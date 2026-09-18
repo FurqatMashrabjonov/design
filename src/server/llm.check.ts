@@ -2,6 +2,8 @@ import assert from 'node:assert'
 import { extractArtifact } from '../artifact.ts'
 import { listDesignSystems, streamCompletion } from './llm.ts'
 import { composeSystemPrompt } from './compose.ts'
+import { parsePlan } from './planner.ts'
+import { mapLimit } from './pool.ts'
 
 const h = '<!doctype html><html><head><title>T</title></head></html>'
 assert.deepEqual(extractArtifact(`<artifact title="Dash">${h}</artifact>`), { title: 'Dash', html: h })
@@ -36,5 +38,34 @@ globalThis.fetch = async () =>
 let out = ''
 for await (const d of streamCompletion('s', 'u')) out += d
 assert.equal(out, '<artifact>')
+
+// planner: parse + validate + truncate untrusted model JSON
+const plan = parsePlan(
+  JSON.stringify({
+    appName: 'BrainFlow AI',
+    summary: 'A study app.',
+    tags: ['dark', 'mobile'],
+    screens: [{ name: 'Home', description: 'Today view' }],
+  }),
+)
+assert.equal(plan.appName, 'BrainFlow AI')
+assert.equal(plan.screens.length, 1)
+assert.throws(() => parsePlan(JSON.stringify({ appName: 'X', screens: [] })), /no screens/) // model returned nothing to build
+assert.throws(() => parsePlan('not json'))
+const many = parsePlan(JSON.stringify({ screens: Array.from({ length: 9 }, (_, i) => ({ name: `S${i}` })) }))
+assert.equal(many.screens.length, 5, 'capped at 5 screens')
+
+// pool: never exceeds the concurrency limit, still runs every item, preserves result order
+let inFlight = 0
+let maxInFlight = 0
+const results = await mapLimit([1, 2, 3, 4, 5, 6], 2, async (n) => {
+  inFlight++
+  maxInFlight = Math.max(maxInFlight, inFlight)
+  await new Promise((r) => setTimeout(r, n % 2 === 0 ? 1 : 5))
+  inFlight--
+  return n * 10
+})
+assert.ok(maxInFlight <= 2, `max concurrency was ${maxInFlight}`)
+assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
 
 console.log('ok')

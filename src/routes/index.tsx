@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { getHome } from '../server/fns'
-import { generate } from '../generate'
-import { extractArtifact } from '../artifact'
-import { frameSize } from '../canvas'
+import { getHome, createProject } from '../server/fns'
 import { PromptBox } from '../PromptBox'
-import { ScreenFrame } from '../ScreenFrame'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,22 +11,19 @@ export const Route = createFileRoute('/')({
   component: Home,
 })
 
-const PREVIEW_WIDTH = 220
-
 function Home() {
   const { projects, designSystems } = Route.useLoaderData()
   const navigate = useNavigate()
   const [device, setDevice] = useState('desktop')
   const [designSystem, setDesignSystem] = useState('minimal')
-  const [live, setLive] = useState('')
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
       <h1 className="mb-2 text-3xl font-semibold tracking-tight">What do you want to design?</h1>
-      <p className="mb-8 text-muted-foreground">Describe a screen. Get a working UI.</p>
+      <p className="mb-8 text-muted-foreground">Describe an app. A planner scopes 3–5 screens and designs all of them.</p>
 
       <PromptBox
-        placeholder="A fintech dashboard with balance, recent transactions and a spending chart"
+        placeholder="A fintech app to track balance, transactions, and spending by category"
         extra={
           <>
             <Select value={device} onValueChange={setDevice}>
@@ -57,20 +50,10 @@ function Home() {
           </>
         }
         onSubmit={async (prompt) => {
-          try {
-            const projectId = await generate({ prompt, device, designSystem }, setLive)
-            navigate({ to: '/p/$projectId', params: { projectId } })
-          } finally {
-            setLive('')
-          }
+          const { id } = await createProject({ data: { device, designSystem } })
+          navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
         }}
       />
-
-      {live && (
-        <div className="mt-8">
-          <ScaledPreview html={extractArtifact(live).html} device={device} />
-        </div>
-      )}
 
       {projects.length > 0 && (
         <section className="mt-12">
@@ -106,18 +89,5 @@ function Home() {
         </section>
       )}
     </main>
-  )
-}
-
-// Scales a native-size ScreenFrame down to a fixed preview width.
-function ScaledPreview(props: { html: string; device: string }) {
-  const f = frameSize(props.device)
-  const scale = PREVIEW_WIDTH / f.width
-  return (
-    <div style={{ width: PREVIEW_WIDTH, height: f.height * scale, overflow: 'hidden' }}>
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-        <ScreenFrame html={props.html} title="Designing…" device={props.device} streaming />
-      </div>
-    </div>
   )
 }

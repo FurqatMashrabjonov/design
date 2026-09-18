@@ -24,3 +24,20 @@ export const moveScreen = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     db.prepare('UPDATE screens SET x = ?, y = ? WHERE id = ?').run(data.x, data.y, data.id)
   })
+
+// Creates an empty project up front so the client can navigate into the workspace immediately;
+// /api/generate-plan fills it with screens and renames it from the planner's appName.
+export const createProject = createServerFn({ method: 'POST' })
+  .validator((d: { device: string; designSystem: string }) => d)
+  .handler(async ({ data }) => {
+    if (!listDesignSystems().some((d2) => d2.id === data.designSystem)) throw new Error('Unknown design system')
+    const id = crypto.randomUUID()
+    const device = data.device === 'mobile' ? 'mobile' : 'desktop'
+    db.prepare('INSERT INTO projects (id, name, design_system, device) VALUES (?, ?, ?, ?)').run(
+      id,
+      'Untitled',
+      data.designSystem,
+      device,
+    )
+    return { id }
+  })
