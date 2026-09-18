@@ -1,62 +1,63 @@
+import { useState } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { useServerFn } from '@tanstack/react-start'
-import { generateScreen, getProject } from '../server/fns'
+import { getProject } from '../server/fns'
+import { generate } from '../generate'
+import { extractArtifact } from '../artifact'
 import { PromptBox } from '../PromptBox'
+import { ScreenFrame } from '../ScreenFrame'
 
 export const Route = createFileRoute('/p/$projectId')({
   loader: ({ params }) => getProject({ data: params.projectId }),
   component: ProjectPage,
 })
 
-const FRAME = {
-  desktop: { width: 1440, height: 900, scale: 0.5 },
-  mobile: { width: 390, height: 844, scale: 0.75 },
-}
-
 function ProjectPage() {
   const { project, screens } = Route.useLoaderData()
-  const generate = useServerFn(generateScreen)
   const router = useRouter()
-  const f = FRAME[project.device as keyof typeof FRAME] ?? FRAME.desktop
+  const [live, setLive] = useState('')
+  const [zoom, setZoom] = useState(1)
 
   return (
     <main className="px-4 py-6">
-      <header className="mb-6 flex items-center gap-4">
+      <header className="mb-6 flex flex-wrap items-center gap-4">
         <Link to="/" className="text-neutral-400 hover:text-white">
           ← Projects
         </Link>
         <h1 className="text-xl font-semibold">{project.name}</h1>
+        <span className="text-sm text-neutral-500">
+          {project.device} · {project.design_system}
+        </span>
+        <label className="ml-auto flex items-center gap-2 text-sm text-neutral-400">
+          Zoom
+          <input
+            type="range"
+            min={0.25}
+            max={1.5}
+            step={0.05}
+            value={zoom}
+            onChange={(e) => setZoom(Number(e.target.value))}
+          />
+        </label>
       </header>
 
       <div className="mb-8 max-w-2xl">
         <PromptBox
           placeholder="Add another screen to this project…"
           onSubmit={async (prompt) => {
-            await generate({ data: { prompt, projectId: project.id } })
-            await router.invalidate()
+            try {
+              await generate({ prompt, projectId: project.id }, setLive)
+              await router.invalidate()
+            } finally {
+              setLive('')
+            }
           }}
         />
       </div>
 
-      <div className="flex flex-wrap gap-8">
+      <div className="flex flex-wrap items-start gap-8">
+        {live && <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} zoom={zoom} />}
         {screens.map((s) => (
-          <figure key={s.id}>
-            <figcaption className="mb-2 text-sm text-neutral-400" title={s.prompt}>
-              {s.name}
-            </figcaption>
-            <div
-              className="overflow-hidden rounded-lg border border-neutral-800 bg-white"
-              style={{ width: f.width * f.scale, height: f.height * f.scale }}
-            >
-              {/* No allow-same-origin: generated JS must not reach this app's origin */}
-              <iframe
-                title={s.name}
-                srcDoc={s.html}
-                sandbox="allow-scripts"
-                style={{ width: f.width, height: f.height, transform: `scale(${f.scale})`, transformOrigin: '0 0' }}
-              />
-            </div>
-          </figure>
+          <ScreenFrame key={s.id} html={s.html} title={s.name} hint={s.prompt} device={project.device} zoom={zoom} />
         ))}
       </div>
     </main>

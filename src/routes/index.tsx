@@ -1,19 +1,24 @@
 import { useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useServerFn } from '@tanstack/react-start'
-import { generateScreen, listProjects } from '../server/fns'
+import { getHome } from '../server/fns'
+import { generate } from '../generate'
+import { extractArtifact } from '../artifact'
 import { PromptBox } from '../PromptBox'
+import { ScreenFrame } from '../ScreenFrame'
 
 export const Route = createFileRoute('/')({
-  loader: () => listProjects(),
+  loader: () => getHome(),
   component: Home,
 })
 
+const selectCls = 'rounded-md bg-neutral-800 px-2 py-1 text-sm'
+
 function Home() {
-  const projects = Route.useLoaderData()
-  const generate = useServerFn(generateScreen)
+  const { projects, designSystems } = Route.useLoaderData()
   const navigate = useNavigate()
   const [device, setDevice] = useState('desktop')
+  const [designSystem, setDesignSystem] = useState('minimal')
+  const [live, setLive] = useState('')
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
@@ -23,20 +28,40 @@ function Home() {
       <PromptBox
         placeholder="A fintech dashboard with balance, recent transactions and a spending chart"
         extra={
-          <select
-            value={device}
-            onChange={(e) => setDevice(e.target.value)}
-            className="rounded-md bg-neutral-800 px-2 py-1 text-sm"
-          >
-            <option value="desktop">Desktop</option>
-            <option value="mobile">Mobile</option>
-          </select>
+          <div className="flex gap-2">
+            <select aria-label="Device" value={device} onChange={(e) => setDevice(e.target.value)} className={selectCls}>
+              <option value="desktop">Desktop</option>
+              <option value="mobile">Mobile</option>
+            </select>
+            <select
+              aria-label="Design system"
+              value={designSystem}
+              onChange={(e) => setDesignSystem(e.target.value)}
+              className={selectCls}
+            >
+              {designSystems.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
         }
         onSubmit={async (prompt) => {
-          const { projectId } = await generate({ data: { prompt, device } })
-          navigate({ to: '/p/$projectId', params: { projectId } })
+          try {
+            const projectId = await generate({ prompt, device, designSystem }, setLive)
+            navigate({ to: '/p/$projectId', params: { projectId } })
+          } finally {
+            setLive('')
+          }
         }}
       />
+
+      {live && (
+        <div className="mt-8">
+          <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={device} zoom={device === 'desktop' ? 0.95 : 1} />
+        </div>
+      )}
 
       {projects.length > 0 && (
         <section className="mt-12">
@@ -50,7 +75,9 @@ function Home() {
                   className="flex justify-between px-4 py-3 hover:bg-neutral-900"
                 >
                   <span>{p.name}</span>
-                  <span className="text-sm text-neutral-500">{p.device}</span>
+                  <span className="text-sm text-neutral-500">
+                    {p.device} · {p.design_system}
+                  </span>
                 </Link>
               </li>
             ))}

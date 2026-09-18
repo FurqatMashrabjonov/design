@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const BASE_PROMPT = `You are an expert product designer and front-end engineer, like Google Stitch.
@@ -18,12 +18,27 @@ const DEVICE = {
   mobile: 'Target: mobile app screen, 390px wide viewport, touch-sized controls, bottom navigation if it fits.',
 }
 
-export function systemPrompt(designSystem: string, device: string) {
-  const ds = readFileSync(join(process.cwd(), 'design-systems', designSystem, 'DESIGN.md'), 'utf8')
-  return `${BASE_PROMPT}\n\n${DEVICE[device as keyof typeof DEVICE] ?? DEVICE.desktop}\n\n# Design system\n\n${ds}`
+const DS_DIR = join(process.cwd(), 'design-systems')
+
+// Label = first "# " heading of DESIGN.md
+export function listDesignSystems() {
+  return readdirSync(DS_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => ({ id: d.name, name: readDesignSystem(d.name).match(/^#\s+(.+)$/m)?.[1] ?? d.name }))
 }
 
-export async function complete(system: string, user: string) {
+function readDesignSystem(id: string) {
+  return readFileSync(join(DS_DIR, id, 'DESIGN.md'), 'utf8')
+}
+
+// Callers must pass a validated id (see listDesignSystems) — it becomes a file path.
+export function systemPrompt(designSystem: string, device: string) {
+  const deviceRule = DEVICE[device as keyof typeof DEVICE] ?? DEVICE.desktop
+  return `${BASE_PROMPT}\n\n${deviceRule}\n\n# Design system\n\n${readDesignSystem(designSystem)}`
+}
+
+// Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
+export async function* streamCompletion(system: string, user: string) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -33,27 +48,27 @@ export async function complete(system: string, user: string) {
     body: JSON.stringify({
       model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
       max_tokens: 8192,
+      stream: true,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
       ],
     }),
   })
-  if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${await res.text()}`)
-  const json = await res.json()
-  return json.choices[0].message.content as string
-}
+  if (!res.ok || !res.body) throw new Error(`DeepSeek ${res.status}: ${await res.text()}`)
 
-// Pull the HTML out of the model reply. Models sometimes skip the <artifact> tag or use a ```html fence.
-export function extractArtifact(text: string) {
-  const tag = text.match(/<artifact(?:\s+title="([^"]*)")?[^>]*>([\s\S]*?)(?:<\/artifact>|$)/i)
-  if (tag) return { title: tag[1] || 'Untitled', html: stripFence(tag[2]) }
-  const fence = text.match(/```html\s*([\s\S]*?)(?:```|$)/i)
-  const html = fence ? fence[1] : text
-  const title = html.match(/<title>([^<]*)<\/title>/i)?.[1] || 'Untitled'
-  return { title, html: html.trim() }
-}
-
-function stripFence(s: string) {
-  return s.replace(/^\s*```html\s*/i, '').replace(/```\s*$/, '').trim()
+  let buf = ''
+  for await (const chunk of res.body.pipeThrough(new TextDecoderStream())) {
+    buf += chunk
+    const lines = buf.split('\n')
+    buf = lines.pop()!
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue // skips ": keep-alive" comments and blank lines
+      const payload = line.slice(5).trim()
+      if (payload === '[DONE]') return
+      const choice = JSON.parse(payload).choices?.[0]
+      if (choice?.delta?.content) yield choice.delta.content as string
+      if (choice?.finish_reason === 'length') throw new Error('Output hit max_tokens, HTML is incomplete. Try a simpler screen.')
+    }
+  }
 }
