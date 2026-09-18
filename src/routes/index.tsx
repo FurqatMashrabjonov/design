@@ -1,8 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { getHome, createProject } from '../server/fns'
 import { PromptBox } from '../PromptBox'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
@@ -16,6 +24,16 @@ function Home() {
   const navigate = useNavigate()
   const [device, setDevice] = useState('desktop')
   const [designSystem, setDesignSystem] = useState('minimal')
+
+  const groupedDesignSystems = useMemo(() => {
+    const map = new Map<string, typeof designSystems>()
+    for (const d of designSystems) {
+      const cat = d.category || 'General'
+      if (!map.has(cat)) map.set(cat, [])
+      map.get(cat)!.push(d)
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
+  }, [designSystems])
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
@@ -36,14 +54,21 @@ function Home() {
               </SelectContent>
             </Select>
             <Select value={designSystem} onValueChange={setDesignSystem}>
-              <SelectTrigger size="sm" aria-label="Design system" className="w-auto">
+              <SelectTrigger size="sm" aria-label="Design system" className="w-auto max-w-[200px]">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                {designSystems.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {d.name}
-                  </SelectItem>
+              <SelectContent className="max-h-80">
+                {groupedDesignSystems.map(([category, items]) => (
+                  <SelectGroup key={category}>
+                    <SelectLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {category}
+                    </SelectLabel>
+                    {items.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 
 export function Sidebar(props: {
   chat: ReactNode
+  jury?: ReactNode
   config: ReactNode
   history: ReactNode
   tab: string
@@ -14,11 +15,15 @@ export function Sidebar(props: {
       <Tabs value={props.tab} onValueChange={props.onTabChange} className="flex min-h-0 flex-1 flex-col gap-0">
         <TabsList className="mx-3 mt-3 w-fit self-start">
           <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsTrigger value="jury">Jury</TabsTrigger>
           <TabsTrigger value="config">Config</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
         <TabsContent value="chat" className="flex min-h-0 flex-1 flex-col gap-3 p-3">
           {props.chat}
+        </TabsContent>
+        <TabsContent value="jury" className="min-h-0 flex-1">
+          <ScrollArea className="h-full p-3">{props.jury}</ScrollArea>
         </TabsContent>
         <TabsContent value="config" className="min-h-0 flex-1">
           <ScrollArea className="h-full p-3">{props.config}</ScrollArea>

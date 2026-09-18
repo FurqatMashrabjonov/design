@@ -41,3 +41,44 @@ export const deleteScreen = createServerFn({ method: 'POST' })
 export const duplicateScreen = createServerFn({ method: 'POST' })
   .validator((d: { id: string; projectId: string }) => d)
   .handler(({ data }) => ScreenController.duplicate(data))
+
+export const runCritique = createServerFn({ method: 'POST' })
+  .validator((d: { screenId: string; projectId: string }) => d)
+  .handler(async ({ data }) => {
+    const { Project } = await import('@/app/Models/Project')
+    const { Screen } = await import('@/app/Models/Screen')
+    const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
+    const { critiqueScreen } = await import('@/app/Services/CritiqueService')
+
+    const project = Project.find(data.projectId)
+    if (!project) throw new Error('Project not found')
+    const screen = Screen.findInProject(data.screenId, data.projectId)
+    if (!screen) throw new Error('Screen not found')
+
+    const dsMd = DesignSystemService.readDesignMd(project.designSystem)
+    const tokens = DesignSystemService.readTokensCss(project.designSystem)
+    const dsContext = `${dsMd}\n\n${tokens ? 'Tokens:\n' + tokens : ''}`
+
+    return critiqueScreen(screen.html, dsContext)
+  })
+
+export const applyCritiqueFix = createServerFn({ method: 'POST' })
+  .validator((d: { screenId: string; projectId: string; revisedHtml: string }) => d)
+  .handler(async ({ data }) => {
+    const { Screen } = await import('@/app/Models/Screen')
+    const { ScreenVersion } = await import('@/app/Models/ScreenVersion')
+    const { annotateHtml } = await import('@/lib/element-annotator')
+
+    const screen = Screen.findInProject(data.screenId, data.projectId)
+    if (!screen) throw new Error('Screen not found')
+
+    ScreenVersion.captureFrom(screen)
+    const annotated = annotateHtml(data.revisedHtml)
+    Screen.updateContent(screen.id, {
+      name: screen.name,
+      prompt: `${screen.prompt} (Critique revised)`,
+      html: annotated,
+    })
+    return { ok: true }
+  })
+

@@ -7,7 +7,7 @@ od:
   mode: prototype
   platform: desktop
   craft:
-    requires: [typography, typography-hierarchy, color, anti-ai-slop, state-coverage, accessibility-baseline, form-validation, laws-of-ux]
+    requires: [typography, typography-hierarchy, color, anti-ai-slop, state-coverage, accessibility-baseline, form-validation, laws-of-ux, app-consistency]
 ---
 
 # Web screen

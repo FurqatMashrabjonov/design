@@ -2,16 +2,26 @@ import { notFound } from '@tanstack/react-router'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
+import { SkillService } from '@/app/Services/SkillService'
 
 export const ProjectController = {
   index() {
-    return { projects: Project.all(), designSystems: DesignSystemService.list() }
+    return {
+      projects: Project.all(),
+      designSystems: DesignSystemService.list(),
+      skills: SkillService.list(),
+    }
   },
 
   show(id: string) {
     const project = Project.find(id)
     if (!project) throw notFound()
-    return { project, screens: Screen.forProject(id) }
+    return {
+      project,
+      screens: Screen.forProject(id),
+      designSystems: DesignSystemService.list(),
+      skills: SkillService.list(),
+    }
   },
 
   store(data: { device: string; designSystem: string }) {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { Check, Loader2, CircleX, Circle, Sparkles } from 'lucide-react'
+import { Check, Loader2, CircleX, Circle, Sparkles, MousePointerClick, X } from 'lucide-react'
 import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
@@ -15,10 +15,12 @@ import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
 import { ScreensList } from '@/components/canvas/ScreensList'
 import { HistoryPanel } from '@/components/canvas/HistoryPanel'
+import { CritiquePanel } from '@/components/canvas/CritiquePanel'
 import { FrameToolbar } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/p/$projectId')({
@@ -36,6 +38,8 @@ function ProjectPage() {
   const navigate = useNavigate()
   const [live, setLive] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
+  const [inspectMode, setInspectMode] = useState(false)
   const [sidebarTab, setSidebarTab] = useState('chat')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
@@ -213,6 +217,14 @@ function ProjectPage() {
                       hint={s.prompt}
                       device={project.device}
                       selected={s.id === selected}
+                      inspectMode={inspectMode && s.id === selected}
+                      selectedElementId={s.id === selected ? selectedElementId : null}
+                      onSelectElement={(elId) => {
+                        setSelected(s.id)
+                        setSelectedElementId(elId)
+                        setSidebarTab('chat')
+                        toast.info(`Selected element: ${elId}`)
+                      }}
                       label={
                         <FrameToolbar
                           name={s.name}
@@ -255,21 +267,64 @@ function ProjectPage() {
                 {plan && <PlanCard plan={plan} status={status} errors={planErrors} />}
               </div>
               {selectedScreen && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  Editing <Badge variant="secondary">{selectedScreen.name}</Badge>
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      Editing <Badge variant="secondary">{selectedScreen.name}</Badge>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={inspectMode ? 'default' : 'outline'}
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setInspectMode(!inspectMode)
+                        if (inspectMode) setSelectedElementId(null)
+                      }}
+                    >
+                      <MousePointerClick className="mr-1 size-3" />
+                      {inspectMode ? 'Selecting...' : 'Select Element'}
+                    </Button>
+                  </div>
+
+                  {selectedElementId && (
+                    <div className="flex items-center justify-between rounded bg-primary/10 px-2 py-1 text-primary">
+                      <span className="truncate font-mono font-medium">
+                        Target: [{selectedElementId}]
+                      </span>
+                      <button
+                        type="button"
+                        className="ml-1 rounded p-0.5 hover:bg-primary/20"
+                        onClick={() => setSelectedElementId(null)}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               <PromptBox
                 placeholder={
                   planning
                     ? 'Designing your screens…'
-                    : selectedScreen
-                      ? 'Describe the change…'
-                      : 'Add another screen to this project…'
+                    : selectedElementId
+                      ? `Describe changes to [${selectedElementId}]…`
+                      : selectedScreen
+                        ? 'Describe the change…'
+                        : 'Add another screen to this project…'
                 }
                 onSubmit={async (prompt) => {
                   try {
-                    await generate({ prompt, projectId: project.id, editScreenId: selectedScreen?.id }, setLive)
+                    await generate(
+                      {
+                        prompt,
+                        projectId: project.id,
+                        editScreenId: selectedScreen?.id,
+                        editElementId: selectedElementId ?? undefined,
+                      },
+                      setLive
+                    )
+                    setSelectedElementId(null)
+                    setInspectMode(false)
                     await router.invalidate()
                   } finally {
                     setLive('')
@@ -277,6 +332,13 @@ function ProjectPage() {
                 }}
               />
             </>
+          }
+          jury={
+            <CritiquePanel
+              selectedScreen={selectedScreen ?? null}
+              projectId={project.id}
+              onRestored={() => router.invalidate()}
+            />
           }
           config={
             <div className="space-y-3 text-sm">
