@@ -16,6 +16,8 @@ import { Sidebar } from '@/components/canvas/Sidebar'
 import { ScreensList } from '@/components/canvas/ScreensList'
 import { HistoryPanel } from '@/components/canvas/HistoryPanel'
 import { FrameToolbar } from '@/components/canvas/FrameToolbar'
+import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
+import { CodeDialog } from '@/components/canvas/CodeDialog'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -34,6 +36,10 @@ function ProjectPage() {
   const navigate = useNavigate()
   const [live, setLive] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  const [sidebarTab, setSidebarTab] = useState('chat')
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
 
   // Multi-screen planning state — only populated when this project was just created from the home page composer.
   const [plan, setPlan] = useState<Plan | null>(null)
@@ -109,6 +115,31 @@ function ProjectPage() {
     URL.revokeObjectURL(url)
   }
 
+  // Re-runs the screen's own last instruction through the edit pipeline — a retry, not a from-scratch
+  // redesign (the LLM sees the current HTML plus that same instruction again).
+  async function reloadScreen(screen: (typeof screens)[number]) {
+    setSelected(screen.id)
+    try {
+      await generate({ prompt: screen.prompt, projectId: project.id, editScreenId: screen.id }, setLive)
+      await router.invalidate()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLive('')
+    }
+  }
+
+  async function copyHtml(html: string) {
+    try {
+      await navigator.clipboard.writeText(html)
+      toast.success('HTML copied')
+    } catch {
+      toast.error('Could not copy — clipboard access was blocked')
+    }
+  }
+
+  const codeScreen = screens.find((s) => s.id === codeScreenId) ?? null
+
   return (
     <div className="flex h-screen flex-col">
       <TopBar
@@ -160,34 +191,58 @@ function ProjectPage() {
               }
               const s = screens.find((sc) => sc.id === id)!
               return (
-                <div onClick={() => setSelected(s.id)}>
-                  <ScreenFrame
-                    html={s.html}
-                    title={s.name}
-                    hint={s.prompt}
-                    device={project.device}
-                    selected={s.id === selected}
-                    label={
-                      <FrameToolbar
-                        name={s.name}
-                        hint={s.prompt}
-                        onRename={async (name) => {
-                          await renameScreen({ data: { id: s.id, projectId: project.id, name } })
-                          await router.invalidate()
-                        }}
-                        onDuplicate={async () => {
-                          await duplicateScreen({ data: { id: s.id, projectId: project.id } })
-                          await router.invalidate()
-                        }}
-                        onDelete={async () => {
-                          await deleteScreen({ data: { id: s.id, projectId: project.id } })
-                          if (selected === s.id) setSelected(null)
-                          await router.invalidate()
-                        }}
-                      />
-                    }
-                  />
-                </div>
+                <FrameContextMenu
+                  onRename={() => setRenamingId(s.id)}
+                  onDuplicate={async () => {
+                    await duplicateScreen({ data: { id: s.id, projectId: project.id } })
+                    await router.invalidate()
+                  }}
+                  onReload={() => reloadScreen(s)}
+                  onCopyHtml={() => copyHtml(s.html)}
+                  onViewCode={() => setCodeScreenId(s.id)}
+                  onOpenHistory={() => {
+                    setSelected(s.id)
+                    setSidebarTab('history')
+                  }}
+                  onDelete={() => setDeleteTargetId(s.id)}
+                >
+                  <div onClick={() => setSelected(s.id)}>
+                    <ScreenFrame
+                      html={s.html}
+                      title={s.name}
+                      hint={s.prompt}
+                      device={project.device}
+                      selected={s.id === selected}
+                      label={
+                        <FrameToolbar
+                          name={s.name}
+                          hint={s.prompt}
+                          editing={renamingId === s.id}
+                          onStartRename={() => setRenamingId(s.id)}
+                          onCancelRename={() => setRenamingId(null)}
+                          onRename={async (name) => {
+                            await renameScreen({ data: { id: s.id, projectId: project.id, name } })
+                            setRenamingId(null)
+                            await router.invalidate()
+                          }}
+                          onDuplicate={async () => {
+                            await duplicateScreen({ data: { id: s.id, projectId: project.id } })
+                            await router.invalidate()
+                          }}
+                          deleteConfirming={deleteTargetId === s.id}
+                          onRequestDelete={() => setDeleteTargetId(s.id)}
+                          onCancelDelete={() => setDeleteTargetId(null)}
+                          onDelete={async () => {
+                            await deleteScreen({ data: { id: s.id, projectId: project.id } })
+                            if (selected === s.id) setSelected(null)
+                            setDeleteTargetId(null)
+                            await router.invalidate()
+                          }}
+                        />
+                      }
+                    />
+                  </div>
+                </FrameContextMenu>
               )
             }}
           />
@@ -243,8 +298,12 @@ function ProjectPage() {
             </div>
           }
           history={<HistoryPanel screenId={selected} onRestored={() => router.invalidate()} />}
+          tab={sidebarTab}
+          onTabChange={setSidebarTab}
         />
       </div>
+
+      <CodeDialog screen={codeScreen} onOpenChange={(open) => !open && setCodeScreenId(null)} />
     </div>
   )
 }

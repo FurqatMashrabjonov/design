@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Pencil, Copy, Trash2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,26 +19,36 @@ import {
 export function FrameToolbar(props: {
   name: string
   hint?: string
+  // Rename and delete-confirm are controlled — the right-click context menu's items start the
+  // same states, so there's one edit box and one confirm dialog regardless of entry point.
+  editing: boolean
+  onStartRename: () => void
+  onCancelRename: () => void
   onRename: (name: string) => Promise<void>
   onDuplicate: () => Promise<void>
+  deleteConfirming: boolean
+  onRequestDelete: () => void
+  onCancelDelete: () => void
   onDelete: () => Promise<void>
 }) {
-  const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(props.name)
   const [busy, setBusy] = useState<'rename' | 'duplicate' | 'delete' | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Re-seed the draft each time editing starts (also covers the context menu's "Rename" entry point).
+  useEffect(() => {
+    if (props.editing) setDraft(props.name)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editing])
 
   async function save() {
     const name = draft.trim()
     if (!name || name === props.name) {
-      setEditing(false)
-      setDraft(props.name)
+      props.onCancelRename()
       return
     }
     setBusy('rename')
     try {
       await props.onRename(name)
-      setEditing(false)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -46,7 +56,7 @@ export function FrameToolbar(props: {
     }
   }
 
-  if (editing) {
+  if (props.editing) {
     return (
       <div className="mb-2 flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
         <Input
@@ -56,25 +66,14 @@ export function FrameToolbar(props: {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') save()
-            if (e.key === 'Escape') {
-              setEditing(false)
-              setDraft(props.name)
-            }
+            if (e.key === 'Escape') props.onCancelRename()
           }}
           className="h-7 text-sm"
         />
         <Button size="icon" variant="ghost" className="size-7 shrink-0" disabled={busy === 'rename'} onClick={save}>
           <Check className="size-3.5" />
         </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="size-7 shrink-0"
-          onClick={() => {
-            setEditing(false)
-            setDraft(props.name)
-          }}
-        >
+        <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={props.onCancelRename}>
           <X className="size-3.5" />
         </Button>
       </div>
@@ -87,16 +86,7 @@ export function FrameToolbar(props: {
         {props.name}
       </span>
       <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <Button
-          size="icon"
-          variant="ghost"
-          className="size-6 shrink-0"
-          title="Rename"
-          onClick={() => {
-            setDraft(props.name)
-            setEditing(true)
-          }}
-        >
+        <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Rename" onClick={props.onStartRename}>
           <Pencil className="size-3.5" />
         </Button>
         <Button
@@ -124,13 +114,13 @@ export function FrameToolbar(props: {
           className="size-6 shrink-0 text-destructive hover:text-destructive"
           title="Delete"
           disabled={busy === 'delete'}
-          onClick={() => setConfirmDelete(true)}
+          onClick={props.onRequestDelete}
         >
           <Trash2 className="size-3.5" />
         </Button>
       </div>
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+      <AlertDialog open={props.deleteConfirming} onOpenChange={(open) => !open && props.onCancelDelete()}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{props.name}"?</AlertDialogTitle>
@@ -149,7 +139,7 @@ export function FrameToolbar(props: {
                   toast.error(err instanceof Error ? err.message : String(err))
                 } finally {
                   setBusy(null)
-                  setConfirmDelete(false)
+                  props.onCancelDelete()
                 }
               }}
             >
