@@ -14,6 +14,7 @@ import { Canvas, type CanvasFrame } from '@/components/canvas/Canvas'
 import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
 import { ScreensList } from '@/components/canvas/ScreensList'
+import { HistoryPanel } from '@/components/canvas/HistoryPanel'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -206,6 +207,7 @@ function ProjectPage() {
               </p>
             </div>
           }
+          history={<HistoryPanel screenId={selected} onRestored={() => router.invalidate()} />}
         />
       </div>
     </div>

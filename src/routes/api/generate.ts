@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { db, type Project, type Screen } from '../../server/db'
+import { db, snapshotScreen, type Project, type Screen } from '../../server/db'
 import { listDesignSystems, streamCompletion } from '../../server/llm'
 import { composeSystemPrompt } from '../../server/compose'
 import { ERROR_MARK, extractArtifact } from '../../artifact'
@@ -80,6 +80,7 @@ export const Route = createFileRoute('/api/generate')({
                   project.device,
                 )
               if (editScreen) {
+                snapshotScreen(editScreen) // keep the pre-edit state so History can restore it
                 db.prepare('UPDATE screens SET name = ?, prompt = ?, html = ? WHERE id = ?').run(
                   title,
                   prompt,

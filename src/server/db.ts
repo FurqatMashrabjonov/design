@@ -22,6 +22,17 @@ db.exec(`
     y REAL NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL DEFAULT (unixepoch())
   );
+  -- Snapshot of a screen's content right before it gets overwritten (by an edit or a restore).
+  -- The screens row itself is always "current" — this table only holds superseded states.
+  CREATE TABLE IF NOT EXISTS screen_versions (
+    id TEXT PRIMARY KEY,
+    screen_id TEXT NOT NULL REFERENCES screens(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    prompt TEXT NOT NULL,
+    html TEXT NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  );
+  CREATE INDEX IF NOT EXISTS screen_versions_screen_id ON screen_versions(screen_id);
 `)
 
 // ponytail: no migration framework for two columns. Ignore "duplicate column" on repeat boots.
@@ -56,4 +67,18 @@ export type Screen = {
   x: number
   y: number
   created_at: number
+}
+export type ScreenVersion = { id: string; screen_id: string; name: string; prompt: string; html: string; created_at: number }
+
+// Snapshots a screen's current row into screen_versions before the caller overwrites it — shared by
+// both the edit path (/api/generate.ts) and restoreVersion, so "restore" is itself just another
+// recorded edit and nothing is ever lost.
+export function snapshotScreen(screen: Pick<Screen, 'id' | 'name' | 'prompt' | 'html'>) {
+  db.prepare('INSERT INTO screen_versions (id, screen_id, name, prompt, html) VALUES (?, ?, ?, ?, ?)').run(
+    crypto.randomUUID(),
+    screen.id,
+    screen.name,
+    screen.prompt,
+    screen.html,
+  )
 }
