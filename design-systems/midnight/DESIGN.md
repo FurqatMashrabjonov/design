@@ -3,11 +3,25 @@
 Dark, precise, developer-tool aesthetic. Think Linear, Vercel, Raycast: near-black surfaces, hairline borders, one luminous accent.
 
 ## Color
-- Background: `#08090a`; raised surface: `#111214`; hover surface: `#17181b`
-- Borders: `rgba(255,255,255,0.08)`; strong border `rgba(255,255,255,0.14)`
-- Text: primary `#f7f8f8`, secondary `#8a8f98`, muted `#5c6068`
-- Accent: `#5e6ad2` (violet-blue); accent glow for hero only: radial gradient of accent at 20% opacity
-- Semantic: success `#4cb782`, warning `#f2c94c`, danger `#eb5757`
+
+Define these as CSS custom properties on `:root` and use `var(--token)` everywhere — never hardcode the hex a second time.
+
+| Token | Value |
+|---|---|
+| `--bg` | `#08090a` |
+| `--surface` | `#111214` |
+| `--surface-hover` | `#17181b` |
+| `--border` | `rgba(255,255,255,0.08)` |
+| `--border-strong` | `rgba(255,255,255,0.14)` |
+| `--fg` | `#f7f8f8` |
+| `--muted` | `#8a8f98` |
+| `--muted-2` | `#5c6068` |
+| `--accent` | `#5e6ad2` |
+| `--success` | `#4cb782` |
+| `--warning` | `#f2c94c` |
+| `--danger` | `#eb5757` |
+
+Accent glow (hero only): `radial-gradient(circle, var(--accent) 0%, transparent 70%)` at 20% opacity — functional emphasis, not decoration.
 
 ## Typography
 - Font: "Inter" from Google Fonts, weights 400/500/600; code and numbers "JetBrains Mono"

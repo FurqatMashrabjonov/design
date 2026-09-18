@@ -1,40 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const BASE_PROMPT = `You are an expert product designer and front-end engineer, like Google Stitch.
-Given a brief, you design ONE polished, production-quality UI screen.
-
-Output rules:
-- Reply with exactly one block: <artifact title="Short screen name">...full HTML document...</artifact>
-- No text before or after the block.
-- The HTML is a single self-contained file starting with <!doctype html>.
-- Use Tailwind via <script src="https://cdn.tailwindcss.com"></script>. No other scripts or CSS files except Google Fonts.
-- Icons: inline SVG only. Images: use https://placehold.co/WIDTHxHEIGHT or CSS gradients.
-- Realistic content (real-sounding names, numbers, copy). Never lorem ipsum.
-- Follow the design system below strictly: its colors, type, spacing, radius, and component rules.`
-
-const DEVICE = {
-  desktop: 'Target: desktop web, 1440px wide viewport.',
-  mobile: 'Target: mobile app screen, 390px wide viewport, touch-sized controls, bottom navigation if it fits.',
-}
-
 const DS_DIR = join(process.cwd(), 'design-systems')
 
 // Label = first "# " heading of DESIGN.md
 export function listDesignSystems() {
   return readdirSync(DS_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory())
-    .map((d) => ({ id: d.name, name: readDesignSystem(d.name).match(/^#\s+(.+)$/m)?.[1] ?? d.name }))
-}
-
-function readDesignSystem(id: string) {
-  return readFileSync(join(DS_DIR, id, 'DESIGN.md'), 'utf8')
-}
-
-// Callers must pass a validated id (see listDesignSystems) — it becomes a file path.
-export function systemPrompt(designSystem: string, device: string) {
-  const deviceRule = DEVICE[device as keyof typeof DEVICE] ?? DEVICE.desktop
-  return `${BASE_PROMPT}\n\n${deviceRule}\n\n# Design system\n\n${readDesignSystem(designSystem)}`
+    .map((d) => ({ id: d.name, name: readFileSync(join(DS_DIR, d.name, 'DESIGN.md'), 'utf8').match(/^#\s+(.+)$/m)?.[1] ?? d.name }))
 }
 
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.

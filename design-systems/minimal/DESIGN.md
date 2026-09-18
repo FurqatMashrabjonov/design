@@ -3,10 +3,23 @@
 Clean, calm, content-first. Think Linear meets Apple: lots of whitespace, one accent color, crisp type.
 
 ## Color
-- Background: `#ffffff`; subtle surface: `#f7f7f8`; borders: `#e5e5e7`
-- Text: primary `#111113`, secondary `#6b6b76`, muted `#a1a1aa`
-- Accent: `#4f46e5` (indigo). Use only for primary actions, links, active states, and one highlight per chart
-- Semantic: success `#16a34a`, warning `#d97706`, danger `#dc2626`
+
+Define these as CSS custom properties on `:root` and use `var(--token)` everywhere — never hardcode the hex a second time.
+
+| Token | Value |
+|---|---|
+| `--bg` | `#ffffff` |
+| `--surface` | `#f7f7f8` |
+| `--border` | `#e5e5e7` |
+| `--fg` | `#111113` |
+| `--muted` | `#6b6b76` |
+| `--muted-2` | `#a1a1aa` |
+| `--accent` | `#2952cc` |
+| `--success` | `#16a34a` |
+| `--warning` | `#d97706` |
+| `--danger` | `#dc2626` |
+
+`--accent` is a deliberate mid-blue, not Tailwind's default indigo — never substitute `#6366f1`, `#4f46e5`, or a sibling indigo shade.
 
 ## Typography
 - Font: "Inter" from Google Fonts, weights 400/500/600

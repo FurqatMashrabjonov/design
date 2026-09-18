@@ -3,10 +3,23 @@
 Loud, raw, confident. Neo-brutalism like Gumroad: thick black outlines, hard offset shadows, flat saturated colors.
 
 ## Color
-- Background: `#fffbeb` (warm cream); cards: `#ffffff`
-- Ink (text, borders, shadows): `#000000`
-- Accents, used as flat fills: yellow `#ffd23f`, pink `#ff90e8`, blue `#3b82f6`, green `#23c55e`
-- Each section may use one accent as its background; never gradients
+
+Define these as CSS custom properties on `:root` and use `var(--token)` everywhere — never hardcode the hex a second time.
+
+| Token | Value |
+|---|---|
+| `--bg` | `#fffbeb` |
+| `--surface` | `#ffffff` |
+| `--fg` | `#000000` |
+| `--border` | `#000000` |
+| `--accent` | `#ffd23f` |
+| `--accent-2` | `#ff90e8` |
+| `--accent-3` | `#3b82f6` |
+| `--success` | `#23c55e` |
+| `--warning` | `#ffd23f` |
+| `--danger` | `#eb5757` |
+
+`--accent` is primary (CTAs, active states). `--accent-2`/`--accent-3` are section-background fills only, at most one per screen alongside the primary — never blended, never gradient.
 
 ## Typography
 - Display: "Space Grotesk" 700 from Google Fonts; body: "Space Grotesk" 400/500

@@ -1,0 +1,9 @@
+This project includes files under `craft/` adapted from nexu-io/open-design
+(https://github.com/nexu-io/open-design), licensed under the Apache License,
+Version 2.0. See http://www.apache.org/licenses/LICENSE-2.0 for the full text.
+
+open-design's `craft/` files are themselves adapted from the MIT-licensed
+refero_skill project (https://github.com/referodesign/refero_skill),
+© Refero Design.
+
+No other files in this repository originate from open-design.

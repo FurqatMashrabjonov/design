@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { db, type Project } from '../../server/db'
-import { listDesignSystems, streamCompletion, systemPrompt } from '../../server/llm'
+import { listDesignSystems, streamCompletion } from '../../server/llm'
+import { composeSystemPrompt } from '../../server/compose'
 import { ERROR_MARK, extractArtifact } from '../../artifact'
 
 // POST { prompt, projectId? , device?, designSystem? } -> text/plain stream of the raw model output.
@@ -31,7 +32,7 @@ export const Route = createFileRoute('/api/generate')({
           isNew = true
         }
 
-        const deltas = streamCompletion(systemPrompt(project.design_system, project.device), prompt)
+        const deltas = streamCompletion(composeSystemPrompt(project.design_system, project.device), prompt)
         // Pull the first chunk before answering so bad key / upstream errors become a real error status
         let first: IteratorResult<string>
         try {
