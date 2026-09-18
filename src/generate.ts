@@ -2,7 +2,7 @@ import { ERROR_MARK } from './artifact'
 
 // Streams /api/generate. onText gets the full text so far. Resolves with the project id once saved.
 export async function generate(
-  body: { prompt: string; projectId?: string; device?: string; designSystem?: string },
+  body: { prompt: string; projectId?: string; device?: string; designSystem?: string; editScreenId?: string },
   onText: (text: string) => void,
 ) {
   const res = await fetch('/api/generate', {

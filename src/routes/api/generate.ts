@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { db, type Project } from '../../server/db'
+import { db, type Project, type Screen } from '../../server/db'
 import { listDesignSystems, streamCompletion } from '../../server/llm'
 import { composeSystemPrompt } from '../../server/compose'
 import { ERROR_MARK, extractArtifact } from '../../artifact'
+import { nextFramePosition } from '../../canvas'
 
-// POST { prompt, projectId? , device?, designSystem? } -> text/plain stream of the raw model output.
+// POST { prompt, projectId? , device?, designSystem?, editScreenId? } -> text/plain stream of the raw model output.
 // New project id is returned up front in X-Project-Id; rows are written only after a complete generation.
 export const Route = createFileRoute('/api/generate')({
   server: {
@@ -32,7 +33,19 @@ export const Route = createFileRoute('/api/generate')({
           isNew = true
         }
 
-        const deltas = streamCompletion(composeSystemPrompt(project.design_system, project.device), prompt)
+        let editScreen: Screen | undefined
+        if (body.editScreenId) {
+          editScreen = db.prepare('SELECT * FROM screens WHERE id = ? AND project_id = ?').get(String(body.editScreenId), project.id) as
+            | Screen
+            | undefined
+          if (!editScreen) return new Response('Screen not found', { status: 404 })
+        }
+
+        const userMessage = editScreen
+          ? `Current screen HTML:\n\`\`\`html\n${editScreen.html}\n\`\`\`\n\nEdit instruction: ${prompt}\n\nRewrite the full HTML applying this instruction. Keep everything else the same.`
+          : prompt
+
+        const deltas = streamCompletion(composeSystemPrompt(project.design_system, project.device), userMessage)
         // Pull the first chunk before answering so bad key / upstream errors become a real error status
         let first: IteratorResult<string>
         try {
@@ -66,13 +79,29 @@ export const Route = createFileRoute('/api/generate')({
                   project.design_system,
                   project.device,
                 )
-              db.prepare('INSERT INTO screens (id, project_id, name, prompt, html) VALUES (?, ?, ?, ?, ?)').run(
-                crypto.randomUUID(),
-                project.id,
-                title,
-                prompt,
-                html,
-              )
+              if (editScreen) {
+                db.prepare('UPDATE screens SET name = ?, prompt = ?, html = ? WHERE id = ?').run(
+                  title,
+                  prompt,
+                  html,
+                  editScreen.id,
+                )
+              } else {
+                const existing = db.prepare('SELECT x, y FROM screens WHERE project_id = ?').all(project.id) as {
+                  x: number
+                  y: number
+                }[]
+                const pos = nextFramePosition(existing, project.device)
+                db.prepare('INSERT INTO screens (id, project_id, name, prompt, html, x, y) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+                  crypto.randomUUID(),
+                  project.id,
+                  title,
+                  prompt,
+                  html,
+                  pos.x,
+                  pos.y,
+                )
+              }
             } catch (e) {
               send(`${ERROR_MARK}${e instanceof Error ? e.message : String(e)}-->`)
             }

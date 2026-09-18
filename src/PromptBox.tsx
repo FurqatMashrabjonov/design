@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from 'react'
+import { ArrowUp, Loader2 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
 
 export function PromptBox(props: {
   placeholder: string
@@ -29,9 +32,9 @@ export function PromptBox(props: {
         e.preventDefault()
         submit()
       }}
-      className="rounded-xl border border-neutral-800 bg-neutral-900 p-3"
+      className="rounded-xl border bg-card p-2.5 shadow-sm"
     >
-      <textarea
+      <Textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => {
@@ -39,20 +42,17 @@ export function PromptBox(props: {
         }}
         placeholder={props.placeholder}
         aria-label="Design prompt"
-        rows={4}
+        rows={3}
         disabled={busy}
-        className="w-full resize-none bg-transparent outline-none placeholder:text-neutral-600"
+        className="resize-none border-0 p-1 shadow-none focus-visible:ring-0"
       />
-      <div className="flex items-center justify-between gap-2">
-        <div>{props.extra}</div>
-        <button
-          disabled={busy || !prompt.trim()}
-          className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-black disabled:opacity-40"
-        >
-          {busy ? 'Designing… (up to a minute)' : 'Generate ⌘↵'}
-        </button>
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2">{props.extra}</div>
+        <Button type="submit" size="icon" className="size-8 shrink-0 rounded-full" disabled={busy || !prompt.trim()}>
+          {busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
+        </Button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
     </form>
   )
 }

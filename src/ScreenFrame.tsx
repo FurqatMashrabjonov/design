@@ -1,31 +1,43 @@
 import { useEffect, useRef, useState } from 'react'
+import { frameSize } from './canvas'
+import { cn } from '@/lib/utils'
 
-const FRAME = {
-  desktop: { width: 1440, height: 900, scale: 0.5 },
-  mobile: { width: 390, height: 844, scale: 0.75 },
-}
-
-export function ScreenFrame(props: { html: string; title: string; device: string; zoom?: number; hint?: string }) {
-  const f = FRAME[props.device as keyof typeof FRAME] ?? FRAME.desktop
-  const scale = f.scale * (props.zoom ?? 1)
+// Renders at native pixel size (1440x900 / 390x844) — the canvas's own transform handles zoom.
+export function ScreenFrame(props: {
+  html: string
+  title: string
+  device: string
+  hint?: string
+  selected?: boolean
+  streaming?: boolean
+}) {
+  const f = frameSize(props.device)
   // A new srcdoc reloads the iframe, so a streaming preview refreshes at most every 800ms
-  const html = useThrottled(props.html, 800)
+  const html = useThrottled(props.html, props.streaming ? 800 : 0)
 
   return (
-    <figure>
-      <figcaption className="mb-2 text-sm text-neutral-400" title={props.hint}>
+    <figure style={{ width: f.width }}>
+      <figcaption
+        className="mb-2 flex items-center gap-1.5 truncate text-sm font-medium text-muted-foreground"
+        title={props.hint}
+      >
+        {props.streaming && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary" />}
         {props.title}
       </figcaption>
       <div
-        className="overflow-hidden rounded-lg border border-neutral-800 bg-white"
-        style={{ width: f.width * scale, height: f.height * scale }}
+        className={cn(
+          'overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow',
+          props.selected ? 'border-primary ring-2 ring-primary/30' : 'border-border',
+        )}
+        style={{ width: f.width, height: f.height }}
       >
-        {/* No allow-same-origin: generated JS must not reach this app's origin */}
+        {/* No allow-same-origin: generated JS must not reach this app's origin. pointer-events-none: clicks drive canvas drag, not the page inside. */}
         <iframe
           title={props.title}
           srcDoc={html}
           sandbox="allow-scripts"
-          style={{ width: f.width, height: f.height, transform: `scale(${scale})`, transformOrigin: '0 0' }}
+          className="pointer-events-none"
+          style={{ width: f.width, height: f.height }}
         />
       </div>
     </figure>
@@ -36,6 +48,10 @@ function useThrottled<T>(value: T, ms: number) {
   const [out, setOut] = useState(value)
   const last = useRef(0)
   useEffect(() => {
+    if (ms <= 0) {
+      setOut(value)
+      return
+    }
     const t = setTimeout(
       () => {
         last.current = Date.now()

@@ -18,3 +18,9 @@ export const getProject = createServerFn({ method: 'GET' })
       .all(id) as Screen[]
     return { project, screens }
   })
+
+export const moveScreen = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; x: number; y: number }) => d)
+  .handler(async ({ data }) => {
+    db.prepare('UPDATE screens SET x = ?, y = ? WHERE id = ?').run(data.x, data.y, data.id)
+  })
