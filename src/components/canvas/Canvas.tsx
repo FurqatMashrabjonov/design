@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Minus, Plus, RotateCcw, Maximize } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,21 +25,21 @@ export function Canvas(props: {
   onBackgroundClick?: () => void
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(1)
-  const [t, setT] = useState({ x: 80, y: 80 })
+  const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
   const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
   const drag = useRef<Drag | null>(null)
 
   const pos = useCallback((f: CanvasFrame) => positions[f.id] ?? { x: f.x, y: f.y }, [positions])
 
-  // Zoom keeping the (vx, vy) viewport point visually fixed. Reads current scale/t directly —
-  // called only from synchronous event handlers, never queued behind another pending update.
+  // Zoom keeping the (vx, vy) viewport point visually fixed. Takes a functional updater so the
+  // native wheel listener below (attached once, never stale) always computes from the latest view.
   function zoomAt(nextScaleRaw: number, vx: number, vy: number) {
-    const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScaleRaw))
-    const worldX = (vx - t.x) / scale
-    const worldY = (vy - t.y) / scale
-    setScale(nextScale)
-    setT({ x: vx - worldX * nextScale, y: vy - worldY * nextScale })
+    setView((prev) => {
+      const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, nextScaleRaw))
+      const worldX = (vx - prev.x) / prev.scale
+      const worldY = (vy - prev.y) / prev.scale
+      return { scale: nextScale, x: vx - worldX * nextScale, y: vy - worldY * nextScale }
+    })
   }
 
   function zoomCentered(nextScale: number) {
@@ -61,29 +61,44 @@ export function Canvas(props: {
     const w = Math.max(...rights) - minX
     const h = Math.max(...bottoms) - minY
     const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(rect.width / w, rect.height / h) * 0.85))
-    setScale(next)
-    setT({ x: rect.width / 2 - (minX + w / 2) * next, y: rect.height / 2 - (minY + h / 2) * next })
+    setView({ scale: next, x: rect.width / 2 - (minX + w / 2) * next, y: rect.height / 2 - (minY + h / 2) * next })
   }
 
   function reset() {
-    setScale(1)
-    setT({ x: 80, y: 80 })
+    setView({ scale: 1, x: 80, y: 80 })
   }
 
-  function onWheel(e: React.WheelEvent) {
-    e.preventDefault()
-    if (e.ctrlKey || e.metaKey) {
-      const rect = viewportRef.current!.getBoundingClientRect()
-      zoomAt(scale * (1 - e.deltaY * 0.01), e.clientX - rect.left, e.clientY - rect.top)
-    } else {
-      setT((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }))
+  // React's onWheel is a passive listener at the root by default, so preventDefault() inside it is
+  // silently ignored — the page pinch-zooms underneath the canvas. A native listener with
+  // passive: false is the only way to actually stop that. Attached once; setView's functional form
+  // means it never reads a stale scale/x/y from a closure.
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const handler = (e: WheelEvent) => {
+      e.preventDefault()
+      if (e.ctrlKey || e.metaKey) {
+        const rect = el.getBoundingClientRect()
+        setView((prev) => {
+          const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, prev.scale * (1 - e.deltaY * 0.01)))
+          const vx = e.clientX - rect.left
+          const vy = e.clientY - rect.top
+          const worldX = (vx - prev.x) / prev.scale
+          const worldY = (vy - prev.y) / prev.scale
+          return { scale: nextScale, x: vx - worldX * nextScale, y: vy - worldY * nextScale }
+        })
+      } else {
+        setView((prev) => ({ ...prev, x: prev.x - e.deltaX, y: prev.y - e.deltaY }))
+      }
     }
-  }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [])
 
   function onBackgroundPointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return
     props.onBackgroundClick?.()
-    drag.current = { mode: 'pan', startX: e.clientX, startY: e.clientY, startTx: t.x, startTy: t.y }
+    drag.current = { mode: 'pan', startX: e.clientX, startY: e.clientY, startTx: view.x, startTy: view.y }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
 
@@ -103,9 +118,9 @@ export function Canvas(props: {
     const dx = e.clientX - d.startX
     const dy = e.clientY - d.startY
     if (d.mode === 'pan') {
-      setT({ x: d.startTx + dx, y: d.startTy + dy })
+      setView((prev) => ({ ...prev, x: d.startTx + dx, y: d.startTy + dy }))
     } else {
-      setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / scale, y: d.startFy + dy / scale } }))
+      setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / view.scale, y: d.startFy + dy / view.scale } }))
     }
   }
 
@@ -118,14 +133,14 @@ export function Canvas(props: {
     }
   }
 
-  const dotSize = 22 * scale
+  const dotSize = 22 * view.scale
   const bg = useMemo(
     () => ({
       backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
       backgroundSize: `${dotSize}px ${dotSize}px`,
-      backgroundPosition: `${t.x}px ${t.y}px`,
+      backgroundPosition: `${view.x}px ${view.y}px`,
     }),
-    [dotSize, t.x, t.y],
+    [dotSize, view.x, view.y],
   )
 
   return (
@@ -133,14 +148,13 @@ export function Canvas(props: {
       <div
         ref={viewportRef}
         className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
-        onWheel={onWheel}
         onPointerDown={onBackgroundPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         <div
           className="absolute left-0 top-0 origin-top-left"
-          style={{ transform: `translate(${t.x}px, ${t.y}px) scale(${scale})` }}
+          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
         >
           {props.frames.map((f) => {
             const p = pos(f)
@@ -160,13 +174,13 @@ export function Canvas(props: {
 
       <div className="absolute inset-x-0 bottom-5 flex justify-center">
         <div className="flex items-center gap-1 rounded-full border bg-background/95 p-1 shadow-md backdrop-blur">
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(scale - 0.1)}>
+          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(view.scale - 0.1)}>
             <Minus className="size-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 min-w-14 rounded-full px-2 text-xs tabular-nums">
-                {Math.round(scale * 100)}%
+                {Math.round(view.scale * 100)}%
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center">
@@ -177,7 +191,7 @@ export function Canvas(props: {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(scale + 0.1)}>
+          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(view.scale + 0.1)}>
             <Plus className="size-4" />
           </Button>
           <div className="mx-1 h-5 w-px bg-border" />
