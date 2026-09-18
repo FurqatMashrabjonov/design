@@ -5,7 +5,7 @@ import { Check, Loader2, CircleX, Circle, Sparkles } from 'lucide-react'
 import { getProject, moveScreen } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
-import type { Plan } from '../server/planner'
+import type { Plan } from '@/app/Services/PlannerService'
 import { extractArtifact } from '../artifact'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
@@ -112,7 +112,7 @@ function ProjectPage() {
       <TopBar
         name={plan?.appName ?? project.name}
         device={project.device}
-        designSystem={project.design_system}
+        designSystem={project.designSystem}
         onExport={selectedScreen ? exportSelected : undefined}
       />
       <div className="flex min-h-0 flex-1">
@@ -199,7 +199,7 @@ function ProjectPage() {
               <div>
                 <div className="mb-1 text-muted-foreground">Design system</div>
                 <Badge variant="secondary" className="capitalize">
-                  {project.design_system}
+                  {project.designSystem}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">

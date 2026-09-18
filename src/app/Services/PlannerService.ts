@@ -1,7 +1,7 @@
-import { completeJSON } from './llm.ts'
+import { completeJSON } from './LlmService.ts'
 
 // ponytail: this is a structured-JSON task, not a rendering skill — no craft/design-system injection needed,
-// so it skips the SKILL.md ceremony compose.ts uses for screen generation and just hardcodes its prompt.
+// so it skips the SKILL.md ceremony PromptComposer uses for screen generation and just hardcodes its prompt.
 const PLANNER_PROMPT = `You are a product design lead scoping a small app from a one-line brief.
 Given the brief, propose 3 to 5 screens that together cover the app's core flow — each screen a distinct job, no two screens doing the same thing.
 

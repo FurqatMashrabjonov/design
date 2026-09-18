@@ -1,15 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
-const DS_DIR = join(process.cwd(), 'design-systems')
-
-// Label = first "# " heading of DESIGN.md
-export function listDesignSystems() {
-  return readdirSync(DS_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => ({ id: d.name, name: readFileSync(join(DS_DIR, d.name, 'DESIGN.md'), 'utf8').match(/^#\s+(.+)$/m)?.[1] ?? d.name }))
-}
-
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 export async function* streamCompletion(system: string, user: string) {
   const key = process.env.DEEPSEEK_API_KEY

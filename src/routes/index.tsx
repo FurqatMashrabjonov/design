@@ -78,7 +78,7 @@ function Home() {
                         {p.device}
                       </Badge>
                       <Badge variant="secondary" className="text-xs capitalize">
-                        {p.design_system}
+                        {p.designSystem}
                       </Badge>
                     </div>
                   </CardContent>

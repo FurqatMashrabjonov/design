@@ -1,16 +1,19 @@
 import assert from 'node:assert'
-import { extractArtifact } from '../artifact.ts'
-import { listDesignSystems, streamCompletion } from './llm.ts'
-import { composeSystemPrompt } from './compose.ts'
-import { parsePlan } from './planner.ts'
-import { mapLimit } from './pool.ts'
+import { extractArtifact } from '../../artifact.ts'
+import { streamCompletion } from './LlmService.ts'
+import { DesignSystemService } from './DesignSystemService.ts'
+import { composeSystemPrompt } from './PromptComposer.ts'
+import { parsePlan } from './PlannerService.ts'
+import { mapLimit } from './Pool.ts'
 
 const h = '<!doctype html><html><head><title>T</title></head></html>'
 assert.deepEqual(extractArtifact(`<artifact title="Dash">${h}</artifact>`), { title: 'Dash', html: h })
 assert.deepEqual(extractArtifact('Sure!\n```html\n' + h + '\n```'), { title: 'T', html: h })
 assert.deepEqual(extractArtifact(`<artifact title="X">\n\`\`\`html\n${h}\n\`\`\`\n</artifact>`), { title: 'X', html: h })
 assert.equal(extractArtifact(`<artifact title="Cut">${h.slice(0, 20)}`).html, h.slice(0, 20)) // partial stream
-assert.ok(listDesignSystems().some((d) => d.id === 'minimal' && d.name === 'Minimal'))
+assert.ok(DesignSystemService.list().some((d) => d.id === 'minimal' && d.name === 'Minimal'))
+assert.ok(DesignSystemService.exists('minimal'))
+assert.ok(!DesignSystemService.exists('../../etc'))
 
 // compose: skill body + only its requested craft files land in the prompt, DESIGN.md always does
 const mobile = composeSystemPrompt('minimal', 'mobile')

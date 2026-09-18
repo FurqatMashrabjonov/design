@@ -1,4 +1,4 @@
-import type { Plan } from './server/planner'
+import type { Plan } from './app/Services/PlannerService'
 
 export type PlanEvent =
   | ({ type: 'plan' } & Plan)

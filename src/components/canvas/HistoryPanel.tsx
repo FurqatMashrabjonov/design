@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { RotateCcw } from 'lucide-react'
 import { getScreenVersions, restoreVersion } from '@/server/fns'
-import type { ScreenVersion } from '@/server/db'
+import type { ScreenVersionRow } from '@/app/Models/ScreenVersion'
 import { Button } from '@/components/ui/button'
 
 export function HistoryPanel(props: { screenId: string | null; onRestored: () => void }) {
-  const [versions, setVersions] = useState<ScreenVersion[]>([])
+  const [versions, setVersions] = useState<ScreenVersionRow[]>([])
   const [restoring, setRestoring] = useState<string | null>(null)
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function HistoryPanel(props: { screenId: string | null; onRestored: () =>
             <div className="min-w-0">
               <p className="truncate font-medium">{v.name}</p>
               <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{v.prompt}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{new Date(v.created_at * 1000).toLocaleString()}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{new Date(v.createdAt * 1000).toLocaleString()}</p>
             </div>
             <Button
               variant="outline"
@@ -43,7 +43,7 @@ export function HistoryPanel(props: { screenId: string | null; onRestored: () =>
               onClick={async () => {
                 setRestoring(v.id)
                 try {
-                  await restoreVersion({ data: { screenId: v.screen_id, versionId: v.id } })
+                  await restoreVersion({ data: { screenId: v.screenId, versionId: v.id } })
                   await Promise.all([props.onRestored(), reload()])
                   toast.success(`Restored "${v.name}"`)
                 } catch (e) {
