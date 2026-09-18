@@ -21,4 +21,9 @@ export const Project = {
   rename(id: string, name: string) {
     db.update(projects).set({ name }).where(eq(projects.id, id)).run()
   },
+
+  // Cascades to screens and screen_versions via the FK (see database/connection.ts's foreign_keys pragma).
+  delete(id: string) {
+    db.delete(projects).where(eq(projects.id, id)).run()
+  },
 }

@@ -40,4 +40,12 @@ export const Screen = {
   move(id: string, x: number, y: number) {
     db.update(screens).set({ x, y }).where(eq(screens.id, id)).run()
   },
+
+  rename(id: string, name: string) {
+    db.update(screens).set({ name }).where(eq(screens.id, id)).run()
+  },
+
+  delete(id: string) {
+    db.delete(screens).where(eq(screens.id, id)).run()
+  },
 }

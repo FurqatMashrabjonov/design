@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles } from 'lucide-react'
-import { getProject, moveScreen } from '../server/fns'
+import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -15,6 +15,7 @@ import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
 import { ScreensList } from '@/components/canvas/ScreensList'
 import { HistoryPanel } from '@/components/canvas/HistoryPanel'
+import { FrameToolbar } from '@/components/canvas/FrameToolbar'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -30,6 +31,7 @@ function ProjectPage() {
   const { project, screens } = Route.useLoaderData()
   const search = Route.useSearch()
   const router = useRouter()
+  const navigate = useNavigate()
   const [live, setLive] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
 
@@ -114,6 +116,14 @@ function ProjectPage() {
         device={project.device}
         designSystem={project.designSystem}
         onExport={selectedScreen ? exportSelected : undefined}
+        onDeleteProject={async () => {
+          try {
+            await deleteProject({ data: project.id })
+            navigate({ to: '/' })
+          } catch (e) {
+            toast.error(e instanceof Error ? e.message : String(e))
+          }
+        }}
       />
       <div className="flex min-h-0 flex-1">
         <div className="relative flex-1">
@@ -151,7 +161,32 @@ function ProjectPage() {
               const s = screens.find((sc) => sc.id === id)!
               return (
                 <div onClick={() => setSelected(s.id)}>
-                  <ScreenFrame html={s.html} title={s.name} hint={s.prompt} device={project.device} selected={s.id === selected} />
+                  <ScreenFrame
+                    html={s.html}
+                    title={s.name}
+                    hint={s.prompt}
+                    device={project.device}
+                    selected={s.id === selected}
+                    label={
+                      <FrameToolbar
+                        name={s.name}
+                        hint={s.prompt}
+                        onRename={async (name) => {
+                          await renameScreen({ data: { id: s.id, projectId: project.id, name } })
+                          await router.invalidate()
+                        }}
+                        onDuplicate={async () => {
+                          await duplicateScreen({ data: { id: s.id, projectId: project.id } })
+                          await router.invalidate()
+                        }}
+                        onDelete={async () => {
+                          await deleteScreen({ data: { id: s.id, projectId: project.id } })
+                          if (selected === s.id) setSelected(null)
+                          await router.invalidate()
+                        }}
+                      />
+                    }
+                  />
                 </div>
               )
             }}

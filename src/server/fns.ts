@@ -2,6 +2,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
+import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 
 export const getHome = createServerFn({ method: 'GET' }).handler(() => ProjectController.index())
 
@@ -24,3 +25,19 @@ export const getScreenVersions = createServerFn({ method: 'GET' })
 export const restoreVersion = createServerFn({ method: 'POST' })
   .validator((d: { screenId: string; versionId: string }) => d)
   .handler(({ data }) => HistoryController.restore(data))
+
+export const deleteProject = createServerFn({ method: 'POST' })
+  .validator((id: string) => id)
+  .handler(({ data }) => ProjectController.destroy(data))
+
+export const renameScreen = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; projectId: string; name: string }) => d)
+  .handler(({ data }) => ScreenController.rename(data))
+
+export const deleteScreen = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; projectId: string }) => d)
+  .handler(({ data }) => ScreenController.destroy(data))
+
+export const duplicateScreen = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; projectId: string }) => d)
+  .handler(({ data }) => ScreenController.duplicate(data))

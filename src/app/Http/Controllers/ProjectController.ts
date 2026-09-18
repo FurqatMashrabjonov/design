@@ -23,4 +23,9 @@ export const ProjectController = {
   moveScreen(data: { id: string; x: number; y: number }) {
     Screen.move(data.id, data.x, data.y)
   },
+
+  destroy(id: string) {
+    if (!Project.find(id)) throw notFound()
+    Project.delete(id)
+  },
 }

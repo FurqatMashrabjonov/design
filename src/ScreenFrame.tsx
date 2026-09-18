@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { frameSize } from './canvas'
 import { cn } from '@/lib/utils'
 
@@ -10,20 +10,25 @@ export function ScreenFrame(props: {
   hint?: string
   selected?: boolean
   streaming?: boolean
+  // Swaps the plain text label for a custom row (FrameToolbar) — only real saved screens get one;
+  // the live-streaming and plan-preview frames keep the default.
+  label?: ReactNode
 }) {
   const f = frameSize(props.device)
   // A new srcdoc reloads the iframe, so a streaming preview refreshes at most every 800ms
   const html = useThrottled(props.html, props.streaming ? 800 : 0)
 
   return (
-    <figure style={{ width: f.width }}>
-      <figcaption
-        className="mb-2 flex items-center gap-1.5 truncate text-sm font-medium text-muted-foreground"
-        title={props.hint}
-      >
-        {props.streaming && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary" />}
-        {props.title}
-      </figcaption>
+    <figure className="group" style={{ width: f.width }}>
+      {props.label ?? (
+        <figcaption
+          className="mb-2 flex items-center gap-1.5 truncate text-sm font-medium text-muted-foreground"
+          title={props.hint}
+        >
+          {props.streaming && <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary" />}
+          {props.title}
+        </figcaption>
+      )}
       <div
         className={cn(
           'overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow',
