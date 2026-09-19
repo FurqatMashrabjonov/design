@@ -22,6 +22,10 @@ export const Project = {
     db.update(projects).set({ name }).where(eq(projects.id, id)).run()
   },
 
+  saveTheme(id: string, theme: unknown) {
+    db.update(projects).set({ theme: JSON.stringify(theme) }).where(eq(projects.id, id)).run()
+  },
+
   saveNavigation(id: string, navigation: unknown) {
     db.update(projects).set({ navigation: JSON.stringify(navigation) }).where(eq(projects.id, id)).run()
   },

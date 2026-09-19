@@ -8,6 +8,8 @@ export const projects = sqliteTable('projects', {
   device: text('device').notNull().default('desktop'),
   // The planned AppNavigation, as JSON — lets the canvas resolve a tab id to a screen.
   navigation: text('navigation'),
+  // Validated theme overrides as JSON (see lib/theme-override.ts); null = design system as-is.
+  theme: text('theme'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

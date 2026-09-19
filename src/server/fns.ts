@@ -18,6 +18,10 @@ export const moveScreen = createServerFn({ method: 'POST' })
   .validator((d: { id: string; x: number; y: number }) => d)
   .handler(({ data }) => ProjectController.moveScreen(data))
 
+export const saveTheme = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; theme: unknown }) => d)
+  .handler(({ data }) => ProjectController.saveTheme(data))
+
 export const getScreenVersions = createServerFn({ method: 'GET' })
   .validator((screenId: string) => screenId)
   .handler(({ data }) => HistoryController.versions(data))

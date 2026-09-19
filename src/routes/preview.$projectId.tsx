@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { getProject } from '../server/fns'
 import { frameSize } from '../canvas'
 import { orderScreens, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
+import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
 
 export const Route = createFileRoute('/preview/$projectId')({
   validateSearch: (s: Record<string, unknown>): { s?: string } => (typeof s.s === 'string' ? { s: s.s } : {}),
@@ -89,7 +90,12 @@ function PreviewPage() {
   const frameW = native.width * scale
   const frameH = native.height * scale
 
-  const srcDoc = useMemo(() => (current ? withPreviewBridge(current.html) : ''), [current])
+  // The project's own theme override — distinct from the dark/light stage theme above.
+  const appTheme = useMemo(() => parseTheme(project.theme), [project.theme])
+  const srcDoc = useMemo(
+    () => (current ? withPreviewBridge(applyThemeOverride(current.html, appTheme)) : ''),
+    [current, appTheme],
+  )
 
   async function copyLink() {
     try {

@@ -259,5 +259,44 @@ assert.equal(screenForBack(pv, 'Home')?.id, 'a', 'Back resolves to the named par
 assert.equal(screenForBack(pv, 'Missing')?.id, 'c', 'Back falls back to a root screen when the parent is gone')
 assert.ok(withPreviewBridge('<html><body>x</body></html>').includes('od:navigate_tab'), 'Bridge is injected before </body>')
 
+console.log('Testing Theme Override...')
+const T = await import('../../lib/theme-override.ts')
+
+// Nothing user-supplied may reach a stylesheet unvalidated.
+const hostile = T.sanitizeTheme({
+  accent: '#fff;}body{display:none}/*',
+  radius: 'url(javascript:alert(1))',
+  headingFont: 'Comic"};@import url(//evil.test/x.css)',
+  bodyFont: 'not-a-real-font',
+})
+assert.deepEqual(hostile, {}, 'Hostile or unknown values are dropped, not escaped')
+assert.deepEqual(T.sanitizeTheme('nope'), {}, 'A non-object theme is empty')
+assert.deepEqual(T.sanitizeTheme({ accent: '#E11D48' }), { accent: '#e11d48' }, 'Accent is normalised to lowercase')
+assert.deepEqual(T.parseTheme('{broken'), {}, 'Corrupt stored JSON falls back to no override')
+
+const css = T.themeCss({ accent: '#e11d48', radius: 'soft', headingFont: 'fraunces', bodyFont: 'inter' })
+assert.ok(css.includes('--accent:#e11d48'), 'Accent is overridden')
+assert.ok(css.includes('--radius-md:16px'), 'Radius preset expands to the scale')
+assert.ok(css.includes('--font-display:"Fraunces", Georgia'), 'Serif heading gets a serif fallback')
+assert.ok(css.includes('--font-body:"Inter", -apple-system'), 'Sans body gets a sans fallback')
+assert.equal(T.themeCss({}), '', 'An empty theme produces no CSS')
+
+assert.equal(T.onAccent('#111113'), '#ffffff', 'Dark accent gets white text')
+assert.equal(T.onAccent('#ffd23f'), '#111111', 'Light accent gets dark text (buttons stay legible)')
+assert.ok(css.includes('--accent-on:#ffffff'), 'Contrast colour is set alongside the accent')
+
+const base = '<html><head><style>:root{--accent:#2952cc}</style></head><body><p>x</p></body></html>'
+assert.equal(T.applyThemeOverride(base, {}), base, 'No override leaves the screen untouched')
+const themed = T.applyThemeOverride(base, { accent: '#e11d48', headingFont: 'fraunces' })
+assert.ok(themed.indexOf('#2952cc') < themed.indexOf('--accent:#e11d48'), 'Override comes after the screen\'s own :root, so it wins the cascade')
+assert.ok(themed.includes('family=Fraunces'), 'The chosen webfont is loaded')
+assert.ok(!themed.includes('__od_theme_listener'), 'Static overlay carries no live listener (export stays clean)')
+const live = T.withLiveTheme(base, {})
+assert.ok(live.includes('__od_theme_listener'), 'Live overlay installs the listener even with no override yet')
+assert.ok(live.includes("e.source !== window.parent"), 'Listener ignores messages that are not from the parent')
+const msg = T.themeMessage({ accent: '#e11d48', bodyFont: 'inter' })
+assert.ok(msg.fonts.every((u: string) => u.startsWith('https://fonts.googleapis.com/')), 'Live payload only names Google Fonts URLs')
+for (const f of T.FONTS) assert.ok(T.fontUrl(f.id).includes('css2?family='), `${f.id} builds a fonts URL`)
+
 console.log('All new features and App Coherence verified successfully! ✅')
 

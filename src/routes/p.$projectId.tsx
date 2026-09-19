@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles, MousePointerClick, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen } from '../server/fns'
+import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -19,6 +19,9 @@ import { CritiquePanel } from '@/components/canvas/CritiquePanel'
 import { FrameToolbar } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
+import { ThemePanel } from '@/components/canvas/ThemePanel'
+import { applyThemeOverride, parseTheme, type Theme } from '@/lib/theme-override'
+import { extractRootBlock, parseDeclarations } from '@/lib/screen-normalizer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,6 +47,27 @@ function ProjectPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
+
+  // Theme overrides live on the project and are applied at render time, so a change restyles
+  // every frame at once with no regeneration. State updates immediately; the save is debounced
+  // so dragging a colour picker doesn't write on every tick.
+  const [theme, setTheme] = useState<Theme>(() => parseTheme(project.theme))
+  const themeSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  function changeTheme(next: Theme) {
+    setTheme(next)
+    clearTimeout(themeSaveTimer.current)
+    themeSaveTimer.current = setTimeout(() => {
+      saveTheme({ data: { projectId: project.id, theme: next } }).catch((e) =>
+        toast.error(e instanceof Error ? e.message : 'Could not save the theme'),
+      )
+    }, 400)
+  }
+  // The design system's own accent, read back from a generated screen (the normalizer put it there).
+  const baseAccent = useMemo(() => {
+    const block = screens[0] ? extractRootBlock(screens[0].html) : null
+    const value = block ? parseDeclarations(block).get('--accent') : undefined
+    return value && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : '#2952cc'
+  }, [screens])
 
   // Multi-screen planning state — only populated when this project was just created from the home page composer.
   const [plan, setPlan] = useState<Plan | null>(null)
@@ -110,7 +134,7 @@ function ProjectPage() {
 
   function exportSelected() {
     if (!selectedScreen) return
-    const blob = new Blob([selectedScreen.html], { type: 'text/html' })
+    const blob = new Blob([applyThemeOverride(selectedScreen.html, theme)], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -180,7 +204,7 @@ function ProjectPage() {
             }}
             renderFrame={(id) => {
               if (id === '__live__')
-                return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} streaming />
+                return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={theme} streaming />
               if (id.startsWith('plan-')) {
                 const i = Number(id.slice(5))
                 const s = plan!.screens[i]
@@ -197,6 +221,7 @@ function ProjectPage() {
                     html={extractArtifact(planTexts[i] ?? '').html}
                     title={s.name}
                     device={project.device}
+                    theme={theme}
                     streaming={st === 'running'}
                   />
                 )
@@ -210,7 +235,7 @@ function ProjectPage() {
                     await router.invalidate()
                   }}
                   onReload={() => reloadScreen(s)}
-                  onCopyHtml={() => copyHtml(s.html)}
+                  onCopyHtml={() => copyHtml(applyThemeOverride(s.html, theme))}
                   onViewCode={() => setCodeScreenId(s.id)}
                   onOpenHistory={() => {
                     setSelected(s.id)
@@ -224,6 +249,7 @@ function ProjectPage() {
                       title={s.name}
                       hint={s.prompt}
                       device={project.device}
+                      theme={theme}
                       selected={s.id === selected}
                       inspectMode={inspectMode && s.id === selected}
                       selectedElementId={s.id === selected ? selectedElementId : null}
@@ -349,7 +375,8 @@ function ProjectPage() {
             />
           }
           config={
-            <div className="space-y-3 text-sm">
+            <div className="space-y-6 text-sm">
+              <ThemePanel theme={theme} baseAccent={baseAccent} onChange={changeTheme} />
               <div>
                 <div className="mb-1 text-muted-foreground">Device</div>
                 <Badge variant="secondary" className="capitalize">
@@ -373,7 +400,7 @@ function ProjectPage() {
         />
       </div>
 
-      <CodeDialog screen={codeScreen} onOpenChange={(open) => !open && setCodeScreenId(null)} />
+      <CodeDialog screen={codeScreen && { name: codeScreen.name, html: applyThemeOverride(codeScreen.html, theme) }} onOpenChange={(open) => !open && setCodeScreenId(null)} />
     </div>
   )
 }
