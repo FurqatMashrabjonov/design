@@ -64,6 +64,8 @@
  * cloning this template should overwrite values, not rename keys.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels) ──────────────────────────────────────────
    * Apple's binary section rhythm alternates pure white retail/hero
@@ -152,9 +154,9 @@
    * SF Mono leads the monospace stack — Apple's brand mono — with
    * the schema fallbacks behind it for portability. */
   --font-display:
-    "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    "SF Pro Display", "Inter", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body:
-    "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    "SF Pro Text", "Inter", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:
     "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 

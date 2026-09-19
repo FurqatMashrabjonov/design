@@ -99,6 +99,8 @@
  * in DESIGN.md or the shared schema.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (2 levels) ──────────────────────────────────────────
    * Pure white retail canvas with a single "barely perceptible" Light
@@ -165,8 +167,8 @@
    * vehicle interface. We mirror the published Tesla fallback chain
    * (-apple-system, Arial) so artifacts rendered on non-Tesla clients
    * land on the closest practical substitute. */
-  --font-display: "Universal Sans Display", -apple-system, Arial, sans-serif;
-  --font-body: "Universal Sans Text", -apple-system, Arial, sans-serif;
+  --font-display: "Universal Sans Display", "Archivo", -apple-system, Arial, sans-serif;
+  --font-body: "Universal Sans Text", "Archivo", -apple-system, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
   /* Type scale (px) — derived from DESIGN.md §3 hierarchy table.

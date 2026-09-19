@@ -3,6 +3,8 @@
  * material design surface logic with soft elevation, rounded controls, and accessible blue interaction.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #f8fafd;
   --surface: #ffffff;

@@ -1,0 +1,109 @@
+/* design-systems/midnight/tokens.css
+ *
+ * Machine-readable form of DESIGN.md. Paste the :root block verbatim into the
+ * artifact's first <style>, then reference everything via var(--*).
+ *
+ * Brand-specific bindings worth flagging:
+ *   1. --border is an alpha white (rgba(255,255,255,0.08)), not a solid hex.
+ *      On near-black surfaces a solid gray border reads as a seam; the alpha
+ *      hairline is what makes the surface ladder feel lit rather than drawn.
+ *   2. --elev-raised is an INSET highlight, not a drop shadow. Depth here comes
+ *      from surface color steps plus a 1px top highlight — DESIGN.md forbids
+ *      big shadows outright.
+ *   3. --surface-warm binds to the real --surface-hover step (#17181b), a
+ *      genuine third tier in the ladder, not an alias.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Surface ladder — three real steps */
+  --bg: #08090a;
+  --surface: #111214;
+  --surface-warm: #17181b;             /* hover / raised step */
+
+  /* Foreground ramp */
+  --fg: #f7f8f8;
+  --fg-2: #c4c7cb;
+  --muted: #8a8f98;
+  --meta: #5c6068;
+
+  /* Border — alpha hairlines */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Accent */
+  --accent: #5e6ad2;
+  --accent-on: #ffffff;
+  --accent-hover: color-mix(in oklab, var(--accent), white 10%);
+  --accent-active: color-mix(in oklab, var(--accent), black 12%);
+
+  /* Semantic */
+  --success: #4cb782;
+  --warn: #f2c94c;
+  --danger: #eb5757;
+
+  /* Aliases for the names DESIGN.md's prose uses. */
+  --warning: var(--warn);
+  --muted-2: var(--meta);
+  --surface-hover: var(--surface-warm);
+
+  /* Typography */
+  --font-display: "Inter", -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-body: "Inter", -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;                     /* body in dense UI */
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 28px;
+  --text-3xl: 40px;
+  --text-4xl: 56px;                    /* hero */
+
+  --leading-body: 1.5;
+  --leading-tight: 1.1;
+  --tracking-display: -0.025em;
+
+  /* Spacing — 4px grid, dense */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --section-y-desktop: 88px;
+  --section-y-tablet: 56px;
+  --section-y-phone: 40px;
+
+  /* Radius */
+  --radius-sm: 6px;                    /* controls */
+  --radius-md: 10px;                   /* cards */
+  --radius-lg: 16px;                   /* large panels */
+  --radius-pill: 9999px;
+
+  /* Elevation — surface steps + inset highlight, never a big drop shadow */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 0 0 1px var(--border);
+
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 60%);
+
+  /* DESIGN.md calls for thin 1.5px monoline icons; most systems sit at lucide's default 2. */
+  --icon-stroke: 1.5;
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --container-max: 1100px;
+  --container-gutter-desktop: 24px;
+  --container-gutter-tablet: 16px;
+  --container-gutter-phone: 16px;
+}

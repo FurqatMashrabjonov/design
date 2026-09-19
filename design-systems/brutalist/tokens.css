@@ -1,0 +1,107 @@
+/* design-systems/brutalist/tokens.css
+ *
+ * Machine-readable form of DESIGN.md. Paste the :root block verbatim into the
+ * artifact's first <style>, then reference everything via var(--*).
+ *
+ * Brand-specific bindings worth flagging:
+ *   1. --border is #000000 solid at 2-3px, not a hairline alpha. The outline IS
+ *      the brand; softening it to gray collapses the whole language.
+ *   2. --elev-* are hard offsets with ZERO blur. A blurred shadow is the single
+ *      most common way this system gets rendered wrong.
+ *   3. --accent-on is #000000, not white — the yellow accent (#ffd23f) fails
+ *      contrast against white text. Black-on-yellow is the brand pairing.
+ *   4. --accent-2 / --accent-3 are section-fill only, at most one per screen.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Surface */
+  --bg: #fffbeb;
+  --surface: #ffffff;
+  --surface-warm: #fff7d6;
+
+  /* Foreground ramp — brutalism barely ramps; keep tiers near-black */
+  --fg: #000000;
+  --fg-2: #1a1a1a;
+  --muted: #444444;
+  --meta: #6b6b6b;
+
+  /* Border — the signature */
+  --border: #000000;
+  --border-soft: #000000;              /* no soft tier; thickness varies, color never */
+  --border-width: 2px;
+  --border-width-card: 3px;
+
+  /* Accent */
+  --accent: #ffd23f;                   /* primary — CTAs, active states */
+  --accent-on: #000000;                /* black label on yellow, never white */
+  --accent-hover: color-mix(in oklab, var(--accent), black 10%);
+  --accent-active: color-mix(in oklab, var(--accent), black 18%);
+  --accent-2: #ff90e8;                 /* section fill only */
+  --accent-3: #3b82f6;                 /* section fill only */
+
+  /* Semantic */
+  --success: #23c55e;
+  --warn: #ffd23f;
+  --danger: #eb5757;
+
+  /* Alias for the name DESIGN.md's prose uses. */
+  --warning: var(--warn);
+
+  /* Typography */
+  --font-display: "Space Grotesk", "Arial Black", Arial, sans-serif;
+  --font-body: "Space Grotesk", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, "Courier New", monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;                   /* body */
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+  --text-3xl: 52px;
+  --text-4xl: 64px;                    /* hero */
+
+  --leading-body: 1.45;
+  --leading-tight: 1.0;
+  --tracking-display: -0.03em;
+
+  /* Spacing — 8px grid, chunky */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+
+  --section-y-desktop: 96px;
+  --section-y-tablet: 64px;
+  --section-y-phone: 48px;
+
+  /* Radius — pick 0 or 8 per screen and hold it */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 8px;
+  --radius-pill: 9999px;
+
+  /* Elevation — hard offset, no blur, ever */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 var(--border-width) var(--border);
+  --elev-raised: 4px 4px 0 var(--border);
+  --elev-raised-lg: 6px 6px 0 var(--border);
+
+  --focus-ring: 0 0 0 3px var(--accent-3);
+
+  /* Motion — snappy, no easing drama */
+  --motion-fast: 80ms;
+  --motion-base: 120ms;
+  --ease-standard: linear;
+
+  /* Layout */
+  --container-max: 1200px;
+  --container-gutter-desktop: 32px;
+  --container-gutter-tablet: 24px;
+  --container-gutter-phone: 16px;
+}

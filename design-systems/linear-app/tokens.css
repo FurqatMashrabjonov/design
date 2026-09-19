@@ -27,6 +27,8 @@
  *   - --elev-raised: luminance stepping — no opaque shadow on dark.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #08090a;              /* marketing black — hero canvas */

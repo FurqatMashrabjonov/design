@@ -60,6 +60,8 @@
  *     not in :root.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels) ──────────────────────────────────────────
    * Cream canvas that defines the entire warm system. Default's
@@ -116,8 +118,8 @@
    *   --font-mono: berkeleyMono for code, kbd, terminal text
    * The three-voice system is the typographic signature; component
    * CSS should never substitute fewer voices for "simplicity". */
-  --font-display: "CursorGothic", "CursorGothic Fallback", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "jjannon", "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-display: "CursorGothic", "Inter", "CursorGothic Fallback", system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "jjannon", "Newsreader", "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "berkeleyMono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Type scale — distilled from DESIGN.md §Typography Hierarchy.

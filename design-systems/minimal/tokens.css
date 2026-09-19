@@ -1,0 +1,103 @@
+/* design-systems/minimal/tokens.css
+ *
+ * Machine-readable form of DESIGN.md. Paste the :root block verbatim into the
+ * artifact's first <style>, then reference everything via var(--*).
+ *
+ * Brand-specific bindings worth flagging:
+ *   1. --accent is a deliberate mid-blue (#2952cc), NOT Tailwind indigo.
+ *      DESIGN.md names the indigo family (#6366f1, #4f46e5) as a forbidden
+ *      substitution — the whole brand reads wrong one hue over.
+ *   2. --elev-raised stays at shadow-sm strength. DESIGN.md §"Shape & depth"
+ *      says borders over shadows; a heavier stack breaks the calm.
+ *   3. --surface-warm aliases --surface. Minimal has one raised tier only.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Surface */
+  --bg: #ffffff;
+  --surface: #f7f7f8;
+  --surface-warm: var(--surface);      /* alias — no warm tier */
+
+  /* Foreground ramp */
+  --fg: #111113;                       /* headings, primary text */
+  --fg-2: #3f3f46;                     /* body copy */
+  --muted: #6b6b76;                    /* captions, secondary */
+  --meta: #a1a1aa;                     /* placeholder, disabled */
+
+  /* Border */
+  --border: #e5e5e7;
+  --border-soft: #f0f0f2;              /* inner row separators */
+
+  /* Accent — mid-blue, never indigo */
+  --accent: #2952cc;
+  --accent-on: #ffffff;
+  --accent-hover: color-mix(in oklab, var(--accent), black 8%);
+  --accent-active: color-mix(in oklab, var(--accent), black 14%);
+
+  /* Semantic */
+  --success: #16a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+
+  /* Aliases for the names DESIGN.md's prose uses, so a screen written from the prose
+     doesn't reference a property that was never defined. */
+  --warning: var(--warn);
+  --muted-2: var(--meta);
+
+  /* Typography */
+  --font-display: "Inter", -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-body: "Inter", -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, "Courier New", monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;                     /* body */
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 32px;
+  --text-3xl: 40px;
+  --text-4xl: 48px;
+
+  --leading-body: 1.55;
+  --leading-tight: 1.15;
+  --tracking-display: -0.02em;
+
+  /* Spacing — 4px grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --section-y-desktop: 80px;
+  --section-y-tablet: 56px;
+  --section-y-phone: 40px;
+
+  /* Radius */
+  --radius-sm: 8px;                    /* controls */
+  --radius-md: 12px;                   /* cards */
+  --radius-lg: 16px;                   /* large panels */
+  --radius-pill: 9999px;
+
+  /* Elevation — borders carry depth, shadows stay faint */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: 0 1px 2px rgba(17, 17, 19, 0.06), 0 0 0 1px var(--border);
+
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 70%);
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --container-max: 1200px;
+  --container-gutter-desktop: 24px;
+  --container-gutter-tablet: 16px;
+  --container-gutter-phone: 16px;
+}

@@ -31,6 +31,8 @@
  *   - --radius-sm: 9999px (full pill for all CTAs per brand identity).
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #000000;             /* void — true black root */
@@ -61,7 +63,7 @@
   --danger:  #dc2626;
 
   /* ─── Typography ───────────────────────────────────────────────── */
-  --font-display: "NeueHaasGrotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "NeueHaasGrotesk", "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body:    "Inter Variable", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 

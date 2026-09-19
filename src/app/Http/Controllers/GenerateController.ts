@@ -8,6 +8,8 @@ import { extractArtifact, ERROR_MARK } from '@/artifact'
 import { nextFramePosition } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
+import { normalizeScreen } from '@/lib/screen-normalizer'
+import { autofixScreen } from '@/lib/design-lint'
 
 // POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, skill? } -> text/plain stream
 export const GenerateController = {
@@ -87,17 +89,23 @@ export const GenerateController = {
           let title: string
           let finalHtml: string
 
+          const normalizeOpts = {
+            tokensCss: DesignSystemService.readTokensRoot(projectRef.designSystem),
+            fontUrls: DesignSystemService.readFontUrls(projectRef.designSystem),
+            iconStroke: DesignSystemService.readIconStroke(projectRef.designSystem),
+          }
+
           if (editScreen && editElementId) {
             // Extracted element HTML
             const extracted = extractArtifact(text)
             const newElementSnippet = extracted.html || text
             finalHtml = patchElement(editScreen.html, editElementId, newElementSnippet)
-            finalHtml = annotateHtml(finalHtml)
+            finalHtml = annotateHtml(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)))
             title = editScreen.name
           } else {
             const extracted = extractArtifact(text)
             title = extracted.title
-            finalHtml = annotateHtml(extracted.html)
+            finalHtml = annotateHtml(autofixScreen(normalizeScreen(extracted.html, normalizeOpts)))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 

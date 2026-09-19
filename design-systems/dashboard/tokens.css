@@ -3,6 +3,8 @@
  * analytics dashboard with compact cards, cool surfaces, and status-first information design.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #f4f7fb;
   --surface: #ffffff;

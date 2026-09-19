@@ -3,6 +3,8 @@
  * neon visual language with dark backgrounds, glowing accents, and high-energy controls.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #070711;
   --surface: #111126;

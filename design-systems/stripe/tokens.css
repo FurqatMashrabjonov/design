@@ -65,6 +65,8 @@
  *   matching slots.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels — #Stripe 1) ──────────────────────────────
    * Stripe sits on pure white. The "warm" tier is a cool-pale
@@ -149,11 +151,11 @@
    * brand's monospace companion, used for code blocks at 12px /
    * 500 with 2.00 line-height. */
   --font-display:
-    "sohne-var", "Söhne", "Sohne",
+    "sohne-var", "Inter", "Söhne", "Sohne",
     "SF Pro Display", -apple-system, BlinkMacSystemFont,
     system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-body:
-    "sohne-var", "Söhne", "Sohne",
+    "sohne-var", "Inter", "Söhne", "Sohne",
     "SF Pro Display", -apple-system, BlinkMacSystemFont,
     system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono:

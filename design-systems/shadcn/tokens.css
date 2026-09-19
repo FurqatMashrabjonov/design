@@ -84,6 +84,8 @@
  * the real faces links them externally.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Fira+Code:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels — schema slot) ─────────────────────────────
    * Pure white canvas, pure white cards. shadcn intentionally rejects

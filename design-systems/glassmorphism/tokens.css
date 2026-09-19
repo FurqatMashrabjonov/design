@@ -3,6 +3,8 @@
  * glass interface language with translucent panels, airy borders, and luminous cyan-violet action.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #eef6ff;
   --surface: rgba(255, 255, 255, 0.74);

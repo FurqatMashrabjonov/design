@@ -85,6 +85,8 @@
  * and any host that wants the real Geist face links it externally.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels — schema slot) ─────────────────────────────
    * Vercel's canvas is famously achromatic: pure white page, pure

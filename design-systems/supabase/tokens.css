@@ -112,6 +112,8 @@
  * it externally.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels — schema slot) ─────────────────────────────
    * #171717 is the documented page canvas (DESIGN.md §1 "Dark"). The
@@ -185,8 +187,8 @@
    * uppercase technical labels with 1.2px tracking that DESIGN.md §3
    * calls "the marker that connects the marketing site to the
    * product". Office Code Pro / Menlo fallbacks match DESIGN.md §3. */
-  --font-display: "Circular", "custom-font", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body: "Circular", "custom-font", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Circular", "Plus Jakarta Sans", "custom-font", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body: "Circular", "Plus Jakarta Sans", "custom-font", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: "Source Code Pro", "Office Code Pro", Menlo, Monaco, Consolas, monospace;
 
   /* Type scale (px) — derived from DESIGN.md §3 hierarchy table.

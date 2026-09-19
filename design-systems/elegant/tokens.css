@@ -3,6 +3,8 @@
  * elegant interface language with warm neutrals, serif display type, and quiet premium controls.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #fbf6ee;
   --surface: #fffdf8;
@@ -20,7 +22,7 @@
   --success: #4f8a4f;
   --warn: #c9822f;
   --danger: #b33a3a;
-  --font-display: Georgia, "Times New Roman", serif;
+  --font-display: Georgia, "Lora", "Times New Roman", serif;
   --font-body: Inter, system-ui, sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
   --text-xs: 12px;

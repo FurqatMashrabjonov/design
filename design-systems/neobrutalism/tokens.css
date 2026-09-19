@@ -3,6 +3,8 @@
  * neo-brutalist design language with hard borders, offset shadows, and loud yellow emphasis.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #fff4cf;
   --surface: #fffaf0;
@@ -20,7 +22,7 @@
   --success: #3d8f4f;
   --warn: #f2a93b;
   --danger: #b83a2f;
-  --font-display: Arial Black, Impact, sans-serif;
+  --font-display: Arial Black, "Archivo Black", Impact, sans-serif;
   --font-body: Inter, system-ui, sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
   --text-xs: 12px;

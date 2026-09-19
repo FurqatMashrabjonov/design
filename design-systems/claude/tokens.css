@@ -16,6 +16,8 @@
  *   - Focus blue (#3898ec) is the only cool color — accessibility only
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Newsreader:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels) ─────────────────────────────────────────
    * Parchment (bg) → Ivory (surface) → Warm Sand (surface-warm).
@@ -57,8 +59,8 @@
    * Anthropic Serif (Georgia fallback) for all headlines — the single
    * weight (500) gives every heading the gravitas of a published title.
    * Anthropic Sans for all UI/body — quiet functional efficiency. */
-  --font-display: "Anthropic Serif", Georgia, "Times New Roman", serif;
-  --font-body: "Anthropic Sans", "Arial", system-ui, -apple-system, sans-serif;
+  --font-display: "Anthropic Serif", "Newsreader", Georgia, "Times New Roman", serif;
+  --font-body: "Anthropic Sans", "Inter", "Arial", system-ui, -apple-system, sans-serif;
   --font-mono: "Anthropic Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
 
   /* Type scale — DESIGN.md §3 Typography Rules.

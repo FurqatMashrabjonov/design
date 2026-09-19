@@ -3,6 +3,8 @@
  * doodle visual language with sketchbook warmth, soft cards, and informal orange accents.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap");
+
 :root {
   --bg: #fff8d7;
   --surface: #ffffff;
@@ -20,8 +22,8 @@
   --success: #2e9d57;
   --warn: #ffb020;
   --danger: #e5484d;
-  --font-display: "Comic Sans MS", "Trebuchet MS", sans-serif;
-  --font-body: "Comic Sans MS", "Trebuchet MS", sans-serif;
+  --font-display: "Comic Sans MS", "Comic Neue", "Trebuchet MS", sans-serif;
+  --font-body: "Comic Sans MS", "Comic Neue", "Trebuchet MS", sans-serif;
   --font-mono: "SF Mono", ui-monospace, Menlo, monospace;
   --text-xs: 12px;
   --text-sm: 14px;

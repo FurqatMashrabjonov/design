@@ -88,6 +88,8 @@
  *   - Lint enforcement:     apps/daemon/src/lint-artifact.ts
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ─────────────────────────────────────────────────────
    * Cal.com's canvas is achromatic and uniform — pure white page, pure

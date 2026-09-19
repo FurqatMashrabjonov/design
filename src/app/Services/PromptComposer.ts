@@ -40,16 +40,22 @@ export function composeSystemPrompt(designSystem: string, device: string, skill?
 
   // Build design system section with both prose and tokens
   const designMd = DesignSystemService.readDesignMd(designSystem)
-  const tokensCss = DesignSystemService.readTokensCss(designSystem)
+  const tokensCss = DesignSystemService.readTokensRoot(designSystem)
   let designSection = `# Design system\n\n${designMd}`
   if (tokensCss) {
-    designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag:\n\n\`\`\`css\n${tokensCss}\n\`\`\``
+    designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag verbatim — do not rename, drop, or re-value any property:\n\n\`\`\`css\n${tokensCss}\n\`\`\`\n\nThis block is the complete token vocabulary. \`var(--x)\` is only valid for a property defined above. The prose section quotes the real product's internal variable names (\`--hds-color-…\`, \`--geist-…\`, \`--palette-…\` and similar) as background research — those do not exist here, so never reference one.`
   }
 
   // Add data-od-id instruction for element-level editing support
   const elementInstruction = `\n\n## Element targeting\n\nTag every major structural section with a \`data-od-id\` attribute using semantic slugs.\nExamples: \`data-od-id="header"\`, \`data-od-id="hero"\`, \`data-od-id="features"\`, \`data-od-id="pricing"\`, \`data-od-id="footer"\`.\nThis enables users to select and edit individual sections without regenerating the full screen.`
 
-  return [INTRO, designSection, craft, skillData.body, elementInstruction]
+  const assetContract = `\n\n## Icons and fonts — do not hand-roll these
+
+**Icons.** Write \`<i data-lucide="camera"></i>\` and nothing else. Do not draw \`<svg>\` paths by hand: hand-drawn icons come out at a different weight and shape on every screen, which is the most visible way a multi-screen app falls apart. Use real [lucide](https://lucide.dev) names (\`home\`, \`search\`, \`plus\`, \`bar-chart-2\`, \`user\`, \`bell\`, \`chevron-right\`, …). Size them with CSS (\`width\`/\`height\`), colour them with \`currentColor\`. The library and its bootstrap are added to your page automatically. An \`<svg>\` you draw yourself is only acceptable for something lucide has no icon for — a logo, a chart, a progress ring.
+
+**Fonts.** Do NOT add a Google Fonts \`<link>\` or \`@import\`. The design system's webfonts are injected into your page automatically; any font link you write is stripped. Reference type only through \`var(--font-display)\`, \`var(--font-body)\`, and \`var(--font-mono)\`.`
+
+  return [INTRO, designSection, craft, skillData.body, elementInstruction, assetContract]
     .filter(Boolean)
     .join('\n\n---\n\n')
 }
@@ -64,7 +70,7 @@ export function composeElementEditPrompt(
   instruction: string,
 ): string {
   const designMd = DesignSystemService.readDesignMd(designSystem)
-  const tokensCss = DesignSystemService.readTokensCss(designSystem)
+  const tokensCss = DesignSystemService.readTokensRoot(designSystem)
 
   let systemPrompt = `You are an expert product designer. You will edit ONE specific element within an existing screen.
 

@@ -93,6 +93,8 @@
  * in DESIGN.md or the shared schema.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Archivo:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels) ──────────────────────────────────────────
    * Nike's surface ladder runs 50 → 100 → 200 across grey-50/100/200.
@@ -173,9 +175,9 @@
    * (Nike's documented heading face) on every other surface.
    * --font-body holds the workhorse Helvetica Now Text stack. */
   --font-display:
-    "Nike Futura ND", "Helvetica Now Display Medium", "Helvetica Now Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    "Nike Futura ND", "Jost", "Helvetica Now Display Medium", "Helvetica Now Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-body:
-    "Helvetica Now Text Medium", "Helvetica Now Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    "Helvetica Now Text Medium", "Archivo", "Helvetica Now Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 

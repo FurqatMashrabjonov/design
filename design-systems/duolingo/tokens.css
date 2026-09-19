@@ -16,6 +16,8 @@
  *   - Eel-blue focus ring (#1cb0f6 tinted) — playful contrast to the green brand
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ─────────────────────────────────────────────────────
    * Snow white canvas with Eel as the section-break tone. Pure optical
@@ -56,8 +58,8 @@
   /* ─── Typography ──────────────────────────────────────────────────
    * Feather Bold (rounded display) drives chrome and headings; Mona Sans
    * carries body. Default weight is 800 — Duolingo never whispers. */
-  --font-display: "Feather Bold", "DIN Round Pro", "Helvetica Neue", sans-serif;
-  --font-body: "Mona Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-display: "Feather Bold", "Nunito", "DIN Round Pro", "Helvetica Neue", sans-serif;
+  --font-body: "Mona Sans", "Nunito Sans", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
 
   /* Type scale — DESIGN.md §3. Display 56px is +25–40% above typical

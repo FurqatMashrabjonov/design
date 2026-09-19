@@ -26,6 +26,8 @@
  *   - --radius-sm: 4px (buttons/inputs); --radius-md: 8px (cards).
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #ffffff;

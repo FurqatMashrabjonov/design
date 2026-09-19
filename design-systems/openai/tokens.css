@@ -29,6 +29,8 @@
  *   - --radius-md: 16px (cards); --radius-sm: 12px (buttons, inputs).
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #ffffff;
@@ -59,7 +61,7 @@
   /* ─── Typography ───────────────────────────────────────────────── */
   /* --font-display binds to Signifier — editorial serif for display only.
      --font-body binds to Söhne/Inter — all UI and reading text. */
-  --font-display: "Signifier", "Source Serif Pro", Georgia, ui-serif, serif;
+  --font-display: "Signifier", "Source Serif 4", "Source Serif Pro", Georgia, ui-serif, serif;
   --font-body:    "Söhne", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono:    "Söhne Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
 

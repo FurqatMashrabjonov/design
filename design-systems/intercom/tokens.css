@@ -19,6 +19,8 @@
  * this token set encodes.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ─────────────────────────────────────────────────────
    * Warm cream is the foundation — Intercom's website never uses pure
@@ -70,8 +72,8 @@
    * Saans Fallback and then through the system ui-sans-serif chain so
    * artifacts render legibly even when Saans is not loaded. SaansMono
    * for code and uppercase technical labels (DESIGN.md §3). */
-  --font-display: "Saans", "Saans Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-body: "Saans", "Saans Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-display: "Saans", "Figtree", "Saans Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-body: "Saans", "Figtree", "Saans Fallback", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   --font-mono: "SaansMono", "SaansMono Fallback", ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Type scale — DESIGN.md §3 hierarchy: 80 / 54 / 40 / 32 / 24 / 20

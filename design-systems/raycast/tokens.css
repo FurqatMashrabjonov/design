@@ -32,6 +32,8 @@
  *     (standard cards), --radius-lg 16px (large feature containers).
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #07080a;              /* near-black blue tint — the void */

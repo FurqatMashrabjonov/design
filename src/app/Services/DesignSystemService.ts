@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { extractRootBlock, parseDeclarations } from '../../lib/screen-normalizer.ts'
 
 const DS_DIR = join(process.cwd(), 'design-systems')
 
@@ -72,6 +73,38 @@ export const DesignSystemService = {
   readTokensCss(id: string): string {
     const path = join(DS_DIR, id, 'tokens.css')
     return existsSync(path) ? readFileSync(path, 'utf8') : ''
+  },
+
+  /**
+   * The bare `:root { … }` rule with rationale comments stripped.
+   * tokens.css carries long explanatory comments for humans; every byte of them would
+   * otherwise be re-sent in each screen's system prompt.
+   */
+  readTokensRoot(id: string): string {
+    const raw = this.readTokensCss(id)
+    if (!raw) return ''
+    const block = extractRootBlock(raw)
+    if (block === null) return ''
+    const decls = [...parseDeclarations(block)].map(([k, v]) => `  ${k}: ${v};`).join('\n')
+    return decls ? `:root {\n${decls}\n}` : ''
+  },
+
+  /**
+   * Webfont stylesheet URLs this system needs, declared as `@import url(…)` in tokens.css.
+   * Screens are told to reference `--font-*`, but nothing makes a model remember the
+   * `<link>` — so the loading step is owned here and injected deterministically.
+   */
+  readFontUrls(id: string): string[] {
+    const raw = this.readTokensCss(id)
+    return [...raw.matchAll(/@import\s+url\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1])
+  },
+
+  /** Icon stroke weight for this brand; lucide's own default when the system doesn't override it. */
+  readIconStroke(id: string): number {
+    const block = extractRootBlock(this.readTokensCss(id))
+    const raw = block ? parseDeclarations(block).get('--icon-stroke') : undefined
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : 2
   },
 
   // Callers must reject an id that fails this before it becomes a file path (PromptComposer reads it directly).

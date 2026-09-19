@@ -2,11 +2,13 @@
 
 Concrete, checkable rules that distinguish "designed by a human who has
 shipped product" from "default LLM output." Several rules below are
-auto-enforced by the daemon's `lint-artifact` linter — failing an
-enforced rule is not a style preference, it is a regression. The
-rest are guidance for agents and reviewers and are flagged inline as
-"(guidance, not auto-checked)" so the contract with the linter stays
-honest.
+auto-enforced by `src/lib/design-lint.ts`, which runs on every screen
+after generation — failing an enforced rule is not a style preference,
+it is a regression. Two of them (indigo accents, literal font stacks)
+are rewritten for you automatically; the rest are reported. The
+remaining rules are guidance for agents and reviewers and are flagged
+inline as "(guidance, not auto-checked)" so the contract with the
+linter stays honest.
 
 > Adapted from [refero_skill](https://github.com/referodesign/refero_skill)
 > (MIT), tightened to match OpenDesign's lint surface.
@@ -18,9 +20,9 @@ These are the patterns the linter blocks at P0 (must-fix):
 1. **Default Tailwind indigo as accent** — exactly `#6366f1`, `#4f46e5`,
    `#4338ca`, `#3730a3`, `#8b5cf6`, `#7c3aed`, `#a855f7`. The active
    `DESIGN.md` provides `--accent`; use it. Indigo is the textbook AI
-   tell. (The daemon's `lint-artifact` flags any of these as a solid
-   accent; keep this list in sync with `AI_DEFAULT_INDIGO` in
-   `apps/daemon/src/lint-artifact.ts`.)
+   tell. (Any of these outside the token block is rewritten to
+   `var(--accent)`; keep this list in sync with `AI_INDIGO` in
+   `src/lib/design-lint.ts`.)
 2. **Two-stop "trust" gradient on the hero** — purple→blue, blue→cyan,
    indigo→pink. A flat surface + intentional type beats this every
    time.

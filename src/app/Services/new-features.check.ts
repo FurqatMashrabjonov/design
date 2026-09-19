@@ -106,5 +106,110 @@ const mobilePrompt = composeSystemPrompt('minimal', 'mobile')
 assert.ok(mobilePrompt.includes('Shared Navigation Shell'), 'Mobile prompt must contain App Consistency craft rules')
 assert.ok(mobilePrompt.includes('Consistent Bottom Navigation Bar'), 'Mobile prompt must contain bottom nav bar rules')
 
+console.log('Testing Token Coverage...')
+for (const id of DesignSystemService.list().map((d) => d.id)) {
+  assert.ok(DesignSystemService.readTokensCss(id).length > 0, `${id} must ship tokens.css`)
+  const root = DesignSystemService.readTokensRoot(id)
+  assert.ok(root.startsWith(':root {'), `${id} tokens must expose a :root block`)
+  assert.ok(!root.includes('/*'), `${id} injected tokens must have comments stripped`)
+  assert.ok(root.includes('--accent:'), `${id} must bind --accent`)
+}
+
+console.log('Testing Navigation Shell Builder...')
+const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE } = await import('./ShellService.ts')
+const navA = buildBottomNav(multiPlan.navigation, 'home')
+const navB = buildBottomNav(multiPlan.navigation, 'stats')
+assert.ok(navA.includes('data-od-shell="bottom-nav"'), 'Nav carries a shell marker')
+assert.equal(
+  navA.replace(/var\(--accent\)|var\(--meta\)/g, 'C').replace(/ aria-current="page"/g, ''),
+  navB.replace(/var\(--accent\)|var\(--meta\)/g, 'C').replace(/ aria-current="page"/g, ''),
+  'Two root-tab navs may differ ONLY in which tab is active',
+)
+assert.ok(!navA.includes('bg-white'), 'Nav must not hardcode a light surface')
+for (const tab of multiPlan.navigation.tabs) {
+  const marks = buildBottomNav(multiPlan.navigation, tab.id).match(/aria-current="page"/g) ?? []
+  assert.equal(marks.length, 1, `Exactly one tab is active for "${tab.id}" (action tabs included)`)
+}
+assert.ok(buildDetailHeader('Meal Analysis', 'Home').includes('Back to Home'), 'Detail header labels its back target')
+
+console.log('Testing Screen Normalizer...')
+const { normalizeScreen, extractStyleDigest, extractRootBlock, parseDeclarations } = await import(
+  '../../lib/screen-normalizer.ts'
+)
+const minimalTokens = DesignSystemService.readTokensRoot('minimal')
+
+// Two screens that drifted the way parallel samples actually drift: different accent hex,
+// different hand-drawn nav markup.
+const driftedA = `<!doctype html><html><head><style>:root{--accent:#6366f1;--bg:#fff;--card-pad:20px}</style></head><body><main>A</main><nav class="fixed bottom-0 inset-x-0 bg-white/95 h-16"><a>Home</a></nav></body></html>`
+const driftedB = `<!doctype html><html><head><style>:root{--accent:#4f46e5;--bg:#fefefe}</style></head><body><nav class="flex gap-2" data-od-id="filters"><a>All</a></nav><main>B</main></body></html>`
+
+const shellA = { nav: buildBottomNav(multiPlan.navigation, 'home') }
+const shellB = { nav: buildBottomNav(multiPlan.navigation, 'home') }
+const normA = normalizeScreen(driftedA, { tokensCss: minimalTokens, shell: shellA, navClearance: NAV_CLEARANCE })
+const normB = normalizeScreen(driftedB, { tokensCss: minimalTokens, shell: shellB, navClearance: NAV_CLEARANCE })
+
+const accentOf = (html: string) => parseDeclarations(extractRootBlock(html)!).get('--accent')
+assert.equal(accentOf(normA), '#2952cc', 'Invented indigo is overwritten by the design system accent')
+assert.equal(accentOf(normA), accentOf(normB), 'Both screens resolve to the same accent')
+assert.ok(normA.includes('--card-pad: 20px'), 'Extra custom properties the model invented survive')
+assert.ok(normA.includes('data-od-shell="bottom-nav"'), 'Hand-drawn bottom nav is replaced by the shell')
+assert.ok(!normA.includes('bg-white/95'), 'The hardcoded white bar is gone')
+assert.ok(normB.includes('data-od-id="filters"'), 'An in-page filter nav is NOT clobbered')
+assert.ok(normB.includes('data-od-shell="bottom-nav"'), 'A missing nav is injected')
+assert.ok(
+  normA.includes(`padding-bottom: ${NAV_CLEARANCE}px !important`),
+  'Body clearance is forced so content cannot hide under the bar',
+)
+
+const digest = extractStyleDigest(normA)
+assert.ok(!digest.includes(':root'), 'Style digest excludes the canonical token block')
+
+console.log('Testing Font Pipeline...')
+for (const d of DesignSystemService.list()) {
+  const urls = DesignSystemService.readFontUrls(d.id)
+  const root = DesignSystemService.readTokensRoot(d.id)
+  assert.ok(!root.includes('@import'), `${d.id}: @import must not reach the prompt`)
+  assert.ok(!/\n/.test(root.match(/--font-body: ([^;]+)/)?.[1] ?? ''), `${d.id}: font stack must be one line`)
+  for (const u of urls) {
+    assert.ok(u.startsWith('https://fonts.googleapis.com/css2?'), `${d.id}: unexpected font url ${u}`)
+    // Every family the system pays to download must actually appear in a stack.
+    for (const [, fam] of u.matchAll(/family=([^:&]+)/g)) {
+      const name = decodeURIComponent(fam).replace(/\+/g, ' ')
+      assert.ok(root.includes(name), `${d.id}: loads "${name}" but never references it`)
+    }
+  }
+}
+const fontless = normalizeScreen('<html><head><link href="https://fonts.googleapis.com/css2?family=Inter" rel="stylesheet"></head><body>x</body></html>', {
+  fontUrls: ['https://fonts.googleapis.com/css2?family=Poppins:wght@400&display=swap'],
+})
+assert.ok(fontless.includes('Poppins'), "The design system's font is injected")
+assert.ok(!fontless.includes('family=Inter"'), "The model's own font link is stripped")
+assert.equal(DesignSystemService.readIconStroke('midnight'), 1.5, 'midnight overrides icon stroke')
+assert.equal(DesignSystemService.readIconStroke('minimal'), 2, 'systems without an override use lucide default')
+
+console.log('Testing Icon Normalizer...')
+const { normalizeIcons, LUCIDE_CDN } = await import('../../lib/screen-normalizer.ts')
+const mixed = '<body><svg stroke-width="1.5"></svg><svg stroke-width="2.5"></svg><circle stroke-width="11"/><i data-lucide="flame"></i></body>'
+const icons = normalizeIcons(mixed, 2)
+assert.equal((icons.match(/stroke-width="2"/g) ?? []).length, 2, 'Icon-weight strokes are unified')
+assert.ok(icons.includes('stroke-width="11"'), 'A progress ring stroke is left alone')
+assert.ok(icons.includes(LUCIDE_CDN), 'Lucide is booted when the page uses data-lucide')
+assert.ok(!normalizeIcons('<body><svg stroke-width="2"></svg></body>', 2).includes(LUCIDE_CDN), 'No lucide payload when unused')
+
+console.log('Testing Design Lint...')
+const { lintScreen, autofixScreen } = await import('../../lib/design-lint.ts')
+const sloppy = `<html><head><style>:root{--accent:#2952cc}</style></head><body>
+<h2>Fast 🚀</h2><p style="font-family: 'Inter', sans-serif">Lorem ipsum dolor sit amet</p>
+<div style="color:#6366f1">10x faster</div><span>var</span><em style="color:var(--nope)">x</em></body></html>`
+const rules = lintScreen(sloppy).map((f) => f.rule)
+for (const r of ['ai-indigo-accent', 'filler-copy', 'invented-metrics', 'emoji-as-icon', 'hardcoded-font-family', 'undefined-token']) {
+  assert.ok(rules.includes(r), `lint must flag ${r} (got: ${rules.join(', ')})`)
+}
+const fixed = autofixScreen(sloppy)
+assert.ok(!fixed.includes('#6366f1'), 'Indigo is rewritten to the accent token')
+assert.ok(fixed.includes('font-family: var(--font-body)'), 'Literal font stack is tokenised')
+assert.ok(fixed.includes("--accent:#2952cc"), 'The canonical token block is left intact')
+assert.ok(lintScreen(autofixScreen(fixed)).every((f) => f.rule !== 'ai-indigo-accent'), 'Autofix is idempotent')
+
 console.log('All new features and App Coherence verified successfully! ✅')
 

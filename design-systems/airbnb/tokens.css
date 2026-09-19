@@ -71,6 +71,8 @@
  * encourage non-tier surfaces to reach for them.
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface (3 levels) ────────────────────────────────────────
    * Canvas White is both the page and the card — Airbnb refuses a
@@ -138,10 +140,10 @@
    * family itself, never from typeface mixing. Mono is a generic
    * stack for kbd, tabular metrics, and the rare code label. */
   --font-display:
-    "Airbnb Cereal VF", "Airbnb Cereal App", Circular,
+    "Airbnb Cereal VF", "Plus Jakarta Sans", "Airbnb Cereal App", Circular,
     -apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif;
   --font-body:
-    "Airbnb Cereal VF", "Airbnb Cereal App", Circular,
+    "Airbnb Cereal VF", "Plus Jakarta Sans", "Airbnb Cereal App", Circular,
     -apple-system, system-ui, "Helvetica Neue", Roboto, sans-serif;
   --font-mono:
     ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco,

@@ -30,6 +30,8 @@
  *   - --radius-sm: 9999px (full pill); --radius-md: 6px (cards/containers).
  * ─────────────────────────────────────────────────────────────────── */
 
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
 :root {
   /* ─── Surface ──────────────────────────────────────────────────── */
   --bg:           #121212;             /* near-black — deepest background */
@@ -58,8 +60,8 @@
   --danger:  #f3727f;                 /* negative red — error states */
 
   /* ─── Typography ───────────────────────────────────────────────── */
-  --font-display: "SpotifyMixUITitle", "CircularSp", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-body:    "SpotifyMixUI", "CircularSp", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "SpotifyMixUITitle", "Poppins", "CircularSp", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-body:    "SpotifyMixUI", "Poppins", "CircularSp", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono:    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Type scale — DESIGN.md §Typography.

@@ -3,6 +3,8 @@
  * retro interface with warm colors, chunky controls, and nostalgic product cards.
  */
 
+@import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;600;700&display=swap");
+
 :root {
   --bg: #fff4cf;
   --surface: #fffaf0;
@@ -20,7 +22,7 @@
   --success: #3d8f4f;
   --warn: #f2a93b;
   --danger: #b83a2f;
-  --font-display: "Courier New", ui-monospace, monospace;
+  --font-display: "Courier New", "Courier Prime", ui-monospace, monospace;
   --font-body: Inter, system-ui, sans-serif;
   --font-mono: "Courier New", ui-monospace, monospace;
   --text-xs: 12px;
