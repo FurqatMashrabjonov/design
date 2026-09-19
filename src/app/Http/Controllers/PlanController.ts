@@ -33,6 +33,7 @@ export const PlanController = {
         try {
           const plan = await planScreensWithRetry(brief, project.device)
           Project.rename(project.id, plan.appName)
+          Project.saveNavigation(project.id, plan.navigation)
           send({ type: 'plan', ...plan })
 
           const system = composeSystemPrompt(project.designSystem, project.device)
@@ -123,6 +124,9 @@ export const PlanController = {
                 html: annotateHtml(normalized),
                 x: i * (fw + FRAME_GAP),
                 y: 0,
+                screenType: s.screenType,
+                activeTabId: s.activeTabId ?? null,
+                parentScreenName: s.parentScreen ?? null,
               })
               send({ type: 'screen_done', index: i, screenId: screen.id, name: screen.name })
               return normalized

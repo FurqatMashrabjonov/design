@@ -126,6 +126,11 @@ assert.equal(
   'Two root-tab navs may differ ONLY in which tab is active',
 )
 assert.ok(!navA.includes('bg-white'), 'Nav must not hardcode a light surface')
+// Tailwind is the model's choice, not ours — a screen written in plain CSS has no utility
+// classes, and a class-styled shell collapsed into an unpositioned block off the bottom.
+assert.ok(!/class="/.test(navA), 'Nav layout must be inline styles, not Tailwind classes')
+assert.ok(!/class="/.test(buildDetailHeader('X', 'Home')), 'Header layout must be inline styles')
+assert.ok(navA.includes('position:fixed'), 'Nav pins itself without relying on a CSS framework')
 for (const tab of multiPlan.navigation.tabs) {
   const marks = buildBottomNav(multiPlan.navigation, tab.id).match(/aria-current="page"/g) ?? []
   assert.equal(marks.length, 1, `Exactly one tab is active for "${tab.id}" (action tabs included)`)
@@ -210,6 +215,49 @@ assert.ok(!fixed.includes('#6366f1'), 'Indigo is rewritten to the accent token')
 assert.ok(fixed.includes('font-family: var(--font-body)'), 'Literal font stack is tokenised')
 assert.ok(fixed.includes("--accent:#2952cc"), 'The canonical token block is left intact')
 assert.ok(lintScreen(autofixScreen(fixed)).every((f) => f.rule !== 'ai-indigo-accent'), 'Autofix is idempotent')
+
+console.log('Testing Prototype Navigation...')
+// Mirrors navigateToTab / navigateBack in routes/p.$projectId.tsx: every tab the shell
+// renders must resolve to a screen, or a preview click-through hits a dead end.
+const navScreens = multiPlan.screens.map((s, i) => ({
+  id: `s${i}`,
+  name: s.name,
+  screenType: s.screenType,
+  activeTabId: s.activeTabId ?? null,
+  parentScreenName: s.parentScreen ?? null,
+}))
+const navRoots = navScreens.filter((s) => s.screenType === 'root-tab' && s.activeTabId)
+for (const tab of multiPlan.navigation.tabs) {
+  const target = navRoots.find((s) => s.activeTabId === tab.id)
+  // The planner rotates unassigned screens through the tab list, so not every tab must
+  // have a screen — but any tab that does must resolve to exactly one.
+  if (target) assert.equal(navRoots.filter((s) => s.activeTabId === tab.id).length, 1, `tab ${tab.id} is claimed twice`)
+}
+const detail = navScreens.find((s) => s.screenType === 'detail-view')
+assert.ok(detail, 'fixture has a detail screen')
+assert.ok(
+  navScreens.some((s) => s.name === detail.parentScreenName),
+  'a detail screen names a parent that exists, so Back resolves',
+)
+const detailHeader = buildDetailHeader(detail.name, detail.parentScreenName ?? 'Home')
+assert.ok(detailHeader.includes(`data-od-back="${detail.parentScreenName}"`), 'Back button carries its target')
+assert.ok(navA.includes('data-od-tab="home"'), 'Tabs carry ids the preview bridge can read')
+
+console.log('Testing Preview Page Logic...')
+const { orderScreens, screenForTab, screenForBack, withPreviewBridge } = await import('../../lib/preview-bridge.ts')
+const pv = [
+  { id: 'c', name: 'Stats', x: 2000, screenType: 'root-tab', activeTabId: 'stats', parentScreenName: null },
+  { id: 'a', name: 'Home', x: 0, screenType: 'root-tab', activeTabId: 'home', parentScreenName: null },
+  { id: 'd', name: 'Meal', x: 3000, screenType: 'detail-view', activeTabId: 'home', parentScreenName: 'Home' },
+  { id: 'b', name: 'Scan', x: 1000, screenType: 'root-tab', activeTabId: 'scan', parentScreenName: null },
+]
+assert.deepEqual(orderScreens(pv).map((s) => s.id), ['a', 'b', 'c', 'd'], 'Preview steps through screens in planned left-to-right order')
+assert.equal(screenForTab(pv, 'stats')?.id, 'c', 'A tab resolves to the root screen that claims it')
+assert.equal(screenForTab(pv, 'home')?.id, 'a', 'A detail screen sharing a tab id never steals the tab')
+assert.equal(screenForTab(pv, 'nope'), undefined, 'An unclaimed tab resolves to nothing rather than a wrong screen')
+assert.equal(screenForBack(pv, 'Home')?.id, 'a', 'Back resolves to the named parent')
+assert.equal(screenForBack(pv, 'Missing')?.id, 'c', 'Back falls back to a root screen when the parent is gone')
+assert.ok(withPreviewBridge('<html><body>x</body></html>').includes('od:navigate_tab'), 'Bridge is injected before </body>')
 
 console.log('All new features and App Coherence verified successfully! ✅')
 

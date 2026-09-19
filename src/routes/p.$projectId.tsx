@@ -144,6 +144,12 @@ function ProjectPage() {
 
   const codeScreen = screens.find((s) => s.id === codeScreenId) ?? null
 
+  function openPreview() {
+    const first = [...screens].sort((a, b) => a.x - b.x)[0]
+    const start = screens.find((sc) => sc.id === selected) ?? first
+    window.open(`/preview/${project.id}${start ? `?s=${start.id}` : ''}`, '_blank', 'noopener')
+  }
+
   return (
     <div className="flex h-screen flex-col">
       <TopBar
@@ -151,6 +157,8 @@ function ProjectPage() {
         device={project.device}
         designSystem={project.designSystem}
         onExport={selectedScreen ? exportSelected : undefined}
+        canPreview={screens.length > 0}
+        onPreview={openPreview}
         onDeleteProject={async () => {
           try {
             await deleteProject({ data: project.id })

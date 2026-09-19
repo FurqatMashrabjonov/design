@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, Play, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -20,6 +20,8 @@ export function TopBar(props: {
   designSystem: string
   onExport?: () => void
   onDeleteProject: () => Promise<void>
+  onPreview?: () => void
+  canPreview?: boolean
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -39,6 +41,12 @@ export function TopBar(props: {
         {props.designSystem}
       </Badge>
       <div className="ml-auto flex items-center gap-2">
+        {props.onPreview && (
+          <Button variant="outline" size="sm" onClick={props.onPreview} disabled={!props.canPreview} title="Open a full-page preview">
+            <Play className="size-4" />
+            Preview
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={props.onExport} disabled={!props.onExport}>
           <Download className="size-4" />
           Export

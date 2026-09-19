@@ -62,11 +62,11 @@ function tabHtml(tab: AppNavTab, isActive: boolean): string {
     // rather than a color change — without it an action-tab screen shows no active tab.
     const ring = isActive ? ';box-shadow:var(--elev-raised),0 0 0 3px var(--bg),0 0 0 5px var(--accent)' : ';box-shadow:var(--elev-raised)'
     const current = isActive ? ' aria-current="page"' : ''
-    return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} aria-label="${label}" class="flex-1 flex items-start justify-center"><span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin-top:-16px;border-radius:9999px;background:var(--accent);color:var(--accent-on)${ring}">${iconSvg(tab.icon, 24)}</span></a>`
+    return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} aria-label="${label}" style="flex:1;display:flex;align-items:flex-start;justify-content:center;text-decoration:none"><span style="display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin-top:-16px;border-radius:9999px;background:var(--accent);color:var(--accent-on)${ring}">${iconSvg(tab.icon, 24)}</span></a>`
   }
   const color = isActive ? 'var(--accent)' : 'var(--meta)'
   const current = isActive ? ' aria-current="page"' : ''
-  return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} class="flex-1 flex flex-col items-center justify-center gap-1" style="color:${color};min-height:44px">${iconSvg(tab.icon)}<span style="font-size:11px;font-weight:500;letter-spacing:0.01em">${label}</span></a>`
+  return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:44px;text-decoration:none;color:${color}">${iconSvg(tab.icon)}<span style="font-size:11px;font-weight:500;letter-spacing:0.01em">${label}</span></a>`
 }
 
 /**
@@ -75,12 +75,12 @@ function tabHtml(tab: AppNavTab, isActive: boolean): string {
  */
 export function buildBottomNav(nav: AppNavigation, activeTabId?: string): string {
   const tabs = nav.tabs.map((t) => tabHtml(t, t.id === activeTabId)).join('')
-  return `<nav data-od-id="bottom-nav" data-od-shell="bottom-nav" class="fixed bottom-0 inset-x-0 z-40 flex items-stretch justify-around" style="height:${NAV_HEIGHT}px;padding-bottom:env(safe-area-inset-bottom);background:var(--surface);border-top:1px solid var(--border)">${tabs}</nav>`
+  return `<nav data-od-id="bottom-nav" data-od-shell="bottom-nav" style="position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:stretch;justify-content:space-around;box-sizing:content-box;height:${NAV_HEIGHT}px;padding-bottom:env(safe-area-inset-bottom);background:var(--surface);border-top:1px solid var(--border)">${tabs}</nav>`
 }
 
 /** The shared detail-screen header: back button, title, optional trailing action slot. */
 export function buildDetailHeader(title: string, parentLabel: string): string {
-  return `<header data-od-id="screen-header" data-od-shell="detail-header" class="sticky top-0 z-30 flex items-center gap-1" style="height:${HEADER_HEIGHT}px;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--border)"><button type="button" aria-label="Back to ${escapeHtml(parentLabel)}" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;color:var(--fg);background:none;border:0;cursor:pointer">${iconSvg('chevron-left', 24)}</button><h1 style="font-size:17px;font-weight:600;color:var(--fg);margin:0;letter-spacing:-0.01em">${escapeHtml(title)}</h1></header>`
+  return `<header data-od-id="screen-header" data-od-shell="detail-header" style="position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:4px;height:${HEADER_HEIGHT}px;padding:0 8px;background:var(--surface);border-bottom:1px solid var(--border)"><button type="button" data-od-back="${escapeHtml(parentLabel)}" aria-label="Back to ${escapeHtml(parentLabel)}" style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;color:var(--fg);background:none;border:0;cursor:pointer">${iconSvg('chevron-left', 24)}</button><h1 style="font-size:17px;font-weight:600;color:var(--fg);margin:0;letter-spacing:-0.01em">${escapeHtml(title)}</h1></header>`
 }
 
 function escapeHtml(s: string): string {

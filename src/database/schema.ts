@@ -6,6 +6,8 @@ export const projects = sqliteTable('projects', {
   name: text('name').notNull(),
   designSystem: text('design_system').notNull().default('minimal'),
   device: text('device').notNull().default('desktop'),
+  // The planned AppNavigation, as JSON — lets the canvas resolve a tab id to a screen.
+  navigation: text('navigation'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 
@@ -19,6 +21,9 @@ export const screens = sqliteTable('screens', {
   html: text('html').notNull(),
   x: real('x').notNull().default(0),
   y: real('y').notNull().default(0),
+  screenType: text('screen_type').notNull().default('root-tab'),
+  activeTabId: text('active_tab_id'),
+  parentScreenName: text('parent_screen_name'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

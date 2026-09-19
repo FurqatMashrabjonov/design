@@ -27,7 +27,18 @@ export const Screen = {
     return db.select({ x: screens.x, y: screens.y }).from(screens).where(eq(screens.projectId, projectId)).all()
   },
 
-  create(data: { id: string; projectId: string; name: string; prompt: string; html: string; x: number; y: number }): ScreenRow {
+  create(data: {
+    id: string
+    projectId: string
+    name: string
+    prompt: string
+    html: string
+    x: number
+    y: number
+    screenType?: string
+    activeTabId?: string | null
+    parentScreenName?: string | null
+  }): ScreenRow {
     db.insert(screens).values(data).run()
     return Screen.findInProject(data.id, data.projectId)!
   },
