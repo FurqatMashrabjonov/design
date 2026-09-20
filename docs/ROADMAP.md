@@ -114,7 +114,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | INF-05 | Doimiy diskli serverga deploy | Infratuzilma / Hosting | MVP | Rejada | O'rta | INF-02, INF-03 | Ilova ochiladi; qayta deploy'da ma'lumot yo'qolmaydi |
 | INF-06 | Domen va HTTPS | Infratuzilma / Hosting | MVP | Rejada | Kichik | INF-05 | O'z domenimiz HTTPS bilan ishlaydi |
 | INF-07 | Bazaning avtomatik zaxirasi va sinalgan tiklash | Infratuzilma / Ma'lumot zaxirasi | MVP | Rejada | O'rta | INF-05 | Har kuni tashqi zaxira; tiklash bir marta sinab ko'rilgan |
-| INF-08 | CI: har push'da npm run check va tsc | Infratuzilma / CI | MVP | Tayyor | Kichik |  | GitHub Actions xatoli build'ni to'xtatadi |
+| INF-08 | CI: har push'da npm run check va tsc | Infratuzilma / CI | MVP | Bloklangan | Kichik |  | GitHub Actions xatoli build'ni to'xtatadi |
 | OBS-02 | Holat tekshiruvi va ishlash monitori | Monitoring / Ishlash nazorati | MVP | Rejada | Kichik | INF-05 | Sayt tushsa sizga xabar keladi |
 | OBS-03 | Server va brauzer xatolarini kuzatish | Monitoring / Xatolar | MVP | Rejada | Kichik | INF-05 | Kutilmagan xatolar foydalanuvchi ID si bilan bitta panelga tushadi |
 | OBS-04 | Asosiy hodisalar analitikasi | Monitoring / Analitika | MVP | Rejada | Kichik | INF-05 | Ro'yxatdan o'tish, birinchi generatsiya, ko'rish, ulashish, eksport, xarid sanaladi |
