@@ -4,9 +4,9 @@ This is an MVP. The rules below exist so scope stays fixed. Read them before wri
 
 ## Scope rules (highest priority)
 
-1. **`docs/ROADMAP.md` is the only source of truth for what to build.** Work only on rows marked `MVP` whose status is not `Done`.
-2. **No feature that is not in the roadmap.** If you think of one (or the user asks for something not listed), do not build it. Add it to the roadmap as `Later`, say so in one line, and ask whether to promote it to `MVP`.
-3. **Finish before starting.** Do not begin a new roadmap row while another is `In progress`.
+1. **The Notion database ["Vazifalar"](https://app.notion.com/p/55b59dbe8eb4414490bd2baa79cc6540) is the source of truth for what to build.** Work only on rows whose `Doira` is `MVP` and whose `Holat` is not `Tayyor`, in `Tartib` order. The plan is written in Uzbek: `Doira` = scope (`MVP` / `Keyin` / `Bekor`), `Holat` = status (`Rejada` / `Jarayonda` / `Bloklangan` / `Tayyor`).
+2. **No feature that is not in the roadmap.** If you think of one (or the user asks for something not listed), do not build it. Add it to the Notion plan with `Doira` = `Keyin`, say so in one line, and ask whether to move it to `MVP`.
+3. **Finish before starting.** Do not begin a new row while another is `Jarayonda`.
 4. **Bug fixes, tests, and refactors needed to finish an MVP row are in scope.** Cleanup that serves no MVP row is not.
 5. Do not propose new features unprompted while an MVP row is open. Recommendations are welcome only when the user asks "what's next" or asks for research.
 
@@ -15,10 +15,10 @@ This is an MVP. The rules below exist so scope stays fixed. Read them before wri
 After each completed change, before reporting it done:
 
 - Add an entry to `docs/CHANGELOG.md` (newest first): what changed, files touched, how it was verified.
-- Update the row's status in `docs/ROADMAP.md`.
+- Set the row's `Holat` to `Tayyor` in Notion, and regenerate the `docs/ROADMAP.md` snapshot.
 - If it changes how the system works, update the "Architecture rules" section below.
 
-If Notion is connected, it mirrors `docs/ROADMAP.md`. The repo copy wins on any conflict.
+`docs/ROADMAP.md` is a read-only snapshot of that database so the plan stays readable without Notion. When Notion is unreachable, work from the snapshot and reconcile once it is back. Related Notion pages: the [plan overview](https://app.notion.com/p/3e039db48ef981bb9c26e3b652eeebaa), the [Modullar](https://app.notion.com/p/cea1e64dba26420d8a3d5088f9272201) database (one page per module, with its tasks), and the [competitor notes](https://app.notion.com/p/3e139db48ef981f2adb7f6d10f919ed5).
 
 ## Commands
 

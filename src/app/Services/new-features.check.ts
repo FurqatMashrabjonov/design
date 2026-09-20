@@ -5,6 +5,7 @@ import { composeSystemPrompt, composeElementEditPrompt } from './PromptComposer.
 import { annotateHtml } from '../../lib/element-annotator.ts'
 import { extractElement, patchElement, listElementIds } from '../../lib/element-patcher.ts'
 import { THRESHOLD, WEIGHTS } from './CritiqueService.ts'
+import { clampFrameHeight, parseHeightMessage, pinViewportHeight, withHeightProbe, MAX_FRAME_HEIGHT } from '../../lib/frame-height.ts'
 
 console.log('Testing Design Systems...')
 const systems = DesignSystemService.list()
@@ -297,6 +298,179 @@ assert.ok(live.includes("e.source !== window.parent"), 'Listener ignores message
 const msg = T.themeMessage({ accent: '#e11d48', bodyFont: 'inter' })
 assert.ok(msg.fonts.every((u: string) => u.startsWith('https://fonts.googleapis.com/')), 'Live payload only names Google Fonts URLs')
 for (const f of T.FONTS) assert.ok(T.fontUrl(f.id).includes('css2?family='), `${f.id} builds a fonts URL`)
+
+console.log('Testing LLM Stream Abort...')
+{
+  // A stand-in for DeepSeek: it streams one token, then hangs like a slow generation.
+  // If the caller's signal never reaches fetch, the loop below would wait forever.
+  const realFetch = globalThis.fetch
+  const realKey = process.env.DEEPSEEK_API_KEY
+  process.env.DEEPSEEK_API_KEY = 'test-key'
+  let receivedSignal: AbortSignal | undefined
+  globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
+    receivedSignal = init?.signal ?? undefined
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n'))
+        init?.signal?.addEventListener('abort', () => c.error(new DOMException('aborted', 'AbortError')))
+      },
+    })
+    return new Response(body, { status: 200 })
+  }) as typeof fetch
+  try {
+    const { streamCompletion } = await import('./LlmService.ts')
+    const ctl = new AbortController()
+    const seen: string[] = []
+    const outcome = await Promise.race([
+      (async () => {
+        try {
+          for await (const d of streamCompletion('sys', 'usr', ctl.signal)) {
+            seen.push(d)
+            ctl.abort() // the client disconnects right after the first token
+          }
+          return 'ended'
+        } catch (e) {
+          return (e as Error).name
+        }
+      })(),
+      new Promise<string>((r) => setTimeout(() => r('HUNG'), 2000)),
+    ])
+    assert.ok(receivedSignal, "streamCompletion must pass the caller's signal to fetch")
+    assert.deepEqual(seen, ['hi'], 'the first token arrived before the abort')
+    assert.notEqual(outcome, 'HUNG', 'aborting must stop the stream instead of letting it run to completion')
+    assert.ok(receivedSignal!.aborted, 'the upstream request was actually cancelled')
+  } finally {
+    globalThis.fetch = realFetch
+    if (realKey === undefined) delete process.env.DEEPSEEK_API_KEY
+    else process.env.DEEPSEEK_API_KEY = realKey
+  }
+}
+// Both controllers must tie the response stream's cancellation to the upstream abort.
+for (const f of ['GenerateController', 'PlanController']) {
+  const src = (await import('node:fs')).readFileSync(`src/app/Http/Controllers/${f}.ts`, 'utf8')
+  assert.ok(/cancel\(\)\s*\{\s*abort\.abort\(\)/.test(src), `${f} must abort the LLM call when the client cancels`)
+  assert.ok(/streamCompletion\(.*abort\.signal\)/.test(src), `${f} must pass abort.signal to streamCompletion`)
+}
+
+console.log('Testing Secrets Stay Server-Side...')
+{
+  const { readFileSync, readdirSync, statSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((n) => {
+      const p = join(dir, n)
+      return statSync(p).isDirectory() ? walk(p) : /\.(tsx?|jsx?)$/.test(n) ? [p] : []
+    })
+  // Everything the browser can load: components, page routes, shared libs and top-level modules.
+  // (routes/api and app/ are server-only; server functions are reached over RPC, not imported.)
+  const browserReachable = [
+    ...walk('src/components'),
+    ...walk('src/lib'),
+    ...readdirSync('src').filter((n) => /\.tsx?$/.test(n)).map((n) => join('src', n)),
+    ...readdirSync('src/routes').filter((n) => /\.tsx$/.test(n)).map((n) => join('src/routes', n)),
+  ].filter((f) => !f.endsWith('routeTree.gen.ts'))
+  assert.ok(browserReachable.length > 10, 'the audit must actually cover the browser-facing files')
+  for (const file of browserReachable) {
+    const text = readFileSync(file, 'utf8')
+    assert.ok(!text.includes('process.env'), `${file} is browser-reachable and must not read process.env`)
+    assert.ok(!/DEEPSEEK/.test(text), `${file} is browser-reachable and must not mention provider keys`)
+  }
+}
+
+console.log('Testing Generated-HTML Sandbox...')
+// Generated screens contain model-written JavaScript. With allow-same-origin that script would
+// run as our origin and could read the session cookie and call our API as the user.
+const { readdirSync, statSync, readFileSync, existsSync } = await import('node:fs')
+const { join: joinPath } = await import('node:path')
+function walkSource(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = joinPath(dir, name)
+    return statSync(full).isDirectory() ? walkSource(full) : /\.(tsx?|jsx?)$/.test(name) ? [full] : []
+  })
+}
+const sourceFiles = walkSource('src')
+for (const file of sourceFiles) {
+  const text = readFileSync(file, 'utf8')
+  if (file.endsWith('new-features.check.ts')) continue // this test names the forbidden values
+  assert.ok(!text.includes('allow-same-origin'), `${file} must never grant allow-same-origin`)
+  assert.ok(!/dangerouslySetInnerHTML/.test(text), `${file} must not inject generated HTML into the app document`)
+  for (const m of text.matchAll(/<iframe\b[\s\S]*?\/>/g)) {
+    assert.ok(/sandbox=["']allow-scripts["']/.test(m[0]), `${file}: every <iframe> must carry sandbox="allow-scripts" and nothing more`)
+  }
+}
+const iframeCount = sourceFiles.reduce((n, f) => n + (readFileSync(f, 'utf8').match(/<iframe\b/g)?.length ?? 0), 0)
+assert.ok(iframeCount >= 2, `expected the canvas and preview iframes to be audited, found ${iframeCount}`)
+
+console.log('Testing Production Entry...')
+const prodEntry = readFileSync('server.prod.mjs', 'utf8')
+// `vite build` emits only a fetch handler; without this file nothing binds a port in production.
+assert.ok(prodEntry.includes("from './dist/server/server.js'"), 'Prod entry loads the built fetch handler')
+assert.ok(prodEntry.includes('serveStatic'), 'Prod entry serves the built client assets')
+assert.ok(prodEntry.includes('process.env.PORT'), 'Port is configurable for the host')
+const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
+assert.ok(pkg.scripts.start?.includes('server.prod.mjs'), 'npm start runs the production entry')
+assert.ok(existsSync('server.prod.mjs'), 'server.prod.mjs is present')
+
+console.log('Testing Frame Height...')
+{
+  const DEVICE = 844
+
+  // A number from the sandbox is untrusted: it decides layout, and it is written to the database.
+  assert.strictEqual(clampFrameHeight(1986, DEVICE), 1986, 'a real content height passes through')
+  assert.strictEqual(clampFrameHeight(400, DEVICE), DEVICE, 'a frame is never shorter than the device')
+  assert.strictEqual(clampFrameHeight(999999, DEVICE), MAX_FRAME_HEIGHT, 'a runaway layout is capped')
+  assert.strictEqual(clampFrameHeight(1200.6, DEVICE), 1201, 'heights are whole pixels')
+  for (const bad of ['1200', NaN, Infinity, null, undefined, {}]) {
+    assert.strictEqual(clampFrameHeight(bad, DEVICE), null, `${String(bad)} is not a height`)
+  }
+
+  assert.deepStrictEqual(
+    parseHeightMessage({ type: 'od:frame_height', frameId: 'abc', height: 1500 }, DEVICE),
+    { frameId: 'abc', height: 1500 },
+    'a well-formed height message is accepted',
+  )
+  for (const bad of [
+    { type: 'od:select_element', frameId: 'abc', height: 1500 },
+    { type: 'od:frame_height', frameId: '', height: 1500 },
+    { type: 'od:frame_height', frameId: 'abc', height: 'tall' },
+    { type: 'od:frame_height', height: 1500 },
+    'od:frame_height',
+    null,
+  ]) {
+    assert.strictEqual(parseHeightMessage(bad, DEVICE), null, `must reject ${JSON.stringify(bad)}`)
+  }
+
+  // The ratchet this exists to prevent: a screen sized against the viewport would stretch to
+  // whatever height the frame was just given, report that back, and never shrink again.
+  const page = [
+    '<html><head><style>body{min-height:100dvh}.hero{height:100vh}.sheet{max-height:100svh}</style></head>',
+    '<body><p>The spec says 100vh here.</p><div style="min-height:100vh">panel</div></body></html>',
+  ].join('')
+  const pinned = pinViewportHeight(page)
+  assert.ok(!/\b100(d|s|l)?vh\b/.test(pinned.match(/<style[\s\S]*?<\/style>/)![0]), 'no viewport height units survive in CSS')
+  assert.ok(!/style="min-height:100vh"/.test(pinned), 'style attributes are pinned too')
+  assert.ok(pinned.includes('min-height:var(--od-frame-vh)'), 'units are repointed at the frame variable')
+  assert.ok(pinned.includes('The spec says 100vh here.'), 'body text that merely mentions 100vh is left alone')
+
+  const probed = withHeightProbe(page, 'screen-1', DEVICE)
+  assert.ok(probed.includes(`--od-frame-vh:${DEVICE}px`), 'the viewport reference is the device height, not the frame')
+  assert.ok(/html\{height:var\(--od-frame-vh\)!important\}/.test(probed), 'the root box is held at the device height so it can shrink')
+  assert.ok(probed.indexOf('data-od-frame') < probed.indexOf('</body>'), 'the probe is injected inside the document')
+  assert.ok(probed.includes('"screen-1"'), 'the frame id travels with the measurement')
+  assert.ok(probed.includes('ResizeObserver'), 'the page re-measures when its content changes')
+  // The document's scrolling box is floored at the frame height, so measuring it would report back
+  // whatever height the frame already had and a screen that got shorter would stay tall forever.
+  assert.ok(!probed.includes('documentElement.scrollHeight'), 'the probe measures the body box, not the scrolling box')
+  assert.ok(probed.includes('b.scrollHeight'), 'the probe measures the body box')
+  assert.ok(withHeightProbe('', 'screen-1', DEVICE) === '', 'nothing to probe before the HTML arrives')
+
+  // The preview route simulates a real phone, so it must keep the real device viewport.
+  const previewRoute = readFileSync('src/routes/preview.$projectId.tsx', 'utf8')
+  assert.ok(!previewRoute.includes('withHeightProbe'), 'the preview page is a device, not a canvas frame')
+  const canvasRoute = readFileSync('src/routes/p.$projectId.tsx', 'utf8')
+  assert.ok(/onHeight=\{reportHeight\}/.test(canvasRoute), 'the canvas listens for measured heights')
+  assert.ok(/height=\{frameHeight\(s\)\}/.test(canvasRoute), 'the canvas lays frames out at their measured height')
+}
 
 console.log('All new features and App Coherence verified successfully! ✅')
 

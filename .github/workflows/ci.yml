@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # The test scripts run .ts files directly, which needs Node's built-in type stripping.
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      # Also generates src/routeTree.gen.ts (gitignored), which the typecheck needs, and proves
+      # the production build still works on every push.
+      - run: npm run build
+      - run: npx tsc --noEmit

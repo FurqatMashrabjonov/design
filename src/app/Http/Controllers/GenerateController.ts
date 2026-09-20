@@ -61,7 +61,9 @@ export const GenerateController = {
       userMessage = prompt
     }
 
-    const deltas = streamCompletion(systemPrompt, userMessage)
+    // Cancelling the response stream (tab closed, navigation) aborts the upstream LLM call.
+    const abort = new AbortController()
+    const deltas = streamCompletion(systemPrompt, userMessage, abort.signal)
     let first: IteratorResult<string>
     try {
       first = await deltas.next()
@@ -72,6 +74,9 @@ export const GenerateController = {
     const enc = new TextEncoder()
     const projectRef = project
     const stream = new ReadableStream({
+      cancel() {
+        abort.abort()
+      },
       async start(controller) {
         const send = (s: string) => {
           try {

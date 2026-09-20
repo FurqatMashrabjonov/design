@@ -18,6 +18,10 @@ export const moveScreen = createServerFn({ method: 'POST' })
   .validator((d: { id: string; x: number; y: number }) => d)
   .handler(({ data }) => ProjectController.moveScreen(data))
 
+export const saveScreenHeight = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; height: number }) => d)
+  .handler(({ data }) => ProjectController.saveScreenHeight(data))
+
 export const saveTheme = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; theme: unknown }) => d)
   .handler(({ data }) => ProjectController.saveTheme(data))

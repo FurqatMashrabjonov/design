@@ -27,6 +27,11 @@ export const Screen = {
     return db.select({ x: screens.x, y: screens.y }).from(screens).where(eq(screens.projectId, projectId)).all()
   },
 
+  // Measured by the frame itself once it has rendered; see lib/frame-height.ts.
+  saveHeight(id: string, height: number) {
+    db.update(screens).set({ height }).where(eq(screens.id, id)).run()
+  },
+
   create(data: {
     id: string
     projectId: string

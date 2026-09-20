@@ -51,11 +51,11 @@ Public pages only (the dashboard requires an account).
 | Initials badge + "created N days ago" on project cards | Sleek | DSH-04 | MVP — removes the need for screenshots/puppeteer |
 | Project search | Sleek | DSH-05 | MVP |
 | Whole-app download | — | EXP-03 | MVP |
-| Visual design picker | Sleek | DSH-06 | Later |
-| Favourites, grid/list, left nav | Sleek | DSH-07, DSH-08 | Later |
+| Visual design picker | Sleek | DSH-07 | Later |
+| Favourites, grid/list, left nav | Sleek | DSH-08 | Later |
 | Full palette, radius slider, shape, theme versions | Sleek | THM-02..04 | Later |
-| Per-frame toolbar and version arrows | Sleek | CAN-08 | Later |
+| Per-frame toolbar and version arrows | Sleek | EDT-09 | Later |
 | Screen states (empty/loading/error) | Figr | GEN-10 | Later |
 | Image input | Stitch, Sleek, ScreenFlow | GEN-11 | Later — needs a vision call |
 | Figma export | Stitch, Sleek, ScreenFlow | EXP-05 | Later |
-| Share link, credits, API keys | Sleek | EXP-06, PLT-03, PLT-07 | Later / Cut |
+| Share link, credits, agent access | Sleek | SHR-02, BIL-04..12, AGT-01 | MVP / MVP / Later |

@@ -1,10 +1,12 @@
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
-export async function* streamCompletion(system: string, user: string) {
+// `signal` lets the caller stop the request (and the token spend) when the client goes away.
+export async function* streamCompletion(system: string, user: string, signal?: AbortSignal) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
+    signal,
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',

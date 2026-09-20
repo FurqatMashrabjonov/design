@@ -4,7 +4,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "check": "node src/app/Services/services.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts"
+    "check": "node src/app/Services/services.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts",
+    "start": "node --env-file-if-exists=.env server.prod.mjs"
   },
   "license": "ISC",
   "type": "module",

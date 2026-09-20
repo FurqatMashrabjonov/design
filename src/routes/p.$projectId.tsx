@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles, MousePointerClick, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme } from '../server/fns'
+import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -116,6 +116,20 @@ function ProjectPage() {
   const f = frameSize(project.device)
   const selectedScreen = screens.find((s) => s.id === selected)
 
+  // Frames grow to fit their screen. The stored height keeps the canvas laid out correctly on load;
+  // the frame re-measures itself once rendered and the new value is saved for next time.
+  const [heights, setHeights] = useState<Record<string, number>>({})
+  const heightSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+  const frameHeight = (screen: { id: string; height: number | null }) =>
+    heights[screen.id] ?? screen.height ?? f.height
+  function reportHeight(id: string, height: number) {
+    setHeights((prev) => (prev[id] === height ? prev : { ...prev, [id]: height }))
+    clearTimeout(heightSaveTimers.current[id])
+    heightSaveTimers.current[id] = setTimeout(() => {
+      saveScreenHeight({ data: { id, height } }).catch(() => {}) // layout only; a failed save just re-measures next load
+    }, 500)
+  }
+
   // Editing an existing screen: the live preview takes over its spot. New screen: it lands to the right of the rest.
   const livePos = selectedScreen ? { x: selectedScreen.x, y: selectedScreen.y } : nextFramePosition(screens, project.device)
   const liveFrame: CanvasFrame | null = live ? { id: '__live__', ...livePos, width: f.width, height: f.height } : null
@@ -127,7 +141,7 @@ function ProjectPage() {
       : []
 
   const frames: CanvasFrame[] = [
-    ...visibleScreens.map((s) => ({ id: s.id, x: s.x, y: s.y, width: f.width, height: f.height })),
+    ...visibleScreens.map((s) => ({ id: s.id, x: s.x, y: s.y, width: f.width, height: frameHeight(s) })),
     ...(liveFrame ? [liveFrame] : []),
     ...planFrames,
   ]
@@ -250,6 +264,9 @@ function ProjectPage() {
                       hint={s.prompt}
                       device={project.device}
                       theme={theme}
+                      frameId={s.id}
+                      height={frameHeight(s)}
+                      onHeight={reportHeight}
                       selected={s.id === selected}
                       inspectMode={inspectMode && s.id === selected}
                       selectedElementId={s.id === selected ? selectedElementId : null}

@@ -6,10 +6,11 @@ import m0004 from './migrations/0004_backfill_stacked_positions.ts'
 import m0005 from './migrations/0005_create_screen_versions_table.ts'
 import m0006 from './migrations/0006_add_navigation_columns.ts'
 import m0007 from './migrations/0007_add_project_theme.ts'
+import m0008 from './migrations/0008_add_screen_height.ts'
 
 export type Migration = { name: string; up: (db: Database) => void }
 
-const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007]
+const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008]
 
 // Runs once at boot. Each migration runs at most once ever, tracked in _migrations —
 // unlike the old db.ts, later ones don't re-scan the whole table on every start.

@@ -23,6 +23,8 @@ export const screens = sqliteTable('screens', {
   html: text('html').notNull(),
   x: real('x').notNull().default(0),
   y: real('y').notNull().default(0),
+  // Measured content height in CSS pixels; null until the frame has reported one.
+  height: integer('height'),
   screenType: text('screen_type').notNull().default('root-tab'),
   activeTabId: text('active_tab_id'),
   parentScreenName: text('parent_screen_name'),

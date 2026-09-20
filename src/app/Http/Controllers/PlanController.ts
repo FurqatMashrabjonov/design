@@ -23,7 +23,11 @@ export const PlanController = {
     if (!project) return new Response('Project not found', { status: 404 })
 
     const enc = new TextEncoder()
+    const abort = new AbortController()
     const stream = new ReadableStream({
+      cancel() {
+        abort.abort()
+      },
       async start(controller) {
         const send = (obj: unknown) => {
           try {
@@ -93,10 +97,11 @@ export const PlanController = {
               .join('\n')
 
           const renderScreen = async (s: PlannedScreen, i: number, digest: string): Promise<string | null> => {
+            if (abort.signal.aborted) return null // client left: don't start more paid work
             send({ type: 'screen_start', index: i, name: s.name })
             try {
               let text = ''
-              for await (const d of streamCompletion(system, buildUser(s, digest))) {
+              for await (const d of streamCompletion(system, buildUser(s, digest), abort.signal)) {
                 text += d
                 send({ type: 'screen_delta', index: i, text })
               }
