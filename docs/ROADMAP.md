@@ -73,10 +73,48 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | VAR-01 | Loyiha art-yo'nalishi urug'i | Generatsiya / Variantlar | MVP | Rejada | O'rta | KIT-02 | Loyiha ichida barqaror, loyihalar aro farqli |
 | VAR-02 | Har arxetipga 2–3 layout varianti | Generatsiya / Variantlar | MVP | Rejada | O'rta | UX-01 | Bir xillik ko'rsatkichi bazaviydan ≥30% past |
 | VAR-03 | Mobilga moslangan ~400 tokenli estetika bloki | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-23 | Prompt byudjeti ichida; eval'da A/B yutadi |
-| EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | Muharrir / Tahrirlash | MVP | Rejada | O'rta | GEN-19 | 'make it blue' → theme-override, yangi ekran emas |
-| EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | Muharrir / Tahrirlash | MVP | Rejada | O'rta |  | Tegilmagan bo'limlar baytma-bayt bir xil |
 | FB-01 | 👍/👎 va 'qayta yarat' signali yoziladi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Signal tizim, arxetip, variant bilan bazada |
 | FB-02 | Foydalanuvchi tahrirlari oldin/keyin juftligi sifatida saqlanadi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Har tahrir juftligi so'rov bilan birga saqlanadi |
+
+## M · Muharrir UX
+
+> 2026-09-21: muharrir (kanvas) UX rejasi — `docs/EDITOR-PLAN.md`. Generatsiya bosqichining qolgan qatorlaridan oldin bajariladi. EDT-09/10/11/12/16/17/18/19, GEN-08/09, EXP-03, THM-08 shu bosqichga ko'chirildi.
+
+| ID | Vazifa | Doira | Holat | Hajmi |
+|---|---|---|---|---|
+| EDT-20 | ScreenFrame xabarni faqat o'z iframe'idan qabul qiladi | MVP | Tayyor | Kichik |
+| EDT-21 | Kanvas ochilganda va generatsiyadan keyin avtomatik fit | MVP | Tayyor | Kichik |
+| EDT-16 | Kadr joylashuvi va "fit" har xil balandlikni hisobga oladi | MVP | Tayyor | Kichik |
+| EDT-22 | Reload → Regenerate (saqlangan spec'dan, o'z slotida) | MVP | Tayyor | Kichik |
+| GEN-08 | Xato bo'lgan ekranni o'z joyidan qayta urinish | MVP | Tayyor | Kichik |
+| CHAT-01 | messages jadvali: suhbat saqlanadi | MVP | Rejada | O'rta |
+| CHAT-02 | Agent javobi kodda yoziladi (LLM'siz) | MVP | Rejada | Kichik |
+| CHAT-03 | Ekran chipi / ro'yxatdan tanlash — kanvas o'sha kadrga boradi | MVP | Rejada | Kichik |
+| CHAT-04 | Xabarda "shundan oldingi holatga qayt" | MVP | Rejada | O'rta |
+| CHAT-05 | Jarayon va Stop tugmasi; kirish maydoni ochiq qoladi | MVP | Rejada | Kichik |
+| GEN-09 | Tushunarli generatsiya xatolari | MVP | Rejada | Kichik |
+| CHAT-06 | Xato — suhbatda, sababi va "Qayta urinish" bilan | MVP | Rejada | Kichik |
+| CHAT-07 | Agent jurnali (ochiladigan) | MVP | Rejada | O'rta |
+| CHAT-08 | Keyingi qadam takliflari, kodda | MVP | Rejada | Kichik |
+| EDT-23 | Har mazmunli element tanlanadi | MVP | Rejada | O'rta |
+| EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Rejada | O'rta |
+| EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | MVP | Rejada | O'rta |
+| EDT-25 | Matnni joyida tahrirlash, LLM'siz | MVP | Rejada | O'rta |
+| EDT-26 | Tezkor amallar LLM'siz: o'chirish, nusxalash, surish, boshqa rasm | MVP | Rejada | O'rta |
+| EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | MVP | Rejada | O'rta |
+| EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Rejada | O'rta |
+| EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Rejada | O'rta |
+| EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Rejada | O'rta |
+| EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Rejada | Kichik |
+| EDT-27 | Kadr faqat sarlavhadagi tutqichdan sudraladi | MVP | Rejada | Kichik |
+| EDT-28 | Klaviatura yorliqlari | MVP | Rejada | Kichik |
+| EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Rejada | Kichik |
+| EDT-30 | Bir nechta ekranni tanlash | MVP | Rejada | O'rta |
+| EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Rejada | O'rta |
+| EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Rejada | Kichik |
+| EDT-32 | Yuqori panel: Preview · Share · Export menyusi; o'chirish ⋯ ichida | MVP | Rejada | Kichik |
+| EXP-03 | Butun ilovani zip qilib yuklab olish (tema bilan) | MVP | Rejada | O'rta |
+| THM-08 | Kanvasda dizayn tizimi namunasi | MVP | Rejada | O'rta |
 
 ## B1 · Hisoblar
 
@@ -116,22 +154,14 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
 | EDT-15 | Kadr balandligi kontent bo'yicha o'lchanadi | Muharrir / Kanvas | MVP | Tayyor | O'rta | EDT-01 | Uzun ekran kanvasda to'liq ko'rinadi; balandlikni iframe o'zi xabar qiladi va bazada saqlanadi |
-| EDT-16 | Kadr joylashuvi va "fit" har xil balandlikni hisobga oladi | Muharrir / Kanvas | MVP | Rejada | Kichik | EDT-15 | Har xil balandlikdagi kadrlar ustma-ust tushmaydi va fit hammasini qamrab oladi |
-| EDT-11 | Canvas'da tanlash va qo'l asboblari | Muharrir / Kanvas | MVP | Rejada | Kichik |  | Pastki asboblar panelida tanlash va qo'l rejimlari bor; qo'l rejimida kadrni sudrab bo'lmaydi, faqat kanvas suriladi |
-| EDT-09 | Kadr ustida asboblar: versiya strelkalari, kod, yuklash, qurilma | Muharrir / Kanvas | MVP | Rejada | O'rta |  | Kadr ustida hover paytida suzuvchi panel: nom, versiya strelkalari, kod, yuklash; strelkalar saqlangan versiyalarga o‘tadi |
-| EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | Muharrir / Tahrirlash | MVP | Rejada | O'rta |  | Element tanlanganda yonida ixcham panel chiqadi va shu yerdan tahrir so'raladi |
 | THM-02 | To'liq rang palitrasi (fon, matn, ikkinchi rang, karta, chegara) | Tema / Tema | MVP | Rejada | O'rta |  | To'liq token ro'yxati tahrirlanadi va har o'zgarish barcha kadrlarda darhol ko'rinadi |
 | THM-03 | Radius slayderi va Round/Squircle shakli | Tema / Tema | MVP | Rejada | Kichik |  | Radius slayderi uzluksiz ishlaydi; Squircle Safari va Firefox’da zaxira orqali silliq ko‘rinadi |
-| THM-08 | Kanvasda dizayn tizimi namunasi (palitra va shriftlar kadri) | Tema / Tema | MVP | Rejada | O'rta | THM-02 | Namuna kadri kodda tokenlardan yig'iladi va tema o'zgarganda darhol yangilanadi |
 | DSH-09 | Qorong'u rejim | Bosh sahifa / Interfeys | MVP | Rejada | Kichik |  | Tugma rejimni almashtiradi, tanlov eslab qolinadi va sahifa yuklanganda miltillamaydi |
 | DSH-10 | Bosh sahifa qobig'i: yon panel va hisob menyusi | Bosh sahifa / Bosh sahifa | MVP | Rejada | O'rta |  | Yon panelli qobiq, pastda hisob menyusi; tor ekranda yon panel yig'iladi |
 | DSH-04 | Loyiha kartasi: bosh harflar va "N kun oldin yaratilgan" | Bosh sahifa / Loyihalar | MVP | Rejada | Kichik |  | Bo'sh joy yo'qoladi |
 | DSH-05 | Loyihalarni qidirish | Bosh sahifa / Loyihalar | MVP | Rejada | Kichik |  | Yozish bilan ro'yxat nom bo'yicha filtrlanadi |
 | DSH-03 | Ilhom kartalari (tavsifni to'ldiradigan uslubli boshlang'ichlar) | Bosh sahifa / Bosh sahifa | MVP | Rejada | Kichik |  | 4–6 ta karta, har biri tavsif va dizayn tizimini qo'yadi |
 | DSH-06 | Birinchi kirishdagi bo'sh holat | Bosh sahifa / Birinchi tanishuv | MVP | Rejada | Kichik | DSH-03 | Yangi foydalanuvchi ilhom kartalari va bir qatorli tushuntirishni ko'radi |
-| GEN-08 | Xato bo'lgan ekranni o'z joyidan qayta urinish | Generatsiya / Ishonchlilik | MVP | Rejada | Kichik |  | Xato ekranda faqat o'zini qayta yaratadigan tugma bor |
-| GEN-09 | Tushunarli generatsiya xatolari | Generatsiya / Ishonchlilik | MVP | Rejada | Kichik |  | Vaqt tugashi, token limiti, provayder ishlamasligi va kredit tugashi — har biriga aniq xabar |
-| EXP-03 | Butun ilovani zip qilib yuklab olish (tema bilan) | Eksport / Fayllar | MVP | Rejada | O'rta |  | Zip ichida har ekran uchun HTML va index |
 | SHR-02 | Loyiha ko'rinishi uchun ommaviy ulashish havolasi | Ko'rish va ulashish / Ulashish | MVP | Rejada | O'rta | OWN-04 | Ega ulashishni yoqadi; taxmin qilib bo'lmaydigan havola bilan har kim faqat ko'radi |
 
 ## B4 · Pul ishlash
@@ -201,8 +231,6 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GEN-14 | Ilovaning qorong'i rejim varianti | Generatsiya / Variantlar | Keyin | Rejada | O'rta |  |  |
 | GEN-15 | Kompyuter versiyasi uchun yon panel kod bilan | Generatsiya / Izchillik | Keyin | Rejada | O'rta |  |  |
 | GEN-16 | Ovoz yoki uzun hujjat orqali kirish | Generatsiya / Kirish ma'lumoti | Bekor | Rejada |  |  |  |
-| EDT-10 | Yuqori panelda yo'l ko'rsatkich (Bosh sahifa › loyiha) | Muharrir / Kanvas | Keyin | Rejada | Kichik |  |  |
-| EDT-12 | Bekor qilish va qaytarish (undo/redo) | Muharrir / Tarix | Keyin | Rejada | O'rta |  |  |
 | THM-04 | Tema versiyalari | Tema / Tema | Keyin | Rejada | O'rta |  |  |
 | THM-05 | O'z dizayn tizimini import qilish (Figma o'zgaruvchilari / tokens.css) | Tema / Dizayn tizimlari | Keyin | Rejada | Katta |  |  |
 | THM-06 | Model qo'lda yozgan ranglar ham temaga ergashsin | Tema / Tema | Keyin | Rejada | O'rta |  |  |
