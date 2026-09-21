@@ -160,6 +160,49 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(!normalizeShell(doc('display:flex'), { nav: '<nav data-od-shell="bottom-nav"></nav>' }).includes('data-od-shell="stack"'), 'a fixed tab bar is out of flow and needs no fix')
 }
 
+// GEN-20: screen types are made true in code — the stored baseline had 39 of 39 screens as "root-tab".
+{
+  const tabs = [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'search', label: 'Search', icon: 'search' }, { id: 'stats', label: 'Stats', icon: 'bar-chart-2' }, { id: 'profile', label: 'Profile', icon: 'user' }]
+  const plan = (screens: Record<string, unknown>[]) => parsePlan(JSON.stringify({ navigation: { tabs }, screens })).screens
+  const check = (screens: ReturnType<typeof plan>) => {
+    const roots = screens.filter((s) => s.screenType === 'root-tab')
+    assert.equal(new Set(roots.map((s) => s.activeTabId)).size, roots.length, 'one root screen per tab')
+    assert.ok(roots.length >= 1 && roots.every((s) => tabs.some((t) => t.id === s.activeTabId) && !s.parentScreen))
+    for (const s of screens.filter((x) => x.screenType !== 'root-tab')) {
+      assert.ok(!s.activeTabId, `${s.name}: a pushed screen lights no tab`)
+      assert.ok(screens.some((o) => o.name === s.parentScreen && o.name !== s.name), `${s.name}: parent "${s.parentScreen}" is a real, other screen`)
+    }
+  }
+
+  // the historical failure: everything root-tab, tabs reused
+  const lazy = plan([
+    { name: 'Home', screenType: 'root-tab', activeTabId: 'home' },
+    { name: 'Note Editor', screenType: 'root-tab', activeTabId: 'home' },
+    { name: 'Search', screenType: 'root-tab', activeTabId: 'search' },
+    { name: 'Stats', screenType: 'root-tab' },
+    { name: 'Profile', screenType: 'root-tab', activeTabId: 'nope' },
+  ])
+  check(lazy)
+  assert.deepEqual(lazy.map((s) => s.screenType), ['root-tab', 'detail-view', 'root-tab', 'root-tab', 'root-tab'])
+  assert.equal(lazy[1].parentScreen, 'Home', 'the loser of a tab is pushed from the winner')
+  assert.equal(lazy[3].activeTabId, 'stats', 'a root screen with no tab takes the free tab named like it')
+  assert.equal(lazy[4].activeTabId, 'profile', 'an invalid tab id is repaired the same way')
+
+  const five = plan(['Home', 'Search', 'Stats', 'Profile', 'Settings'].map((name) => ({ name, screenType: 'root-tab' })))
+  check(five)
+  assert.equal(five.filter((s) => s.screenType === 'detail-view').length, 1, '5 screens over 4 tabs leaves at least one detail view')
+
+  const orphans = plan([
+    { name: 'Meal Detail', screenType: 'detail-view', parentScreen: 'Nowhere' },
+    { name: 'Checkout', screenType: 'modal-flow', parentScreen: 'meal detail', activeTabId: 'home' },
+    { name: 'Self', screenType: 'detail-view', parentScreen: 'Self' },
+  ])
+  check(orphans)
+  assert.equal(orphans[0].screenType, 'root-tab', 'an app with no root screen gets a way in')
+  assert.equal(orphans[1].parentScreen, 'Meal Detail', 'parents match case-insensitively and keep the real name')
+  assert.equal(orphans[2].parentScreen, 'Meal Detail', 'a screen is never its own parent')
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

@@ -5,6 +5,15 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Ekran turlari kodda rost qilinadi — GEN-20
+`data.db` dagi 39 ekranning 39 tasi `root-tab` edi: muharrir ham, checkout ham tab bar bilan chizilgan, ikki ekran bitta tab'ni yoritgan. Planner promptidagi JSON namunada faqat `root-tab` bor edi — model namunani ko'chirardi, kodda esa hech narsa tekshirilmasdi.
+- `assignScreenSlots` (`parsePlan` ichida): tab'ni birinchi da'vo qilgan ekran oladi; tab'siz yoki noto'g'ri tab'li root ekran bo'sh tab'ni oladi (avval nomi mos kelganini, keyin navbatdagisini); tab'i band yoki tab qolmagan ekran `detail-view` ga aylanadi va tab'ning egasidan "push" qilinadi. Har `detail-view`/`modal-flow` ning ota-onasi — mavjud, boshqa ekran (katta-kichik harfga qaramay topiladi, topilmasa birinchi root). Root ekransiz reja birinchi ekranni kirish nuqtasi qiladi.
+- Planner prompti: "tab'ga AYNAN BITTA root ekran; ekran ichidagi biror narsani bosganda ochiladigan hamma narsa — detail", va namunaga `parentScreen` li detail ekran qo'shildi.
+- `eval/run.ts`: "oldingi" yugurish endi eng ko'p umumiy briefga ega bo'lgani (teng bo'lsa — eng yangisi).
+- Fayllar: `PlannerService.ts`, `services.check.ts`, `eval/run.ts`.
+- Tekshirildi: `npm run check`, `tsc` toza. Testlar: tarixiy holat (hammasi root, tab takrorlangan) → bitta tab bitta root, yutqazgan ekran yutganidan push qilinadi; tab'siz va noto'g'ri tab'li root nomiga mos bo'sh tab'ni oladi; 4 tab'ga 5 root → kamida 1 detail; yetim, o'zini ota-ona qilgan va tab yoritgan detail'lar tuzatiladi. Eval (`gen20`, 4 brief, baseline bilan): detalsiz brieflar 1 → 0, `root-tab` ulushi 0.80 → 0.67, lint toza 0.75 → 1.0, brend oqishi 1 → 0, `fallbackIcons` 20 → 0.
+- Qoldi (UX-02/03): planner 5 ekranga 5 tab ochib, hammasini root qilishi mumkin (food-delivery, notes-ai) — bu endi tur xatosi emas, reja sifati. Qiziq tomoni: GEN-19 dagi "yetishmayotgan ekranni chiz" aynan o'sha bo'shliqni to'ldirdi ("Product Detail", "Note Detail").
+
 ### Qo'shilgan ekran o'z ilovasiga qo'shiladi — GEN-19
 Chatdagi "yana bitta qo'sh" `GenerateController` ga yalang'och prompt bo'lib borardi: ilova nomi, ekranlar, navigatsiya, house style — hech narsa. Natijada kaloriya ilovasiga boshqa ilovaning ekrani, o'z tab bar'i bilan qo'shilgan (`data.db` dagi uchta "Lesson Complete" ekrani).
 - `app/Services/ScreenContext.ts` (yangi): `shellContract`, `shellPartsFor`, `screenBrief` `PlanController` dan ko'chirildi va ikkala yo'l shulardan foydalanadi — rejali yugurishning prompt matni o'zgarmadi.

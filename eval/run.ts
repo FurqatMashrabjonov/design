@@ -132,12 +132,13 @@ const loadRun = (d: string): BriefResult[] => JSON.parse(readFileSync(join(OUT_R
 const inputsOf = (d: string, rs: BriefResult[]): ScreenInput[] =>
   rs.flatMap((r) => r.screens.map((s) => ({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, added: s.added, html: readFileSync(join(OUT_ROOT, d, s.file), 'utf8') })))
 
-// "Before" is the newest earlier run that drew at least one of these briefs. Runs are usually
+// "Before" is the earlier run that drew the most of these briefs (newest on a tie). Runs are usually
 // --only subsets, so both sides are cut down to the briefs they share before anything is compared.
 const drew = new Set(results.filter((r) => r.screens.length).map((r) => r.id))
+const overlap = (d: string) => (existsSync(join(OUT_ROOT, d, 'results.json')) ? loadRun(d).filter((r) => r.screens.length && drew.has(r.id)).length : 0)
 const prevLabel = readdirSync(OUT_ROOT)
-  .filter((d) => d < label && existsSync(join(OUT_ROOT, d, 'results.json')) && loadRun(d).some((r) => r.screens.length && drew.has(r.id)))
-  .sort()
+  .filter((d) => d < label && overlap(d) > 0)
+  .sort((a, z) => overlap(a) - overlap(z) || a.localeCompare(z))
   .pop()
 
 const errorCount = results.reduce((n, r) => n + r.errors.length, 0)
