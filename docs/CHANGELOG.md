@@ -5,6 +5,13 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Ilova belgisi kodda chiziladi — AST-03
+Model logotipni har ekranda boshqacha to'qirdi (yoki emoji qo'yardi). Endi `<img data-od-logo alt="">` sloti: `applyLogo` ilova nomidan monogramma yasaydi ("LingoStreak" → LS, "Nova Bank" → NB, "Продукты24" → П) — `var(--accent)` fonli, `var(--accent-on)` matnli, `var(--font-display)` dagi yumaloq kvadrat. Tokenlardan chizilgani uchun jonli temaga ergashadi va har ekranda bir xil.
+- `resolveImages(html, signal, { name })` — ilova nomi ikkala controller'dan keladi (yangi bitta ekranli loyihada — ekranning o'z sarlavhasi). Logo va avatar slotlari hech qachon foto sifatida qidirilmaydi.
+- `APP CONTENT` blokiga bitta qator: logoni qayerda ishlatish va "o'zing chizma".
+- Fayllar: `lib/image-slots.ts`, `ImageService.ts`, `PlanController.ts`, `GenerateController.ts`, `lib/content-seed.ts`, `image.check.ts`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Testlar: monogramma (camelCase, ikki so'z, kirill, bo'sh nom), model o'lchami saqlanadi, o'lchamsizga 56px, atribut matn ichida emas — teg ichida qidiriladi, `aria-label` escape qilinadi, idempotent. Eval (`ast03`: meditation, vague-dating): "Shelf Life" ilovasining ikki ekranida bir xil "SL" belgisi; 12 ekran, xato 0, $0.08.
+
 ### Avatarlar: bir odam — bir yuz, hamma ekranda — AST-02
 Feed, chat, reyting ekranlarida odamlar bosh harfli doiralar edi — eng "jonsiz" joy.
 - Shartnoma: `<img data-od-avatar="Full Name" alt="Full Name">`, o'lchami CSS'da. `ImageService` portretni ikki hovuzdan oladi (`woman portrait face` / `man portrait face`, har biri **bir marta** so'raladi, 40 tagacha yuz, `image_cache` da `avatar:<jins>:<n>`), indeks — ismning xeshi, shuning uchun bir odam har ekranda va keyin qo'shilgan ekranda ham o'sha yuz bilan chiqadi. 128×128 kvadrat kesim, doira, `object-fit:cover`.

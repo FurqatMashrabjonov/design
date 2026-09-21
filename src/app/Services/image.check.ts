@@ -1,6 +1,6 @@
 // Run with the alias hook and a throwaway database (see package.json "check").
 import assert from 'node:assert'
-import { applyAvatars, applyImages, avatarNames, imageQueries, normalizeQuery, slotQuery } from '../../lib/image-slots.ts'
+import { applyAvatars, applyImages, applyLogo, monogram, avatarNames, imageQueries, normalizeQuery, slotQuery } from '../../lib/image-slots.ts'
 
 // --- slots (pure) ---
 assert.equal(normalizeQuery('  Grilled Salmon Bowl, top-view!! <script> '), 'grilled salmon bowl top-view script')
@@ -37,6 +37,20 @@ assert.ok(/<img data-od-avatar="Zainab Novak"[^>]*style="width:40px;height:40px;
 assert.ok(/<span role="img" aria-label="Maya Chen" data-od-avatar-resolved class="av" style="[^"]*var\(--surface\)[^"]*">MC<\/span>/.test(faces), 'no portrait: initials in a token-coloured circle')
 assert.equal(applyAvatars(faces, new Map()), faces, 'idempotent')
 assert.deepEqual(avatarNames(faces), [])
+
+// --- app mark (pure) ---
+assert.equal(monogram('LingoStreak'), 'LS')
+assert.equal(monogram('Nova Bank'), 'NB')
+assert.equal(monogram('feastly'), 'F')
+assert.equal(monogram('Продукты24'), 'П')
+assert.equal(monogram('  '), 'A')
+const mark = applyLogo('<header><img data-od-logo alt="" style="width:72px;height:72px"><img data-od-logo class="sm"><img src="/x.png" alt="data-od-logo is only text here"></header>', 'Pantry & "Plate"')
+assert.equal(mark.match(/data-od-logo-resolved/g)?.length, 2)
+assert.ok(/aria-label="Pantry &amp; &quot;Plate&quot;"[^>]*style="width:72px;height:72px;border-radius:22%[^"]*background:var\(--accent\);color:var\(--accent-on\)[^"]*">PP<\/span>/.test(mark), 'drawn from tokens, so it follows the theme')
+assert.ok(/class="sm" style="width:56px;height:56px/.test(mark), 'an unsized mark gets a default size')
+assert.ok(mark.includes('<img src="/x.png" alt="data-od-logo is only text here">'), 'the attribute is matched, not the text')
+assert.equal(applyLogo(mark, 'Other'), mark, 'idempotent')
+assert.equal(slotQuery('<img data-od-logo alt="LingoStreak logo">'), null, 'a logo slot is never searched as a photo of its alt text')
 
 // --- service: cache, provider failures, URL validation ---
 const { resolveImages } = await import('./ImageService.ts')

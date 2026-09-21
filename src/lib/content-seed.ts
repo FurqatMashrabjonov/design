@@ -102,5 +102,6 @@ Other people who appear (friends, senders, reviewers, leaderboards) — use thes
 Today is ${seed.today}; every date and timestamp on the screen is consistent with it.
 Money: ${seed.money}.
 Avatars: <img data-od-avatar="Full Name" alt="Full Name">, sized in CSS — a portrait is inserted for the people named here; anyone else gets initials.
+App logo: <img data-od-logo alt="">, sized in CSS — the app's own mark is inserted. Use it where an app shows its logo (onboarding, sign-in, a splash header); never draw or invent a logo.
 Never use another name for the signed-in user, and never the stock names (Maya Chen, Sarah Chen, Alex Johnson, John Doe, Jane Doe).`
 }

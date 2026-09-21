@@ -86,7 +86,7 @@ export const PlanController = {
                   navClearance: NAV_CLEARANCE,
                 }),
               )
-              const withImages = await resolveImages(normalized, abort.signal)
+              const withImages = await resolveImages(normalized, abort.signal, { name: plan.appName })
               const findings = lintScreen(withImages, { leakTerms, colorEnergy })
               if (findings.length > 0) {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))

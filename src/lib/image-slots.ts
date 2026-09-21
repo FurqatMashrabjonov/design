@@ -35,7 +35,7 @@ export function normalizeQuery(raw: string): string {
 
 /** The search query a tag asks for, or null when the tag is not ours to fill (it already has a real src). */
 export function slotQuery(tag: string): string | null {
-  if (attr(tag, 'data-od-avatar')) return null // a person, not a photo subject: see applyAvatars
+  if (attr(tag, 'data-od-avatar') || /\sdata-od-logo(?=[\s=>/])/i.test(tag)) return null // a person or the app mark, not a photo subject
   const src = attrValue(tag, 'src') ?? ''
   const wanted = attrValue(tag, 'data-od-img')
   const fillable = src === '' || src === '#' || PLACEHOLDER_HOST.test(src)
@@ -118,5 +118,47 @@ export function applyAvatars(html: string, portraits: Map<string, string | null>
     out = setAttr(out, 'style', [style, ...round, 'object-fit:cover', 'display:block', 'background:var(--surface)'].filter(Boolean).join(';'))
     if (attrValue(out, 'alt') === undefined) out = setAttr(out, 'alt', name)
     return setAttr(setAttr(out, 'loading', 'lazy'), 'data-od-avatar-resolved', '')
+  })
+}
+
+// --- app mark: <img data-od-logo alt=""> ---
+
+/** "LingoStreak" -> "LS", "Nova Bank" -> "NB", "feastly" -> "F". */
+export function monogram(appName: string): string {
+  const words = appName
+    .replace(/([\p{Ll}\p{N}])(\p{Lu})/gu, '$1 $2')
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean)
+  return (words.length > 1 ? [...words[0]][0] + [...words[1]][0] : [...(words[0] ?? 'A')][0]).toUpperCase()
+}
+
+/** The app's mark is drawn in code from its name and the accent tokens, so it is the same on every screen and follows the theme. */
+export function applyLogo(html: string, appName: string): string {
+  return html.replace(IMG_TAG, (tag) => {
+    if (!/\sdata-od-logo(?=[\s=>/])/i.test(tag)) return tag
+    const style = (attrValue(tag, 'style') ?? '').trim().replace(/;$/, '')
+    const has = (prop: string) => new RegExp(`(^|;)\\s*${prop}\\s*:`, 'i').test(style)
+    const classes = attrValue(tag, 'class')
+    const label = appName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+    const box = [
+      style,
+      !has('width') && 'width:56px',
+      !has('height') && 'height:56px',
+      !has('border-radius') && 'border-radius:22%',
+      'display:inline-flex',
+      'align-items:center',
+      'justify-content:center',
+      'flex:none',
+      'background:var(--accent)',
+      'color:var(--accent-on)',
+      'font-family:var(--font-display)',
+      'font-weight:700',
+      'font-size:1.25em',
+      'letter-spacing:-0.02em',
+      'line-height:1',
+    ]
+      .filter(Boolean)
+      .join(';')
+    return `<span role="img" aria-label="${label}" data-od-logo-resolved${classes ? ` class="${classes}"` : ''} style="${box}">${monogram(appName)}</span>`
   })
 }

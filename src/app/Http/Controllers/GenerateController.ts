@@ -130,13 +130,13 @@ export const GenerateController = {
             const extracted = extractArtifact(text)
             const newElementSnippet = extracted.html || text
             finalHtml = patchElement(editScreen.html, editElementId, newElementSnippet)
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal))
             title = editScreen.name
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
           } else {
             const extracted = extractArtifact(text)
             title = extracted.title
             const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title)
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })), abort.signal))
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })), abort.signal, { name: projectRef.name ?? title }))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 

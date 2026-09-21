@@ -1,6 +1,6 @@
 import { ImageCache } from '@/app/Models/ImageCache'
 import { genderOf, type Gender } from '@/lib/content-seed'
-import { applyAvatars, applyImages, avatarNames, imageQueries, type ResolvedImage } from '@/lib/image-slots'
+import { applyAvatars, applyImages, applyLogo, avatarNames, imageQueries, type ResolvedImage } from '@/lib/image-slots'
 
 const SEARCH = 'https://api.pexels.com/v1/search'
 const PHOTO_HOST = 'https://images.pexels.com/'
@@ -80,9 +80,9 @@ async function resolveAvatars(html: string, signal?: AbortSignal): Promise<strin
   return applyAvatars(html, portraits)
 }
 
-/** Replaces every image slot in a generated screen with a stock photo, or with a plain block when none is found. */
-export async function resolveImages(input: string, signal?: AbortSignal): Promise<string> {
-  const html = await resolveAvatars(input, signal)
+/** Fills every slot of a generated screen: the app mark, people's avatars, and photos (a plain block when none is found). */
+export async function resolveImages(input: string, signal?: AbortSignal, app?: { name: string }): Promise<string> {
+  const html = await resolveAvatars(app ? applyLogo(input, app.name) : input, signal)
   const queries = imageQueries(html)
   if (queries.length === 0) return html
   const found = new Map<string, ResolvedImage | null>()
