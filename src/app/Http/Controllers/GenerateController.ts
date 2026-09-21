@@ -14,6 +14,8 @@ import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
 import { autofixScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
+import { Message } from '@/app/Models/Message'
+import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/lib/agent-messages'
 
 // POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, regenerateScreenId?, skill? } -> text/plain stream
 // regenerateScreenId redraws that screen from its stored spec — also how a failed screen is retried.
@@ -104,9 +106,21 @@ export const GenerateController = {
       }
     }
 
+    // The conversation: what was asked, then (below) what was done. A brand-new single-screen project
+    // has no row yet, so its first exchange is written once the project exists.
+    const startedAt = Date.now()
+    const kind: MessageKind = redraw ? 'regenerate' : editScreen && editElementId ? 'element' : editScreen ? 'edit' : 'add'
+    const ask = redraw ? `Regenerate “${redraw.name}”` : String(body.prompt).trim()
+    const target = redraw ?? editScreen
+    if (!isNew) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
+    const fail = (raw: string) =>
+      Message.add({ projectId: projectRef.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { screens: target ? [{ id: target.id, name: target.name }] : [], log: [raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
+
     // Cancelling the response stream (tab closed, navigation) aborts the upstream LLM call.
     const abort = new AbortController()
-    const deltas = streamCompletion(systemPrompt, userMessage, abort.signal)
+    const projectRef = project
+    const deltas = streamCompletion(systemPrompt, userMessage, abort.signal, (u) => Object.assign(usage, u))
     let first: IteratorResult<string>
     try {
       first = await deltas.next()
@@ -114,11 +128,11 @@ export const GenerateController = {
       // The provider refused before sending a byte (no balance, rate limit, outage).
       const message = e instanceof Error ? e.message : String(e)
       if (redraw) Screen.markFailed(redraw.id, message)
-      return new Response(message, { status: 502 })
+      if (!isNew) fail(message)
+      return new Response(friendlyError(message), { status: 502 })
     }
 
     const enc = new TextEncoder()
-    const projectRef = project
     const stream = new ReadableStream({
       cancel() {
         abort.abort()
@@ -170,17 +184,23 @@ export const GenerateController = {
             })
           }
 
+          let changed: { id: string; name: string; versionId?: string; created?: boolean }
           if (redraw) {
             // A screen that failed has no design worth keeping as a version.
-            if (redraw.html) ScreenVersion.captureFrom(redraw)
-            Screen.updateContent(redraw.id, { name: title === 'Untitled' ? redraw.name : title, prompt: redraw.prompt, html: finalHtml })
+            const versionId = redraw.html ? ScreenVersion.captureFrom(redraw) : undefined
+            const name = title === 'Untitled' ? redraw.name : title
+            Screen.updateContent(redraw.id, { name, prompt: redraw.prompt, html: finalHtml })
+            changed = { id: redraw.id, name, versionId }
           } else if (editScreen) {
-            ScreenVersion.captureFrom(editScreen)
+            const versionId = ScreenVersion.captureFrom(editScreen)
             Screen.updateContent(editScreen.id, { name: title, prompt, html: finalHtml })
+            changed = { id: editScreen.id, name: title, versionId }
           } else {
             const pos = nextFramePosition(Screen.positions(projectRef.id), projectRef.device)
+            const id = crypto.randomUUID()
+            changed = { id, name: title, created: true }
             Screen.create({
-              id: crypto.randomUUID(),
+              id,
               projectId: projectRef.id,
               name: title,
               prompt,
@@ -193,10 +213,29 @@ export const GenerateController = {
               spec: prompt,
             })
           }
+
+          if (isNew) Message.add({ projectId: projectRef.id, role: 'user', kind, text: ask })
+          const slot = addTo && (addTo.slot.screenType === 'root-tab' ? `as the ${addTo.nav.tabs.find((t) => t.id === addTo!.slot.activeTabId)?.label ?? ''} tab` : addTo.slot.parentScreen ? `under “${addTo.slot.parentScreen}”` : '')
+          const photos = (finalHtml.match(/data-od-(img|avatar)-resolved/g) ?? []).length
+          Message.add({
+            projectId: projectRef.id,
+            role: 'agent',
+            kind,
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: editElementId, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            meta: {
+              screens: [changed],
+              log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],
+              durationMs: Date.now() - startedAt,
+            },
+          })
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e)
           if (redraw && !abort.signal.aborted) Screen.markFailed(redraw.id, message)
-          send(`${ERROR_MARK}${message}-->`)
+          if (abort.signal.aborted) {
+            // Stop (or a closed tab): nothing was saved, and the conversation says so.
+            if (!isNew) Message.add({ projectId: projectRef.id, role: 'agent', kind, text: 'Stopped — nothing was changed.', meta: { stopped: true, durationMs: Date.now() - startedAt } })
+          } else if (!isNew || Project.find(projectRef.id)) fail(message)
+          send(`${ERROR_MARK}${friendlyError(message)}-->`)
         }
         try {
           controller.close()

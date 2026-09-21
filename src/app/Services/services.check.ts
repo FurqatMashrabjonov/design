@@ -308,6 +308,40 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   for (const junk of [null, '', '{', '"x"']) assert.equal(parseStoredPlan(junk), null)
 }
 
+// CHAT-02 / CHAT-06: what the agent says is written in code.
+{
+  const { planReply, changeReply, friendlyError, parseMeta, formatTokens } = await import('../../lib/agent-messages.ts')
+  const reply = planReply({ appName: 'GoBite', summary: 'Food delivery for busy evenings.', drawn: ['Feed', 'Menu', 'Cart'], failed: ['Tracking'], tabs: ['Home', 'Orders'], entities: [{ kind: 'Dish', count: 6 }, { kind: 'Restaurant', count: 1 }] })
+  assert.equal(reply, 'GoBite — Food delivery for busy evenings.\nDesigned 3 screens: Feed, Menu and Cart.\nTabs: Home · Orders.\nEvery screen shares one set of data: 6 dishes and 1 restaurant.\nTracking could not be drawn — use “Try again” on that frame.')
+  assert.match(planReply({ appName: 'A', summary: '', drawn: [], failed: [], tabs: [], entities: [{ kind: 'Category', count: 2 }, { kind: 'Box', count: 3 }] }), /2 categories and 3 boxes/)
+  assert.equal(changeReply({ kind: 'element', screen: 'Home', element: 'header', version: 3 }), 'Updated “header” on “Home” — now v3.')
+  assert.equal(changeReply({ kind: 'edit', screen: 'Home', version: 2 }), 'Updated “Home” — now v2.')
+  assert.equal(changeReply({ kind: 'add', screen: 'Stats', slot: 'as the Stats tab' }), 'Added “Stats” as the Stats tab.')
+  assert.match(friendlyError('DeepSeek 402: {"error":{"message":"Insufficient Balance"}}'), /out of credit/)
+  assert.match(friendlyError('DeepSeek 429: Too many requests'), /rate-limiting/)
+  assert.match(friendlyError('Model returned incomplete HTML'), /stopped before the screen was complete/)
+  assert.match(friendlyError('fetch failed'), /connection/)
+  assert.match(friendlyError('kaboom'), /Something went wrong/)
+  assert.deepEqual(parseMeta('{'), {})
+  assert.equal(formatTokens({ promptTokens: 25140, cachedTokens: 22016, completionTokens: 7310 }), 'Tokens: 25,140 in (22,016 cached), 7,310 out')
+}
+
+// CHAT-08: next-step suggestions are facts about the project, not guesses.
+{
+  const { suggestions } = await import('../../lib/suggestions.ts')
+  const scr = (name: string, screenType: string, activeTabId: string | null, html: string) => ({ id: name, name, x: 0, screenType, activeTabId, parentScreenName: null, html })
+  const tabs = [{ id: 'home', label: 'Home' }, { id: 'orders', label: 'Orders' }]
+  const app = [
+    scr('GoBite — Feed', 'root-tab', 'home', '<a data-od-link="Dish Detail">a</a><a data-od-link="Order Tracking">b</a><a data-od-link="Order Tracking">c</a><a data-od-link="Cart &amp; Checkout">d</a>'),
+    scr('Dish Detail — GoBite', 'detail-view', null, '<a data-od-link="Cart & Checkout">x</a>'),
+    scr('Broken', 'detail-view', null, ''),
+  ]
+  assert.deepEqual(suggestions(app, tabs), ['Design the Orders tab', 'Design the “Order Tracking” screen', 'Design the “Cart & Checkout” screen'], 'an empty tab first, then undesigned link targets, most linked first')
+  assert.deepEqual(suggestions(app.slice(0, 2), [{ id: 'home', label: 'Home' }], 5).slice(-2), ['Show the empty state of “GoBite — Feed”', 'Add an onboarding screen'])
+  assert.deepEqual(suggestions([], tabs), [], 'nothing to suggest before anything is drawn')
+  assert.deepEqual(suggestions([scr('x', 'root-tab', 'home', '')], tabs), [], 'a project of failed screens suggests nothing')
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

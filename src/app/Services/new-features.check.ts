@@ -389,7 +389,7 @@ console.log('Testing LLM Stream Abort...')
 for (const f of ['GenerateController', 'PlanController']) {
   const src = (await import('node:fs')).readFileSync(`src/app/Http/Controllers/${f}.ts`, 'utf8')
   assert.ok(/cancel\(\)\s*\{\s*abort\.abort\(\)/.test(src), `${f} must abort the LLM call when the client cancels`)
-  assert.ok(/streamCompletion\(.*abort\.signal\)/.test(src), `${f} must pass abort.signal to streamCompletion`)
+  assert.ok(/streamCompletion\(.*abort\.signal[,)]/.test(src), `${f} must pass abort.signal to streamCompletion`)
 }
 
 console.log('Testing Secrets Stay Server-Side...')

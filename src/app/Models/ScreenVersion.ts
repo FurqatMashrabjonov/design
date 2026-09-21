@@ -20,9 +20,14 @@ export const ScreenVersion = {
 
   // Snapshots a screen's current row before the caller overwrites it — shared by the edit path
   // and restoreVersion, so "restore" is itself just another recorded edit and nothing is lost.
-  captureFrom(screen: Pick<ScreenRow, 'id' | 'name' | 'prompt' | 'html'>) {
-    db.insert(screenVersions)
-      .values({ id: crypto.randomUUID(), screenId: screen.id, name: screen.name, prompt: screen.prompt, html: screen.html })
-      .run()
+  // Returns the snapshot's id, so the message that caused the change can point back at it.
+  captureFrom(screen: Pick<ScreenRow, 'id' | 'name' | 'prompt' | 'html'>): string {
+    const id = crypto.randomUUID()
+    db.insert(screenVersions).values({ id, screenId: screen.id, name: screen.name, prompt: screen.prompt, html: screen.html }).run()
+    return id
+  },
+
+  count(screenId: string): number {
+    return db.select().from(screenVersions).where(eq(screenVersions.screenId, screenId)).all().length
   },
 }

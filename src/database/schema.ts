@@ -55,3 +55,16 @@ export const imageCache = sqliteTable('image_cache', {
   avgColor: text('avg_color'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
+
+// The project's conversation (see migration 0012 and lib/agent-messages.ts).
+export const messages = sqliteTable('messages', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => projects.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(),
+  kind: text('kind').notNull(),
+  text: text('text').notNull(),
+  meta: text('meta'),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+})

@@ -25,6 +25,8 @@ export function Canvas(props: {
   onBackgroundClick?: () => void
   /** Change this to bring every frame back into view (a generation finished, a screen was added). */
   fitKey?: string | number
+  /** Bring one frame to the centre of the view (a screen chip or the screens list was clicked). */
+  focus?: { id: string; key: number }
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
@@ -85,6 +87,19 @@ export function Canvas(props: {
     if (hasFrames && !userMoved.current) fit(1)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extent])
+
+  useEffect(() => {
+    const el = viewportRef.current
+    const f = props.focus && props.frames.find((x) => x.id === props.focus!.id)
+    if (!el || !f) return
+    const rect = el.getBoundingClientRect()
+    const p = pos(f)
+    // Whole frame in view, never magnified, and never zoomed out so far that it cannot be read.
+    const scale = Math.min(1, Math.max(0.35, Math.min((rect.width * 0.9) / f.width, (rect.height * 0.86) / f.height)))
+    userMoved.current = true
+    setView({ scale, x: rect.width / 2 - (p.x + f.width / 2) * scale, y: Math.max(24, rect.height / 2 - (p.y + f.height / 2) * scale) })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.focus?.key])
 
   function reset() {
     setView({ scale: 1, x: 80, y: 80 })

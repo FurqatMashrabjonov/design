@@ -34,6 +34,10 @@ export const restoreVersion = createServerFn({ method: 'POST' })
   .validator((d: { screenId: string; versionId: string }) => d)
   .handler(({ data }) => HistoryController.restore(data))
 
+export const revertMessage = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; messageId: string }) => d)
+  .handler(({ data }) => HistoryController.revertMessage(data))
+
 export const deleteProject = createServerFn({ method: 'POST' })
   .validator((id: string) => id)
   .handler(({ data }) => ProjectController.destroy(data))

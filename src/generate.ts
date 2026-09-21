@@ -13,11 +13,13 @@ export async function generate(
     skill?: string
   },
   onText: (text: string) => void,
+  signal?: AbortSignal,
 ) {
   const res = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal,
   })
   if (!res.ok || !res.body) throw new Error(await res.text())
 

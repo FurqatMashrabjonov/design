@@ -5,9 +5,11 @@ let usageListener: ((u: LlmUsage) => void) | undefined
 export function onLlmUsage(fn: typeof usageListener) {
   usageListener = fn
 }
-function reportUsage(u: Record<string, number> | undefined) {
-  if (!u || !usageListener) return
-  usageListener({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0 })
+function reportUsage(u: Record<string, number> | undefined, also?: (u: LlmUsage) => void) {
+  if (!u) return
+  const usage = { promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0 }
+  also?.(usage) // the caller's own tally (one request's agent log)
+  usageListener?.(usage)
 }
 
 // The one model this app generates with: DeepSeek V4 Flash, thinking off. Asked for by name,
@@ -26,7 +28,7 @@ const PLAN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_PLAN ?? 1.0)
 
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 // `signal` lets the caller stop the request (and the token spend) when the client goes away.
-export async function* streamCompletion(system: string, user: string, signal?: AbortSignal) {
+export async function* streamCompletion(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -60,7 +62,7 @@ export async function* streamCompletion(system: string, user: string, signal?: A
       const payload = line.slice(5).trim()
       if (payload === '[DONE]') return
       const data = JSON.parse(payload)
-      reportUsage(data.usage)
+      reportUsage(data.usage, onUsage)
       const choice = data.choices?.[0]
       if (choice?.delta?.content) yield choice.delta.content as string
       if (choice?.finish_reason === 'length') throw new Error('Output hit max_tokens, HTML is incomplete. Try a simpler screen.')
@@ -69,7 +71,7 @@ export async function* streamCompletion(system: string, user: string, signal?: A
 }
 
 // Non-streaming, JSON-only completion (planner). DeepSeek's response_format:json_object guarantees valid JSON syntax.
-export async function completeJSON(system: string, user: string, maxTokens = 1024) {
+export async function completeJSON(system: string, user: string, maxTokens = 1024, onUsage?: (u: LlmUsage) => void) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -90,6 +92,6 @@ export async function completeJSON(system: string, user: string, maxTokens = 102
   })
   if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${await res.text()}`)
   const json = await res.json()
-  reportUsage(json.usage)
+  reportUsage(json.usage, onUsage)
   return json.choices[0].message.content as string
 }

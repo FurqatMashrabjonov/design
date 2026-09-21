@@ -1,6 +1,7 @@
 import { notFound } from '@tanstack/react-router'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
+import { Message } from '@/app/Models/Message'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { SkillService } from '@/app/Services/SkillService'
 import { sanitizeTheme } from '@/lib/theme-override'
@@ -22,6 +23,7 @@ export const ProjectController = {
     return {
       project,
       screens: Screen.forProject(id),
+      messages: Message.forProject(id),
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),
     }

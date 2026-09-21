@@ -1,4 +1,4 @@
-import { completeJSON } from './LlmService.ts'
+import { completeJSON, type LlmUsage } from './LlmService.ts'
 import { ICON_NAMES, isActionIcon, resolveIcon } from './ShellService.ts'
 
 // What a screen is *for*. The vocabulary is closed so code can reason about a plan: pick a blueprint,
@@ -97,6 +97,8 @@ export type Plan = {
   requested: string[]
   /** Requested screens no planned screen claims to deliver — the input to one repair round. */
   uncovered: string[]
+  /** True when the repair round ran and its plan was kept (agent log). */
+  repaired?: boolean
   navigation: AppNavigation
   entities: Entity[]
   screens: PlannedScreen[]
@@ -285,9 +287,9 @@ export function assignScreenSlots(screens: PlannedScreen[], navigation: AppNavig
   return out
 }
 
-export async function planScreens(brief: string, device: string): Promise<Plan> {
+export async function planScreens(brief: string, device: string, onUsage?: (u: LlmUsage) => void): Promise<Plan> {
   const user = `Brief: ${brief}\nPlatform: ${device}`
-  const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS)
+  const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS, onUsage)
   const plan = parsePlan(raw)
   if (plan.uncovered.length === 0) return plan
 
@@ -301,8 +303,8 @@ ${raw}
 It leaves these requested screens without a screen of their own: ${plan.uncovered.map((r) => `"${r}"`).join(', ')}.
 Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace screens nobody asked for (profile, settings, search, notifications) before anything else. Keep "requested" unchanged and set "covers" truthfully.`
   try {
-    const fixed = parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS))
-    return fixed.uncovered.length < plan.uncovered.length ? fixed : plan
+    const fixed = parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS, onUsage))
+    return fixed.uncovered.length < plan.uncovered.length ? { ...fixed, repaired: true } : plan
   } catch {
     return plan
   }
@@ -312,10 +314,10 @@ Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace scre
 const PLAN_MAX_TOKENS = 4000
 
 // One retry on malformed JSON or an empty screen list — DeepSeek's json_object mode guarantees syntax but not shape.
-export async function planScreensWithRetry(brief: string, device: string): Promise<Plan> {
+export async function planScreensWithRetry(brief: string, device: string, onUsage?: (u: LlmUsage) => void): Promise<Plan> {
   try {
-    return await planScreens(brief, device)
+    return await planScreens(brief, device, onUsage)
   } catch {
-    return await planScreens(brief, device)
+    return await planScreens(brief, device, onUsage)
   }
 }

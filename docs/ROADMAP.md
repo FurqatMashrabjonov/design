@@ -87,15 +87,15 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-16 | Kadr joylashuvi va "fit" har xil balandlikni hisobga oladi | MVP | Tayyor | Kichik |
 | EDT-22 | Reload → Regenerate (saqlangan spec'dan, o'z slotida) | MVP | Tayyor | Kichik |
 | GEN-08 | Xato bo'lgan ekranni o'z joyidan qayta urinish | MVP | Tayyor | Kichik |
-| CHAT-01 | messages jadvali: suhbat saqlanadi | MVP | Rejada | O'rta |
-| CHAT-02 | Agent javobi kodda yoziladi (LLM'siz) | MVP | Rejada | Kichik |
-| CHAT-03 | Ekran chipi / ro'yxatdan tanlash — kanvas o'sha kadrga boradi | MVP | Rejada | Kichik |
-| CHAT-04 | Xabarda "shundan oldingi holatga qayt" | MVP | Rejada | O'rta |
-| CHAT-05 | Jarayon va Stop tugmasi; kirish maydoni ochiq qoladi | MVP | Rejada | Kichik |
-| GEN-09 | Tushunarli generatsiya xatolari | MVP | Rejada | Kichik |
-| CHAT-06 | Xato — suhbatda, sababi va "Qayta urinish" bilan | MVP | Rejada | Kichik |
-| CHAT-07 | Agent jurnali (ochiladigan) | MVP | Rejada | O'rta |
-| CHAT-08 | Keyingi qadam takliflari, kodda | MVP | Rejada | Kichik |
+| CHAT-01 | messages jadvali: suhbat saqlanadi | MVP | Tayyor | O'rta |
+| CHAT-02 | Agent javobi kodda yoziladi (LLM'siz) | MVP | Tayyor | Kichik |
+| CHAT-03 | Ekran chipi / ro'yxatdan tanlash — kanvas o'sha kadrga boradi | MVP | Tayyor | Kichik |
+| CHAT-04 | Xabarda "shundan oldingi holatga qayt" | MVP | Tayyor | O'rta |
+| CHAT-05 | Jarayon va Stop tugmasi; kirish maydoni ochiq qoladi | MVP | Tayyor | Kichik |
+| GEN-09 | Tushunarli generatsiya xatolari | MVP | Tayyor | Kichik |
+| CHAT-06 | Xato — suhbatda, sababi va "Qayta urinish" bilan | MVP | Tayyor | Kichik |
+| CHAT-07 | Agent jurnali (ochiladigan) | MVP | Tayyor | O'rta |
+| CHAT-08 | Keyingi qadam takliflari, kodda | MVP | Tayyor | Kichik |
 | EDT-23 | Har mazmunli element tanlanadi | MVP | Rejada | O'rta |
 | EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Rejada | O'rta |
 | EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | MVP | Rejada | O'rta |
@@ -108,7 +108,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Rejada | Kichik |
 | EDT-27 | Kadr faqat sarlavhadagi tutqichdan sudraladi | MVP | Rejada | Kichik |
 | EDT-28 | Klaviatura yorliqlari | MVP | Rejada | Kichik |
-| EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Rejada | Kichik |
+| EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Tayyor | Kichik |
 | EDT-30 | Bir nechta ekranni tanlash | MVP | Rejada | O'rta |
 | EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Rejada | O'rta |
 | EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Rejada | Kichik |

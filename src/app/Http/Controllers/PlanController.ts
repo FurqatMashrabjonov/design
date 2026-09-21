@@ -14,6 +14,8 @@ import { annotateHtml } from '@/lib/element-annotator'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
+import { Message } from '@/app/Models/Message'
+import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
 // Only used to seed a brand-new, empty project — positions are assigned by plan order (0, 1, 2, ...).
@@ -37,8 +39,25 @@ export const PlanController = {
             controller.enqueue(enc.encode(JSON.stringify(obj) + '\n'))
           } catch {}
         }
+        // The conversation is written as the work happens: the ask first, then what was done about it.
+        const startedAt = Date.now()
+        Message.add({ projectId: project.id, role: 'user', kind: 'plan', text: brief })
+        const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
+        const tally = (u: typeof usage) => {
+          usage.promptTokens += u.promptTokens
+          usage.cachedTokens += u.cachedTokens
+          usage.completionTokens += u.completionTokens
+        }
+        const log: string[] = []
+        const drawnScreens: MessageScreen[] = []
+        const planIndex = new Map<string, number>() // screens finish out of order; the reply lists them in plan order
+        const failedNames: string[] = []
         try {
-          const plan = await planScreensWithRetry(brief, project.device)
+          const plan = await planScreensWithRetry(brief, project.device, tally)
+          log.push(
+            `Planned ${plan.screens.length} screens (${plan.screens.map((s) => s.archetype).join(', ')}), ${plan.navigation.tabs.length} tabs, ${plan.entities.reduce((n, e) => n + e.items.length, 0)} data items — ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
+          )
+          if (plan.requested.length) log.push(`The brief asked for ${plan.requested.length} screens; ${plan.uncovered.length === 0 ? 'all are covered' : `not covered: ${plan.uncovered.join('; ')}`}${plan.repaired ? ' (after one repair round)' : ''}`)
           Project.rename(project.id, plan.appName)
           Project.saveNavigation(project.id, plan.navigation)
           Project.savePlan(project.id, { summary: plan.summary, appType: plan.appType, entities: plan.entities })
@@ -73,7 +92,8 @@ export const PlanController = {
             send({ type: 'screen_start', index: i, name: s.name })
             try {
               let text = ''
-              for await (const d of streamCompletion(system, buildUser(s, digest), abort.signal)) {
+              const t0 = Date.now()
+              for await (const d of streamCompletion(system, buildUser(s, digest), abort.signal, tally)) {
                 text += d
                 send({ type: 'screen_delta', index: i, text })
               }
@@ -107,6 +127,12 @@ export const PlanController = {
                 parentScreenName: s.parentScreen ?? null,
                 spec: screenSpec(s),
               })
+              drawnScreens.push({ id: screen.id, name: screen.name, created: true })
+              planIndex.set(screen.id, i)
+              const photos = (withImages.match(/data-od-(img|avatar)-resolved/g) ?? []).length
+              log.push(
+                `${screen.name} — ${((Date.now() - t0) / 1000).toFixed(1)}s, ${Math.round(withImages.length / 1024)} KB, ${findings.length === 0 ? 'lint clean' : `lint: ${findings.map((f) => f.rule).join(', ')}`}${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`,
+              )
               send({ type: 'screen_done', index: i, screenId: screen.id, name: screen.name })
               return normalized
             } catch (e) {
@@ -129,6 +155,10 @@ export const PlanController = {
                   error: message,
                 })
               }
+              if (!abort.signal.aborted) {
+                failedNames.push(s.name)
+                log.push(`${s.name} — failed: ${message.slice(0, 200)}`)
+              }
               send({ type: 'screen_error', index: i, message })
               return null
             }
@@ -143,9 +173,29 @@ export const PlanController = {
           const rest = plan.screens.map((s, i) => ({ s, i })).filter(({ i }) => i !== anchorIndex)
           await mapLimit(rest, 3, ({ s, i }) => renderScreen(s, i, digest))
 
+          const stopped = abort.signal.aborted
+          drawnScreens.sort((a, z) => (planIndex.get(a.id) ?? 0) - (planIndex.get(z.id) ?? 0))
+          if (usage.promptTokens) log.push(formatTokens(usage))
+          Message.add({
+            projectId: project.id,
+            role: 'agent',
+            kind: 'plan',
+            text: planReply({
+              appName: plan.appName,
+              summary: plan.summary,
+              drawn: drawnScreens.map((d) => d.name),
+              failed: failedNames,
+              tabs: plan.navigation.tabs.map((t) => t.label),
+              entities: plan.entities.map((e) => ({ kind: e.kind, count: e.items.length })),
+              stopped,
+            }),
+            meta: { screens: drawnScreens, log, durationMs: Date.now() - startedAt, stopped },
+          })
           send({ type: 'done' })
         } catch (e) {
-          send({ type: 'error', message: e instanceof Error ? e.message : String(e) })
+          const raw = e instanceof Error ? e.message : String(e)
+          Message.add({ projectId: project.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { log: [...log, raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
+          send({ type: 'error', message: friendlyError(raw) })
         }
         try {
           controller.close()

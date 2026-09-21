@@ -10,11 +10,12 @@ export type PlanEvent =
   | { type: 'error'; message: string }
 
 // Streams /api/generate-plan (newline-delimited JSON) and calls onEvent for each line.
-export async function generatePlan(projectId: string, brief: string, onEvent: (e: PlanEvent) => void) {
+export async function generatePlan(projectId: string, brief: string, onEvent: (e: PlanEvent) => void, signal?: AbortSignal) {
   const res = await fetch('/api/generate-plan', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ projectId, brief }),
+    signal,
   })
   if (!res.ok || !res.body) throw new Error(await res.text())
 
