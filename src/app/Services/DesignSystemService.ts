@@ -80,6 +80,12 @@ export const DesignSystemService = {
     return existsSync(path) ? readFileSync(path, 'utf8') : this.readDesignMd(id)
   },
 
+  /** How much of a screen this system paints in accent — the "Colour energy:" line of its style card. */
+  readColorEnergy(id: string): 'low' | 'medium' | 'high' | undefined {
+    const m = this.readStyleCard(id).match(/^Colou?r energy:\s*(low|medium|high)\b/im)
+    return m ? (m[1].toLowerCase() as 'low' | 'medium' | 'high') : undefined
+  },
+
   /** Company and product names this system must never put into an app (see lib/design-lint brand-leak rule). */
   readLeakTerms(id: string): { brand: string[]; anywhere: string[] } {
     const all = tryReadJson(join(DS_DIR, 'leak-terms.json')) as Record<string, { brand?: string[]; anywhere?: string[] }> | null

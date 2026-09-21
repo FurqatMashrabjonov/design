@@ -60,7 +60,14 @@ function uniq(values: string[], cap = 4): string[] {
  * Stripe" or "Sign in with GitHub" is ordinary copy. `anywhere` holds terms with no innocent use.
  */
 export type LeakTerms = { brand: string[]; anywhere: string[] }
-export type LintOptions = { leakTerms?: LeakTerms }
+export type ColorEnergy = 'low' | 'medium' | 'high'
+export type LintOptions = { leakTerms?: LeakTerms; colorEnergy?: ColorEnergy }
+
+// References to the accent outside :root and outside the injected shell. A proxy, not a pixel count:
+// on 228 eval screens the median was 6 (low), 7 (medium), 11 (high) with wide overlap, so only the
+// far ends are reported. ponytail: reference count; replace with painted area once the render audit (EYE-01) exists.
+const ACCENT_REF = /var\(--accent(?:-hover|-active)?\)/g
+export const ACCENT_BOUNDS = { lowMax: 20, highMin: 4 }
 
 const textOf = (html: string) => html.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')
 const termRe = (terms: string[]) => new RegExp(`(?<![\\w-])(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![\\w-])`, 'gi')
@@ -88,6 +95,22 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
       message: 'The screen names the company its design system was modelled on. A design system lends its look, not its product.',
       samples: uniq(leaks),
     })
+  }
+
+  if (opts.colorEnergy) {
+    const refs = (scannable.replace(/<nav\b[^>]*data-od-shell[\s\S]*?<\/nav>/i, '').match(ACCENT_REF) ?? []).length
+    const grey = opts.colorEnergy === 'high' && refs < ACCENT_BOUNDS.highMin
+    const loud = opts.colorEnergy === 'low' && refs > ACCENT_BOUNDS.lowMax
+    if (grey || loud) {
+      findings.push({
+        rule: 'accent-energy-mismatch',
+        severity: 'warn',
+        message: grey
+          ? 'A high-energy design system drawn almost without its accent. Fill the primary action, progress and highlights with var(--accent).'
+          : 'A low-energy design system with accent spread across the screen. Keep accent for the primary action, the active state and one highlight.',
+        samples: [`${refs} accent references`],
+      })
+    }
   }
 
   const indigo = scannable.match(AI_INDIGO)

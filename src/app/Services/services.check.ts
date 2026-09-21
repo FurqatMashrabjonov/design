@@ -241,6 +241,23 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(readFileSync('craft/mobile.md', 'utf8').split('\n').length <= 150, 'craft/mobile.md is at most 150 lines')
 }
 
+// GEN-24: accent is budgeted per design system, not "at most twice" for all of them.
+{
+  const { lintScreen, ACCENT_BOUNDS } = await import('../../lib/design-lint.ts')
+  const { readdirSync, existsSync, readFileSync } = await import('node:fs')
+  assert.equal(DesignSystemService.readColorEnergy('duolingo'), 'high')
+  assert.equal(DesignSystemService.readColorEnergy('minimal'), 'low')
+  for (const id of readdirSync('design-systems').filter((d) => existsSync(`design-systems/${d}/DESIGN.md`))) assert.ok(DesignSystemService.readColorEnergy(id), `${id}: style card states its colour energy`)
+  const screen = (n: number) => `<html><head><style>:root{--accent:#58cc02}</style></head><body>${'<b style="color:var(--accent)">x</b>'.repeat(n)}<nav data-od-shell="bottom-nav"><a style="color:var(--accent)">t</a></nav></body></html>`
+  const mismatch = (n: number, colorEnergy: 'low' | 'medium' | 'high') => lintScreen(screen(n), { colorEnergy }).find((f) => f.rule === 'accent-energy-mismatch')
+  assert.equal(mismatch(1, 'high')?.severity, 'warn', 'a grey screen in a high-energy system')
+  assert.ok(!mismatch(ACCENT_BOUNDS.highMin, 'high') && !mismatch(30, 'high'))
+  assert.ok(mismatch(ACCENT_BOUNDS.lowMax + 1, 'low') && !mismatch(ACCENT_BOUNDS.lowMax, 'low') && !mismatch(0, 'low'))
+  assert.ok(!mismatch(0, 'medium') && !mismatch(99, 'medium'), 'medium is never flagged')
+  assert.ok(!lintScreen(screen(0)).some((f) => f.rule === 'accent-energy-mismatch'), 'no energy given, no rule')
+  for (const f of ['craft/mobile.md', 'skills/mobile-screen/SKILL.md']) assert.ok(!/at most (2|twice)|most twice/i.test(readFileSync(f, 'utf8')), `${f}: the flat accent cap is gone`)
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

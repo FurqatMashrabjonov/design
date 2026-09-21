@@ -5,6 +5,14 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Accent byudjeti dizayn tizimiga qarab — GEN-24
+"`var(--accent)` ko'pi bilan ikki marta" hamma tizimga bir xil taqiq edi: til o'rganish ilovasida hamma progress qora chiqqan, holbuki duolingo uslubida ekranning uchdan biri yashil bo'lishi kerak.
+- Qiymat manbai bitta: har `STYLE.md` ning "Colour energy: low | medium | high" qatori (`DesignSystemService.readColorEnergy`). `manifest.json` ga ikkinchi nusxa yozilmadi — uchta tizimda manifest yo'q, va ikki manba bir-biridan uzoqlashadi.
+- Prompt tomoni GEN-23 da: `craft/mobile.md` "accent'ni kartaning Colour energy qatoriga qarab sarfla" deydi, tekis chegara olib tashlangan (test ushlab turadi).
+- Lint `accent-energy-mismatch` (`warn`): yuqori energiyali tizimda accent deyarli yo'q (<4 murojaat) yoki past energiyalida hamma joyda (>20). Chegaralar o'lchovdan: 228 eval ekranida mediana 6 / 7 / 11 (low / medium / high), lekin taqsimotlar kuchli ustma-ust — shuning uchun faqat chekkalar. Bu murojaatlar soni, bo'yalgan yuza emas; render auditi (EYE-01) kelganda almashtiriladi.
+- Fayllar: `src/lib/design-lint.ts`, `DesignSystemService.ts`, `PlanController.ts`, `eval/metrics.ts`, `services.check.ts`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Testlar: har 33 karta energiyasini aytadi; duolingo `high`, minimal `low`; chegaralarning ikki tomoni; `medium` hech qachon yonmaydi; shell'dagi accent sanalmaydi; skill va craft'da tekis chegara yo'q. Mavjud yugurishlarda: baseline'da 2 ta topilma, `gen23` da 0.
+
 ### Mobil system prompt 78k → 18k belgi — GEN-23
 GEN-17 dan keyin ham mobil prompt ~78 000 belgi edi: to'qqizta craft fayl (~1200 qator) — WCAG'ning yurisdiksiyalar bo'yicha huquqiy tahlili, React forma kutubxonalari, Android predictive-back API'si, landing sahifa bo'limlari. Statik telefon ekrani chizayotgan tez model uchun bu shovqin: qoidalar bir-birini bosib ketadi va model hammasining o'rtachasini chiqaradi.
 - `craft/mobile.md` (yangi, 83 qator): o'n bo'lim — bitta ekran bitta ish, ierarxiya va tip, rang, layout va teginish, komponentlar, kontent, ikonkalar, harakat, accessibility, ilova ichida. Apple HIG uslubida yozilgan: har qoida — **qaror + sababi**, o'lchanadigan raqamlar bilan (body ≥15px, hech narsa <11px, nishon ≥44px, 16px chekka, 4px shkala, kontrast 4.5:1). Linter majburlaydigan hamma narsa (indigo, emoji ikonka, qo'lda SVG, token'siz rang, filler matn, to'qima metrika) saqlangan.

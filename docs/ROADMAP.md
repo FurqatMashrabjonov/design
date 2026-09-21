@@ -48,7 +48,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GEN-21 | Planner ikonkani faqat ma'lum ro'yxatdan tanlaydi; sinonim xaritasi; ~80 ikonka | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Hech bir tab 'circle' ga tushmaydi. isAction tab standart o'chiq |
 | GEN-22 | Kontent urug'i kodda: persona, avatar, sana, valyuta | Generatsiya / Kontent | MVP | Tayyor | Kichik |  | Ikki loyihada har xil persona; bitta loyihaning hamma ekranida bir xil |
 | GEN-23 | Prompt dietasi: mobil system prompt ≤6k token | Generatsiya / Sifat | MVP | Tayyor | O'rta | GEN-17 | composeSystemPrompt(*, 'mobile') < 24 000 belgi |
-| GEN-24 | 'Accent ≤2' o'rniga tizim bo'yicha colorEnergy | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik |  | manifest.json'da qiymat; lint shunga qarab tekshiradi |
+| GEN-24 | 'Accent ≤2' o'rniga tizim bo'yicha colorEnergy | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik |  | manifest.json'da qiymat; lint shunga qarab tekshiradi |
 | GEN-25 | temperature aniq beriladi (ekran va planner alohida) | Generatsiya / Asosiy | MVP | Rejada | Kichik | EVAL-02 | Qiymatlar eval'da tanlangan va LlmService'da yozilgan |
 | GEN-26 | Rasm qoidasi ziddiyatini olib tashlash (.ph-img, placehold.co) | Generatsiya / Sifat | MVP | Rejada | Kichik |  | Repoda .ph-img va placehold.co yo'q |
 | AST-01 | Rasm resolver: data-od-img → Pexels, SQLite kesh, gradient zaxira | Generatsiya / Kontent | MVP | Rejada | O'rta | GEN-26 | Haqiqiy rasm; keshdan; xatoda gradient; kalit faqat serverda |

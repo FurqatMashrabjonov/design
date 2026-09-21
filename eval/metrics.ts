@@ -52,7 +52,7 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
   let lintClean = 0
   let brandLeakScreens = 0
   for (const s of screens) {
-    const findings = lintScreen(s.html, { leakTerms: DesignSystemService.readLeakTerms(s.designSystem) })
+    const findings = lintScreen(s.html, { leakTerms: DesignSystemService.readLeakTerms(s.designSystem), colorEnergy: DesignSystemService.readColorEnergy(s.designSystem) })
     if (findings.some((f) => f.rule === 'design-system-brand-leak')) brandLeakScreens++
     if (findings.length === 0) lintClean++
     for (const f of findings) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1
