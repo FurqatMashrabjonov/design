@@ -56,8 +56,9 @@ function uniq(values: string[], cap = 4): string[] {
 
 /**
  * Names that belong to the company a design system was modelled on (design-systems/leak-terms.json).
- * `brand` is only a leak where an app names itself — the title and headings — because "Pay with
- * Stripe" or "Sign in with GitHub" is ordinary copy. `anywhere` holds terms with no innocent use.
+ * `brand` is only a leak where an app names itself — its <title> — because "Pay with Stripe",
+ * "Sign in with GitHub" or a sneaker shop's "Nike Air Max 90" heading is ordinary content.
+ * `anywhere` holds terms with no innocent use.
  */
 export type LeakTerms = { brand: string[]; anywhere: string[] }
 export type ColorEnergy = 'low' | 'medium' | 'high'
@@ -76,7 +77,7 @@ function brandLeaks(html: string, terms: LeakTerms): string[] {
   const hits: string[] = []
   if (terms.anywhere.length) hits.push(...(textOf(bodyOf(html)).match(termRe(terms.anywhere)) ?? []))
   if (terms.brand.length) {
-    const naming = [...html.matchAll(/<(title|h[1-3])\b[^>]*>([\s\S]*?)<\/\1>/gi)].map((m) => textOf(m[2])).join(' \n ')
+    const naming = textOf(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '')
     hits.push(...(naming.match(termRe(terms.brand)) ?? []))
   }
   return hits

@@ -100,6 +100,12 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       rootTabShare: share(screens.filter((s) => s.screenType === 'root-tab').length),
       briefsWithoutDetail: briefIds.filter((id) => screens.filter((s) => s.briefId === id).every((s) => s.screenType === 'root-tab')).length,
     },
+    images: {
+      filled: screens.reduce((n, s) => n + (s.html.match(/data-od-img-resolved/g)?.length ?? 0), 0),
+      fallbackBlocks: screens.reduce((n, s) => n + (s.html.match(/data-od-img-fallback/g)?.length ?? 0), 0),
+      placeholderUrls: screens.reduce((n, s) => n + (s.html.match(/placehold\.co|picsum\.photos|via\.placeholder|source\.unsplash/g)?.length ?? 0), 0),
+      screensWithPhoto: share(screens.filter((s) => /data-od-img-resolved/.test(s.html)).length),
+    },
     time: { screenP50Ms: median(screens.map((s) => s.ms)), briefP50Ms: median(briefMs) },
     usage: usage && {
       ...usage,

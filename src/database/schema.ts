@@ -41,3 +41,11 @@ export const screenVersions = sqliteTable('screen_versions', {
   html: text('html').notNull(),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
+
+// Stock-photo lookups, keyed by the normalised search text (see lib/image-slots.ts).
+export const imageCache = sqliteTable('image_cache', {
+  query: text('query').primaryKey(),
+  url: text('url').notNull(),
+  avgColor: text('avg_color'),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+})

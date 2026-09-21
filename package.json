@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "check": "node src/app/Services/services.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts && node eval/eval.check.ts",
+    "check": "node src/app/Services/services.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts && DB_PATH=:memory: node --import ./eval/alias-hook.mjs src/app/Services/image.check.ts && node eval/eval.check.ts",
     "start": "node --env-file-if-exists=.env server.prod.mjs",
     "eval": "node --env-file=.env --import ./eval/alias-hook.mjs eval/run.ts"
   },

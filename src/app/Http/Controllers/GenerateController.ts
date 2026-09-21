@@ -3,6 +3,7 @@ import { Screen, type ScreenRow } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { streamCompletion } from '@/app/Services/LlmService'
+import { resolveImages } from '@/app/Services/ImageService'
 import { composeSystemPrompt, composeElementEditPrompt } from '@/app/Services/PromptComposer'
 import { extractArtifact, ERROR_MARK } from '@/artifact'
 import { nextFramePosition } from '@/canvas'
@@ -129,13 +130,13 @@ export const GenerateController = {
             const extracted = extractArtifact(text)
             const newElementSnippet = extracted.html || text
             finalHtml = patchElement(editScreen.html, editElementId, newElementSnippet)
-            finalHtml = annotateHtml(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)))
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal))
             title = editScreen.name
           } else {
             const extracted = extractArtifact(text)
             title = extracted.title
             const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title)
-            finalHtml = annotateHtml(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })))
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })), abort.signal))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 

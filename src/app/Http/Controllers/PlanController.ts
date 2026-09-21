@@ -5,6 +5,7 @@ import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
 import { planScreensWithRetry, type PlannedScreen } from '@/app/Services/PlannerService'
 import { mapLimit } from '@/app/Services/Pool'
+import { resolveImages } from '@/app/Services/ImageService'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { screenBrief, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
 import { extractArtifact } from '@/artifact'
@@ -85,7 +86,8 @@ export const PlanController = {
                   navClearance: NAV_CLEARANCE,
                 }),
               )
-              const findings = lintScreen(normalized, { leakTerms, colorEnergy })
+              const withImages = await resolveImages(normalized, abort.signal)
+              const findings = lintScreen(withImages, { leakTerms, colorEnergy })
               if (findings.length > 0) {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))
               }
@@ -94,7 +96,7 @@ export const PlanController = {
                 projectId: project.id,
                 name: title || s.name,
                 prompt: s.description,
-                html: annotateHtml(normalized),
+                html: annotateHtml(withImages),
                 x: i * (fw + FRAME_GAP),
                 y: 0,
                 screenType: s.screenType,

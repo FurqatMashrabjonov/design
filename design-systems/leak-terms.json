@@ -10,7 +10,7 @@
   "github": { "brand": ["GitHub"], "anywhere": ["Octocat", "GitHub Sponsors"] },
   "intercom": { "brand": ["Intercom"], "anywhere": ["Intercom", "Fin AI"] },
   "linear-app": { "brand": ["Linear"], "anywhere": [] },
-  "nike": { "brand": ["Nike"], "anywhere": ["Nike", "Swoosh"] },
+  "nike": { "brand": ["Nike"], "anywhere": [] },
   "notion": { "brand": ["Notion"], "anywhere": ["Get Notion free"] },
   "openai": { "brand": ["OpenAI", "ChatGPT"], "anywhere": ["OpenAI"] },
   "raycast": { "brand": ["Raycast"], "anywhere": ["Raycast"] },

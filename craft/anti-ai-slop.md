@@ -49,9 +49,9 @@ These are the patterns the linter blocks at P0 (must-fix):
   skeleton; introduce at least one unconventional section (testimonial
   wall as full-bleed quote, pricing as comparison-against-status-quo,
   an inline mini-product-demo).
-- **External placeholder image CDNs** (`unsplash.com`, `placehold.co`,
-  `placekitten.com`, `picsum.photos`). Fragile and obvious. Use the
-  shipped `.ph-img` placeholder class.
+- **Invented image URLs and placeholder image services.** Fragile and
+  obvious. Write an image slot instead — `<img data-od-img="what the
+  photo shows" alt="…">` with no `src` — and a stock photo is inserted.
 - **More than ~12 raw hex values outside `:root`.** Tokens were not
   honoured.
 - **`var(--accent)` used 6+ times in the rendered body.** Cap at 2
