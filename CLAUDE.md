@@ -26,9 +26,13 @@ After each completed change, before reporting it done:
 npm run dev          # vite dev server (http://localhost:3000 by default; pass --port to change)
 npm run check        # service, database and feature tests (plain node scripts, no framework)
 npx tsc --noEmit     # typecheck
+npm run eval         # generate eval/briefs.json through the real pipeline -> eval/out/<label>/ (costs LLM tokens)
+                     #   flags: --only id,id  --limit n  --concurrency n  --label name  --no-shot
 ```
 
 A change is not done until `npm run check` and `npx tsc --noEmit` are clean. UI changes must also be exercised in a real browser (golden path plus one edge case) — type checks do not prove a feature works.
+
+A change to generation (prompts, planner, normalizer, linter, shell) is judged on the eval set, not on one hand-picked prompt: run `npm run eval -- --label <what-changed>` and read `compare.html` and the metrics delta against the previous run. Use `--only` while iterating; a full run is 25 briefs.
 
 ## Model policy
 
@@ -43,6 +47,7 @@ Generation runs on DeepSeek's fast chat model (`deepseek-chat`) only. Never swit
 - **Icons are `<i data-lucide="name">`.** The model must not hand-draw icon SVG.
 - **Fonts are declared per design system** as `@import` in `design-systems/<id>/tokens.css` and injected by the normalizer. Every family in that URL must appear in a `--font-*` stack. Validate any new Google Fonts URL with curl; a weight the family lacks makes the whole request 400.
 - **Theme overrides are applied at render time** over stored HTML (`lib/theme-override.ts`); stored screens are never rewritten. Only validated values reach CSS — sanitize at every boundary.
+- **The eval harness runs the real controllers, never a copy of the pipeline.** `eval/run.ts` calls `PlanController.stream` in-process against a throwaway SQLite file (`DB_PATH`), so it measures what users get. `eval/alias-hook.mjs` is what lets plain `node` resolve `@/` outside Vite. Metrics in `eval/metrics.ts` are deterministic; every known failure mode gets a counter there before it gets a fix.
 - **Shell and injected markup carries markers** (`data-od-shell`, `data-od-icon`, `data-od-font`, `data-od-tab`, `data-od-back`) so the linter and the preview recognize canonical output.
 
 ## Git

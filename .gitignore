@@ -6,3 +6,4 @@ data.db*
 src/routeTree.gen.ts
 .DS_Store
 .idea
+eval/out

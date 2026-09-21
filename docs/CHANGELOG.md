@@ -3,6 +3,40 @@
 Newest first. One entry per completed change: what changed, files touched, how it was verified.
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
+## 2026-09-21
+
+### Tab ikonkalari hech qachon doiraga tushmaydi — GEN-21
+Baseline eval'da 104 ekranda **69 ta** yalang'och doira chiqdi: planner `users`, `file-text`, `mic`, `library` kabi to'g'ri lucide nomlarini berardi, lekin `ShellService` da atigi 37 ta ikonka bor edi va qolgani `circle` ga tushardi.
+- Ikonka geometriyasi `shell-icons.ts` ga ko'chdi: 108 ta, `lucide-react` ning o'z node'laridan olingan (qo'lda ko'chirilmagan). Kalitlar — planner ishlatadigan klassik nomlar (`home`, `bar-chart-2`), lucide ularni qayta nomlagan bo'lsa ham.
+- `resolveIcon(name, label)`: aniq nom → nomning sinonimi (`profile-outline` → `user`) → tab yorlig'ining sinonimi (`Leaderboard` → `trophy`) → `grid`. Modelning o'zi yozgan `circle` ham noma'lum deb qaraladi. `parsePlan` shu orqali o'tkazadi, ya'ni bazaga faqat chiziladigan nom yoziladi.
+- Planner promptiga ruxsat etilgan nomlar ro'yxati kiradi (kodda ro'yxat o'zgarsa, prompt ham o'zgaradi).
+- **`isAction` tab standart holatda o'chiq.** Apple HIG: tab bar navigatsiya uchun, amal uchun emas. Ko'tarilgan markaziy tugma faqat "ushlash" ikonkasiga (`camera`, `scan`, `scan-line`, `qr-code`, `mic`) va ko'pi bilan bitta tab'ga beriladi — bu kodda majburlanadi, promptdagi namunadan "+" tab olib tashlandi.
+- Fayllar: `src/app/Services/shell-icons.ts` (yangi), `ShellService.ts`, `PlannerService.ts`, `services.check.ts`.
+- Tekshirildi: `npm run check` va `tsc` toza. Testlar: baseline'da planner bergan 38 ta nomning har biri o'zi bo'lib chiziladi; har sinonim mavjud ikonkaga ishora qiladi; `plus` + `isAction` ko'tarilmaydi, ikkita capture tab'dan faqat bittasi ko'tariladi; tab bar'da fallback doira yo'q. Eval'da tasdiqlash (`fallbackIcons` 69 → 0) DeepSeek balansi to'ldirilgach qilinadi — hozir API 402 qaytaryapti.
+
+### Eval to'plami va o'lchov — EVAL-01, EVAL-02, EVAL-03, EVAL-04
+Generatsiyadagi har o'zgarish endi bitta hand-picked prompt bilan emas, 25 ta doimiy brief bilan baholanadi.
+
+- **EVAL-01.** `eval/briefs.json`: 25 brief, 13 ilova turi, 20 dizayn tizimi, 5 tasi noaniq ("todo app"), 3 tasi o'zbek/rus tilida, har birida kutilgan arxetiplar.
+- **EVAL-02.** `npm run eval` haqiqiy `PlanController.stream` ni jarayon ichida, alohida SQLite faylida (`DB_PATH`) chaqiradi — pipeline nusxasi emas, foydalanuvchi oladigan narsaning o'zi, va `data.db` ifloslanmaydi. `eval/alias-hook.mjs` oddiy `node` ga `@/` va kengaytmasiz importlarni Vite'siz yechib beradi (yangi bog'liqlik yo'q). Natija: `index.html` (har ekran jonli, sandbox'li 390px iframe), oldingi yugurish bilan `compare.html`, va `sheet-N.png`.
+- **EVAL-03.** `eval/metrics.ts`: lint o'tish ulushi, ilovalar aro strukturaviy bir xillik, ma'lum buglar hisoblagichlari (brend oqishi, `circle` ikonka, standart persona, `root-tab` ulushi), vaqt, token va taxminiy narx (`LlmService` endi `include_usage` bilan usage'ni tinglovchiga beradi). Oldingi yugurishga nisbatan o'zgargan har raqam konsolda va sahifada chiqadi. `--from <run>` generatsiyasiz qayta hisoblaydi.
+- **EVAL-04.** `ab.html`: ikki yugurish ko'r-ko'rona juftlanadi (qaysi biri "A" ekani brief ID xeshi bilan almashadi), ovozlar `localStorage` da, hisob faqat "Reveal" dan keyin.
+
+Yo'lda ushlangan uchta tuzoq:
+- **Bir xillik metrikasi birinchi variantda ko'r edi.** `chuqurlik:teg` 4-gramlari har juftlikni begona ko'rsatdi (0.021). Baseline'da besh variant sinaldi; faqat teg 4-gramlari "turli ilovalardagi profil ekranlari" ni tasodifiy juftlikdan eng yaxshi ajratdi (1.55×). Shu tanlandi va `sameKindMean` qo'shildi — VAR-02 ning maqsadi shu raqam.
+- **100+ jonli iframe'li sahifani headless Chrome chizib bo'lmadi** (osilib qoldi). Skrinshot endi 5 briefdan bo'lib olinadi va xatosi yugurishni yiqitmaydi.
+- **DeepSeek balans kamayganda parallel so'rovni 5 tagacha cheklaydi.** Baseline oxiridagi 5 brief 429 oldi. `--concurrency` standart qiymati 1 ga tushirildi (bitta brief o'zi 3 ta ekranni parallel chizadi).
+
+Baseline (`2026-09-21-09-59-baseline`, 22 brief, 104 ekran, ~$1.0, ekran p50 18.6s): `circle` ikonka **69**, standart persona 6/22 briefda, lint toza 82.7% (13 ta qo'lda chizilgan ikonka), `root-tab` 67%, detalsiz 2 brief, `sameKindMean` 0.072. Brend oqishi reja yo'lida 0 — u bitta ekran qo'shish yo'lida (GEN-19) chiqadi.
+- Fayllar: `eval/` (yangi: `briefs.json`, `run.ts`, `sheet.ts`, `metrics.ts`, `alias-hook.mjs`, `eval.check.ts`), `src/database/connection.ts` (`DB_PATH`), `src/app/Services/LlmService.ts` (usage), `package.json`, `tsconfig.json` (`eval` typecheck'da), `.gitignore`, `CLAUDE.md`, `docs/ROADMAP.md`.
+- Tekshirildi: `npm run check` (yangi `eval/eval.check.ts` bilan) va `tsc` toza. Haqiqiy yugurish: 1 brief smoke (5 ekran, 51s), keyin to'liq baseline. Chrome'da `ab.html`: ovoz berish va ovozni o'zgartirish, qayta yuklagandan keyin tiklanish, "Reveal" hisobi ("… won 1, … won 1, ties 1 — 3 of 22 rated"), yugurish nomlari ko'rinadigan matnda yo'q; 208 iframe yuklanadi. Chekka holat: API'da yiqilgan (0 ekranli) yugurish keyingi taqqoslashda "oldingi" bo'lib qolmaydi.
+- Ochiq: DeepSeek balansi tugadi (402). To'ldirilmaguncha eval va generatsiya ishlamaydi; baseline'da oxirgi 5 brief yo'q.
+
+### Generatsiya sifati rejasi (taklif) — hujjat, kod o'zgarmadi
+Yo'nalish o'zgardi: avval generatsiya sifati, keyin hisoblar/to'lov/deploy. `docs/GENERATION-PLAN.md` yozildi: o'z ekranlarimizdagi 11 ta topilma (brend oqishi, kontekstsiz ekran qo'shish, 39/39 `root-tab`, `circle` ikonkalar, bir xil persona, 19–26k tokenli system prompt va h.k.), raqobatchilar tahlili, Apple HIG va prompt tuzilmalari saboqlari, P0–P9 fazalari Notion'ga ko'chirishga tayyor ID'lar bilan.
+- Fayllar: `docs/GENERATION-PLAN.md` (yangi).
+- Tekshirildi: topilmalar `data.db` dagi 39 ekrandan 12 tasini headless Chrome'da render qilib va `sqlite3` so'rovlari bilan tasdiqlandi; prompt hajmi `composeSystemPrompt` ni chaqirib o'lchandi. Notion'ga ulanish yo'q edi — qatorlar bazaga hali qo'shilmagan, `docs/ROADMAP.md` o'zgarmadi.
+
 ## 2026-09-20
 
 ### Kadr balandligi kontent bo'yicha o'lchanadi — EDT-15

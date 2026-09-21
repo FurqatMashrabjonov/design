@@ -31,6 +31,53 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EXP-02 | HTML ni nusxalash, kodni ko'rish (tema bilan) | Eksport / Fayllar | MVP | Tayyor |  |  |  |
 | INF-01 | SQLite va raqamlangan migratsiyalar | Infratuzilma / Ma'lumotlar bazasi | MVP | Tayyor |  |  |  |
 
+## G · Generatsiya sifati
+
+> 2026-09-21: yo'nalish o'zgardi — avval generatsiya sifati, keyin B1–B6. Tafsilot: `docs/GENERATION-PLAN.md`. Bu bosqich qatorlari `Tartib` bo'yicha B1 dan oldin turadi.
+
+| ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
+|---|---|---|---|---|---|---|---|
+| EVAL-01 | 25 ta doimiy brief to'plami (eval/briefs.json) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | Fayl repoda; 10+ ilova turi × turli dizayn tizimi; 5 tasi qisqa/noaniq, 3 tasi o'zbek/rus tilida; kutilgan arxetiplar yozilgan |
+| EVAL-02 | npm run eval: generatsiya → 390px iframe → kontakt-varaq | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-01 | Bir buyruq → eval/out/<label>/index.html; oldingi yugurish bilan yonma-yon (compare.html) |
+| EVAL-03 | Deterministik eval ko'rsatkichlari: lint, bir xillik, token/vaqt/narx | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-02 | metrics.json; regressiya oldingi yugurishga nisbatan ko'rinadi |
+| EVAL-04 | Ko'r-ko'rona A/B taqqoslash sahifasi | Generatsiya / Sifat | MVP | Tayyor | Kichik | EVAL-02 | Ikki yugurish juftlab ko'rsatiladi, tomonlar yashirin; yutish foizi hisoblanadi |
+| GEN-17 | DESIGN.md → uslub kartasi (STYLE.md, ≤60 qator), mahsulot lug'atisiz | Generatsiya / Dizayn tizimlari | MVP | Rejada | O'rta |  | Uslub kartasida brend mahsulot otlari yo'q; eval'da tizim nomi ekran matnida uchramaydi |
+| GEN-18 | Lint: dizayn tizimi brend nomi yoki maskoti ekran matnida | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-17 | Test fixture P0 topilma bilan yiqiladi |
+| GEN-19 | Bitta ekran qo'shish ham to'liq ilova kontekstini oladi | Generatsiya / Izchillik | MVP | Rejada | O'rta |  | Qo'shilgan ekran bir xil nav, shell va house style'da; check test |
+| GEN-20 | Ekran turi kodda tekshiriladi (root-tab / detail-view / modal-flow) | Generatsiya / Izchillik | MVP | Rejada | Kichik |  | Har tab'ga aynan bitta root-tab; 5 ekran/4 tab → kamida 1 detail; ota-onasiz detail rad etiladi |
+| GEN-21 | Planner ikonkani faqat ma'lum ro'yxatdan tanlaydi; sinonim xaritasi; ~80 ikonka | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Hech bir tab 'circle' ga tushmaydi. isAction tab standart o'chiq |
+| GEN-22 | Kontent urug'i kodda: persona, avatar, sana, valyuta | Generatsiya / Kontent | MVP | Rejada | Kichik |  | Ikki loyihada har xil persona; bitta loyihaning hamma ekranida bir xil |
+| GEN-23 | Prompt dietasi: mobil system prompt ≤6k token | Generatsiya / Sifat | MVP | Rejada | O'rta | GEN-17 | composeSystemPrompt(*, 'mobile') < 24 000 belgi |
+| GEN-24 | 'Accent ≤2' o'rniga tizim bo'yicha colorEnergy | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik |  | manifest.json'da qiymat; lint shunga qarab tekshiradi |
+| GEN-25 | temperature aniq beriladi (ekran va planner alohida) | Generatsiya / Asosiy | MVP | Rejada | Kichik | EVAL-02 | Qiymatlar eval'da tanlangan va LlmService'da yozilgan |
+| GEN-26 | Rasm qoidasi ziddiyatini olib tashlash (.ph-img, placehold.co) | Generatsiya / Sifat | MVP | Rejada | Kichik |  | Repoda .ph-img va placehold.co yo'q |
+| AST-01 | Rasm resolver: data-od-img → Pexels, SQLite kesh, gradient zaxira | Generatsiya / Kontent | MVP | Rejada | O'rta | GEN-26 | Haqiqiy rasm; keshdan; xatoda gradient; kalit faqat serverda |
+| AST-02 | Avatarlar persona urug'idan | Generatsiya / Kontent | MVP | Rejada | Kichik | GEN-22 | Har loyihada har xil, ekranlar aro bir xil |
+| AST-03 | Ilova belgisi: kodda monogramma SVG | Generatsiya / Kontent | MVP | Rejada | Kichik |  | Onboarding/kirish ekranlarida; aksentga ergashadi |
+| AST-04 | Rasm sloti o'lchami qulflangan (aspect-ratio, object-fit) | Generatsiya / Kontent | MVP | Rejada | Kichik | AST-01 | Har qanday rasm layout'ni buzmaydi |
+| UX-01 | Ekran arxetiplari katalogi (~20 blueprint) | Generatsiya / Asosiy | MVP | Rejada | O'rta |  | blueprints/<id>.json; sxema testi |
+| UX-02 | Ilova turi naqshlari (~12): odatiy ekran to'plami va oqimlar | Generatsiya / Asosiy | MVP | Rejada | O'rta | UX-01 | Planner promptiga faqat mos kelgan tur kiradi |
+| UX-03 | Planner v2: archetype, userGoal, primaryAction, sections[], linksTo[] | Generatsiya / Asosiy | MVP | Rejada | O'rta | UX-01 | Sxemaga mos kelmagan reja o'tmaydi yoki tuzatiladi |
+| UX-04 | Ilova ma'lumot modeli: ekranlararo bir xil kontent | Generatsiya / Izchillik | MVP | Rejada | O'rta | UX-03 | Bosh ekrandagi element detal ekranida shu nom va raqam bilan |
+| UX-05 | Oqim bog'lari: data-od-link, preview'da o'tish | Generatsiya / Ko'rish | MVP | Rejada | Kichik | UX-03 | Preview'da kartadan detal ekranga o'tiladi |
+| HIG-01 | HIG/Material komponent kartalari (o'z so'zimiz bilan, 5–8 qator) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | craft/platform/ios/*.md |
+| HIG-02 | Promptga faqat arxetip ishlatadigan kartalar kiradi | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-01, UX-01 | Prompt byudjeti saqlanadi |
+| HIG-03 | HIG raqamlari → render auditi qoidalari | Generatsiya / Sifat | MVP | Rejada | Kichik |  | Shrift ≥11px, nishon ≥44px, kontrast ≥4.5, tab 3–5 — bitta faylda |
+| KIT-01 | od-kit.css: tokenlar bilan ishlaydigan ~30 komponent | Generatsiya / Izchillik | MVP | Rejada | Katta |  | Har komponent 33 tizimda galereyada to'g'ri ko'rinadi |
+| KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Rejada | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
+| KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Rejada | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
+| KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Rejada | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
+| EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Rejada | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
+| EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Rejada | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
+| EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |
+| VAR-01 | Loyiha art-yo'nalishi urug'i | Generatsiya / Variantlar | MVP | Rejada | O'rta | KIT-02 | Loyiha ichida barqaror, loyihalar aro farqli |
+| VAR-02 | Har arxetipga 2–3 layout varianti | Generatsiya / Variantlar | MVP | Rejada | O'rta | UX-01 | Bir xillik ko'rsatkichi bazaviydan ≥30% past |
+| VAR-03 | Mobilga moslangan ~400 tokenli estetika bloki | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-23 | Prompt byudjeti ichida; eval'da A/B yutadi |
+| EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | Muharrir / Tahrirlash | MVP | Rejada | O'rta | GEN-19 | 'make it blue' → theme-override, yangi ekran emas |
+| EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | Muharrir / Tahrirlash | MVP | Rejada | O'rta |  | Tegilmagan bo'limlar baytma-bayt bir xil |
+| FB-01 | 👍/👎 va 'qayta yarat' signali yoziladi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Signal tizim, arxetip, variant bilan bazada |
+| FB-02 | Foydalanuvchi tahrirlari oldin/keyin juftligi sifatida saqlanadi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Har tahrir juftligi so'rov bilan birga saqlanadi |
+
 ## B1 · Hisoblar
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
@@ -168,4 +215,6 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | INF-09 | Tab–ekran bog'lanishi saqlanmagan eski loyihalarni tuzatish | Infratuzilma / Ma'lumotlar bazasi | Keyin | Rejada | Kichik |  |  |
 | QA-03 | To'liq avtomatlashtirilgan brauzer testlari | Sinov / To'liq yo'l sinovi | Keyin | Rejada | O'rta | QA-01 |  |
 | AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | Keyin | Rejada | Katta | AUTH-02, BIL-04 |  |
-
+| HIG-04 | Loyihada platforma tanlovi: iOS / Android | Generatsiya / Qurilmalar | Keyin | Rejada | O'rta |  |  |
+| FB-03 | Yoqqan ekranlar few-shot kutubxonasiga ko'tariladi | Generatsiya / Sifat | Keyin | Rejada | O'rta | FB-01 |  |
+| FB-04 | Juftliklardan reward model / fine-tune | Generatsiya / Sifat | Keyin | Rejada | Katta | FB-02 |  |

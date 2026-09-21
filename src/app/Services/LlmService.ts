@@ -1,3 +1,15 @@
+export type LlmUsage = { promptTokens: number; cachedTokens: number; completionTokens: number }
+
+// One listener, set by whoever measures spend (today: eval/run.ts). Called once per completed call.
+let usageListener: ((u: LlmUsage) => void) | undefined
+export function onLlmUsage(fn: typeof usageListener) {
+  usageListener = fn
+}
+function reportUsage(u: Record<string, number> | undefined) {
+  if (!u || !usageListener) return
+  usageListener({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0 })
+}
+
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 // `signal` lets the caller stop the request (and the token spend) when the client goes away.
 export async function* streamCompletion(system: string, user: string, signal?: AbortSignal) {
@@ -13,6 +25,7 @@ export async function* streamCompletion(system: string, user: string, signal?: A
       // A full HTML screen plus a heavy craft-rules system prompt can run past 8k tokens — DeepSeek allows up to 384k.
       max_tokens: 16000,
       stream: true,
+      stream_options: { include_usage: true }, // usage arrives in a final chunk with no choices
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },
@@ -30,7 +43,9 @@ export async function* streamCompletion(system: string, user: string, signal?: A
       if (!line.startsWith('data:')) continue // skips ": keep-alive" comments and blank lines
       const payload = line.slice(5).trim()
       if (payload === '[DONE]') return
-      const choice = JSON.parse(payload).choices?.[0]
+      const data = JSON.parse(payload)
+      reportUsage(data.usage)
+      const choice = data.choices?.[0]
       if (choice?.delta?.content) yield choice.delta.content as string
       if (choice?.finish_reason === 'length') throw new Error('Output hit max_tokens, HTML is incomplete. Try a simpler screen.')
     }
@@ -57,5 +72,6 @@ export async function completeJSON(system: string, user: string) {
   })
   if (!res.ok) throw new Error(`DeepSeek ${res.status}: ${await res.text()}`)
   const json = await res.json()
+  reportUsage(json.usage)
   return json.choices[0].message.content as string
 }
