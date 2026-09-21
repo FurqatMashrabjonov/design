@@ -12,6 +12,7 @@ import { frameSize, FRAME_GAP } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
+import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
 // Only used to seed a brand-new, empty project — positions are assigned by plan order (0, 1, 2, ...).
@@ -49,6 +50,7 @@ export const PlanController = {
           const fw = frameSize(project.device).width
           const isMobile = project.device === 'mobile'
           const screenNames = plan.screens.map((s) => s.name)
+          const content = contentBlock(contentSeed(project.id, localeOf(brief)))
 
           const buildUser = (s: PlannedScreen, digest: string) =>
             screenBrief({
@@ -56,6 +58,7 @@ export const PlanController = {
               screenNames,
               contract: shellContract(s, plan.navigation, isMobile),
               digest,
+              content,
               heading: `Screen to design: ${s.name}`,
               description: s.description,
             })

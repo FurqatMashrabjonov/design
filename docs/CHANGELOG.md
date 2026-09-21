@@ -5,6 +5,14 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Ilova aholisi kodda tanlanadi — GEN-22
+"Maya Chen" uchta begona loyihada foydalanuvchi bo'lib chiqqan; bitta ilovaning ekranlari ham har xil ism tanlashi mumkin edi.
+- `lib/content-seed.ts`: `(projectId, til, kun)` dan sof funksiya — tizimga kirgan foydalanuvchi (ism, bosh harflar, email, shahar), 6 kishilik "cast" (do'stlar, jo'natuvchilar, reyting), bugungi sana va pul formati. Uch til: `en`, `uz` (so'm, Toshkent…), `ru` (₽, familiya ayol ismiga moslanadi). Til brief matnidan aniqlanadi (kirill → `ru`; "ilova/uchun/tilida…" → `uz`).
+- Blok `screenBrief` orqali har ekran promptiga kiradi — rejali yugurishda ham, keyin qo'shilgan ekranda ham, shuning uchun bir oy keyin qo'shilgan ekran ham o'sha foydalanuvchini oladi.
+- Tuzoq: qo'shilgan ekran uchun til avval chat xabaridan ham o'qilardi — o'zbekcha "yana bitta ekran qo'sh" ingliz tilidagi bank ilovasiga "Madina Abdullayeva" ni olib kirdi. Endi til faqat ilovaning mavjud ekranidan o'qiladi: odamlar ingliz ilovasining keyingi ekranini o'z tilida so'raydi.
+- Fayllar: `src/lib/content-seed.ts` (yangi), `ScreenContext.ts`, `PlanController.ts`, `GenerateController.ts`, `services.check.ts`.
+- Tekshirildi: `npm run check`, `tsc` toza. Testlar: bir loyiha — bir xil cast; 8 loyihada kamida 6 xil foydalanuvchi; cast'da takror va foydalanuvchining o'zi yo'q; til aniqlash uch tilda; kirill ism ham email oladi; ruscha familiya jinsga mos. Eval (`gen22`: bank-neo, uz-taxi, ru-delivery): bank ilovasining 6 ekranida bitta foydalanuvchi ("Zainab Novak" ×9) va o'z cast'i; `defaultPersonaBriefs` 1 → 0; o'zbek ilovasida so'm va o'zbek ismlari; rus ilovasida ₽, bir xil shahar va foydalanuvchining bosh harflari ("ТО") hamma ekranda.
+
 ### Ekran turlari kodda rost qilinadi — GEN-20
 `data.db` dagi 39 ekranning 39 tasi `root-tab` edi: muharrir ham, checkout ham tab bar bilan chizilgan, ikki ekran bitta tab'ni yoritgan. Planner promptidagi JSON namunada faqat `root-tab` bor edi — model namunani ko'chirardi, kodda esa hech narsa tekshirilmasdi.
 - `assignScreenSlots` (`parsePlan` ichida): tab'ni birinchi da'vo qilgan ekran oladi; tab'siz yoki noto'g'ri tab'li root ekran bo'sh tab'ni oladi (avval nomi mos kelganini, keyin navbatdagisini); tab'i band yoki tab qolmagan ekran `detail-view` ga aylanadi va tab'ning egasidan "push" qilinadi. Har `detail-view`/`modal-flow` ning ota-onasi — mavjud, boshqa ekran (katta-kichik harfga qaramay topiladi, topilmasa birinchi root). Root ekransiz reja birinchi ekranni kirish nuqtasi qiladi.

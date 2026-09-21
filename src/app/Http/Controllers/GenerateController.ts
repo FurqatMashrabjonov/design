@@ -12,6 +12,7 @@ import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { parseNavigation, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
 import { autofixScreen } from '@/lib/design-lint'
+import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 
 // POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, skill? } -> text/plain stream
 export const GenerateController = {
@@ -75,6 +76,9 @@ export const GenerateController = {
           screenNames: siblings.map((s) => s.name),
           contract: shellContract(slot, nav, project.device === 'mobile'),
           digest: extractStyleDigest(anchor.html),
+          // No brief is stored with a project, so the app's language is read off the screen it already has —
+          // never off the chat message: people ask for an English app's next screen in their own language.
+          content: contentBlock(contentSeed(project.id, localeOf(`${anchor.html.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').slice(0, 4000)}`))),
           heading: 'Screen to add',
           description: `${prompt}\n\nIf this request does not name a screen, design the most useful screen this app is still missing. Never redesign a screen listed above. Title the artifact with the screen's own name.`,
         })

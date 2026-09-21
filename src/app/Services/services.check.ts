@@ -203,6 +203,32 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.equal(orphans[2].parentScreen, 'Meal Detail', 'a screen is never its own parent')
 }
 
+// GEN-22: the cast of an app is chosen in code — one signed-in user per project, different across projects.
+{
+  const { contentSeed, contentBlock, localeOf } = await import('../../lib/content-seed.ts')
+  const day = new Date('2026-09-21T09:00:00Z')
+  const a = contentSeed('project-a', 'en', day)
+  assert.deepEqual(contentSeed('project-a', 'en', day), a, 'same project, same cast — on every screen and on a screen added later')
+  const users = new Set(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].map((id) => contentSeed(id, 'en', day).user.name))
+  assert.ok(users.size >= 6, `8 projects share only ${users.size} names`)
+  assert.ok(!a.people.includes(a.user.name) && new Set(a.people).size === a.people.length && a.people.length === 6)
+  assert.equal(a.user.initials.length, 2)
+  assert.match(a.user.email, /^[a-z.]+@gmail\.com$/)
+  assert.ok(contentBlock(a).includes(a.user.name) && contentBlock(a).includes('2026'))
+
+  assert.equal(localeOf('Toshkent uchun taksi chaqirish ilovasi'), 'uz')
+  assert.equal(localeOf('Приложение доставки продуктов'), 'ru')
+  assert.equal(localeOf('Fitness tracker for runners, vague todo app'), 'en')
+  const uz = contentSeed('project-a', 'uz', day)
+  assert.ok(/so'm/.test(uz.money) && /@gmail\.com$/.test(uz.user.email))
+  const ru = contentSeed('project-a', 'ru', day)
+  assert.ok(/[а-яё]/i.test(ru.user.name) && /₽/.test(ru.money) && /^user\d+@/.test(ru.user.email), 'a Cyrillic name still gets an address')
+  for (const id of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']) {
+    const [first, last] = contentSeed(id, 'ru', day).user.name.split(' ')
+    assert.equal(/[ая]$/.test(first), /а$/.test(last), `${first} ${last}: surname agrees with the first name`)
+  }
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

@@ -46,7 +46,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GEN-19 | Bitta ekran qo'shish ham to'liq ilova kontekstini oladi | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | Qo'shilgan ekran bir xil nav, shell va house style'da; check test |
 | GEN-20 | Ekran turi kodda tekshiriladi (root-tab / detail-view / modal-flow) | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Har tab'ga aynan bitta root-tab; 5 ekran/4 tab → kamida 1 detail; ota-onasiz detail rad etiladi |
 | GEN-21 | Planner ikonkani faqat ma'lum ro'yxatdan tanlaydi; sinonim xaritasi; ~80 ikonka | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Hech bir tab 'circle' ga tushmaydi. isAction tab standart o'chiq |
-| GEN-22 | Kontent urug'i kodda: persona, avatar, sana, valyuta | Generatsiya / Kontent | MVP | Rejada | Kichik |  | Ikki loyihada har xil persona; bitta loyihaning hamma ekranida bir xil |
+| GEN-22 | Kontent urug'i kodda: persona, avatar, sana, valyuta | Generatsiya / Kontent | MVP | Tayyor | Kichik |  | Ikki loyihada har xil persona; bitta loyihaning hamma ekranida bir xil |
 | GEN-23 | Prompt dietasi: mobil system prompt ≤6k token | Generatsiya / Sifat | MVP | Rejada | O'rta | GEN-17 | composeSystemPrompt(*, 'mobile') < 24 000 belgi |
 | GEN-24 | 'Accent ≤2' o'rniga tizim bo'yicha colorEnergy | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik |  | manifest.json'da qiymat; lint shunga qarab tekshiradi |
 | GEN-25 | temperature aniq beriladi (ekran va planner alohida) | Generatsiya / Asosiy | MVP | Rejada | Kichik | EVAL-02 | Qiymatlar eval'da tanlangan va LlmService'da yozilgan |
