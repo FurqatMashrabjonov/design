@@ -5,6 +5,13 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Temperature aniq yozildi va o'lchandi — GEN-25
+`LlmService` temperature'ni umuman bermasdi (provayder standarti). Endi ikkalasi kodda: ekran 1.0, planner 1.0, eval A/B uchun `LLM_TEMPERATURE_SCREEN` / `LLM_TEMPERATURE_PLAN` env bilan almashtiriladi.
+- **Topilma: temperature bu yerda dastak emas.** 4 brief × 20 ekran, 0.6 / 1.0 / 1.3: lint toza 0.90 / 0.95 / 0.95, turli ilovalardagi bir xil turdagi ekranlar o'xshashligi 0.133 / 0.127 / 0.137, ekran p50 17.3 / 18.2 / 18.1s, o'rtacha HTML 23.2k / 22.6k / 23.1k belgi — hammasi shovqin ichida. "Hamma ekran bir xil" ni sampling bilan davolab bo'lmaydi; xilma-xillik kodda tanlangan variantlardan keladi (VAR-01/02). Shuning uchun 1.0 qoldi.
+- Ko'z bilan solishtirish uchun: `eval/out/<…>-t13/ab.html` — 1.3 va 0.6 ko'r-ko'rona juftlangan.
+- Fayllar: `src/app/Services/LlmService.ts`.
+- Tekshirildi: `tsc` toza; ikki eval yugurishi (`t06`, `t13`, `--no-add`), `gen23` bilan shu 4 brief bo'yicha solishtirildi. `t06` dagi 1 xato — incomplete HTML, temperature'ga bog'lab bo'lmaydi (n=1).
+
 ### Accent byudjeti dizayn tizimiga qarab — GEN-24
 "`var(--accent)` ko'pi bilan ikki marta" hamma tizimga bir xil taqiq edi: til o'rganish ilovasida hamma progress qora chiqqan, holbuki duolingo uslubida ekranning uchdan biri yashil bo'lishi kerak.
 - Qiymat manbai bitta: har `STYLE.md` ning "Colour energy: low | medium | high" qatori (`DesignSystemService.readColorEnergy`). `manifest.json` ga ikkinchi nusxa yozilmadi — uchta tizimda manifest yo'q, va ikki manba bir-biridan uzoqlashadi.

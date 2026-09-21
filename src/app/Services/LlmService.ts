@@ -10,6 +10,13 @@ function reportUsage(u: Record<string, number> | undefined) {
   usageListener({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0 })
 }
 
+// Sampling temperatures, stated rather than inherited from the provider's default. 1.0 was kept after
+// an eval A/B (4 briefs, 20 screens each): 0.6 and 1.3 moved no metric beyond noise — lint-clean
+// 0.90 / 0.95 / 0.95, cross-app sameness 0.133 / 0.127 / 0.137, same speed and output size. Variety has
+// to come from code (VAR-01/02), not from sampling. The env overrides exist for such A/B runs only.
+const SCREEN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_SCREEN ?? 1.0)
+const PLAN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_PLAN ?? 1.0)
+
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 // `signal` lets the caller stop the request (and the token spend) when the client goes away.
 export async function* streamCompletion(system: string, user: string, signal?: AbortSignal) {
@@ -24,6 +31,7 @@ export async function* streamCompletion(system: string, user: string, signal?: A
       model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
       // A full HTML screen plus a heavy craft-rules system prompt can run past 8k tokens — DeepSeek allows up to 384k.
       max_tokens: 16000,
+      temperature: SCREEN_TEMPERATURE,
       stream: true,
       stream_options: { include_usage: true }, // usage arrives in a final chunk with no choices
       messages: [
@@ -63,6 +71,7 @@ export async function completeJSON(system: string, user: string) {
     body: JSON.stringify({
       model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
       max_tokens: 1024,
+      temperature: PLAN_TEMPERATURE,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: system },
