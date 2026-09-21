@@ -30,6 +30,10 @@ export const Project = {
     db.update(projects).set({ navigation: JSON.stringify(navigation) }).where(eq(projects.id, id)).run()
   },
 
+  savePlan(id: string, plan: unknown) {
+    db.update(projects).set({ plan: JSON.stringify(plan) }).where(eq(projects.id, id)).run()
+  },
+
   // Cascades to screens and screen_versions via the FK (see database/connection.ts's foreign_keys pragma).
   delete(id: string) {
     db.delete(projects).where(eq(projects.id, id)).run()

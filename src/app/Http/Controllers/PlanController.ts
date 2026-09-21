@@ -7,7 +7,7 @@ import { planScreensWithRetry, type PlannedScreen } from '@/app/Services/Planner
 import { mapLimit } from '@/app/Services/Pool'
 import { resolveImages } from '@/app/Services/ImageService'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
-import { screenBrief, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
+import { dataBlock, screenBrief, screenSpec, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
 import { extractArtifact } from '@/artifact'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
@@ -41,6 +41,7 @@ export const PlanController = {
           const plan = await planScreensWithRetry(brief, project.device)
           Project.rename(project.id, plan.appName)
           Project.saveNavigation(project.id, plan.navigation)
+          Project.savePlan(project.id, { summary: plan.summary, appType: plan.appType, entities: plan.entities })
           send({ type: 'plan', ...plan })
 
           const system = composeSystemPrompt(project.designSystem, project.device)
@@ -53,6 +54,7 @@ export const PlanController = {
           const isMobile = project.device === 'mobile'
           const screenNames = plan.screens.map((s) => s.name)
           const content = contentBlock(contentSeed(project.id, localeOf(brief)))
+          const data = dataBlock(plan.entities)
 
           const buildUser = (s: PlannedScreen, digest: string) =>
             screenBrief({
@@ -61,8 +63,9 @@ export const PlanController = {
               contract: shellContract(s, plan.navigation, isMobile),
               digest,
               content,
+              data,
               heading: `Screen to design: ${s.name}`,
-              description: s.description,
+              description: screenSpec(s),
             })
 
           const renderScreen = async (s: PlannedScreen, i: number, digest: string): Promise<string | null> => {

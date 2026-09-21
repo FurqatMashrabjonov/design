@@ -9,6 +9,7 @@ export type BriefResult = {
   designSystem: string
   appName?: string
   ms: number
+  plan?: { archetypes: string[]; requested: string[]; uncovered: string[]; tabs: number; entityItems: string[] }
   screens: ScreenResult[]
   errors: string[]
 }

@@ -57,8 +57,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | AST-04 | Rasm sloti o'lchami qulflangan (aspect-ratio, object-fit) | Generatsiya / Kontent | MVP | Tayyor | Kichik | AST-01 | Har qanday rasm layout'ni buzmaydi |
 | UX-01 | Ekran arxetiplari katalogi (~20 blueprint) | Generatsiya / Asosiy | MVP | Rejada | O'rta |  | blueprints/<id>.json; sxema testi |
 | UX-02 | Ilova turi naqshlari (~12): odatiy ekran to'plami va oqimlar | Generatsiya / Asosiy | MVP | Rejada | O'rta | UX-01 | Planner promptiga faqat mos kelgan tur kiradi |
-| UX-03 | Planner v2: archetype, userGoal, primaryAction, sections[], linksTo[] | Generatsiya / Asosiy | MVP | Rejada | O'rta | UX-01 | Sxemaga mos kelmagan reja o'tmaydi yoki tuzatiladi |
-| UX-04 | Ilova ma'lumot modeli: ekranlararo bir xil kontent | Generatsiya / Izchillik | MVP | Rejada | O'rta | UX-03 | Bosh ekrandagi element detal ekranida shu nom va raqam bilan |
+| UX-03 | Planner v2: archetype, userGoal, primaryAction, sections[], linksTo[] | Generatsiya / Asosiy | MVP | Tayyor | O'rta | UX-01 | Sxemaga mos kelmagan reja o'tmaydi yoki tuzatiladi |
+| UX-04 | Ilova ma'lumot modeli: ekranlararo bir xil kontent | Generatsiya / Izchillik | MVP | Tayyor | O'rta | UX-03 | Bosh ekrandagi element detal ekranida shu nom va raqam bilan |
 | UX-05 | Oqim bog'lari: data-od-link, preview'da o'tish | Generatsiya / Ko'rish | MVP | Rejada | Kichik | UX-03 | Preview'da kartadan detal ekranga o'tiladi |
 | HIG-01 | HIG/Material komponent kartalari (o'z so'zimiz bilan, 5–8 qator) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | craft/platform/ios/*.md |
 | HIG-02 | Promptga faqat arxetip ishlatadigan kartalar kiradi | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-01, UX-01 | Prompt byudjeti saqlanadi |

@@ -69,7 +69,7 @@ export async function* streamCompletion(system: string, user: string, signal?: A
 }
 
 // Non-streaming, JSON-only completion (planner). DeepSeek's response_format:json_object guarantees valid JSON syntax.
-export async function completeJSON(system: string, user: string) {
+export async function completeJSON(system: string, user: string, maxTokens = 1024) {
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -79,7 +79,7 @@ export async function completeJSON(system: string, user: string) {
     body: JSON.stringify({
       model: MODEL,
       thinking: THINKING,
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       temperature: PLAN_TEMPERATURE,
       response_format: { type: 'json_object' },
       messages: [

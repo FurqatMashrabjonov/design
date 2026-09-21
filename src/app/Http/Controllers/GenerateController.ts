@@ -11,7 +11,7 @@ import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
-import { parseNavigation, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
+import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
 import { autofixScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 
@@ -22,7 +22,7 @@ export const GenerateController = {
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
     if (!prompt || prompt.length > 4000) return new Response('Prompt must be 1-4000 characters', { status: 400 })
 
-    let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation'>>) | undefined
+    let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation' | 'plan'>>) | undefined
     let isNew = false
     if (body.projectId) {
       project = Project.find(String(body.projectId))
@@ -72,8 +72,10 @@ export const GenerateController = {
         const slot = slotForAddedScreen(prompt, nav, siblings)
         const anchor = siblings.find((s) => s.screenType === 'root-tab') ?? siblings[0]
         addTo = { nav, slot }
+        const stored = parseStoredPlan(project.plan)
         userMessage = screenBrief({
-          app: project.name ?? 'Untitled',
+          app: stored?.summary ? `${project.name ?? 'Untitled'} — ${stored.summary}` : (project.name ?? 'Untitled'),
+          data: dataBlock(stored?.entities ?? []),
           screenNames: siblings.map((s) => s.name),
           contract: shellContract(slot, nav, project.device === 'mobile'),
           digest: extractStyleDigest(anchor.html),

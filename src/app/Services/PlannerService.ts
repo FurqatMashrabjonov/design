@@ -1,46 +1,62 @@
 import { completeJSON } from './LlmService.ts'
 import { ICON_NAMES, isActionIcon, resolveIcon } from './ShellService.ts'
 
-const PLANNER_PROMPT = `You are a principal product designer scoping a coherent multi-screen app from a one-line brief.
-Given the brief and platform (mobile or desktop), design a unified app architecture with 3 to 5 screens and a SHARED global navigation shell.
+// What a screen is *for*. The vocabulary is closed so code can reason about a plan: pick a blueprint,
+// check that the brief's screens are covered, measure plans in the eval.
+export const ARCHETYPES = ['dashboard', 'feed', 'list', 'detail', 'search', 'form', 'checkout', 'result', 'stats', 'profile', 'settings', 'chat', 'player', 'map', 'camera', 'calendar', 'notifications', 'onboarding', 'auth', 'paywall'] as const
+export type Archetype = (typeof ARCHETYPES)[number]
 
-Rules:
-1. For mobile: define a bottom-tabs navigation with 3 to 5 clear tabs (e.g. Home, Search, Stats, Profile). Tabs are destinations, never actions. Labels are one word.
-2. For desktop: define sidebar navigation items.
-3. Every screen is either a "root-tab" (the one primary view of a tab, drawn with the shared tab bar) or a "detail-view" (pushed from another screen, drawn with a back button and no tab bar). Use "modal-flow" for a step of a focused task such as checkout or onboarding.
-4. A tab has EXACTLY ONE root-tab screen; give it that tab's activeTabId. Anything reached by tapping something inside a screen — an item's detail, an editor, a form, a result, a confirmation, a checkout step — is a detail-view and names its parentScreen.
-5. A good app plan is not five tabs: include the detail screens where the core task actually happens.
+const PLANNER_PROMPT = `You are a principal product designer planning a coherent multi-screen app from a brief, for the platform given (mobile or desktop).
+
+Work in this order.
+
+1. REQUESTED. List every screen the brief asks for, in the brief's own words, as "requested". A vague brief ("todo app") requests nothing: return [].
+2. SCREENS. Plan 4 to 6 screens. Every requested screen gets a screen of its own — they come first. Only if fewer than 5 were requested, add the screens the core task still needs (the detail, the editor, the result), and only then supporting ones (profile, settings). Each screen lists the indexes of the requested items it delivers in "covers".
+3. NAVIGATION. Bottom tabs (mobile) or sidebar items (desktop): 2 to 5 destinations, one word each. A tab exists only if one of your screens is its root. Tabs are destinations, never actions.
+4. TYPES. A screen is a "root-tab" (THE one primary view of a tab; give it that tab's activeTabId), a "detail-view" (opened by tapping something inside another screen; names its parentScreen) or a "modal-flow" (a step of a focused task: checkout, compose, onboarding; names its parentScreen). An item's detail, an editor, a form, a result, a confirmation, a tracking view are never root-tab.
+5. SPEC. For each screen: its archetype, the user's goal in one sentence, the ONE primary action, 3 to 6 sections from top to bottom (each a short phrase naming the content, e.g. "Order summary with item thumbnails"), and "linksTo": the other screens a tap on this screen opens.
+6. DATA. "entities": the real things this app is about — 1 to 3 kinds, 4 to 6 items each, with 2 to 5 short fields. Concrete, specific, mutually consistent (prices, times, counts that make sense together). Every screen will draw from exactly this data, so an item shown in a list is the same item, with the same values, on its detail screen. Write names and values in the brief's language.
 
 Respond with JSON only, exactly this shape:
 {
-  "appName": "Short product name, 2-4 words",
-  "summary": "One or two sentences describing the app and visual direction",
-  "tags": ["3 to 6 short tags, e.g. mobile, fintech, dark"],
-  "navigation": {
-    "type": "bottom-tabs",
-    "tabs": [
-      { "id": "home", "label": "Home", "icon": "home" },
-      { "id": "search", "label": "Search", "icon": "search" },
-      { "id": "stats", "label": "Stats", "icon": "bar-chart-2" },
-      { "id": "profile", "label": "Profile", "icon": "user" }
-    ]
-  },
+  "appName": "Short product name, 1-3 words",
+  "appType": "one of: fitness, health, fintech, commerce, marketplace, food-delivery, food, travel, booking, social, learning, productivity, media, other",
+  "summary": "One or two sentences: what the app does and for whom",
+  "tags": ["3 to 6 short tags"],
+  "requested": ["restaurant feed with categories", "dish detail with add-ons", "cart and checkout"],
+  "navigation": { "type": "bottom-tabs", "tabs": [ { "id": "home", "label": "Home", "icon": "home" }, { "id": "orders", "label": "Orders", "icon": "receipt" } ] },
+  "entities": [
+    { "kind": "Dish", "items": [ { "name": "Pad Thai", "fields": { "price": "$16.50", "restaurant": "Bangkok Garden", "rating": "4.8", "time": "25 min" } } ] }
+  ],
   "screens": [
     {
-      "name": "Screen name",
-      "description": "What this screen shows and does, specific enough to design from",
+      "name": "Home",
+      "archetype": "feed",
       "screenType": "root-tab",
-      "activeTabId": "home"
+      "activeTabId": "home",
+      "covers": [0],
+      "userGoal": "Find something to eat tonight",
+      "primaryAction": "Open a restaurant",
+      "sections": ["Delivery address and search", "Cuisine chips", "Featured restaurants with photos", "Popular dishes nearby"],
+      "linksTo": ["Dish Detail"],
+      "description": "What this screen shows and does, specific enough to design from"
     },
     {
-      "name": "Item Detail",
-      "description": "What opens when an item on the first screen is tapped",
+      "name": "Dish Detail",
+      "archetype": "detail",
       "screenType": "detail-view",
-      "parentScreen": "Screen name"
+      "parentScreen": "Home",
+      "covers": [1],
+      "userGoal": "Decide on a dish and customise it",
+      "primaryAction": "Add to cart",
+      "sections": ["Dish photo", "Name, price and rating", "Add-ons with prices", "Quantity and add-to-cart bar"],
+      "linksTo": ["Cart"],
+      "description": "…"
     }
   ]
 }
-Tab icons: choose "icon" ONLY from this list — ${ICON_NAMES.join(', ')}.
+"archetype" is ONLY one of: ${ARCHETYPES.join(', ')}.
+Tab "icon" is ONLY one of: ${ICON_NAMES.join(', ')}.
 Set "isAction": true on at most one tab, and only when the app's core loop is capturing something (camera, scan, mic); that tab is drawn as a raised centre button.
 No prose outside the JSON.`
 
@@ -62,13 +78,27 @@ export type PlannedScreen = {
   screenType: 'root-tab' | 'detail-view' | 'modal-flow'
   activeTabId?: string
   parentScreen?: string
+  archetype: Archetype
+  userGoal: string
+  primaryAction: string
+  sections: string[]
+  linksTo: string[]
+  covers: number[]
 }
+
+/** The things an app is about, with concrete values every screen shares. */
+export type Entity = { kind: string; items: { name: string; fields: Record<string, string> }[] }
 
 export type Plan = {
   appName: string
+  appType: string
   summary: string
   tags: string[]
+  requested: string[]
+  /** Requested screens no planned screen claims to deliver — the input to one repair round. */
+  uncovered: string[]
   navigation: AppNavigation
+  entities: Entity[]
   screens: PlannedScreen[]
 }
 
@@ -104,21 +134,102 @@ export function parsePlan(raw: string): Plan {
     }
   }
 
-  const screens: PlannedScreen[] = plan.screens.slice(0, 5).map((s: Record<string, unknown>, idx: number) => ({
-    name: String(s?.name ?? `Screen ${idx + 1}`).slice(0, 60),
-    description: String(s?.description ?? '').slice(0, 500),
-    screenType: s?.screenType === 'detail-view' || s?.screenType === 'modal-flow' ? s.screenType : 'root-tab',
-    activeTabId: s?.activeTabId ? String(s.activeTabId) : undefined,
-    parentScreen: s?.parentScreen ? String(s.parentScreen) : undefined,
-  }))
+  const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
+  const list = (v: unknown, max: number, each: number) => (Array.isArray(v) ? v.map((x) => text(x, each)).filter(Boolean).slice(0, max) : [])
 
-  return {
-    appName: String(plan.appName ?? 'Untitled').slice(0, 60),
-    summary: String(plan.summary ?? '').slice(0, 400),
-    tags: Array.isArray(plan.tags) ? plan.tags.slice(0, 6).map(String) : [],
-    navigation,
-    screens: assignScreenSlots(screens, navigation),
+  const requested = list(plan.requested, 6, 120)
+  const drafted: PlannedScreen[] = plan.screens.slice(0, MAX_SCREENS).map((s: Record<string, unknown>, idx: number) => {
+    const name = text(s?.name, 60) || `Screen ${idx + 1}`
+    const screenType = s?.screenType === 'detail-view' || s?.screenType === 'modal-flow' ? s.screenType : 'root-tab'
+    return {
+      name,
+      description: text(s?.description, 500),
+      screenType,
+      activeTabId: s?.activeTabId ? String(s.activeTabId) : undefined,
+      parentScreen: s?.parentScreen ? String(s.parentScreen) : undefined,
+      archetype: (ARCHETYPES as readonly string[]).includes(String(s?.archetype)) ? (s.archetype as Archetype) : inferArchetype(name, screenType),
+      userGoal: text(s?.userGoal, 160),
+      primaryAction: text(s?.primaryAction, 80),
+      sections: list(s?.sections, 7, 120),
+      linksTo: list(s?.linksTo, 6, 60),
+      covers: Array.isArray(s?.covers) ? [...new Set(s.covers.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < requested.length))] : [],
+    }
+  })
+
+  const screens = assignScreenSlots(drafted, navigation)
+  // A link only means something if it names another screen of this plan.
+  for (const s of screens) {
+    s.linksTo = [...new Set(s.linksTo.map((l) => screens.find((o) => o.name.toLowerCase() === l.toLowerCase() && o.name !== s.name)?.name).filter((n): n is string => Boolean(n)))]
   }
+
+  // A tab nobody can open is a dead end in a prototype. Keep the bar the plan asked for only when
+  // pruning would leave fewer than two tabs.
+  const live = navigation.tabs.filter((t) => screens.some((s) => s.screenType === 'root-tab' && s.activeTabId === t.id))
+  if (live.length >= 2) navigation.tabs = live
+
+  const covered = new Set(screens.flatMap((s) => s.covers))
+  return {
+    appName: text(plan.appName, 60) || 'Untitled',
+    appType: text(plan.appType, 30) || 'other',
+    summary: text(plan.summary, 400),
+    tags: list(plan.tags, 6, 30),
+    requested,
+    uncovered: requested.filter((_, i) => !covered.has(i)),
+    navigation,
+    entities: parseEntities(plan.entities),
+    screens,
+  }
+}
+
+export const MAX_SCREENS = 6
+
+function parseEntities(raw: unknown): Entity[] {
+  if (!Array.isArray(raw)) return []
+  const str = (v: unknown, max: number) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim().slice(0, max) : '')
+  return raw
+    .slice(0, 3)
+    .map((e: Record<string, unknown>) => ({
+      kind: str(e?.kind, 40),
+      items: (Array.isArray(e?.items) ? e.items : [])
+        .slice(0, 8)
+        .map((it: Record<string, unknown>) => ({
+          name: str(it?.name, 80),
+          fields: Object.fromEntries(
+            Object.entries(it?.fields && typeof it.fields === 'object' ? (it.fields as Record<string, unknown>) : {})
+              .slice(0, 6)
+              .map(([k, v]) => [str(k, 30), str(v, 80)] as const)
+              .filter(([k, v]) => k && v),
+          ),
+        }))
+        .filter((it) => it.name),
+    }))
+    .filter((e) => e.kind && e.items.length > 0)
+}
+
+// When the planner leaves the archetype out or invents one, the screen's name usually says it.
+const ARCHETYPE_HINTS: [RegExp, Archetype][] = [
+  [/check\s?out|cart|basket|payment|pay\b|order summary/i, 'checkout'],
+  [/profile|account/i, 'profile'],
+  [/setting|preference/i, 'settings'],
+  [/search|explore|discover|browse|filter/i, 'search'],
+  [/stat|analytic|insight|progress|report/i, 'stats'],
+  [/chat|message|conversation|thread|inbox/i, 'chat'],
+  [/map|track|route|nearby|location/i, 'map'],
+  [/camera|scan/i, 'camera'],
+  [/player|now playing|session|cooking mode|lesson|exercise/i, 'player'],
+  [/calendar|schedule|itinerary|agenda/i, 'calendar'],
+  [/notification|activity|alert/i, 'notifications'],
+  [/onboard|welcome/i, 'onboarding'],
+  [/sign ?in|log ?in|sign ?up|register/i, 'auth'],
+  [/paywall|upgrade|premium|subscri/i, 'paywall'],
+  [/result|complete|success|confirm|receipt|summary/i, 'result'],
+  [/add|new|create|edit|compose|send|book|form/i, 'form'],
+  [/feed|timeline|for you/i, 'feed'],
+  [/home|today|dashboard|overview/i, 'dashboard'],
+  [/detail/i, 'detail'],
+]
+export function inferArchetype(name: string, screenType: string): Archetype {
+  return ARCHETYPE_HINTS.find(([re]) => re.test(name))?.[1] ?? (screenType === 'root-tab' ? 'list' : 'detail')
 }
 
 /**
@@ -175,9 +286,30 @@ export function assignScreenSlots(screens: PlannedScreen[], navigation: AppNavig
 }
 
 export async function planScreens(brief: string, device: string): Promise<Plan> {
-  const raw = await completeJSON(PLANNER_PROMPT, `Brief: ${brief}\nPlatform: ${device}`)
-  return parsePlan(raw)
+  const user = `Brief: ${brief}\nPlatform: ${device}`
+  const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS)
+  const plan = parsePlan(raw)
+  if (plan.uncovered.length === 0) return plan
+
+  // One repair round. The model likes to spend its screens on Search / Profile / Settings and
+  // quietly drop the checkout or the tracking screen the brief asked for.
+  const repair = `${user}
+
+Your previous plan:
+${raw}
+
+It leaves these requested screens without a screen of their own: ${plan.uncovered.map((r) => `"${r}"`).join(', ')}.
+Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace screens nobody asked for (profile, settings, search, notifications) before anything else. Keep "requested" unchanged and set "covers" truthfully.`
+  try {
+    const fixed = parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS))
+    return fixed.uncovered.length < plan.uncovered.length ? fixed : plan
+  } catch {
+    return plan
+  }
 }
+
+// A v2 plan carries specs and data for up to six screens; 1024 tokens cut it off mid-JSON.
+const PLAN_MAX_TOKENS = 4000
 
 // One retry on malformed JSON or an empty screen list — DeepSeek's json_object mode guarantees syntax but not shape.
 export async function planScreensWithRetry(brief: string, device: string): Promise<Plan> {

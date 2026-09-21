@@ -1,4 +1,4 @@
-import type { AppNavigation } from './PlannerService.ts'
+import type { AppNavigation, Entity, PlannedScreen } from './PlannerService.ts'
 import { buildBottomNav, buildDetailHeader, HEADER_HEIGHT, NAV_CLEARANCE, NAV_HEIGHT } from './ShellService.ts'
 import type { ShellParts } from '../../lib/screen-normalizer.ts'
 
@@ -50,11 +50,12 @@ export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home') }
 }
 
-export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string }): string {
+export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string; data?: string }): string {
   return [
     `App: ${p.app}`,
     `Other screens in this app: ${p.screenNames.join(', ')}`,
     p.content ? `\n${p.content}` : '',
+    p.data ? `\n${p.data}` : '',
     '',
     `# ${p.contract}`,
     p.digest
@@ -85,6 +86,42 @@ export function parseNavigation(json: string | null | undefined): AppNavigation 
   try {
     const nav = JSON.parse(json ?? 'null')
     return nav && Array.isArray(nav.tabs) && nav.tabs.length >= 2 ? (nav as AppNavigation) : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The app's data model, as every screen sees it. One list feeds every screen, so "Pad Thai $16.50"
+ * on the feed is "Pad Thai $16.50" on its detail screen and in the cart.
+ */
+export function dataBlock(entities: Entity[]): string {
+  if (entities.length === 0) return ''
+  const lines = entities.map((e) => `${e.kind}:\n${e.items.map((it) => `- ${it.name}${Object.keys(it.fields).length ? ` — ${Object.entries(it.fields).map(([k, v]) => `${k}: ${v}`).join('; ')}` : ''}`).join('\n')}`)
+  return `# APP DATA — the only source for these things
+Wherever this screen shows one of these, use its exact name and values; when it needs more of the same kind, add items that fit beside them. Never rename, re-price or contradict an item below.
+${lines.join('\n')}`
+}
+
+/** A planned screen's spec, written so the drawing model composes a decided screen instead of deciding one. */
+export function screenSpec(s: PlannedScreen): string {
+  return [
+    s.description,
+    s.userGoal && `\nUser goal: ${s.userGoal}`,
+    s.primaryAction && `Primary action (the one filled button, within thumb reach): ${s.primaryAction}`,
+    s.sections.length > 0 && `Sections, top to bottom:\n${s.sections.map((x, i) => `${i + 1}. ${x}`).join('\n')}`,
+    s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+/** What Project.plan holds; tolerant of nulls and of JSON written by an older version. */
+export function parseStoredPlan(json: string | null | undefined): { summary: string; appType: string; entities: Entity[] } | null {
+  try {
+    const p = JSON.parse(json ?? 'null')
+    if (!p || typeof p !== 'object') return null
+    return { summary: typeof p.summary === 'string' ? p.summary : '', appType: typeof p.appType === 'string' ? p.appType : 'other', entities: Array.isArray(p.entities) ? p.entities : [] }
   } catch {
     return null
   }

@@ -4,6 +4,7 @@ import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
 
 export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string; added?: boolean }
+export type PlanInput = { briefId: string; expect: string[]; archetypes: string[]; requested: string[]; uncovered: string[]; tabs: number; entityItems: string[] }
 export type Usage = { calls: number; promptTokens: number; cachedTokens: number; completionTokens: number }
 
 // ponytail: fixed list of the names the model reaches for by default; replace with a per-run frequency count if it drifts.
@@ -47,7 +48,7 @@ const PRICE = {
   output: Number(process.env.EVAL_PRICE_OUT ?? 1.1),
 }
 
-export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors: number, usage?: Usage) {
+export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors: number, usage?: Usage, plans: PlanInput[] = []) {
   const byRule: Record<string, number> = {}
   let lintClean = 0
   let brandLeakScreens = 0
@@ -100,6 +101,7 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       rootTabShare: share(screens.filter((s) => s.screenType === 'root-tab').length),
       briefsWithoutDetail: briefIds.filter((id) => screens.filter((s) => s.briefId === id).every((s) => s.screenType === 'root-tab')).length,
     },
+    plan: plans.length ? planMetrics(plans, screens) : undefined,
     images: {
       filled: screens.reduce((n, s) => n + (s.html.match(/data-od-img-resolved/g)?.length ?? 0), 0),
       fallbackBlocks: screens.reduce((n, s) => n + (s.html.match(/data-od-img-fallback/g)?.length ?? 0), 0),
@@ -116,6 +118,46 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
         4,
       ),
     },
+  }
+}
+
+// How well the plans match what the briefs asked for, and whether the data model reaches the screens.
+function planMetrics(plans: PlanInput[], screens: ScreenInput[]) {
+  // Multiset recall: a brief expecting two "list" screens is only satisfied by two.
+  let expected = 0
+  let matched = 0
+  for (const p of plans) {
+    const have = [...p.archetypes]
+    for (const want of p.expect) {
+      expected++
+      const i = have.indexOf(want)
+      if (i !== -1) {
+        matched++
+        have.splice(i, 1)
+      }
+    }
+  }
+  let items = 0
+  let used = 0
+  let shared = 0
+  for (const p of plans) {
+    const texts = screens.filter((s) => s.briefId === p.briefId && !s.added).map((s) => visibleText(s.html).toLowerCase())
+    for (const name of p.entityItems) {
+      items++
+      const on = texts.filter((t) => t.includes(name.toLowerCase())).length
+      if (on >= 1) used++
+      if (on >= 2) shared++
+    }
+  }
+  const r = (a: number, b: number) => (b ? Number((a / b).toFixed(3)) : 0)
+  return {
+    archetypeRecall: r(matched, expected),
+    requestedScreens: plans.reduce((n, p) => n + p.requested.length, 0),
+    uncoveredScreens: plans.reduce((n, p) => n + p.uncovered.length, 0),
+    tabsMean: r(plans.reduce((n, p) => n + p.tabs, 0), plans.length),
+    dataItems: items,
+    dataItemsUsedShare: r(used, items),
+    dataItemsOnTwoScreensShare: r(shared, items),
   }
 }
 

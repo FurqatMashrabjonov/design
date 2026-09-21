@@ -10,6 +10,8 @@ export const projects = sqliteTable('projects', {
   navigation: text('navigation'),
   // Validated theme overrides as JSON (see lib/theme-override.ts); null = design system as-is.
   theme: text('theme'),
+  // What later screens still need from the plan — summary, app type, data model — as JSON.
+  plan: text('plan'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

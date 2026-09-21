@@ -10,7 +10,7 @@ import { parseArgs } from 'node:util'
 import { computeMetrics, diffMetrics, type ScreenInput, type Usage } from './metrics.ts'
 import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet.ts'
 
-type Brief = { id: string; brief: string; designSystem: string }
+type Brief = { id: string; brief: string; designSystem: string; expect?: string[] }
 
 const { values: args } = parseArgs({
   options: {
@@ -79,7 +79,16 @@ async function runBrief(b: Brief): Promise<BriefResult> {
     buf = lines.pop()!
     for (const line of lines.filter(Boolean)) {
       const ev = JSON.parse(line)
-      if (ev.type === 'plan') result.appName = ev.appName
+      if (ev.type === 'plan') {
+        result.appName = ev.appName
+        result.plan = {
+          archetypes: (ev.screens ?? []).map((x: { archetype?: string }) => x.archetype ?? ''),
+          requested: ev.requested ?? [],
+          uncovered: ev.uncovered ?? [],
+          tabs: ev.navigation?.tabs?.length ?? 0,
+          entityItems: (ev.entities ?? []).flatMap((e: { items: { name: string }[] }) => e.items.map((it) => it.name)),
+        }
+      }
       else if (ev.type === 'screen_start') startedAt.set(ev.index, Date.now())
       else if (ev.type === 'screen_done') tookMs.set(ev.screenId, Date.now() - (startedAt.get(ev.index) ?? started))
       else if (ev.type === 'screen_error') result.errors.push(`${ev.index}: ${ev.message}`)
@@ -142,7 +151,9 @@ const prevLabel = readdirSync(OUT_ROOT)
   .pop()
 
 const errorCount = results.reduce((n, r) => n + r.errors.length, 0)
-const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage)
+const expectOf = Object.fromEntries((JSON.parse(readFileSync('eval/briefs.json', 'utf8')) as Brief[]).map((b) => [b.id, b.expect ?? []]))
+const planInputs = (rs: BriefResult[]) => rs.flatMap((r) => (r.plan ? [{ briefId: r.id, expect: expectOf[r.id] ?? [], ...r.plan }] : []))
+const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage, planInputs(results))
 writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2))
 
 let delta: string[] = []
@@ -150,7 +161,7 @@ if (prevLabel) {
   const before = loadRun(prevLabel).filter((r) => r.screens.length && drew.has(r.id))
   const shared = new Set(before.map((r) => r.id))
   const after = results.filter((r) => shared.has(r.id))
-  const measure = (rs: BriefResult[], inputs: ScreenInput[]) => computeMetrics(inputs, rs.map((r) => r.ms), rs.reduce((n, r) => n + r.errors.length, 0))
+  const measure = (rs: BriefResult[], inputs: ScreenInput[]) => computeMetrics(inputs, rs.map((r) => r.ms), rs.reduce((n, r) => n + r.errors.length, 0), undefined, planInputs(rs))
   delta = diffMetrics(measure(before, inputsOf(prevLabel, before)), measure(after, screenInputs.filter((s) => shared.has(s.briefId))))
   delta.unshift(`(${shared.size} shared briefs)`)
 }

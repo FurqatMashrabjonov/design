@@ -65,7 +65,7 @@ assert.equal(plan.screens.length, 1)
 assert.throws(() => parsePlan(JSON.stringify({ appName: 'X', screens: [] })), /no screens/) // model returned nothing to build
 assert.throws(() => parsePlan('not json'))
 const many = parsePlan(JSON.stringify({ screens: Array.from({ length: 9 }, (_, i) => ({ name: `S${i}` })) }))
-assert.equal(many.screens.length, 5, 'capped at 5 screens')
+assert.equal(many.screens.length, 6, 'capped at 6 screens')
 
 // pool: never exceeds the concurrency limit, still runs every item, preserves result order
 let inFlight = 0
@@ -263,6 +263,49 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(!mismatch(0, 'medium') && !mismatch(99, 'medium'), 'medium is never flagged')
   assert.ok(!lintScreen(screen(0)).some((f) => f.rule === 'accent-energy-mismatch'), 'no energy given, no rule')
   for (const f of ['craft/mobile.md', 'skills/mobile-screen/SKILL.md']) assert.ok(!/at most (2|twice)|most twice/i.test(readFileSync(f, 'utf8')), `${f}: the flat accent cap is gone`)
+}
+
+// UX-03 / UX-04: the plan says what each screen is for, covers what the brief asked for, and carries one data model.
+{
+  const { inferArchetype } = await import('./PlannerService.ts')
+  const { dataBlock, screenSpec, parseStoredPlan } = await import('./ScreenContext.ts')
+  const v2 = parsePlan(
+    JSON.stringify({
+      appName: 'Feastly',
+      appType: 'food-delivery',
+      requested: ['restaurant feed', 'dish detail with add-ons', 'cart and checkout', 'live order tracking'],
+      navigation: { tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'orders', label: 'Orders', icon: 'receipt' }, { id: 'search', label: 'Search', icon: 'search' }, { id: 'profile', label: 'Profile', icon: 'user' }] },
+      entities: [
+        { kind: 'Dish', items: [{ name: 'Pad Thai', fields: { price: '$16.50', rating: 4.8, nested: { no: 1 } } }, { name: '', fields: {} }, { name: 'Green Curry', fields: { price: '$17.00' } }] },
+        { kind: '', items: [{ name: 'x' }] },
+        { kind: 'Empty', items: [] },
+      ],
+      screens: [
+        { name: 'Home', archetype: 'feed', screenType: 'root-tab', activeTabId: 'home', covers: [0], sections: ['Search', 'Cuisine chips', 'Featured'], primaryAction: 'Open a restaurant', userGoal: 'Find dinner', linksTo: ['dish detail', 'Home', 'Nowhere'] },
+        { name: 'Dish Detail', archetype: 'hologram', screenType: 'detail-view', parentScreen: 'Home', covers: [1, 1, 99, -1, 'x'], linksTo: ['Cart'] },
+        { name: 'Cart', screenType: 'modal-flow', parentScreen: 'Dish Detail', covers: [2] },
+        { name: 'Orders', screenType: 'root-tab', activeTabId: 'orders' },
+      ],
+    }),
+  )
+  assert.deepEqual(v2.uncovered, ['live order tracking'], 'a requested screen nobody covers is reported for the repair round')
+  assert.deepEqual(v2.screens[1].covers, [1], 'covers keeps only real, distinct indexes')
+  assert.deepEqual(v2.screens.map((s) => s.archetype), ['feed', 'detail', 'checkout', 'list'], 'unknown or missing archetypes are inferred from the name, then the type')
+  assert.deepEqual(v2.screens[0].linksTo, ['Dish Detail'], 'links keep the real screen name; self and unknown targets are dropped')
+  assert.deepEqual(v2.navigation.tabs.map((t) => t.id), ['home', 'orders'], 'tabs no screen can open are pruned')
+  assert.deepEqual(v2.entities, [{ kind: 'Dish', items: [{ name: 'Pad Thai', fields: { price: '$16.50', rating: '4.8' } }, { name: 'Green Curry', fields: { price: '$17.00' } }] }], 'entities are cleaned: strings only, no empty kinds or items')
+  assert.equal(parsePlan(JSON.stringify({ screens: [{ name: 'A' }] })).uncovered.length, 0, 'a vague brief requests nothing')
+  assert.equal(inferArchetype('Live Order Tracking', 'detail-view'), 'map')
+  assert.equal(inferArchetype('Whatever', 'root-tab'), 'list')
+
+  const data = dataBlock(v2.entities)
+  assert.ok(data.includes('- Pad Thai — price: $16.50; rating: 4.8') && data.includes('Never rename'))
+  assert.equal(dataBlock([]), '')
+  const spec = screenSpec(v2.screens[0])
+  for (const part of ['User goal: Find dinner', 'Primary action', '1. Search', '3. Featured', 'data-od-link', '"Dish Detail"']) assert.ok(spec.includes(part), `spec carries ${part}`)
+  assert.ok(!screenSpec(v2.screens[3]).includes('Sections'), 'an old-shape screen still yields a usable brief')
+  assert.deepEqual(parseStoredPlan(JSON.stringify({ summary: 's', entities: v2.entities }))?.entities, v2.entities)
+  for (const junk of [null, '', '{', '"x"']) assert.equal(parseStoredPlan(junk), null)
 }
 
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
