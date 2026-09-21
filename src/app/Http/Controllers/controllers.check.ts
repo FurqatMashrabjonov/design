@@ -123,4 +123,59 @@ assert.deepEqual(planMeta.screens?.map((x) => x.name), ['Today'])
 assert.ok(planMeta.log?.some((l) => /^Planned 2 screens \(dashboard, detail\), 2 tabs/.test(l)) && planMeta.log?.some((l) => /Task Detail — failed/.test(l)))
 assert.throws(() => HistoryController.revertMessage({ projectId: 'p2', messageId: planTalk[1].id }), /cannot be undone/, 'reverting the plan would delete the app')
 
+// --- hand edits on the canvas (EDT-25, EDT-26) and theme from chat (EDT-18) ---
+const { ElementController } = await import('./ElementController.ts')
+const { ProjectController } = await import('./ProjectController.ts')
+Project.create({ id: 'p3', name: 'Hand', designSystem: 'minimal', device: 'mobile' })
+Screen.create({ id: 's3', projectId: 'p3', name: 'Home', prompt: 'home', html: '<!doctype html><html><body><main><h1>Hello</h1><button><i data-lucide="plus"></i> Add to cart</button><p>Note</p><img data-od-img="ramen" src="https://images.pexels.com/1.jpeg" data-od-img-resolved alt="Ramen"></main></body></html>', x: 0, y: 0, spec: 'home' })
+
+assert.deepEqual(ElementController.info({ projectId: 'p3', screenId: 's3', elementId: 'button-1' }), { label: 'Button “Add to cart”', textEditable: true, isPhoto: false, photoQuery: '' }, 'ids the browser sees exist on the server without having been saved')
+assert.equal(ElementController.info({ projectId: 'p3', screenId: 's3', elementId: 'gone' }), null)
+
+sent = []
+ElementController.editText({ projectId: 'p3', screenId: 's3', elementId: 'button-1', text: 'Order now' })
+let home = Screen.find('s3')!
+assert.ok(home.html.includes('<i data-lucide="plus"></i> Order now</button>'))
+assert.equal(sent.length, 0, 'no model call')
+let last = Message.forProject('p3').at(-1)!
+assert.equal(last.text, 'Changed text on “Home”: “Add to cart” → “Order now”.')
+assert.equal(parseMeta(last.meta).screens?.[0].versionId !== undefined, true, 'undoable')
+
+ElementController.act({ projectId: 'p3', screenId: 's3', elementId: 'p-1', action: 'up' })
+home = Screen.find('s3')!
+assert.ok(home.html.indexOf('Note') < home.html.indexOf('Order now'))
+assert.equal(Message.forProject('p3').at(-1)!.text, 'Moved up Text “Note” on “Home”.')
+ElementController.act({ projectId: 'p3', screenId: 's3', elementId: 'h1-1', action: 'delete' })
+assert.ok(!Screen.find('s3')!.html.includes('Hello'))
+assert.throws(() => ElementController.act({ projectId: 'p3', screenId: 's3', elementId: 'h1-1', action: 'delete' }), /no longer on this screen/)
+assert.throws(() => ElementController.act({ projectId: 'p3', screenId: 's3', elementId: 'main-1', action: 'delete' }), /main container/)
+assert.throws(() => ElementController.editText({ projectId: 'p1', screenId: 's3', elementId: 'button-1', text: 'x' }), 'a screen is only editable inside its own project')
+
+// undo the delete from the chat
+HistoryController.revertMessage({ projectId: 'p3', messageId: Message.forProject('p3').at(-1)!.id })
+assert.ok(Screen.find('s3')!.html.includes('Hello'), 'a hand edit is undone like any other step')
+
+// replacing a photo: with no key the slot becomes an honest empty block, and the message says so
+await ElementController.replacePhoto({ projectId: 'p3', screenId: 's3', elementId: 'img-1', query: 'green curry' })
+assert.ok(Screen.find('s3')!.html.includes('data-od-img-fallback'))
+assert.match(Message.forProject('p3').at(-1)!.text, /No photo matched “green curry”/)
+
+// an element edit through the model uses the same ids, and says which element it changed
+reply = () => sse('<artifact title="x"><button data-od-id="button-1">Checkout</button></artifact>')
+await post(GenerateController, { projectId: 'p3', prompt: 'say checkout', editScreenId: 's3', editElementId: 'button-1' })
+assert.ok(Screen.find('s3')!.html.includes('>Checkout</button>'))
+assert.match(Message.forProject('p3').at(-1)!.text, /^Updated Button “Order now” on “Home” — now v\d+\.$/)
+assert.equal((await GenerateController.stream(new Request('http://t/api', { method: 'POST', body: JSON.stringify({ projectId: 'p3', prompt: 'x', editScreenId: 's3', editElementId: 'nope' }) }))).status, 409, 'a stale element is refused before any tokens are spent')
+
+// theme from chat
+const t1 = ProjectController.themeFromChat({ projectId: 'p3', prompt: 'make it blue' })
+assert.deepEqual(t1, { applied: true, theme: { accent: '#2563eb' } })
+assert.deepEqual(ProjectController.themeFromChat({ projectId: 'p3', prompt: 'add a stats screen' }), { applied: false })
+const themeMsg = Message.forProject('p3').at(-1)!
+assert.match(themeMsg.text, /Changed the accent colour to blue on every screen/)
+ProjectController.themeFromChat({ projectId: 'p3', prompt: 'rounder corners' })
+assert.equal(Project.find('p3')!.theme, JSON.stringify({ accent: '#2563eb', radius: 'round' }), 'theme changes accumulate')
+HistoryController.revertMessage({ projectId: 'p3', messageId: Message.forProject('p3').at(-1)!.id })
+assert.equal(Project.find('p3')!.theme, JSON.stringify({ accent: '#2563eb' }), 'and undo one at a time')
+
 console.log('ok')

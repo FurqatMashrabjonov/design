@@ -96,12 +96,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | CHAT-06 | Xato — suhbatda, sababi va "Qayta urinish" bilan | MVP | Tayyor | Kichik |
 | CHAT-07 | Agent jurnali (ochiladigan) | MVP | Tayyor | O'rta |
 | CHAT-08 | Keyingi qadam takliflari, kodda | MVP | Tayyor | Kichik |
-| EDT-23 | Har mazmunli element tanlanadi | MVP | Rejada | O'rta |
-| EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Rejada | O'rta |
-| EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | MVP | Rejada | O'rta |
-| EDT-25 | Matnni joyida tahrirlash, LLM'siz | MVP | Rejada | O'rta |
-| EDT-26 | Tezkor amallar LLM'siz: o'chirish, nusxalash, surish, boshqa rasm | MVP | Rejada | O'rta |
-| EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | MVP | Rejada | O'rta |
+| EDT-23 | Har mazmunli element tanlanadi | MVP | Tayyor | O'rta |
+| EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Jarayonda | O'rta |
+| EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | MVP | Tayyor | O'rta |
+| EDT-25 | Matnni joyida tahrirlash, LLM'siz | MVP | Tayyor | O'rta |
+| EDT-26 | Tezkor amallar LLM'siz: o'chirish, nusxalash, surish, boshqa rasm | MVP | Tayyor | O'rta |
+| EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | MVP | Tayyor | O'rta |
 | EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Rejada | O'rta |
 | EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Rejada | O'rta |
 | EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Rejada | O'rta |
@@ -110,7 +110,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-28 | Klaviatura yorliqlari | MVP | Rejada | Kichik |
 | EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Tayyor | Kichik |
 | EDT-30 | Bir nechta ekranni tanlash | MVP | Rejada | O'rta |
-| EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Rejada | O'rta |
+| EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Tayyor | O'rta |
 | EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Rejada | Kichik |
 | EDT-32 | Yuqori panel: Preview · Share · Export menyusi; o'chirish ⋯ ichida | MVP | Rejada | Kichik |
 | EXP-03 | Butun ilovani zip qilib yuklab olish (tema bilan) | MVP | Rejada | O'rta |

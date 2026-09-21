@@ -4,7 +4,8 @@ import { Screen } from '@/app/Models/Screen'
 import { Message } from '@/app/Models/Message'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { SkillService } from '@/app/Services/SkillService'
-import { sanitizeTheme } from '@/lib/theme-override'
+import { parseTheme, sanitizeTheme } from '@/lib/theme-override'
+import { routeIntent } from '@/lib/intent'
 import { clampFrameHeight } from '@/lib/frame-height'
 import { frameSize } from '@/canvas'
 
@@ -51,6 +52,31 @@ export const ProjectController = {
   },
 
   // Sanitized here, not just in the panel — this is the boundary where untrusted input arrives.
+  /**
+   * A chat request that is really a theme change ("make it blue"). Routed again here rather than
+   * trusted from the browser; anything that is not clearly a theme change returns applied: false
+   * and goes to generation as before.
+   */
+  themeFromChat(data: { projectId: string; prompt: string }) {
+    const project = Project.find(data.projectId)
+    if (!project) throw notFound()
+    const prompt = typeof data.prompt === 'string' ? data.prompt.trim().slice(0, 500) : ''
+    const intent = routeIntent(prompt, { elementSelected: false })
+    if (intent.kind !== 'theme') return { applied: false as const }
+    const previous = parseTheme(project.theme)
+    const theme = sanitizeTheme({ ...previous, ...intent.theme })
+    Project.saveTheme(project.id, theme)
+    Message.add({ projectId: project.id, role: 'user', kind: 'theme', text: prompt })
+    Message.add({
+      projectId: project.id,
+      role: 'agent',
+      kind: 'theme',
+      text: `Changed ${intent.summary} on every screen. No screen was regenerated — it is a theme setting, so it is also in the Theme tab.`,
+      meta: { previousTheme: previous },
+    })
+    return { applied: true as const, theme }
+  },
+
   saveTheme(data: { projectId: string; theme: unknown }) {
     if (!Project.find(data.projectId)) throw notFound()
     const theme = sanitizeTheme(data.theme)

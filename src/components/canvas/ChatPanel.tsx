@@ -47,8 +47,8 @@ function AgentMessage(props: { message: MessageRow; screenIds: Set<string>; onFo
   // Only a step that left something to go back to: a snapshot, or a screen it created that still exists.
   const revertible =
     !meta.reverted &&
-    ['add', 'edit', 'element', 'regenerate'].includes(m.kind) &&
-    (meta.screens ?? []).some((s) => props.screenIds.has(s.id) && (s.created || s.versionId))
+    ((m.kind === 'theme' && meta.previousTheme !== undefined) ||
+      (['add', 'edit', 'element', 'regenerate', 'direct'].includes(m.kind) && (meta.screens ?? []).some((s) => props.screenIds.has(s.id) && (s.created || s.versionId))))
 
   return (
     <div className={cn('space-y-2 rounded-xl border bg-card p-3 text-sm', isError && 'border-destructive/40 bg-destructive/5')}>

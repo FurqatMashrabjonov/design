@@ -2,6 +2,8 @@ import { notFound } from '@tanstack/react-router'
 import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
+import { Project } from '@/app/Models/Project'
+import { sanitizeTheme } from '@/lib/theme-override'
 import { parseMeta, type MessageScreen } from '@/lib/agent-messages'
 
 export const HistoryController = {
@@ -30,6 +32,13 @@ export const HistoryController = {
     if (!message || message.projectId !== data.projectId || message.role !== 'agent') throw notFound()
     const meta = parseMeta(message.meta)
     if (message.kind === 'plan' || message.kind === 'error' || message.kind === 'revert' || meta.reverted) throw new Error('This step cannot be undone')
+
+    if (message.kind === 'theme') {
+      Project.saveTheme(data.projectId, sanitizeTheme(meta.previousTheme))
+      Message.setMeta(message.id, { ...meta, reverted: true })
+      Message.add({ projectId: data.projectId, role: 'agent', kind: 'revert', text: 'Put the theme back the way it was.' })
+      return
+    }
 
     const touched: MessageScreen[] = []
     for (const ref of meta.screens ?? []) {

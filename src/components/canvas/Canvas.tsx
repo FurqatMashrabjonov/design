@@ -186,6 +186,7 @@ export function Canvas(props: {
     <div className="relative size-full select-none overflow-hidden bg-muted/30" style={bg}>
       <div
         ref={viewportRef}
+        data-canvas-viewport
         className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
         onPointerDown={onBackgroundPointerDown}
         onPointerMove={onPointerMove}
@@ -193,7 +194,8 @@ export function Canvas(props: {
       >
         <div
           className="absolute left-0 top-0 origin-top-left"
-          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})` }}
+          // --canvas-scale lets overlays (the element panel) stay readable at any zoom.
+          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, ['--canvas-scale' as string]: view.scale }}
         >
           {props.frames.map((f) => {
             const p = pos(f)

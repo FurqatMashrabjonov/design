@@ -3,9 +3,14 @@ import { frameSize } from './canvas'
 import { cn } from '@/lib/utils'
 import { themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
 import { parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
+import { annotateElements } from '@/lib/element-ops'
+import { parseRect, safeElementId, withEditBridge, type BridgeRect } from '@/lib/edit-bridge'
 
 // Renders at native device width; the height grows to fit the screen (see lib/frame-height.ts).
 // The canvas's own transform handles zoom.
+//
+// A saved screen always carries the edit bridge (lib/edit-bridge.ts) and is switched between
+// "look" and "edit" by message, so selecting it never reloads the frame.
 export function ScreenFrame(props: {
   html: string
   title: string
@@ -13,9 +18,6 @@ export function ScreenFrame(props: {
   hint?: string
   selected?: boolean
   streaming?: boolean
-  inspectMode?: boolean
-  selectedElementId?: string | null
-  onSelectElement?: (elementId: string, tag: string) => void
   theme?: Theme
   label?: ReactNode
   /** Identifies this frame in height messages; omit to keep the frame at the device height. */
@@ -23,91 +25,92 @@ export function ScreenFrame(props: {
   /** Last known content height, so the frame opens at the right size instead of jumping. */
   height?: number
   onHeight?: (frameId: string, height: number) => void
+  /** The selected element of this (selected) screen. */
+  selectedElementId?: string | null
+  onSelectElement?: (elementId: string | null) => void
+  /** Resolves false when the edit was refused, so the frame puts the old text back. */
+  onTextEdit?: (elementId: string, text: string) => Promise<boolean>
+  onEscape?: () => void
+  /** Floating panel shown under the selected element. */
+  panel?: ReactNode
+  /** Start editing the selected element's text in place (a panel button); bump `key` to repeat. */
+  editRequest?: { elementId: string; key: number }
 }) {
   const f = frameSize(props.device)
   const height = Math.max(f.height, props.height ?? f.height)
   // A new srcdoc reloads the iframe, so a streaming preview refreshes at most every 600ms
   const rawHtml = useThrottled(props.html, props.streaming ? 600 : 0)
-  const isInteractive = props.inspectMode || props.selected
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [rect, setRect] = useState<BridgeRect | null>(null)
+  const editable = Boolean(props.frameId) && !props.streaming
+  const active = editable && Boolean(props.selected)
 
   // The srcDoc carries the theme as it was when the HTML last changed. Later theme edits are
   // pushed into the running frame instead, so dragging a colour never reloads it.
   const themeRef = useRef(props.theme)
   themeRef.current = props.theme
-  // A streaming frame is still half-written, so it measures nothing useful yet.
-  const measuring = Boolean(props.frameId) && !props.streaming
   const themedHtml = useMemo(() => {
     if (!rawHtml) return rawHtml
-    const themed = withLiveTheme(rawHtml, themeRef.current)
-    return measuring ? withHeightProbe(themed, props.frameId!, f.height) : themed
+    // The same annotation the server applies before an element edit, so both see the same ids.
+    const base = editable ? annotateElements(rawHtml) : rawHtml
+    const themed = withLiveTheme(base, themeRef.current)
+    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)) : themed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawHtml, measuring, props.frameId, f.height])
+  }, [rawHtml, editable, props.frameId, f.height])
 
+  function send(message: unknown) {
+    iframeRef.current?.contentWindow?.postMessage(message, '*')
+  }
   function pushTheme() {
-    iframeRef.current?.contentWindow?.postMessage(themeMessage(themeRef.current), '*')
+    send(themeMessage(themeRef.current))
+  }
+  function pushMode() {
+    if (editable) send({ type: 'od:mode', active, selectedId: active ? (props.selectedElementId ?? null) : null })
   }
   useEffect(pushTheme, [props.theme])
+  useEffect(() => {
+    if (!active || !props.selectedElementId) setRect(null)
+    pushMode()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, props.selectedElementId])
+  useEffect(() => {
+    if (props.editRequest) send({ type: 'od:start_edit', elementId: props.editRequest.elementId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.editRequest?.key])
 
-  // Element selection and frame height both arrive from the sandbox as postMessages.
-  const onHeight = props.onHeight
+  const latest = useRef(props)
+  latest.current = props
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
       // Every frame on the canvas listens on the same window. Without this check each of them
       // answered every frame's message, so picking an element in one screen selected another.
       if (e.source !== iframeRef.current?.contentWindow) return
-      if (e.data && e.data.type === 'od:select_element') {
-        props.onSelectElement?.(e.data.elementId, e.data.tag)
-        return
+      const d = e.data
+      const p = latest.current
+      if (d?.type === 'od:select_element') {
+        const id = safeElementId(d.elementId)
+        setRect(id ? parseRect(d.rect) : null)
+        p.onSelectElement?.(id)
+      } else if (d?.type === 'od:selected_rect') {
+        if (safeElementId(d.elementId) === p.selectedElementId) setRect(parseRect(d.rect))
+      } else if (d?.type === 'od:text_edit') {
+        const id = safeElementId(d.elementId)
+        if (!id || typeof d.text !== 'string' || !p.onTextEdit) return
+        p.onTextEdit(id, d.text.slice(0, 2000)).then((ok) => {
+          if (!ok) send({ type: 'od:cancel_edit', elementId: id })
+        })
+      } else if (d?.type === 'od:escape') {
+        p.onEscape?.()
+      } else if (d?.type === 'od:wheel') {
+        forwardWheel(iframeRef.current, d)
+      } else {
+        const reported = p.onHeight ? parseHeightMessage(d, f.height) : null
+        if (reported) p.onHeight!(reported.frameId, reported.height)
       }
-      const reported = onHeight ? parseHeightMessage(e.data, f.height) : null
-      if (reported) onHeight!(reported.frameId, reported.height)
     }
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [props.onSelectElement, onHeight, f.height])
-
-  // Preserve the FULL HTML document exactly as generated by the LLM
-  // (contains its own head, styles, tokens, fonts, scripts)
-  let finalHtml = themedHtml
-
-  if (isInteractive && !props.streaming && rawHtml) {
-    const selectedAttr = props.selectedElementId ? `[data-od-id="${props.selectedElementId}"]` : ''
-    const bridgeScript = `
-<style id="__od_interactive_bridge">
-  [data-od-id] {
-    cursor: pointer !important;
-    transition: outline 0.12s ease !important;
-  }
-  [data-od-id]:hover {
-    outline: 2px dashed #2563eb !important;
-    outline-offset: 2px !important;
-  }
-  ${selectedAttr ? `
-  ${selectedAttr} {
-    outline: 2px solid #2563eb !important;
-    outline-offset: 3px !important;
-    box-shadow: 0 0 0 4px rgba(37,99,235,0.2) !important;
-  }
-  ` : ''}
-</style>
-<script id="__od_click_bridge">
-  document.addEventListener('click', function(e) {
-    var target = e.target.closest('[data-od-id]');
-    if (!target) return;
-    e.preventDefault();
-    e.stopPropagation();
-    var id = target.getAttribute('data-od-id');
-    window.parent.postMessage({ type: 'od:select_element', elementId: id, tag: target.tagName.toLowerCase() }, '*');
-  }, true);
-</script>
-`
-    if (finalHtml.includes('</body>')) {
-      finalHtml = finalHtml.replace('</body>', `${bridgeScript}</body>`)
-    } else {
-      finalHtml += bridgeScript
-    }
-  }
+  }, [f.height])
 
   return (
     <figure className="group relative" style={{ width: f.width }}>
@@ -121,28 +124,64 @@ export function ScreenFrame(props: {
         </figcaption>
       )}
 
-      <div
-        className={cn(
-          'overflow-hidden rounded-xl border bg-white shadow-sm transition-all',
-          props.selected ? 'border-primary ring-2 ring-primary/30' : 'border-border',
-          props.streaming && 'ring-2 ring-primary/40'
-        )}
-        style={{ width: f.width, height }}
-      >
-        <iframe
-          ref={iframeRef}
-          onLoad={pushTheme}
-          title={props.title}
-          srcDoc={finalHtml}
-          sandbox="allow-scripts"
+      <div className="relative">
+        <div
           className={cn(
-            'size-full',
-            props.inspectMode ? 'pointer-events-auto' : 'pointer-events-none'
+            'overflow-hidden rounded-xl border bg-white shadow-sm transition-all',
+            props.selected ? 'border-primary ring-2 ring-primary/30' : 'border-border',
+            props.streaming && 'ring-2 ring-primary/40'
           )}
           style={{ width: f.width, height }}
-        />
+        >
+          <iframe
+            ref={iframeRef}
+            onLoad={() => {
+              pushTheme()
+              pushMode()
+            }}
+            title={props.title}
+            srcDoc={themedHtml}
+            sandbox="allow-scripts"
+            // Only the selected screen takes the pointer; the others stay whole objects to click and drag.
+            className={cn('size-full', active ? 'pointer-events-auto' : 'pointer-events-none')}
+            style={{ width: f.width, height }}
+          />
+        </div>
+
+        {active && rect && props.panel && (
+          <div
+            className="absolute z-20"
+            // Kept at screen size whatever the canvas zoom (Canvas sets --canvas-scale).
+            style={{ left: Math.max(0, Math.min(rect.x, f.width - 40)), top: rect.y + rect.h + 8, transformOrigin: 'top left', transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {props.panel}
+          </div>
+        )}
       </div>
     </figure>
+  )
+}
+
+// The selected frame receives the wheel; replay it on the canvas viewport so pan and zoom keep working.
+function forwardWheel(iframe: HTMLIFrameElement | null, d: Record<string, unknown>) {
+  const viewport = iframe?.closest('[data-canvas-viewport]')
+  if (!iframe || !viewport) return
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(-5000, Math.min(5000, v)) : 0)
+  const r = iframe.getBoundingClientRect()
+  const scale = iframe.offsetWidth ? r.width / iframe.offsetWidth : 1
+  viewport.dispatchEvent(
+    new WheelEvent('wheel', {
+      deltaX: num(d.deltaX),
+      deltaY: num(d.deltaY),
+      ctrlKey: d.ctrlKey === true,
+      metaKey: d.metaKey === true,
+      clientX: r.left + num(d.clientX) * scale,
+      clientY: r.top + num(d.clientY) * scale,
+      bubbles: true,
+      cancelable: true,
+    }),
   )
 }
 

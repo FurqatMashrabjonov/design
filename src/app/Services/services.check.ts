@@ -342,6 +342,26 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.deepEqual(suggestions([scr('x', 'root-tab', 'home', '')], tabs), [], 'a project of failed screens suggests nothing')
 }
 
+// EDT-18: "make it blue" is a theme change, not a new screen.
+{
+  const { routeIntent } = await import('../../lib/intent.ts')
+  const none = { elementSelected: false }
+  const theme = (p: string) => { const r = routeIntent(p, none); return r.kind === 'theme' ? r.theme : null }
+  assert.deepEqual(theme('make it blue'), { accent: '#2563eb' })
+  assert.deepEqual(theme('Make it blue please'), { accent: '#2563eb' })
+  assert.deepEqual(theme('use #FF8800 as the accent'), { accent: '#ff8800' })
+  assert.deepEqual(theme('#0af'), { accent: '#00aaff' })
+  assert.deepEqual(theme('change the brand colour to a deep navy'), { accent: '#1e3a8a' })
+  assert.deepEqual(theme("ko'k qil"), { accent: '#2563eb' })
+  assert.deepEqual(theme('сделай зелёным'), { accent: '#16a34a' })
+  assert.deepEqual(theme('rounder corners'), { radius: 'round' })
+  assert.deepEqual(theme('sharper'), { radius: 'sharp' })
+  assert.equal(theme('purple')?.accent, '#9333ea', 'plain purple is not the linted AI violet')
+  for (const p of ['make the header blue', 'make the button red', 'add a blue banner to the home screen', 'change the background to black', 'a recipe app for busy parents with warm orange accents and a weekly planner screen', 'add a settings screen'])
+    assert.equal(routeIntent(p, none).kind, 'generate', `"${p}" is design work`)
+  assert.equal(routeIntent('make it blue', { elementSelected: true }).kind, 'generate', 'with an element selected it is about that element')
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

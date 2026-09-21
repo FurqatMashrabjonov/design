@@ -9,6 +9,7 @@ import { extractArtifact, ERROR_MARK } from '@/artifact'
 import { nextFramePosition } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
+import { annotateElements, elementInfo } from '@/lib/element-ops'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
@@ -59,12 +60,17 @@ export const GenerateController = {
     let userMessage: string
     let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot } | undefined
 
+    // The browser addresses elements by the ids annotateElements gives the stored HTML; so does this.
+    const editBase = editScreen?.html ? annotateElements(editScreen.html) : ''
+    let elementLabel: string | undefined
     if (editScreen && editElementId) {
-      const existingElementHtml = extractElement(editScreen.html, editElementId) ?? ''
+      const existingElementHtml = extractElement(editBase, editElementId)
+      if (!existingElementHtml) return new Response('That element is no longer on this screen — select it again', { status: 409 })
+      elementLabel = elementInfo(editBase, editElementId).label
       systemPrompt = composeElementEditPrompt(
         project.designSystem,
         project.device,
-        editScreen.html,
+        editBase,
         editElementId,
         existingElementHtml,
         prompt
@@ -164,7 +170,7 @@ export const GenerateController = {
             // Extracted element HTML
             const extracted = extractArtifact(text)
             const newElementSnippet = extracted.html || text
-            finalHtml = patchElement(editScreen.html, editElementId, newElementSnippet)
+            finalHtml = patchElement(editBase, editElementId, newElementSnippet)
             title = editScreen.name
             finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
           } else {
@@ -221,7 +227,7 @@ export const GenerateController = {
             projectId: projectRef.id,
             role: 'agent',
             kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: editElementId, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
             meta: {
               screens: [changed],
               log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],

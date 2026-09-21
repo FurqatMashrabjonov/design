@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { Check, Loader2, CircleX, Circle, Sparkles, MousePointerClick, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage } from '../server/fns'
+import { Check, Loader2, CircleX, Circle, Sparkles, X } from 'lucide-react'
+import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -18,7 +18,8 @@ import { suggestions } from '@/lib/suggestions'
 import { friendlyError } from '@/lib/agent-messages'
 import { ScreensList } from '@/components/canvas/ScreensList'
 import { HistoryPanel } from '@/components/canvas/HistoryPanel'
-import { CritiquePanel } from '@/components/canvas/CritiquePanel'
+import { ElementPanel, type ElementInfo } from '@/components/canvas/ElementPanel'
+import { routeIntent } from '@/lib/intent'
 import { FrameToolbar } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
@@ -44,8 +45,11 @@ function ProjectPage() {
   const navigate = useNavigate()
   const [live, setLive] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  // Selection: a screen, then optionally one element inside it (reported by the frame's edit bridge).
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
-  const [inspectMode, setInspectMode] = useState(false)
+  const [elementInfo, setElementInfo] = useState<ElementInfo | null>(null)
+  const [editRequest, setEditRequest] = useState<{ elementId: string; key: number } | undefined>(undefined)
+  const [handBusy, setHandBusy] = useState(false)
   const [sidebarTab, setSidebarTab] = useState('chat')
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
@@ -56,9 +60,57 @@ function ProjectPage() {
   const inFlight = useRef<AbortController | null>(null)
   const [working, setWorking] = useState(false)
 
-  function focusScreen(id: string) {
+  function selectScreen(id: string | null) {
+    if (id !== selected) setSelectedElementId(null)
     setSelected(id)
+  }
+  function focusScreen(id: string) {
+    selectScreen(id)
     setFocus((f) => ({ id, key: (f?.key ?? 0) + 1 }))
+  }
+
+  // The panel needs to know what was picked; the server says, from the same annotated HTML.
+  useEffect(() => {
+    setElementInfo(null)
+    if (!selected || !selectedElementId) return
+    let current = true
+    getElementInfo({ data: { projectId: project.id, screenId: selected, elementId: selectedElementId } })
+      .then((info) => current && setElementInfo(info))
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [selected, selectedElementId, project.id, screens])
+
+  // Esc steps out: element, then screen. (Inside a frame the bridge forwards Esc.)
+  function escape() {
+    if (selectedElementId) setSelectedElementId(null)
+    else selectScreen(null)
+  }
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target
+      if (e.key !== 'Escape' || (t instanceof Element && t.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]'))) return
+      escape()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  // Hand edits: no model, applied at once, recorded in the conversation like any other change.
+  async function hand(fn: () => Promise<unknown>, after?: () => void) {
+    setHandBusy(true)
+    try {
+      await fn()
+      after?.()
+      await router.invalidate()
+      return true
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+      return false
+    } finally {
+      setHandBusy(false)
+    }
   }
 
   // Theme overrides live on the project and are applied at render time, so a change restyles
@@ -66,15 +118,21 @@ function ProjectPage() {
   // so dragging a colour picker doesn't write on every tick.
   const [theme, setTheme] = useState<Theme>(() => parseTheme(project.theme))
   const themeSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const themeSavePending = useRef(false)
   function changeTheme(next: Theme) {
     setTheme(next)
     clearTimeout(themeSaveTimer.current)
+    themeSavePending.current = true
     themeSaveTimer.current = setTimeout(() => {
-      saveTheme({ data: { projectId: project.id, theme: next } }).catch((e) =>
-        toast.error(e instanceof Error ? e.message : 'Could not save the theme'),
-      )
+      saveTheme({ data: { projectId: project.id, theme: next } })
+        .catch((e) => toast.error(e instanceof Error ? e.message : 'Could not save the theme'))
+        .finally(() => (themeSavePending.current = false))
     }, 400)
   }
+  // The theme can also change on the server (from chat, or undone from chat).
+  useEffect(() => {
+    if (!themeSavePending.current) setTheme(parseTheme(project.theme))
+  }, [project.theme])
   // The design system's own accent, read back from a generated screen (the normalizer put it there).
   const baseAccent = useMemo(() => {
     const drawn = screens.find((sc) => sc.html)
@@ -192,7 +250,8 @@ function ProjectPage() {
     inFlight.current = ctl
     setWorking(true)
     try {
-      await generate(body, setLive, ctl.signal)
+      // An element edit streams only the element, which is not a page: keep the screen in view instead.
+      await generate(body, body.editElementId ? () => {} : setLive, ctl.signal)
     } catch (e) {
       const stopped = e instanceof DOMException && e.name === 'AbortError'
       if (!stopped) toast.error(e instanceof Error ? e.message : String(e))
@@ -207,7 +266,7 @@ function ProjectPage() {
   // Draws the screen again from what it was planned to be (its stored spec), in the same slot, with
   // the app's context. The current design becomes a version. Also how a failed screen is retried.
   async function regenerateScreen(screen: (typeof screens)[number]) {
-    setSelected(screen.id)
+    selectScreen(screen.id)
     await run({ prompt: '', projectId: project.id, regenerateScreenId: screen.id })
   }
 
@@ -247,13 +306,124 @@ function ProjectPage() {
         }}
       />
       <div className="flex min-h-0 flex-1">
+        <Sidebar
+          chat={
+            <>
+              <ChatPanel
+                messages={messages}
+                screenIds={screenIds}
+                onFocusScreen={focusScreen}
+                onRevert={async (messageId) => {
+                  await revertMessage({ data: { projectId: project.id, messageId } })
+                  await router.invalidate()
+                }}
+                running={
+                  planning && plan ? (
+                    <PlanCard plan={plan} status={status} errors={planErrors} />
+                  ) : working ? (
+                    <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />
+                      {planning ? 'Planning the app…' : selectedScreen ? `Working on “${selectedScreen.name}”…` : 'Designing a new screen…'}
+                    </div>
+                  ) : undefined
+                }
+                empty={
+                  <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
+                    <Sparkles className="size-5" />
+                    <p>Everything you ask for and everything the agent does shows up here, with a way back.</p>
+                  </div>
+                }
+              />
+              {selectedScreen && (
+                // What the next message will change: the screen, or one element of it.
+                <div className="flex min-w-0 items-center gap-1 text-xs">
+                  <span className="shrink-0 text-muted-foreground">Editing</span>
+                  <button type="button" onClick={() => focusScreen(selectedScreen.id)} className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-primary/60" title="Show on the canvas">
+                    {selectedScreen.name}
+                  </button>
+                  {selectedElementId && (
+                    <>
+                      <span className="text-muted-foreground">›</span>
+                      <span className="min-w-0 truncate rounded-md border border-primary/40 bg-primary/5 px-2 py-0.5 text-primary">{elementInfo?.label ?? 'Element'}</span>
+                    </>
+                  )}
+                  <button type="button" onClick={escape} className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Step out (Esc)" aria-label="Step out">
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              )}
+              {!working && !selectedScreen && nextSteps.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {nextSteps.map((text) => (
+                    <button
+                      key={text}
+                      type="button"
+                      onClick={() => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <PromptBox
+                placeholder={
+                  planning
+                    ? 'Designing your screens…'
+                    : selectedElementId
+                      ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
+                      : selectedScreen
+                        ? 'Describe the change…'
+                        : 'Add another screen to this project…'
+                }
+                fill={fill}
+                onStop={() => inFlight.current?.abort()}
+                onSubmit={async (prompt) => {
+                  // "make it blue" is a theme change: instant, every screen, no generation.
+                  if (routeIntent(prompt, { elementSelected: Boolean(selectedElementId) }).kind === 'theme') {
+                    const result = await themeFromChat({ data: { projectId: project.id, prompt } })
+                    if (result.applied) {
+                      setTheme(result.theme)
+                      await router.invalidate()
+                      return
+                    }
+                  }
+                  await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined })
+                }}
+              />
+            </>
+          }
+          theme={
+            <div className="space-y-6 text-sm">
+              <ThemePanel theme={theme} baseAccent={baseAccent} onChange={changeTheme} />
+              <div>
+                <div className="mb-1 text-muted-foreground">Device</div>
+                <Badge variant="secondary" className="capitalize">
+                  {project.device}
+                </Badge>
+              </div>
+              <div>
+                <div className="mb-1 text-muted-foreground">Design system</div>
+                <Badge variant="secondary" className="capitalize">
+                  {project.designSystem}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Device and design system are fixed per project — start a new project to change them.
+              </p>
+            </div>
+          }
+          history={<HistoryPanel screenId={selected} onRestored={() => router.invalidate()} />}
+          tab={sidebarTab}
+          onTabChange={setSidebarTab}
+        />
         <div className="relative flex-1">
           <ScreensList screens={screens} selected={selected} onSelect={focusScreen} />
           <Canvas
             frames={frames}
             fitKey={`${screens.length}:${planFrames.length}`}
             focus={focus}
-            onBackgroundClick={() => setSelected(null)}
+            onBackgroundClick={() => selectScreen(null)}
             onMove={(id, x, y) => {
               if (id.startsWith('plan-') || id === '__live__') return
               moveScreen({ data: { id, x, y } })
@@ -308,12 +478,12 @@ function ProjectPage() {
                   onCopyHtml={() => copyHtml(applyThemeOverride(s.html, theme))}
                   onViewCode={() => setCodeScreenId(s.id)}
                   onOpenHistory={() => {
-                    setSelected(s.id)
+                    selectScreen(s.id)
                     setSidebarTab('history')
                   }}
                   onDelete={() => setDeleteTargetId(s.id)}
                 >
-                  <div onClick={() => setSelected(s.id)}>
+                  <div onClick={() => s.id !== selected && selectScreen(s.id)}>
                     <ScreenFrame
                       html={s.html}
                       title={s.name}
@@ -324,13 +494,32 @@ function ProjectPage() {
                       height={frameHeight(s)}
                       onHeight={reportHeight}
                       selected={s.id === selected}
-                      inspectMode={inspectMode && s.id === selected}
                       selectedElementId={s.id === selected ? selectedElementId : null}
                       onSelectElement={(elId) => {
-                        setSelected(s.id)
+                        if (s.id !== selected) return
                         setSelectedElementId(elId)
-                        setSidebarTab('chat')
+                        if (elId) setSidebarTab('chat')
                       }}
+                      onEscape={escape}
+                      editRequest={s.id === selected ? editRequest : undefined}
+                      onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
+                      panel={
+                        s.id === selected && selectedElementId ? (
+                          <ElementPanel
+                            info={elementInfo}
+                            busy={handBusy || working}
+                            onAsk={(instruction) => run({ prompt: instruction, projectId: project.id, editScreenId: s.id, editElementId: selectedElementId })}
+                            onEditText={() => setEditRequest((r) => ({ elementId: selectedElementId, key: (r?.key ?? 0) + 1 }))}
+                            onAction={(action) =>
+                              hand(
+                                () => elementAction({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, action } }),
+                                () => action === 'delete' && setSelectedElementId(null),
+                              )
+                            }
+                            onReplacePhoto={(query) => hand(() => replaceElementPhoto({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, query } }))}
+                          />
+                        ) : undefined
+                      }
                       label={
                         <FrameToolbar
                           name={s.name}
@@ -352,7 +541,7 @@ function ProjectPage() {
                           onCancelDelete={() => setDeleteTargetId(null)}
                           onDelete={async () => {
                             await deleteScreen({ data: { id: s.id, projectId: project.id } })
-                            if (selected === s.id) setSelected(null)
+                            if (selected === s.id) selectScreen(null)
                             setDeleteTargetId(null)
                             await router.invalidate()
                           }}
@@ -366,135 +555,6 @@ function ProjectPage() {
           />
         </div>
 
-        <Sidebar
-          chat={
-            <>
-              <ChatPanel
-                messages={messages}
-                screenIds={screenIds}
-                onFocusScreen={focusScreen}
-                onRevert={async (messageId) => {
-                  await revertMessage({ data: { projectId: project.id, messageId } })
-                  await router.invalidate()
-                }}
-                running={
-                  planning && plan ? (
-                    <PlanCard plan={plan} status={status} errors={planErrors} />
-                  ) : working ? (
-                    <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      {planning ? 'Planning the app…' : selectedScreen ? `Working on “${selectedScreen.name}”…` : 'Designing a new screen…'}
-                    </div>
-                  ) : undefined
-                }
-                empty={
-                  <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
-                    <Sparkles className="size-5" />
-                    <p>Everything you ask for and everything the agent does shows up here, with a way back.</p>
-                  </div>
-                }
-              />
-              {selectedScreen && (
-                <div className="space-y-2 rounded-lg border bg-muted/30 p-2.5 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      Editing <Badge variant="secondary">{selectedScreen.name}</Badge>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant={inspectMode ? 'default' : 'outline'}
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        setInspectMode(!inspectMode)
-                        if (inspectMode) setSelectedElementId(null)
-                      }}
-                    >
-                      <MousePointerClick className="mr-1 size-3" />
-                      {inspectMode ? 'Selecting...' : 'Select Element'}
-                    </Button>
-                  </div>
-
-                  {selectedElementId && (
-                    <div className="flex items-center justify-between rounded bg-primary/10 px-2 py-1 text-primary">
-                      <span className="truncate font-mono font-medium">
-                        Target: [{selectedElementId}]
-                      </span>
-                      <button
-                        type="button"
-                        className="ml-1 rounded p-0.5 hover:bg-primary/20"
-                        onClick={() => setSelectedElementId(null)}
-                      >
-                        <X className="size-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {!working && !selectedScreen && nextSteps.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {nextSteps.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      onClick={() => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <PromptBox
-                placeholder={
-                  planning
-                    ? 'Designing your screens…'
-                    : selectedElementId
-                      ? `Describe changes to [${selectedElementId}]…`
-                      : selectedScreen
-                        ? 'Describe the change…'
-                        : 'Add another screen to this project…'
-                }
-                fill={fill}
-                onStop={() => inFlight.current?.abort()}
-                onSubmit={async (prompt) => {
-                  await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined })
-                  setSelectedElementId(null)
-                  setInspectMode(false)
-                }}
-              />
-            </>
-          }
-          jury={
-            <CritiquePanel
-              selectedScreen={selectedScreen ?? null}
-              projectId={project.id}
-              onRestored={() => router.invalidate()}
-            />
-          }
-          config={
-            <div className="space-y-6 text-sm">
-              <ThemePanel theme={theme} baseAccent={baseAccent} onChange={changeTheme} />
-              <div>
-                <div className="mb-1 text-muted-foreground">Device</div>
-                <Badge variant="secondary" className="capitalize">
-                  {project.device}
-                </Badge>
-              </div>
-              <div>
-                <div className="mb-1 text-muted-foreground">Design system</div>
-                <Badge variant="secondary" className="capitalize">
-                  {project.designSystem}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Device and design system are fixed per project — start a new project to change them.
-              </p>
-            </div>
-          }
-          history={<HistoryPanel screenId={selected} onRestored={() => router.invalidate()} />}
-          tab={sidebarTab}
-          onTabChange={setSidebarTab}
-        />
       </div>
 
       <CodeDialog screen={codeScreen && { name: codeScreen.name, html: applyThemeOverride(codeScreen.html, theme) }} onOpenChange={(open) => !open && setCodeScreenId(null)} />

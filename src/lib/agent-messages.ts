@@ -1,7 +1,9 @@
 // What the agent says in the chat, written in code. Every fact here is already known to the
 // pipeline (the plan, the slots, lint, timings), so the reply is exact and costs no tokens.
 
-export type MessageKind = 'plan' | 'add' | 'edit' | 'element' | 'regenerate' | 'revert' | 'error'
+// direct: an edit made by hand on the canvas (retype, delete, move…), no model involved.
+// theme: an app-wide style change routed away from generation ("make it blue").
+export type MessageKind = 'plan' | 'add' | 'edit' | 'element' | 'regenerate' | 'revert' | 'error' | 'direct' | 'theme'
 
 export type MessageScreen = {
   id: string
@@ -19,6 +21,8 @@ export type MessageMeta = {
   /** Set once this message's changes were undone from the chat. */
   reverted?: boolean
   stopped?: boolean
+  /** For a theme message: the theme before it, so it can be undone. */
+  previousTheme?: unknown
 }
 
 export function parseMeta(json: string | null | undefined): MessageMeta {
@@ -67,7 +71,9 @@ export function planReply(p: {
 export function changeReply(p: { kind: 'add' | 'edit' | 'element' | 'regenerate'; screen: string; element?: string | null; version?: number; slot?: string }): string {
   if (p.kind === 'add') return `Added “${p.screen}”${p.slot ? ` ${p.slot}` : ''}.`
   if (p.kind === 'regenerate') return `Redrew “${p.screen}” from its plan.${p.version && p.version > 1 ? ` The previous design is kept as v${p.version - 1}.` : ''}`
-  const what = p.kind === 'element' && p.element ? `“${p.element}” on “${p.screen}”` : `“${p.screen}”`
+  // An element label already carries its quotes (Button “Add to cart”); a bare id does not.
+  const element = p.element && (p.element.includes('“') ? p.element : `“${p.element}”`)
+  const what = p.kind === 'element' && element ? `${element} on “${p.screen}”` : `“${p.screen}”`
   return `Updated ${what}${p.version ? ` — now v${p.version}` : ''}.`
 }
 

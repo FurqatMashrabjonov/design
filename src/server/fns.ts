@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
+import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
 
 export const getHome = createServerFn({ method: 'GET' }).handler(() => ProjectController.index())
 
@@ -22,6 +23,10 @@ export const saveScreenHeight = createServerFn({ method: 'POST' })
   .validator((d: { id: string; height: number }) => d)
   .handler(({ data }) => ProjectController.saveScreenHeight(data))
 
+export const themeFromChat = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; prompt: string }) => d)
+  .handler(({ data }) => ProjectController.themeFromChat(data))
+
 export const saveTheme = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; theme: unknown }) => d)
   .handler(({ data }) => ProjectController.saveTheme(data))
@@ -37,6 +42,22 @@ export const restoreVersion = createServerFn({ method: 'POST' })
 export const revertMessage = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; messageId: string }) => d)
   .handler(({ data }) => HistoryController.revertMessage(data))
+
+export const getElementInfo = createServerFn({ method: 'GET' })
+  .validator((d: { projectId: string; screenId: string; elementId: string }) => d)
+  .handler(({ data }) => ElementController.info(data))
+
+export const editElementText = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; screenId: string; elementId: string; text: string }) => d)
+  .handler(({ data }) => ElementController.editText(data))
+
+export const elementAction = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; screenId: string; elementId: string; action: ElementAction }) => d)
+  .handler(({ data }) => ElementController.act(data))
+
+export const replaceElementPhoto = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; screenId: string; elementId: string; query: string }) => d)
+  .handler(({ data }) => ElementController.replacePhoto(data))
 
 export const deleteProject = createServerFn({ method: 'POST' })
   .validator((id: string) => id)
