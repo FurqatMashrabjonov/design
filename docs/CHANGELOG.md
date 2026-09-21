@@ -5,6 +5,15 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Mobil system prompt 78k → 18k belgi — GEN-23
+GEN-17 dan keyin ham mobil prompt ~78 000 belgi edi: to'qqizta craft fayl (~1200 qator) — WCAG'ning yurisdiksiyalar bo'yicha huquqiy tahlili, React forma kutubxonalari, Android predictive-back API'si, landing sahifa bo'limlari. Statik telefon ekrani chizayotgan tez model uchun bu shovqin: qoidalar bir-birini bosib ketadi va model hammasining o'rtachasini chiqaradi.
+- `craft/mobile.md` (yangi, 83 qator): o'n bo'lim — bitta ekran bitta ish, ierarxiya va tip, rang, layout va teginish, komponentlar, kontent, ikonkalar, harakat, accessibility, ilova ichida. Apple HIG uslubida yozilgan: har qoida — **qaror + sababi**, o'lchanadigan raqamlar bilan (body ≥15px, hech narsa <11px, nishon ≥44px, 16px chekka, 4px shkala, kontrast 4.5:1). Linter majburlaydigan hamma narsa (indigo, emoji ikonka, qo'lda SVG, token'siz rang, filler matn, to'qima metrika) saqlangan.
+- "Accent ko'pi bilan 2 marta" olib tashlandi: o'rniga "uslub kartasining Colour energy qatoriga qarab sarfla" — past energiyali tizimni accent'ga bo'yash ham, yuqori energiyalini kulrang qoldirish ham xato.
+- `skills/mobile-screen/SKILL.md` endi faqat `[mobile]` ni talab qiladi. Eski craft fayllar web skill'lar uchun joyida.
+- Yo'lda: qo'shilgan ekranlardan birida sahifa pastida xom markdown chiqdi ("### Monthly Budget at a Glance…") — model `</html>` dan keyin tushuntirish yozgan. `extractArtifact` endi hujjatdan keyingi hamma narsani tashlaydi.
+- Fayllar: `craft/mobile.md` (yangi), `skills/mobile-screen/SKILL.md`, `src/artifact.ts`, `services.check.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Test: har 33 tizim uchun mobil prompt < 24 000 belgi (hozir ~18k ≈ 4.6k token); `mobile.md` ≤150 qator; web esselari mobil promptda yo'q; `</html>` dan keyingi matn tashlanadi. Eval (`gen23`, 6 brief, baseline bilan, shu 6 brief bo'yicha): lint toza 0.73 → 0.97, `undefined-token` 4 → 1, brend oqishi 1 → 0, `fallbackIcons` 24 → 0, standart persona 3 → 0, `root-tab` ulushi 0.77 → 0.53, ekran p50 19.7s → 17.5s, xato 0. Varaqni ko'zdan kechirdim: sifat tushmadi — uslublar aniq (nike qora-oq siqiq sarlavhalar, duolingo yashil halqalar, midnight to'q), detal ekranlar ko'paydi, layout'lar xilma-xilroq. 6 brief + 6 qo'shilgan ekran $0.27 turdi.
+
 ### Ilova aholisi kodda tanlanadi — GEN-22
 "Maya Chen" uchta begona loyihada foydalanuvchi bo'lib chiqqan; bitta ilovaning ekranlari ham har xil ism tanlashi mumkin edi.
 - `lib/content-seed.ts`: `(projectId, til, kun)` dan sof funksiya — tizimga kirgan foydalanuvchi (ism, bosh harflar, email, shahar), 6 kishilik "cast" (do'stlar, jo'natuvchilar, reyting), bugungi sana va pul formati. Uch til: `en`, `uz` (so'm, Toshkent…), `ru` (₽, familiya ayol ismiga moslanadi). Til brief matnidan aniqlanadi (kirill → `ru`; "ilova/uchun/tilida…" → `uz`).

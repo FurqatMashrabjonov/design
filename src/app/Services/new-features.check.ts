@@ -104,8 +104,8 @@ assert.equal(multiPlan.screens[1].screenType, 'detail-view', 'Screen 2 is detail
 
 // Verify mobile-screen prompt includes app-consistency craft rules
 const mobilePrompt = composeSystemPrompt('minimal', 'mobile')
-assert.ok(mobilePrompt.includes('Shared Navigation Shell'), 'Mobile prompt must contain App Consistency craft rules')
-assert.ok(mobilePrompt.includes('Consistent Bottom Navigation Bar'), 'Mobile prompt must contain bottom nav bar rules')
+assert.ok(mobilePrompt.includes('The SHELL CONTRACT wins'), 'Mobile prompt must tell the model not to draw injected chrome')
+assert.ok(mobilePrompt.includes('HOUSE STYLE block'), 'Mobile prompt must contain the house-style rule')
 
 console.log('Testing Token Coverage...')
 for (const id of DesignSystemService.list().map((d) => d.id)) {

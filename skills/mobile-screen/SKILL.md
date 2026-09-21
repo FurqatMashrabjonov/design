@@ -7,7 +7,7 @@ od:
   mode: prototype
   platform: mobile
   craft:
-    requires: [typography, typography-hierarchy, color, anti-ai-slop, state-coverage, accessibility-baseline, form-validation, animation-discipline, app-consistency]
+    requires: [mobile]
 ---
 
 # Mobile screen
@@ -23,7 +23,7 @@ Produce exactly one mobile app screen, 390px wide viewport. The host page alread
 5. Icons: `<i data-lucide="name"></i>`, coloured with `currentColor` (see the icons and fonts contract). Never hand-draw icon SVG. Images: `https://placehold.co/WIDTHxHEIGHT` or CSS gradients.
 6. Realistic content — real-sounding names, numbers, timestamps, copy. Never lorem ipsum.
 7. Small interactivity (tab switch, toggle, expand) is a plain inline `<script>` at the end of `<body>`. No external JS framework.
-8. Before emitting, walk the craft references above and fix anything they flag — especially the anti-ai-slop cardinal sins and the accent budget (`var(--accent)` at most twice, visibly).
+8. Before emitting, run the "Before you emit" check in the craft rules above, and spend accent the way the style card's "Colour energy" line says.
 
 ## Output contract
 

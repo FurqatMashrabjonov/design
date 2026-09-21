@@ -4,9 +4,9 @@ export function extractArtifact(text: string) {
   const tag = text.match(/<artifact(?:\s+title="([^"]*)")?[^>]*>([\s\S]*?)(?:<\/artifact>|$)/i)
   if (tag) return { title: decodeEntities(tag[1] || '') || 'Untitled', html: stripFence(tag[2]) }
   const fence = text.match(/```html\s*([\s\S]*?)(?:```|$)/i)
-  const html = fence ? fence[1] : text
+  const html = stripFence(fence ? fence[1] : text)
   const title = decodeEntities(html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? '') || 'Untitled'
-  return { title, html: html.trim() }
+  return { title, html }
 }
 
 // A title is plain text from here on (screen name, injected header). Left encoded, "Profile &amp; Goals"
@@ -17,8 +17,12 @@ function decodeEntities(s: string) {
     .trim()
 }
 
+// Also drops anything after the document: models sometimes explain the screen in markdown after
+// </html>, and the browser renders that prose at the bottom of the page.
 function stripFence(s: string) {
-  return s.replace(/^\s*```html\s*/i, '').replace(/```\s*$/, '').trim()
+  const html = s.replace(/^\s*```html\s*/i, '').replace(/```\s*$/, '').trim()
+  const end = html.search(/<\/html\s*>/i)
+  return end === -1 ? html : html.slice(0, end) + '</html>'
 }
 
 // Server appends this when the stream fails midway, so the client can show the reason.

@@ -14,6 +14,8 @@ assert.deepEqual(extractArtifact(`<artifact title="X">\n\`\`\`html\n${h}\n\`\`\`
 assert.equal(extractArtifact(`<artifact title="Cut">${h.slice(0, 20)}`).html, h.slice(0, 20)) // partial stream
 assert.equal(extractArtifact(`<artifact title="Profile &amp; Goals">${h}</artifact>`).title, 'Profile & Goals', 'titles are plain text')
 assert.equal(extractArtifact('<html><head><title>Q&amp;A &lt;3</title></head></html>').title, 'Q&A <3')
+assert.equal(extractArtifact(`<artifact title="X">${h}\n\`\`\`\n### What I built\n- a list</artifact>`).html, h, 'prose after </html> is dropped')
+assert.equal(extractArtifact(`${h}\n\nHope this helps!`).html, h)
 assert.ok(DesignSystemService.list().some((d) => d.id === 'minimal' && d.name === 'Minimal'))
 assert.ok(DesignSystemService.exists('minimal'))
 assert.ok(!DesignSystemService.exists('../../etc'))
@@ -23,8 +25,8 @@ const mobile = composeSystemPrompt('minimal', 'mobile')
 assert.ok(mobile.includes('390px'), 'mobile skill body present')
 assert.ok(mobile.includes('— style card'), 'style card present')
 assert.ok(composeSystemPrompt('minimal', 'desktop').includes('# Minimal'), 'desktop still reads DESIGN.md')
-assert.ok(mobile.includes('Anti-AI-slop'), 'requested craft file present')
-assert.ok(mobile.includes('Animation'), 'mobile-only craft file present')
+assert.ok(mobile.includes('# Mobile screen craft'), 'requested craft file present')
+assert.ok(!mobile.includes('Anti-AI-slop') && !mobile.includes('Form validation'), 'web craft essays stay out of the mobile prompt')
 assert.ok(!mobile.includes('Laws of UX'), 'web-only craft file absent from mobile prompt')
 
 const web = composeSystemPrompt('minimal', 'desktop')
@@ -227,6 +229,16 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
     const [first, last] = contentSeed(id, 'ru', day).user.name.split(' ')
     assert.equal(/[ая]$/.test(first), /а$/.test(last), `${first} ${last}: surname agrees with the first name`)
   }
+}
+
+// GEN-23: the mobile system prompt stays small enough for a fast model to actually follow.
+{
+  const { readdirSync, existsSync, readFileSync } = await import('node:fs')
+  for (const id of readdirSync('design-systems').filter((d) => existsSync(`design-systems/${d}/DESIGN.md`))) {
+    const size = composeSystemPrompt(id, 'mobile').length
+    assert.ok(size < 24_000, `${id}: mobile system prompt is ${size} chars (budget 24 000, about 6k tokens)`)
+  }
+  assert.ok(readFileSync('craft/mobile.md', 'utf8').split('\n').length <= 150, 'craft/mobile.md is at most 150 lines')
 }
 
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
