@@ -2,11 +2,19 @@
 // Models sometimes skip the <artifact> tag or wrap the HTML in a ```html fence.
 export function extractArtifact(text: string) {
   const tag = text.match(/<artifact(?:\s+title="([^"]*)")?[^>]*>([\s\S]*?)(?:<\/artifact>|$)/i)
-  if (tag) return { title: decodeEntities(tag[1] || '') || 'Untitled', html: stripFence(tag[2]) }
+  if (tag) {
+    const html = stripFence(tag[2])
+    return { title: decodeEntities(tag[1] || '') || titleFrom(html), html }
+  }
   const fence = text.match(/```html\s*([\s\S]*?)(?:```|$)/i)
   const html = stripFence(fence ? fence[1] : text)
-  const title = decodeEntities(html.match(/<title>([^<]*)<\/title>/i)?.[1] ?? '') || 'Untitled'
-  return { title, html }
+  return { title: titleFrom(html), html }
+}
+
+// A screen the model forgot to name is named by its own <title>, then its first heading.
+function titleFrom(html: string) {
+  const pick = (re: RegExp) => decodeEntities((html.match(re)?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')).slice(0, 60)
+  return pick(/<title[^>]*>([\s\S]*?)<\/title>/i) || pick(/<h1[^>]*>([\s\S]*?)<\/h1>/i) || pick(/<h2[^>]*>([\s\S]*?)<\/h2>/i) || 'Untitled'
 }
 
 // A title is plain text from here on (screen name, injected header). Left encoded, "Profile &amp; Goals"
