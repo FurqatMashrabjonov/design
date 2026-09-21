@@ -20,6 +20,8 @@ After each completed change, before reporting it done:
 
 `docs/ROADMAP.md` is a read-only snapshot of that database so the plan stays readable without Notion. When Notion is unreachable, work from the snapshot and reconcile once it is back. Related Notion pages: the [plan overview](https://app.notion.com/p/3e039db48ef981bb9c26e3b652eeebaa), the [Modullar](https://app.notion.com/p/cea1e64dba26420d8a3d5088f9272201) database (one page per module, with its tasks), and the [competitor notes](https://app.notion.com/p/3e139db48ef981f2adb7f6d10f919ed5).
 
+Starting a session on a new machine or after a break: read `docs/HANDOFF.md` first — current state, open issues, and setup.
+
 ## Commands
 
 ```
