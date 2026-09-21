@@ -64,7 +64,8 @@ function ProjectPage() {
   }
   // The design system's own accent, read back from a generated screen (the normalizer put it there).
   const baseAccent = useMemo(() => {
-    const block = screens[0] ? extractRootBlock(screens[0].html) : null
+    const drawn = screens.find((sc) => sc.html)
+    const block = drawn ? extractRootBlock(drawn.html) : null
     const value = block ? parseDeclarations(block).get('--accent') : undefined
     return value && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : '#2952cc'
   }, [screens])
@@ -157,16 +158,16 @@ function ProjectPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Re-runs the screen's own last instruction through the edit pipeline — a retry, not a from-scratch
-  // redesign (the LLM sees the current HTML plus that same instruction again).
-  async function reloadScreen(screen: (typeof screens)[number]) {
+  // Draws the screen again from what it was planned to be (its stored spec), in the same slot, with
+  // the app's context. The current design becomes a version. Also how a failed screen is retried.
+  async function regenerateScreen(screen: (typeof screens)[number]) {
     setSelected(screen.id)
     try {
-      await generate({ prompt: screen.prompt, projectId: project.id, editScreenId: screen.id }, setLive)
-      await router.invalidate()
+      await generate({ prompt: '', projectId: project.id, regenerateScreenId: screen.id }, setLive)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
+      await router.invalidate() // a failure is recorded on the screen too
       setLive('')
     }
   }
@@ -211,6 +212,7 @@ function ProjectPage() {
           <ScreensList screens={screens} selected={selected} onSelect={setSelected} />
           <Canvas
             frames={frames}
+            fitKey={`${screens.length}:${planFrames.length}`}
             onBackgroundClick={() => setSelected(null)}
             onMove={(id, x, y) => {
               if (id.startsWith('plan-') || id === '__live__') return
@@ -241,6 +243,20 @@ function ProjectPage() {
                 )
               }
               const s = screens.find((sc) => sc.id === id)!
+              if (!s.html)
+                return (
+                  <FailedFrame
+                    name={s.name}
+                    error={s.error}
+                    width={f.width}
+                    height={f.height}
+                    onRetry={() => regenerateScreen(s)}
+                    onDelete={async () => {
+                      await deleteScreen({ data: { id: s.id, projectId: project.id } })
+                      await router.invalidate()
+                    }}
+                  />
+                )
               return (
                 <FrameContextMenu
                   onRename={() => setRenamingId(s.id)}
@@ -248,7 +264,7 @@ function ProjectPage() {
                     await duplicateScreen({ data: { id: s.id, projectId: project.id } })
                     await router.invalidate()
                   }}
-                  onReload={() => reloadScreen(s)}
+                  onRegenerate={() => regenerateScreen(s)}
                   onCopyHtml={() => copyHtml(applyThemeOverride(s.html, theme))}
                   onViewCode={() => setCodeScreenId(s.id)}
                   onOpenHistory={() => {
@@ -419,6 +435,30 @@ function ProjectPage() {
 
       <CodeDialog screen={codeScreen && { name: codeScreen.name, html: applyThemeOverride(codeScreen.html, theme) }} onOpenChange={(open) => !open && setCodeScreenId(null)} />
     </div>
+  )
+}
+
+// A planned screen whose generation failed keeps its place on the canvas.
+function FailedFrame(props: { name: string; error: string | null; width: number; height: number; onRetry: () => void; onDelete: () => void }) {
+  return (
+    <figure style={{ width: props.width }}>
+      <figcaption className="mb-2 truncate text-sm font-medium text-muted-foreground">{props.name}</figcaption>
+      <div
+        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/40 bg-background p-8 text-center"
+        style={{ width: props.width, height: props.height }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <CircleX className="size-8 text-destructive" />
+        <p className="text-base font-medium">This screen was not drawn</p>
+        <p className="max-w-[280px] text-sm text-muted-foreground">{props.error || 'The generation stopped before the screen was complete.'}</p>
+        <div className="mt-2 flex gap-2">
+          <Button onClick={props.onRetry}>Try again</Button>
+          <Button variant="outline" onClick={props.onDelete}>
+            Remove
+          </Button>
+        </div>
+      </div>
+    </figure>
   )
 }
 

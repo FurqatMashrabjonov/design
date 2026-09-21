@@ -105,11 +105,31 @@ export const PlanController = {
                 screenType: s.screenType,
                 activeTabId: s.activeTabId ?? null,
                 parentScreenName: s.parentScreen ?? null,
+                spec: screenSpec(s),
               })
               send({ type: 'screen_done', index: i, screenId: screen.id, name: screen.name })
               return normalized
             } catch (e) {
-              send({ type: 'screen_error', index: i, message: e instanceof Error ? e.message : String(e) })
+              const message = e instanceof Error ? e.message : String(e)
+              // The screen keeps its slot: it shows up on the canvas as a failed frame that can be
+              // retried in place, instead of a six-screen plan quietly becoming five.
+              if (!abort.signal.aborted) {
+                Screen.create({
+                  id: crypto.randomUUID(),
+                  projectId: project.id,
+                  name: s.name,
+                  prompt: s.description,
+                  html: '',
+                  x: i * (fw + FRAME_GAP),
+                  y: 0,
+                  screenType: s.screenType,
+                  activeTabId: s.activeTabId ?? null,
+                  parentScreenName: s.parentScreen ?? null,
+                  spec: screenSpec(s),
+                  error: message,
+                })
+              }
+              send({ type: 'screen_error', index: i, message })
               return null
             }
           }

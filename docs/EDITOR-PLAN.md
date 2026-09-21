@@ -1,6 +1,6 @@
 # Muharrir (kanvas) UX rejasi
 
-> Holat: **taklif** (2026-09-21). Manbalar: muharrir kodi to'liq o'qildi (`routes/p.$projectId.tsx`, `components/canvas/*`, `ScreenFrame.tsx`, `lib/element-*`), brauzerda ishlatib ko'rildi, Sleek va Stitch muharrirlarining skrinshotlari (foydalanuvchidan) va obzorlar.
+> Holat: **qabul qilindi, ishlanmoqda** (2026-09-21). Qatorlar Notion'da `M · Muharrir UX` bosqichida; M0 tayyor. Manbalar: muharrir kodi to'liq o'qildi (`routes/p.$projectId.tsx`, `components/canvas/*`, `ScreenFrame.tsx`, `lib/element-*`), brauzerda ishlatib ko'rildi, Sleek va Stitch muharrirlarining skrinshotlari (foydalanuvchidan) va obzorlar.
 >
 > Generatsiya endi yaxshi ekran beradi. Lekin foydalanuvchi vaqtining 90% i **birinchi generatsiyadan keyin** o'tadi: nimanidir o'zgartiradi, qaytaradi, solishtiradi. Hozir bizda aynan shu qism eng zaif.
 

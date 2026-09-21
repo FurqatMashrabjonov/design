@@ -9,10 +9,11 @@ import m0007 from './migrations/0007_add_project_theme.ts'
 import m0008 from './migrations/0008_add_screen_height.ts'
 import m0009 from './migrations/0009_create_image_cache_table.ts'
 import m0010 from './migrations/0010_add_project_plan.ts'
+import m0011 from './migrations/0011_add_screen_spec_and_error.ts'
 
 export type Migration = { name: string; up: (db: Database) => void }
 
-const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010]
+const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011]
 
 // Runs once at boot. Each migration runs at most once ever, tracked in _migrations —
 // unlike the old db.ts, later ones don't re-scan the whole table on every start.

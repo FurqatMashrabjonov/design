@@ -9,12 +9,12 @@ import {
 } from '@/components/ui/context-menu'
 
 // Right-click menu for a real (saved) screen frame — same actions as the hover toolbar plus the
-// less-frequent ones (reload, copy HTML, view code, jump to history) that would clutter it.
+// less-frequent ones (regenerate, copy HTML, view code, jump to history) that would clutter it.
 export function FrameContextMenu(props: {
   children: ReactNode
   onRename: () => void
   onDuplicate: () => void
-  onReload: () => void
+  onRegenerate: () => void
   onCopyHtml: () => void
   onViewCode: () => void
   onOpenHistory: () => void
@@ -30,8 +30,8 @@ export function FrameContextMenu(props: {
         <ContextMenuItem onSelect={props.onDuplicate}>
           <Copy /> Duplicate
         </ContextMenuItem>
-        <ContextMenuItem onSelect={props.onReload}>
-          <RotateCw /> Reload
+        <ContextMenuItem onSelect={props.onRegenerate}>
+          <RotateCw /> Regenerate
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={props.onCopyHtml}>

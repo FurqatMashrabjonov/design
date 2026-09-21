@@ -53,6 +53,9 @@ export function ScreenFrame(props: {
   const onHeight = props.onHeight
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
+      // Every frame on the canvas listens on the same window. Without this check each of them
+      // answered every frame's message, so picking an element in one screen selected another.
+      if (e.source !== iframeRef.current?.contentWindow) return
       if (e.data && e.data.type === 'od:select_element') {
         props.onSelectElement?.(e.data.elementId, e.data.tag)
         return

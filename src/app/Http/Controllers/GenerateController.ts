@@ -15,12 +15,14 @@ import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract
 import { autofixScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 
-// POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, skill? } -> text/plain stream
+// POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, regenerateScreenId?, skill? } -> text/plain stream
+// regenerateScreenId redraws that screen from its stored spec — also how a failed screen is retried.
 export const GenerateController = {
   async stream(request: Request): Promise<Response> {
     const body = await request.json().catch(() => ({}))
-    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
-    if (!prompt || prompt.length > 4000) return new Response('Prompt must be 1-4000 characters', { status: 400 })
+    const regenerateId = typeof body.regenerateScreenId === 'string' && body.regenerateScreenId ? body.regenerateScreenId : null
+    let prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+    if (!regenerateId && (!prompt || prompt.length > 4000)) return new Response('Prompt must be 1-4000 characters', { status: 400 })
 
     let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation' | 'plan'>>) | undefined
     let isNew = false
@@ -38,6 +40,14 @@ export const GenerateController = {
     if (body.editScreenId) {
       editScreen = Screen.findInProject(String(body.editScreenId), project.id)
       if (!editScreen) return new Response('Screen not found', { status: 404 })
+    }
+
+    // Regenerating is "draw this screen again from what it was planned to be", in the same slot.
+    let redraw: ScreenRow | undefined
+    if (regenerateId) {
+      redraw = Screen.findInProject(regenerateId, project.id)
+      if (!redraw) return new Response('Screen not found', { status: 404 })
+      prompt = redraw.spec || redraw.prompt
     }
 
     const editElementId = typeof body.editElementId === 'string' && body.editElementId ? body.editElementId : null
@@ -67,9 +77,13 @@ export const GenerateController = {
       // Adding to a planned app: the screen joins that app — its name, its screens, its shell and
       // its house style — instead of being designed from the bare prompt as if it stood alone.
       const nav = isNew ? null : parseNavigation(project.navigation)
-      const siblings = nav ? Screen.forProject(project.id).sort((a, z) => a.x - z.x) : []
-      if (nav && siblings.length > 0) {
-        const slot = slotForAddedScreen(prompt, nav, siblings)
+      // Screens that were drawn: a failed one has nothing to anchor a style on, and the screen being
+      // redrawn must not be listed as its own sibling.
+      const siblings = nav ? Screen.forProject(project.id).filter((s) => s.html && s.id !== redraw?.id).sort((a, z) => a.x - z.x) : []
+      if (nav && (siblings.length > 0 || redraw)) {
+        const slot: ScreenSlot = redraw
+          ? { name: redraw.name, screenType: redraw.screenType as ScreenSlot['screenType'], activeTabId: redraw.activeTabId ?? undefined, parentScreen: redraw.parentScreenName ?? undefined }
+          : slotForAddedScreen(prompt, nav, siblings)
         const anchor = siblings.find((s) => s.screenType === 'root-tab') ?? siblings[0]
         addTo = { nav, slot }
         const stored = parseStoredPlan(project.plan)
@@ -78,12 +92,14 @@ export const GenerateController = {
           data: dataBlock(stored?.entities ?? []),
           screenNames: siblings.map((s) => s.name),
           contract: shellContract(slot, nav, project.device === 'mobile'),
-          digest: extractStyleDigest(anchor.html),
+          digest: anchor ? extractStyleDigest(anchor.html) : '',
           // No brief is stored with a project, so the app's language is read off the screen it already has —
           // never off the chat message: people ask for an English app's next screen in their own language.
-          content: contentBlock(contentSeed(project.id, localeOf(`${anchor.html.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').slice(0, 4000)}`))),
-          heading: 'Screen to add',
-          description: `${prompt}\n\nIf this request does not name a screen, design the most useful screen this app is still missing. Never redesign a screen listed above. Title the artifact with the screen's own name.`,
+          content: contentBlock(contentSeed(project.id, localeOf(`${(anchor?.html ?? prompt).replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').slice(0, 4000)}`))),
+          heading: redraw ? `Screen to design: ${redraw.name}` : 'Screen to add',
+          description: redraw
+            ? prompt
+            : `${prompt}\n\nIf this request does not name a screen, design the most useful screen this app is still missing. Never redesign a screen listed above. Title the artifact with the screen's own name.`,
         })
       }
     }
@@ -95,7 +111,10 @@ export const GenerateController = {
     try {
       first = await deltas.next()
     } catch (e) {
-      return new Response(e instanceof Error ? e.message : String(e), { status: 502 })
+      // The provider refused before sending a byte (no balance, rate limit, outage).
+      const message = e instanceof Error ? e.message : String(e)
+      if (redraw) Screen.markFailed(redraw.id, message)
+      return new Response(message, { status: 502 })
     }
 
     const enc = new TextEncoder()
@@ -151,7 +170,11 @@ export const GenerateController = {
             })
           }
 
-          if (editScreen) {
+          if (redraw) {
+            // A screen that failed has no design worth keeping as a version.
+            if (redraw.html) ScreenVersion.captureFrom(redraw)
+            Screen.updateContent(redraw.id, { name: title === 'Untitled' ? redraw.name : title, prompt: redraw.prompt, html: finalHtml })
+          } else if (editScreen) {
             ScreenVersion.captureFrom(editScreen)
             Screen.updateContent(editScreen.id, { name: title, prompt, html: finalHtml })
           } else {
@@ -167,10 +190,13 @@ export const GenerateController = {
               screenType: addTo?.slot.screenType,
               activeTabId: addTo?.slot.activeTabId ?? null,
               parentScreenName: addTo?.slot.parentScreen ?? null,
+              spec: prompt,
             })
           }
         } catch (e) {
-          send(`${ERROR_MARK}${e instanceof Error ? e.message : String(e)}-->`)
+          const message = e instanceof Error ? e.message : String(e)
+          if (redraw && !abort.signal.aborted) Screen.markFailed(redraw.id, message)
+          send(`${ERROR_MARK}${message}-->`)
         }
         try {
           controller.close()

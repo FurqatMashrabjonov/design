@@ -316,6 +316,24 @@ const msg = T.themeMessage({ accent: '#e11d48', bodyFont: 'inter' })
 assert.ok(msg.fonts.every((u: string) => u.startsWith('https://fonts.googleapis.com/')), 'Live payload only names Google Fonts URLs')
 for (const f of T.FONTS) assert.ok(T.fontUrl(f.id).includes('css2?family='), `${f.id} builds a fonts URL`)
 
+console.log('Testing Editor Wiring...')
+{
+  // Every frame listens on the same window; a frame that answers another frame's message sends an
+  // element edit to the wrong screen. Source text is checked because the component needs a browser.
+  const { readFileSync: read } = await import('node:fs')
+  const frame = read('src/ScreenFrame.tsx', 'utf8')
+  const handler = frame.slice(frame.indexOf('function handleMessage'), frame.indexOf("window.addEventListener('message', handleMessage)"))
+  assert.ok(/if \(e\.source !== iframeRef\.current\?\.contentWindow\) return/.test(handler), 'ScreenFrame must ignore messages that did not come from its own iframe')
+  assert.ok(handler.indexOf('e.source !==') < handler.indexOf('od:select_element'), 'the source check comes before any message is acted on')
+
+  const canvas = read('src/components/canvas/Canvas.tsx', 'utf8')
+  assert.ok(/\[hasFrames, props\.fitKey\]/.test(canvas) && /fit\(1\)/.test(canvas), 'the canvas fits all frames when a project opens and when the set of screens changes')
+  assert.ok(/if \(hasFrames && !userMoved\.current\) fit\(1\)/.test(canvas), 'it follows frames as they report their height, until the person moves the view')
+
+  const controller = read('src/app/Http/Controllers/ScreenController.ts', 'utf8')
+  assert.ok(/screenType: source\.screenType/.test(controller) && /parentScreenName: source\.parentScreenName/.test(controller), 'a duplicated detail screen stays a detail screen')
+}
+
 console.log('Testing LLM Stream Abort...')
 {
   // A stand-in for DeepSeek: it streams one token, then hangs like a slow generation.

@@ -8,6 +8,8 @@ export async function generate(
     designSystem?: string
     editScreenId?: string
     editElementId?: string
+    /** Redraw this screen from its stored spec (also how a failed screen is retried); `prompt` is ignored. */
+    regenerateScreenId?: string
     skill?: string
   },
   onText: (text: string) => void,

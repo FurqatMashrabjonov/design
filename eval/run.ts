@@ -110,7 +110,8 @@ async function runBrief(b: Brief): Promise<BriefResult> {
   }
 
   // x is assigned by plan order, so it restores the planner's sequence; an added screen lands last.
-  const rows = Screen.forProject(projectId).sort((a, z) => a.x - z.x)
+  // A failed screen keeps a row (so the app can retry it) but has nothing to show or measure.
+  const rows = Screen.forProject(projectId).filter((s) => s.html).sort((a, z) => a.x - z.x)
   rows.forEach((s, i) => {
     const file = `screens/${b.id}-${i}.html`
     writeFileSync(join(outDir, file), s.html)

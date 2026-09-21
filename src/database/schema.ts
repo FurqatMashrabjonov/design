@@ -30,6 +30,10 @@ export const screens = sqliteTable('screens', {
   screenType: text('screen_type').notNull().default('root-tab'),
   activeTabId: text('active_tab_id'),
   parentScreenName: text('parent_screen_name'),
+  // What the screen was planned to be; never overwritten by edits (see migration 0011).
+  spec: text('spec'),
+  // Set while the last attempt to draw the screen failed; html is '' in that case.
+  error: text('error'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

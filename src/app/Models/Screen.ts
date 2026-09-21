@@ -43,14 +43,22 @@ export const Screen = {
     screenType?: string
     activeTabId?: string | null
     parentScreenName?: string | null
+    spec?: string | null
+    error?: string | null
   }): ScreenRow {
     db.insert(screens).values(data).run()
     return Screen.findInProject(data.id, data.projectId)!
   },
 
   // Content only — never touches position, so an edit can't jump the frame on the canvas.
+  // A failed attempt leaves the previous design (if any) in place and only records why.
+  markFailed(id: string, error: string) {
+    db.update(screens).set({ error: error.slice(0, 500) }).where(eq(screens.id, id)).run()
+  },
+
+  // A successful draw always clears the failure note.
   updateContent(id: string, data: { name: string; prompt: string; html: string }) {
-    db.update(screens).set(data).where(eq(screens.id, id)).run()
+    db.update(screens).set({ ...data, error: null }).where(eq(screens.id, id)).run()
   },
 
   move(id: string, x: number, y: number) {

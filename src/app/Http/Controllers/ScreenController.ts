@@ -31,6 +31,11 @@ export const ScreenController = {
       html: source.html,
       x: pos.x,
       y: pos.y,
+      // A copy of a detail screen is still a detail screen: without these the preview treated it
+      // as a tab root and its Back button had nowhere to go.
+      screenType: source.screenType,
+      activeTabId: source.screenType === 'root-tab' ? null : source.activeTabId,
+      parentScreenName: source.parentScreenName,
     })
   },
 }

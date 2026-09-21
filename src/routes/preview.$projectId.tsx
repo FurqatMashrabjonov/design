@@ -27,7 +27,7 @@ function PreviewPage() {
   const navigate = useNavigate()
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  const screens = useMemo(() => orderScreens(rows), [rows])
+  const screens = useMemo(() => orderScreens(rows.filter((sc) => sc.html)), [rows])
   const currentIndex = Math.max(0, screens.findIndex((s) => s.id === search.s))
   const current = screens[currentIndex]
 

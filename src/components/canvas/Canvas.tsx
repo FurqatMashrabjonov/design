@@ -23,6 +23,8 @@ export function Canvas(props: {
   onMove: (id: string, x: number, y: number) => void
   renderFrame: (id: string) => ReactNode
   onBackgroundClick?: () => void
+  /** Change this to bring every frame back into view (a generation finished, a screen was added). */
+  fitKey?: string | number
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
@@ -43,12 +45,14 @@ export function Canvas(props: {
   }
 
   function zoomCentered(nextScale: number) {
+    userMoved.current = true
     const el = viewportRef.current
     const rect = el?.getBoundingClientRect()
     zoomAt(nextScale, rect ? rect.width / 2 : 0, rect ? rect.height / 2 : 0)
   }
 
-  function fit() {
+  // `maxScale` lets an automatic fit stop at 100%: one small screen should not be blown up to 200%.
+  function fit(maxScale = MAX_SCALE) {
     const el = viewportRef.current
     if (!el || props.frames.length === 0) return
     const rect = el.getBoundingClientRect()
@@ -60,9 +64,27 @@ export function Canvas(props: {
     const minY = Math.min(...ys)
     const w = Math.max(...rights) - minX
     const h = Math.max(...bottoms) - minY
-    const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.min(rect.width / w, rect.height / h) * 0.85))
+    const next = Math.min(maxScale, Math.max(MIN_SCALE, Math.min(rect.width / w, rect.height / h) * 0.85))
     setView({ scale: next, x: rect.width / 2 - (minX + w / 2) * next, y: rect.height / 2 - (minY + h / 2) * next })
   }
+
+  // A project opens with all of its screens in view, and comes back to that whenever the set of
+  // screens changes. It used to open at 100%, showing two and a half of six phone frames.
+  const hasFrames = props.frames.length > 0
+  const userMoved = useRef(false)
+  useEffect(() => {
+    if (!hasFrames) return
+    userMoved.current = false
+    fit(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasFrames, props.fitKey])
+  // Frames report their real height a moment after they render, which makes the first fit too
+  // tight. Follow them — but only until the person pans or zooms; after that the view is theirs.
+  const extent = props.frames.reduce((m, f) => Math.max(m, pos(f).y + f.height), 0)
+  useEffect(() => {
+    if (hasFrames && !userMoved.current) fit(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extent])
 
   function reset() {
     setView({ scale: 1, x: 80, y: 80 })
@@ -77,6 +99,7 @@ export function Canvas(props: {
     if (!el) return
     const handler = (e: WheelEvent) => {
       e.preventDefault()
+      userMoved.current = true
       if (e.ctrlKey || e.metaKey) {
         const rect = el.getBoundingClientRect()
         setView((prev) => {
@@ -118,6 +141,7 @@ export function Canvas(props: {
     const dx = e.clientX - d.startX
     const dy = e.clientY - d.startY
     if (d.mode === 'pan') {
+      userMoved.current = true
       setView((prev) => ({ ...prev, x: d.startTx + dx, y: d.startTy + dy }))
     } else {
       setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / view.scale, y: d.startFy + dy / view.scale } }))
@@ -198,7 +222,7 @@ export function Canvas(props: {
           <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={reset} title="Reset view">
             <RotateCcw className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={fit} title="Fit to screen">
+          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => fit()} title="Fit to screen">
             <Maximize className="size-4" />
           </Button>
         </div>
