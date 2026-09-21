@@ -1,4 +1,4 @@
-// npm run eval -- [--only id,id] [--limit n] [--concurrency n] [--label name] [--no-shot] [--from run]
+// npm run eval -- [--only id,id] [--limit n] [--concurrency n] [--label name] [--no-shot] [--no-add] [--from run]
 // --from <run> skips generation and rebuilds metrics and sheets for an existing run (after a metrics change).
 // Generates every brief in eval/briefs.json through the real PlanController, in a throwaway database,
 // and writes eval/out/<label>/{index.html, compare.html, ab.html, results.json, metrics.json, screens/, sheet-N.png}.
@@ -22,6 +22,7 @@ const { values: args } = parseArgs({
     from: { type: 'string' },
     label: { type: 'string' },
     'no-shot': { type: 'boolean', default: false },
+    'no-add': { type: 'boolean', default: false },
   },
 })
 
@@ -36,6 +37,7 @@ process.env.DB_PATH = join(outDir, 'eval.db')
 const { Project } = await import('@/app/Models/Project')
 const { Screen } = await import('@/app/Models/Screen')
 const { PlanController } = await import('@/app/Http/Controllers/PlanController')
+const { GenerateController } = await import('@/app/Http/Controllers/GenerateController')
 const { mapLimit } = await import('@/app/Services/Pool')
 const { onLlmUsage } = await import('@/app/Services/LlmService')
 
@@ -85,14 +87,28 @@ async function runBrief(b: Brief): Promise<BriefResult> {
     }
   }
 
-  // x is assigned by plan order, so it restores the planner's sequence.
+  // The second way screens are made: a vague follow-up in the chat. It used to lose the app entirely.
+  const planned = new Set(Screen.forProject(projectId).map((s) => s.id))
+  if (planned.size > 0 && !args['no-add']) {
+    const t0 = Date.now()
+    const add = await GenerateController.stream(
+      new Request('http://eval/api/generate', { method: 'POST', body: JSON.stringify({ projectId, prompt: "yana bitta ekran qo'sh" }) }),
+    )
+    const text = await add.text()
+    const failed = text.match(/<!--GEN_ERROR:([\s\S]*?)-->/)?.[1] ?? (add.ok ? '' : text)
+    if (failed) result.errors.push(`added: ${failed.trim().slice(0, 200)}`)
+    for (const s of Screen.forProject(projectId)) if (!planned.has(s.id)) tookMs.set(s.id, Date.now() - t0)
+  }
+
+  // x is assigned by plan order, so it restores the planner's sequence; an added screen lands last.
   const rows = Screen.forProject(projectId).sort((a, z) => a.x - z.x)
   rows.forEach((s, i) => {
     const file = `screens/${b.id}-${i}.html`
     writeFileSync(join(outDir, file), s.html)
     const ms = tookMs.get(s.id) ?? 0
-    result.screens.push({ file, name: s.name, screenType: s.screenType, ms, chars: s.html.length })
-    screenInputs.push({ briefId: b.id, designSystem: b.designSystem, name: s.name, screenType: s.screenType, ms, html: s.html })
+    const added = !planned.has(s.id)
+    result.screens.push({ file, name: s.name, screenType: s.screenType, ms, chars: s.html.length, added })
+    screenInputs.push({ briefId: b.id, designSystem: b.designSystem, name: s.name, screenType: s.screenType, ms, html: s.html, added })
   })
   result.ms = Date.now() - started
   console.log(`${b.id}: ${result.screens.length} screens, ${(result.ms / 1000).toFixed(0)}s${result.errors.length ? `, ${result.errors.length} errors` : ''}`)
@@ -104,7 +120,7 @@ if (args.from) {
   results = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'))
   for (const r of results)
     for (const s of r.screens)
-      screenInputs.push({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, html: readFileSync(join(outDir, s.file), 'utf8') })
+      screenInputs.push({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, added: s.added, html: readFileSync(join(outDir, s.file), 'utf8') })
   const old = JSON.parse(readFileSync(join(outDir, 'metrics.json'), 'utf8')).usage
   if (old) usage = { calls: old.calls, promptTokens: old.promptTokens, cachedTokens: old.cachedTokens, completionTokens: old.completionTokens }
 } else {
@@ -114,7 +130,7 @@ if (args.from) {
 
 const loadRun = (d: string): BriefResult[] => JSON.parse(readFileSync(join(OUT_ROOT, d, 'results.json'), 'utf8'))
 const inputsOf = (d: string, rs: BriefResult[]): ScreenInput[] =>
-  rs.flatMap((r) => r.screens.map((s) => ({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, html: readFileSync(join(OUT_ROOT, d, s.file), 'utf8') })))
+  rs.flatMap((r) => r.screens.map((s) => ({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, added: s.added, html: readFileSync(join(OUT_ROOT, d, s.file), 'utf8') })))
 
 // "Before" is the newest earlier run that drew at least one of these briefs. Runs are usually
 // --only subsets, so both sides are cut down to the briefs they share before anything is compared.

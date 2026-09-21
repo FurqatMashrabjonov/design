@@ -8,7 +8,9 @@ import { extractArtifact, ERROR_MARK } from '@/artifact'
 import { nextFramePosition } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
-import { normalizeScreen } from '@/lib/screen-normalizer'
+import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
+import { NAV_CLEARANCE } from '@/app/Services/ShellService'
+import { parseNavigation, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
 import { autofixScreen } from '@/lib/design-lint'
 
 // POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, skill? } -> text/plain stream
@@ -18,7 +20,7 @@ export const GenerateController = {
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
     if (!prompt || prompt.length > 4000) return new Response('Prompt must be 1-4000 characters', { status: 400 })
 
-    let project: Pick<ProjectRow, 'id' | 'designSystem' | 'device'> | undefined
+    let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation'>>) | undefined
     let isNew = false
     if (body.projectId) {
       project = Project.find(String(body.projectId))
@@ -41,6 +43,7 @@ export const GenerateController = {
 
     let systemPrompt: string
     let userMessage: string
+    let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot } | undefined
 
     if (editScreen && editElementId) {
       const existingElementHtml = extractElement(editScreen.html, editElementId) ?? ''
@@ -59,6 +62,23 @@ export const GenerateController = {
     } else {
       systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill)
       userMessage = prompt
+      // Adding to a planned app: the screen joins that app — its name, its screens, its shell and
+      // its house style — instead of being designed from the bare prompt as if it stood alone.
+      const nav = isNew ? null : parseNavigation(project.navigation)
+      const siblings = nav ? Screen.forProject(project.id).sort((a, z) => a.x - z.x) : []
+      if (nav && siblings.length > 0) {
+        const slot = slotForAddedScreen(prompt, nav, siblings)
+        const anchor = siblings.find((s) => s.screenType === 'root-tab') ?? siblings[0]
+        addTo = { nav, slot }
+        userMessage = screenBrief({
+          app: project.name ?? 'Untitled',
+          screenNames: siblings.map((s) => s.name),
+          contract: shellContract(slot, nav, project.device === 'mobile'),
+          digest: extractStyleDigest(anchor.html),
+          heading: 'Screen to add',
+          description: `${prompt}\n\nIf this request does not name a screen, design the most useful screen this app is still missing. Never redesign a screen listed above. Title the artifact with the screen's own name.`,
+        })
+      }
     }
 
     // Cancelling the response stream (tab closed, navigation) aborts the upstream LLM call.
@@ -110,7 +130,8 @@ export const GenerateController = {
           } else {
             const extracted = extractArtifact(text)
             title = extracted.title
-            finalHtml = annotateHtml(autofixScreen(normalizeScreen(extracted.html, normalizeOpts)))
+            const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title)
+            finalHtml = annotateHtml(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 
@@ -136,6 +157,9 @@ export const GenerateController = {
               html: finalHtml,
               x: pos.x,
               y: pos.y,
+              screenType: addTo?.slot.screenType,
+              activeTabId: addTo?.slot.activeTabId ?? null,
+              parentScreenName: addTo?.slot.parentScreen ?? null,
             })
           }
         } catch (e) {

@@ -42,6 +42,7 @@ Generation runs on DeepSeek's fast chat model (`deepseek-chat`) only. Never swit
 
 - **Consistency across screens is enforced in code after generation, never by prompt wording.** Parallel LLM calls are independent samples. Anything that must match across screens belongs in `ShellService`, `lib/screen-normalizer.ts`, or `lib/design-lint.ts`. Prompt text should only tell the model *not* to draw things the code injects.
 - **Layers:** `app/Models` (data access), `app/Services` (logic), `app/Http/Controllers` (request handling), `routes/` (TanStack file routes), `server/fns.ts` (route-to-controller binding). Migrations are numbered files in `database/migrations`, registered in `database/migrate.ts`.
+- **Every screen is generated with its app's context, whichever path makes it.** `app/Services/ScreenContext.ts` builds the brief (app name, sibling screens, shell contract, house-style digest) for both the planned run and a screen added later from chat. A new generation path must go through it, or the screen is designed as if it belonged to no app.
 - **Shell markup uses inline styles only**, never Tailwind classes. Whether a screen loads Tailwind is the model's choice; a class-styled nav collapsed off-screen on a plain-CSS screen.
 - **Never hardcode a light surface** (`bg-white`, `#fff`) in shell markup. Use `var(--surface)` / `var(--border)` or dark design systems break.
 - **Icons are `<i data-lucide="name">`.** The model must not hand-draw icon SVG.

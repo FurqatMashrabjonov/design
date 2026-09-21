@@ -5,6 +5,19 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Qo'shilgan ekran o'z ilovasiga qo'shiladi — GEN-19
+Chatdagi "yana bitta qo'sh" `GenerateController` ga yalang'och prompt bo'lib borardi: ilova nomi, ekranlar, navigatsiya, house style — hech narsa. Natijada kaloriya ilovasiga boshqa ilovaning ekrani, o'z tab bar'i bilan qo'shilgan (`data.db` dagi uchta "Lesson Complete" ekrani).
+- `app/Services/ScreenContext.ts` (yangi): `shellContract`, `shellPartsFor`, `screenBrief` `PlanController` dan ko'chirildi va ikkala yo'l shulardan foydalanadi — rejali yugurishning prompt matni o'zgarmadi.
+- Navigatsiyasi bor loyihaga ekran qo'shilganda: ilova nomi, mavjud ekranlar ro'yxati, shell shartnomasi, anchor ekrandan olingan house style digest, va "nom aytilmagan bo'lsa — ilovada yetishmayotgan eng foydali ekranni chiz, ro'yxatdagini qayta chizma". Shell kodda in'ektsiya qilinadi, `screenType` / `activeTabId` / `parentScreenName` bazaga yoziladi (preview'da "orqaga" ishlaydi).
+- `slotForAddedScreen`: so'rov bo'sh tab'ning yorlig'ini aytsa — o'sha tab'ning root ekrani; aks holda birinchi tab ostidagi detail ekran. Band tab'ga ikkinchi root ekran hech qachon berilmaydi.
+- Eval endi bu yo'lni ham o'lchaydi: har briefdan keyin haqiqiy `GenerateController` ga "yana bitta ekran qo'sh" yuboriladi (`--no-add` o'chiradi); varaqda `added` belgisi, metrikada `addedScreens` / `addedWithoutShell`.
+
+Tekshirish paytida ikkita eski bug chiqdi va tuzatildi:
+- **Detail header qator-flex `body` ichida ekran yonida tor ustun bo'lib qolardi.** Model 390px ustunni markazlash uchun `body{display:flex;justify-content:center}` yozadi; header `body` ning birinchi bolasi bo'lib in'ektsiya qilinadi va kontentni o'ngga surib chiqaradi. `normalizeShell` endi bunday `body` ni ustunga o'tkazadi (`<style data-od-shell="stack">`). Baseline'da 34 detail ekrandan 1 tasi, oxirgi ikki yugurishda 2 tasi shunday edi.
+- **Sarlavhadagi `&amp;` ochilmasdi**: "Profile &amp; Goals" kanvasda aynan shunday ko'rinardi va header ichida ikkinchi marta escape qilinardi. `extractArtifact` endi sarlavhani oddiy matnga aylantiradi.
+- Fayllar: `ScreenContext.ts` (yangi), `GenerateController.ts`, `PlanController.ts`, `lib/screen-normalizer.ts`, `artifact.ts`, `services.check.ts`, `eval/run.ts`, `eval/sheet.ts`, `eval/metrics.ts`.
+- Tekshirildi: `npm run check`, `tsc` toza. Testlar: noaniq so'rov → birinchi tab ostida detail; bo'sh tab nomi → o'sha tab; band tab → detail; yorliq butun so'z bo'lib mos keladi; header `data-od-back` ota ekranni ko'rsatadi; desktopda shell yo'q; buzuq navigation JSON → `null`; qator-flex/grid/Tailwind `flex` body aniqlanadi, `flex-col` va blok body tegilmaydi, tuzatish idempotent, tab bar uchun qo'llanmaydi. Eval (`gen19`, 2 brief): ikkala qo'shilgan ekran o'z ilovasida ("SnapCal AI — Add Another Serving", "TaskFlow — New Task"), o'sha uslubda, `addedWithoutShell` 0. Header tuzatishi headless Chrome'da oldin/keyin skrinshot bilan ko'rildi.
+
 ### Lint: ekran o'z dizayn tizimining kompaniyasini atasa — P0 — GEN-18
 GEN-17 oqishning manbasini yopdi; bu qator uni o'lchaydi, toki qaytsa ko'rinsin.
 - `design-systems/leak-terms.json`: 23 tizim uchun qo'lda saralangan ikki ro'yxat. `brand` — faqat ilova **o'zini atagan** joyda oqish (`<title>`, `h1`–`h3`), chunki "Pay with Stripe" yoki "Sign in with GitHub" oddiy matn. `anywhere` — begunoh ishlatilishi yo'q atamalar ("Cybertruck", "Super Duolingo", "Become a host"). Distillator bergan xom ro'yxat (shrift nomlari, rang nomlari, "Inter", "Explore") ishlatilmadi — u har ikkinchi ekranda yolg'on signal berardi.

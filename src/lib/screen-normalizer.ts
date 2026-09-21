@@ -125,9 +125,32 @@ export function normalizeShell(html: string, shell: ShellParts): string {
       patchById(out, 'screen-header', shell.header) ??
       replaceMatchingTag(out, 'header', isPinnedTop, shell.header) ??
       injectAfterBodyStart(out, shell.header)
+    out = stackRowBody(out)
   }
 
   return out
+}
+
+/**
+ * Models like `body { display:flex; justify-content:center }` to centre a 390px column. The header
+ * is injected as body's first child, so in that row it became a narrow column beside the screen
+ * and pushed the content off the right edge. When body is a row container, stack it instead.
+ */
+export function bodyIsRowContainer(html: string): boolean {
+  const css = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => stripCssComments(m[1])).join('\n')
+  const bodyRules = [...css.matchAll(/(?:^|[\s,}])body\s*\{([^}]*)\}/gi)].map((m) => m[1]).join(';')
+  const inline = html.match(/<body\b[^>]*\bstyle\s*=\s*["']([^"']*)["']/i)?.[1] ?? ''
+  const classes = ` ${html.match(/<body\b[^>]*\bclass\s*=\s*["']([^"']*)["']/i)?.[1] ?? ''} `
+  const decl = `${bodyRules};${inline}`
+  const flexOrGrid = /display\s*:\s*(inline-)?(flex|grid)/i.test(decl) || /\s(flex|inline-flex|grid)\s/.test(classes)
+  const column = /flex-direction\s*:\s*column/i.test(decl) || /\sflex-col\s/.test(classes)
+  return flexOrGrid && !column
+}
+
+function stackRowBody(html: string): string {
+  if (!bodyIsRowContainer(html) || html.includes('data-od-shell="stack"')) return html
+  const fix = '<style data-od-shell="stack">body{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;align-items:stretch!important}</style>'
+  return /<\/head>/i.test(html) ? html.replace(/<\/head>/i, `${fix}</head>`) : fix + html
 }
 
 function patchById(html: string, id: string, replacement: string): string | null {

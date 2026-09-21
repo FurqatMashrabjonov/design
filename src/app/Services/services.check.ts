@@ -12,6 +12,8 @@ assert.deepEqual(extractArtifact(`<artifact title="Dash">${h}</artifact>`), { ti
 assert.deepEqual(extractArtifact('Sure!\n```html\n' + h + '\n```'), { title: 'T', html: h })
 assert.deepEqual(extractArtifact(`<artifact title="X">\n\`\`\`html\n${h}\n\`\`\`\n</artifact>`), { title: 'X', html: h })
 assert.equal(extractArtifact(`<artifact title="Cut">${h.slice(0, 20)}`).html, h.slice(0, 20)) // partial stream
+assert.equal(extractArtifact(`<artifact title="Profile &amp; Goals">${h}</artifact>`).title, 'Profile & Goals', 'titles are plain text')
+assert.equal(extractArtifact('<html><head><title>Q&amp;A &lt;3</title></head></html>').title, 'Q&A <3')
 assert.ok(DesignSystemService.list().some((d) => d.id === 'minimal' && d.name === 'Minimal'))
 assert.ok(DesignSystemService.exists('minimal'))
 assert.ok(!DesignSystemService.exists('../../etc'))
@@ -111,6 +113,51 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(!lintScreen(page('Duolingo', '')).some((f) => f.rule === 'design-system-brand-leak'), 'no terms passed, no rule')
   for (const id of Object.keys(JSON.parse(readFileSync('design-systems/leak-terms.json', 'utf8')))) assert.ok(DesignSystemService.exists(id), `leak-terms.json: unknown design system ${id}`)
   assert.ok(!DesignSystemService.list().some((d) => d.id.includes('leak-terms')), 'the terms file is not listed as a design system')
+}
+
+// GEN-19: a screen added to an existing app joins that app.
+{
+  const { parseNavigation, screenBrief, shellContract, shellPartsFor, slotForAddedScreen } = await import('./ScreenContext.ts')
+  const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'stats', label: 'Stats', icon: 'bar-chart-2' }, { id: 'profile', label: 'Profile', icon: 'user' }] }
+  const existing = [
+    { name: 'SnapCal — Home', screenType: 'root-tab', activeTabId: 'home' },
+    { name: 'Meal detail', screenType: 'detail-view', activeTabId: null },
+    { name: 'SnapCal — Profile', screenType: 'root-tab', activeTabId: 'profile' },
+  ]
+  assert.deepEqual(slotForAddedScreen("yana bitta qo'sh", nav, existing), { screenType: 'detail-view', parentScreen: 'SnapCal — Home' }, 'a vague request becomes a detail screen under the first tab')
+  assert.deepEqual(slotForAddedScreen('make the stats page', nav, existing), { screenType: 'root-tab', activeTabId: 'stats' }, 'naming an empty tab fills it')
+  assert.equal(slotForAddedScreen('another profile variant', nav, existing).screenType, 'detail-view', 'an occupied tab never gets a second root screen')
+  assert.equal(slotForAddedScreen('show statsy things', nav, existing).screenType, 'detail-view', 'tab labels match as whole words')
+
+  const detail = slotForAddedScreen('water log', nav, existing)
+  assert.ok(shellContract(detail, nav, true).includes("this screen's title"), 'the title is the model\'s to choose')
+  assert.ok(shellPartsFor(detail, nav, true, 'Water log').header?.includes('data-od-back="SnapCal — Home"'))
+  assert.ok(shellPartsFor({ screenType: 'root-tab', activeTabId: 'stats' }, nav, true, 'Stats').nav?.includes('data-od-shell="bottom-nav"'))
+  assert.deepEqual(shellPartsFor(detail, nav, false, 'x'), {}, 'desktop has no injected shell')
+
+  const brief = screenBrief({ app: 'SnapCal', screenNames: existing.map((s) => s.name), contract: shellContract(detail, nav, true), digest: '.card{border-radius:16px}', heading: 'Screen to add', description: 'water log' })
+  for (const part of ['App: SnapCal', 'SnapCal — Home, Meal detail, SnapCal — Profile', 'SHELL CONTRACT', '.card{border-radius:16px}', 'water log']) assert.ok(brief.includes(part), `brief carries "${part}"`)
+
+  assert.equal(parseNavigation(JSON.stringify(nav))?.tabs.length, 3)
+  for (const junk of [null, '', '{', '{"tabs":[]}', '"x"']) assert.equal(parseNavigation(junk), null)
+}
+
+// GEN-19 (shell): a detail header injected into a row-flex body stacks above the screen, not beside it.
+{
+  const { normalizeShell, bodyIsRowContainer } = await import('../../lib/screen-normalizer.ts')
+  const doc = (bodyCss: string, bodyAttrs = '') => `<!doctype html><html><head><style>/* body { display:block } */\nbody {\n  ${bodyCss}\n}\n.screen{max-width:390px}</style></head><body${bodyAttrs}><div class="screen">x</div></body></html>`
+  assert.ok(bodyIsRowContainer(doc('display: flex;\n  justify-content: center;')))
+  assert.ok(bodyIsRowContainer(doc('margin:0', ' class="min-h-screen flex justify-center"')))
+  assert.ok(bodyIsRowContainer(doc('display:grid')))
+  assert.ok(!bodyIsRowContainer(doc('display:flex; flex-direction: column')))
+  assert.ok(!bodyIsRowContainer(doc('margin:0', ' class="flex flex-col"')))
+  assert.ok(!bodyIsRowContainer(doc('margin:0')), 'a block body is left alone')
+  const header = '<header data-od-id="screen-header" data-od-shell="detail-header">T</header>'
+  const fixed = normalizeShell(doc('display:flex;justify-content:center'), { header })
+  assert.ok(fixed.includes('data-od-shell="stack"') && fixed.includes('flex-direction:column!important'))
+  assert.equal(normalizeShell(fixed, { header }).match(/data-od-shell="stack"/g)?.length, 1, 'idempotent')
+  assert.ok(!normalizeShell(doc('margin:0'), { header }).includes('data-od-shell="stack"'))
+  assert.ok(!normalizeShell(doc('display:flex'), { nav: '<nav data-od-shell="bottom-nav"></nav>' }).includes('data-od-shell="stack"'), 'a fixed tab bar is out of flow and needs no fix')
 }
 
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.

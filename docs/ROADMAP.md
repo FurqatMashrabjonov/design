@@ -43,7 +43,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EVAL-04 | Ko'r-ko'rona A/B taqqoslash sahifasi | Generatsiya / Sifat | MVP | Tayyor | Kichik | EVAL-02 | Ikki yugurish juftlab ko'rsatiladi, tomonlar yashirin; yutish foizi hisoblanadi |
 | GEN-17 | DESIGN.md → uslub kartasi (STYLE.md, ≤60 qator), mahsulot lug'atisiz | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta |  | Uslub kartasida brend mahsulot otlari yo'q; eval'da tizim nomi ekran matnida uchramaydi |
 | GEN-18 | Lint: dizayn tizimi brend nomi yoki maskoti ekran matnida | Generatsiya / Sifat | MVP | Tayyor | Kichik | GEN-17 | Test fixture P0 topilma bilan yiqiladi |
-| GEN-19 | Bitta ekran qo'shish ham to'liq ilova kontekstini oladi | Generatsiya / Izchillik | MVP | Rejada | O'rta |  | Qo'shilgan ekran bir xil nav, shell va house style'da; check test |
+| GEN-19 | Bitta ekran qo'shish ham to'liq ilova kontekstini oladi | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | Qo'shilgan ekran bir xil nav, shell va house style'da; check test |
 | GEN-20 | Ekran turi kodda tekshiriladi (root-tab / detail-view / modal-flow) | Generatsiya / Izchillik | MVP | Rejada | Kichik |  | Har tab'ga aynan bitta root-tab; 5 ekran/4 tab → kamida 1 detail; ota-onasiz detail rad etiladi |
 | GEN-21 | Planner ikonkani faqat ma'lum ro'yxatdan tanlaydi; sinonim xaritasi; ~80 ikonka | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Hech bir tab 'circle' ga tushmaydi. isAction tab standart o'chiq |
 | GEN-22 | Kontent urug'i kodda: persona, avatar, sana, valyuta | Generatsiya / Kontent | MVP | Rejada | Kichik |  | Ikki loyihada har xil persona; bitta loyihaning hamma ekranida bir xil |

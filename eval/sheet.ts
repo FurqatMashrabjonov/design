@@ -2,7 +2,7 @@
 // Pure string building so it can be tested without a run. Headless Chrome on macOS cannot open a
 // window narrower than 500px, so a screen is never screenshotted on its own: it is always framed here.
 
-export type ScreenResult = { file: string; name: string; screenType: string; ms: number; chars: number }
+export type ScreenResult = { file: string; name: string; screenType: string; ms: number; chars: number; added?: boolean }
 export type BriefResult = {
   id: string
   brief: string
@@ -33,7 +33,7 @@ function briefRow(r: BriefResult, base: string, tag?: string): string {
     .map(
       (s) =>
         `<figure><div class="f"><iframe sandbox="allow-scripts" loading="lazy" src="${esc(base + s.file)}"></iframe></div>` +
-        `<figcaption>${esc(s.name)} · ${esc(s.screenType)} · ${(s.ms / 1000).toFixed(0)}s · ${(s.chars / 1000).toFixed(1)}k</figcaption></figure>`,
+        `<figcaption>${s.added ? '<span class="tag">added</span>' : ''}${esc(s.name)} · ${esc(s.screenType)} · ${(s.ms / 1000).toFixed(0)}s · ${(s.chars / 1000).toFixed(1)}k</figcaption></figure>`,
     )
     .join('')
   const errors = r.errors.map((e) => `<div class="err">${esc(e)}</div>`).join('')

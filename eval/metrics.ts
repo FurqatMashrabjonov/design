@@ -3,7 +3,7 @@
 import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
 
-export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string }
+export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string; added?: boolean }
 export type Usage = { calls: number; promptTokens: number; cachedTokens: number; completionTokens: number }
 
 // ponytail: fixed list of the names the model reaches for by default; replace with a per-run frequency count if it drifts.
@@ -94,6 +94,9 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       brandLeakScreens,
       fallbackIcons: screens.reduce((n, s) => n + (s.html.match(FALLBACK_ICON)?.length ?? 0), 0),
       defaultPersonaBriefs: briefIds.filter((id) => screens.some((s) => s.briefId === id && DEFAULT_PERSONAS.test(visibleText(s.html)))).length,
+      // An added screen that carries no injected shell was designed as if it belonged to no app.
+      addedScreens: screens.filter((s) => s.added).length,
+      addedWithoutShell: screens.filter((s) => s.added && !/data-od-shell=/.test(s.html)).length,
       rootTabShare: share(screens.filter((s) => s.screenType === 'root-tab').length),
       briefsWithoutDetail: briefIds.filter((id) => screens.filter((s) => s.briefId === id).every((s) => s.screenType === 'root-tab')).length,
     },

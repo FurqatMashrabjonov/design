@@ -5,11 +5,12 @@ import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
 import { planScreensWithRetry, type PlannedScreen } from '@/app/Services/PlannerService'
 import { mapLimit } from '@/app/Services/Pool'
-import { buildBottomNav, buildDetailHeader, NAV_CLEARANCE, NAV_HEIGHT, HEADER_HEIGHT } from '@/app/Services/ShellService'
+import { NAV_CLEARANCE } from '@/app/Services/ShellService'
+import { screenBrief, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
 import { extractArtifact } from '@/artifact'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
-import { normalizeScreen, extractStyleDigest, type ShellParts } from '@/lib/screen-normalizer'
+import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
 
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
@@ -47,55 +48,17 @@ export const PlanController = {
           const leakTerms = DesignSystemService.readLeakTerms(project.designSystem)
           const fw = frameSize(project.device).width
           const isMobile = project.device === 'mobile'
-          const screenNames = plan.screens.map((s) => s.name).join(', ')
-          const tabList = plan.navigation.tabs.map((t) => t.label).join(', ')
-          const labelFor = (s: PlannedScreen) =>
-            plan.navigation.tabs.find((t) => t.id === s.activeTabId)?.label ?? s.name
-
-          // Mobile shells are assembled in code so every screen gets byte-identical markup.
-          // Desktop has no sidebar builder yet, so it stays on the prose contract.
-          const shellFor = (s: PlannedScreen): ShellParts => {
-            if (!isMobile) return {}
-            return s.screenType === 'root-tab'
-              ? { nav: buildBottomNav(plan.navigation, s.activeTabId) }
-              : { header: buildDetailHeader(s.name, s.parentScreen ?? 'Home') }
-          }
-
-          const shellContract = (s: PlannedScreen) => {
-            if (!isMobile) {
-              return `SIDEBAR CONTRACT
-1. Render the shared sidebar with EXACTLY these items in this order: [${tabList}].
-2. The active item is "${labelFor(s)}"; every other item is muted.
-3. Never invent, rename, drop, or reorder items.`
-            }
-            if (s.screenType === 'root-tab') {
-              return `SHELL CONTRACT — the shared chrome is injected for you
-1. A shared ${NAV_HEIGHT}px bottom tab bar ([${tabList}]) is added to your page automatically AFTER you finish.
-2. Do NOT render a bottom nav, tab bar, or floating action button yourself — a second one will collide with it.
-3. This screen is the "${labelFor(s)}" tab; the injected bar highlights it.
-4. End your page content with ${NAV_CLEARANCE}px of bottom padding so nothing hides behind the bar.`
-            }
-            return `SHELL CONTRACT — the shared chrome is injected for you
-1. A shared ${HEADER_HEIGHT}px top header (back button + the title "${s.name}") is added to your page automatically AFTER you finish.
-2. Do NOT render your own top header, back button, or page-title bar.
-3. Do NOT render a bottom tab bar — this is a pushed detail screen.
-4. Start your content directly below where that header sits.`
-          }
+          const screenNames = plan.screens.map((s) => s.name)
 
           const buildUser = (s: PlannedScreen, digest: string) =>
-            [
-              `App: ${plan.appName} — ${plan.summary}`,
-              `Other screens in this app: ${screenNames}`,
-              '',
-              `# ${shellContract(s)}`,
-              digest
-                ? `\n# HOUSE STYLE\nThe anchor screen of this app was already designed. Reuse these exact component styles — same radii, same spacing rhythm, same card treatment:\n\`\`\`css\n${digest}\n\`\`\``
-                : '',
-              `\n## Screen to design: ${s.name}`,
-              s.description,
-            ]
-              .filter(Boolean)
-              .join('\n')
+            screenBrief({
+              app: `${plan.appName} — ${plan.summary}`,
+              screenNames,
+              contract: shellContract(s, plan.navigation, isMobile),
+              digest,
+              heading: `Screen to design: ${s.name}`,
+              description: s.description,
+            })
 
           const renderScreen = async (s: PlannedScreen, i: number, digest: string): Promise<string | null> => {
             if (abort.signal.aborted) return null // client left: don't start more paid work
@@ -114,7 +77,7 @@ export const PlanController = {
                   tokensCss,
                   fontUrls,
                   iconStroke,
-                  shell: shellFor(s),
+                  shell: shellPartsFor(s, plan.navigation, isMobile, s.name),
                   navClearance: NAV_CLEARANCE,
                 }),
               )
