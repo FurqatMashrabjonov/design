@@ -41,7 +41,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EVAL-02 | npm run eval: generatsiya → 390px iframe → kontakt-varaq | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-01 | Bir buyruq → eval/out/<label>/index.html; oldingi yugurish bilan yonma-yon (compare.html) |
 | EVAL-03 | Deterministik eval ko'rsatkichlari: lint, bir xillik, token/vaqt/narx | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-02 | metrics.json; regressiya oldingi yugurishga nisbatan ko'rinadi |
 | EVAL-04 | Ko'r-ko'rona A/B taqqoslash sahifasi | Generatsiya / Sifat | MVP | Tayyor | Kichik | EVAL-02 | Ikki yugurish juftlab ko'rsatiladi, tomonlar yashirin; yutish foizi hisoblanadi |
-| GEN-17 | DESIGN.md → uslub kartasi (STYLE.md, ≤60 qator), mahsulot lug'atisiz | Generatsiya / Dizayn tizimlari | MVP | Rejada | O'rta |  | Uslub kartasida brend mahsulot otlari yo'q; eval'da tizim nomi ekran matnida uchramaydi |
+| GEN-17 | DESIGN.md → uslub kartasi (STYLE.md, ≤60 qator), mahsulot lug'atisiz | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta |  | Uslub kartasida brend mahsulot otlari yo'q; eval'da tizim nomi ekran matnida uchramaydi |
 | GEN-18 | Lint: dizayn tizimi brend nomi yoki maskoti ekran matnida | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-17 | Test fixture P0 topilma bilan yiqiladi |
 | GEN-19 | Bitta ekran qo'shish ham to'liq ilova kontekstini oladi | Generatsiya / Izchillik | MVP | Rejada | O'rta |  | Qo'shilgan ekran bir xil nav, shell va house style'da; check test |
 | GEN-20 | Ekran turi kodda tekshiriladi (root-tab / detail-view / modal-flow) | Generatsiya / Izchillik | MVP | Rejada | Kichik |  | Har tab'ga aynan bitta root-tab; 5 ekran/4 tab → kamida 1 detail; ota-onasiz detail rad etiladi |

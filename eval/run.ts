@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import { computeMetrics, diffMetrics, type Metrics, type ScreenInput, type Usage } from './metrics.ts'
+import { computeMetrics, diffMetrics, type ScreenInput, type Usage } from './metrics.ts'
 import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet.ts'
 
 type Brief = { id: string; brief: string; designSystem: string }
@@ -112,26 +112,35 @@ if (args.from) {
   writeFileSync(join(outDir, 'results.json'), JSON.stringify(results, null, 2))
 }
 
-// Newest earlier run that produced screens becomes the "before" row; a run that died on the API is skipped.
-const producedScreens = (d: string) => {
-  const p = join(OUT_ROOT, d, 'metrics.json')
-  return existsSync(p) && JSON.parse(readFileSync(p, 'utf8')).screens > 0
-}
+const loadRun = (d: string): BriefResult[] => JSON.parse(readFileSync(join(OUT_ROOT, d, 'results.json'), 'utf8'))
+const inputsOf = (d: string, rs: BriefResult[]): ScreenInput[] =>
+  rs.flatMap((r) => r.screens.map((s) => ({ briefId: r.id, designSystem: r.designSystem, name: s.name, screenType: s.screenType, ms: s.ms, html: readFileSync(join(OUT_ROOT, d, s.file), 'utf8') })))
+
+// "Before" is the newest earlier run that drew at least one of these briefs. Runs are usually
+// --only subsets, so both sides are cut down to the briefs they share before anything is compared.
+const drew = new Set(results.filter((r) => r.screens.length).map((r) => r.id))
 const prevLabel = readdirSync(OUT_ROOT)
-  .filter((d) => d < label && producedScreens(d))
+  .filter((d) => d < label && existsSync(join(OUT_ROOT, d, 'results.json')) && loadRun(d).some((r) => r.screens.length && drew.has(r.id)))
   .sort()
   .pop()
 
 const errorCount = results.reduce((n, r) => n + r.errors.length, 0)
 const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage)
 writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2))
-const prevMetricsPath = prevLabel && join(OUT_ROOT, prevLabel, 'metrics.json')
-const prevMetrics: Metrics | undefined = prevMetricsPath && existsSync(prevMetricsPath) ? JSON.parse(readFileSync(prevMetricsPath, 'utf8')) : undefined
-const delta = prevMetrics ? diffMetrics(prevMetrics, metrics) : []
+
+let delta: string[] = []
+if (prevLabel) {
+  const before = loadRun(prevLabel).filter((r) => r.screens.length && drew.has(r.id))
+  const shared = new Set(before.map((r) => r.id))
+  const after = results.filter((r) => shared.has(r.id))
+  const measure = (rs: BriefResult[], inputs: ScreenInput[]) => computeMetrics(inputs, rs.map((r) => r.ms), rs.reduce((n, r) => n + r.errors.length, 0))
+  delta = diffMetrics(measure(before, inputsOf(prevLabel, before)), measure(after, screenInputs.filter((s) => shared.has(s.briefId))))
+  delta.unshift(`(${shared.size} shared briefs)`)
+}
 
 writeFileSync(join(outDir, 'index.html'), sheetHtml(label, results, metrics, delta))
 if (prevLabel) {
-  const prev: BriefResult[] = JSON.parse(readFileSync(join(OUT_ROOT, prevLabel, 'results.json'), 'utf8'))
+  const prev = loadRun(prevLabel)
   writeFileSync(join(outDir, 'compare.html'), compareHtml(label, results, prevLabel, prev))
   writeFileSync(join(outDir, 'ab.html'), abHtml(label, results, prevLabel, prev))
 }

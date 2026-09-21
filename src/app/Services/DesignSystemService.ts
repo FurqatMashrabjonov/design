@@ -69,6 +69,17 @@ export const DesignSystemService = {
     return readFileSync(join(DS_DIR, id, 'DESIGN.md'), 'utf8')
   },
 
+  /**
+   * STYLE.md: the look only, in under 60 lines, with no trace of the company it came from.
+   * DESIGN.md is a brand document — fed whole, the model copied the brand's product into
+   * unrelated apps (a calorie counter drew an owl and "Lesson complete"). Mobile prompts read
+   * this card; DESIGN.md stays the source the card is distilled from, and the desktop prompt.
+   */
+  readStyleCard(id: string): string {
+    const path = join(DS_DIR, id, 'STYLE.md')
+    return existsSync(path) ? readFileSync(path, 'utf8') : this.readDesignMd(id)
+  },
+
   /** Read tokens.css if it exists, returns empty string otherwise */
   readTokensCss(id: string): string {
     const path = join(DS_DIR, id, 'tokens.css')

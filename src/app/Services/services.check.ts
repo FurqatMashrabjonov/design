@@ -19,7 +19,8 @@ assert.ok(!DesignSystemService.exists('../../etc'))
 // compose: skill body + only its requested craft files land in the prompt, DESIGN.md always does
 const mobile = composeSystemPrompt('minimal', 'mobile')
 assert.ok(mobile.includes('390px'), 'mobile skill body present')
-assert.ok(mobile.includes('# Minimal'), 'DESIGN.md present')
+assert.ok(mobile.includes('— style card'), 'style card present')
+assert.ok(composeSystemPrompt('minimal', 'desktop').includes('# Minimal'), 'desktop still reads DESIGN.md')
 assert.ok(mobile.includes('Anti-AI-slop'), 'requested craft file present')
 assert.ok(mobile.includes('Animation'), 'mobile-only craft file present')
 assert.ok(!mobile.includes('Laws of UX'), 'web-only craft file absent from mobile prompt')
@@ -71,6 +72,26 @@ const results = await mapLimit([1, 2, 3, 4, 5, 6], 2, async (n) => {
 })
 assert.ok(maxInFlight <= 2, `max concurrency was ${maxInFlight}`)
 assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
+
+// GEN-17: mobile prompts carry the look of a design system, never the company it came from.
+{
+  const { readdirSync, readFileSync, existsSync } = await import('node:fs')
+  const STYLE_NAMED = ['minimal', 'midnight', 'elegant', 'retro', 'neon', 'bento', 'brutalist', 'neobrutalism', 'glassmorphism', 'doodle', 'dashboard', 'material']
+  for (const id of readdirSync('design-systems').filter((d) => existsSync(`design-systems/${d}/DESIGN.md`))) {
+    const path = `design-systems/${id}/STYLE.md`
+    assert.ok(existsSync(path), `${id}: STYLE.md exists`)
+    const card = readFileSync(path, 'utf8')
+    assert.ok(card.split('\n').length <= 60, `${id}: style card is at most 60 lines`)
+    for (const h of ['Colour energy:', '## Colour use', '## Type', '## Shape and depth', '## Layout and density', '## Signature moves', '## Avoid'])
+      assert.ok(card.includes(h), `${id}: style card has "${h}"`)
+    assert.ok(!/#[0-9a-fA-F]{3,8}\b/.test(card), `${id}: colours only through tokens, no hex`)
+    const tokens = new Set([...readFileSync(`design-systems/${id}/tokens.css`, 'utf8').matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]))
+    for (const m of card.matchAll(/var\((--[\w-]+)/g)) assert.ok(tokens.has(m[1]), `${id}: ${m[1]} is not in tokens.css`)
+    if (!STYLE_NAMED.includes(id)) assert.ok(!new RegExp(`\\b${id.split('-')[0]}\\b`, 'i').test(card), `${id}: brand name in style card`)
+  }
+  const duo = composeSystemPrompt('duolingo', 'mobile')
+  assert.ok(!/\bowl\b|\bDuo\b|Duolingo|mascot/i.test(duo), 'the brand and its mascot never reach a mobile prompt')
+}
 
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)

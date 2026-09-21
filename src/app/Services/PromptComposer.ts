@@ -38,12 +38,15 @@ export function composeSystemPrompt(designSystem: string, device: string, skill?
   const skillData = readSkill(resolveSkillId(device, skill))
   const craft = skillData.craftRequires.map(readCraft).join('\n\n---\n\n')
 
-  // Build design system section with both prose and tokens
-  const designMd = DesignSystemService.readDesignMd(designSystem)
+  // Build design system section with both prose and tokens. Mobile reads the style card (look only);
+  // desktop still reads the full brand document.
+  const isMobile = device === 'mobile'
+  const designMd = isMobile ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
   const tokensCss = DesignSystemService.readTokensRoot(designSystem)
   let designSection = `# Design system\n\n${designMd}`
   if (tokensCss) {
-    designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag verbatim — do not rename, drop, or re-value any property:\n\n\`\`\`css\n${tokensCss}\n\`\`\`\n\nThis block is the complete token vocabulary. \`var(--x)\` is only valid for a property defined above. The prose section quotes the real product's internal variable names (\`--hds-color-…\`, \`--geist-…\`, \`--palette-…\` and similar) as background research — those do not exist here, so never reference one.`
+    designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag verbatim — do not rename, drop, or re-value any property:\n\n\`\`\`css\n${tokensCss}\n\`\`\`\n\nThis block is the complete token vocabulary. \`var(--x)\` is only valid for a property defined above.`
+    if (!isMobile) designSection += ` The prose section quotes the real product's internal variable names (\`--hds-color-…\`, \`--geist-…\`, \`--palette-…\` and similar) as background research — those do not exist here, so never reference one.`
   }
 
   // Add data-od-id instruction for element-level editing support
@@ -69,7 +72,7 @@ export function composeElementEditPrompt(
   elementHtml: string,
   instruction: string,
 ): string {
-  const designMd = DesignSystemService.readDesignMd(designSystem)
+  const designMd = device === 'mobile' ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
   const tokensCss = DesignSystemService.readTokensRoot(designSystem)
 
   let systemPrompt = `You are an expert product designer. You will edit ONE specific element within an existing screen.

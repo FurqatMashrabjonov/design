@@ -5,6 +5,16 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Mobil prompt dizayn tizimining ko'rinishini oladi, kompaniyasini emas — GEN-17
+`DESIGN.md` — brend hujjati (393 qatorgacha): maskot, mahsulot, funksiya nomlari. Uni butunligicha olgan model uslubni emas, mahsulotni ko'chirardi — `duolingo` tizimidagi kaloriya ilovasi boyqush va "Lesson complete" chizgan.
+- Har 33 tizimga `STYLE.md` — **uslub kartasi**, ≤60 qator, bir xil tuzilma: Mood, Colour energy (low/medium/high), Colour use, Type, Shape and depth, Layout and density, Signature moves, Avoid. Neytral nom bilan ("Chunky Playful Green", "Monochrome Athletic Editorial"), brend va mahsulot otlarisiz, ranglar faqat `tokens.css` dagi `var(--…)` orqali, hex yo'q, 44px dan past boshqaruv yo'q, ikonka chizish haqida gap yo'q.
+- Kartalar bir martalik skript bilan `DESIGN.md` + `tokens.css` dan `deepseek-chat` orqali distillandi (~$0.1) va repoga **statik fayl** sifatida kirdi — ish vaqtida LLM yo'q. Shartnomani kod ushlab turadi: yangi yoki qo'lda yozilgan karta ham shu testdan o'tishi kerak.
+- `DesignSystemService.readStyleCard()`; mobil system prompt va element tahriri kartani o'qiydi. Desktop `DESIGN.md` da qoldi — eval faqat mobilni o'lchaydi, o'lchanmagan yo'lni o'zgartirmadim.
+- Yo'lda: distillatorning birinchi varianti `:root` ni `tokens.css` boshidagi izohdan topib, 5 tizimda (apple, airbnb, cursor, nike, tesla) modelga bo'sh token ro'yxati bergan — model manba hujjatdagi mavjud bo'lmagan tokenlarni yozgan. Validator buni ushladi; izohlar olib tashlangach beshalasi toza chiqdi.
+- Fayllar: `design-systems/*/STYLE.md` (33 yangi), `DesignSystemService.ts`, `PromptComposer.ts`, `services.check.ts`, `eval/run.ts` (delta endi faqat ikki yugurishda ham bor brieflar bo'yicha hisoblanadi — `--only` bilan ishlaganda olma bilan olma solishtiriladi).
+- Tekshirildi: `npm run check`, `tsc` toza. Test har tizim uchun: karta bor, ≤60 qator, 7 bo'lim, hex yo'q, har `var(--x)` `tokens.css` da mavjud, brend nomi yo'q; `duolingo` mobil promptida owl/Duo/Duolingo/mascot yo'q; desktop hali `DESIGN.md`. Eval (`gen17`, 4 brief: nike, duolingo, midnight, airbnb): uslub saqlangan (nike — siqiq bosh harfli sarlavhalar, duolingo — 4px pastki qirrali yashil tugmalar, kontent esa kaloriya haqida), brend oqishi 0, `fallbackIcons` 3 → 0, ekran p50 21.2s → 18.7s. Bitta ekran tarmoq xatosi (`fetch failed`) bilan tushdi — kodga aloqasi yo'q.
+- Ko'rindi, keyingi qatorlarga: rasm o'rnida "592 × 333" qutilari (AST-01); system prompt hali ~78k belgi, chunki craft fayllar ustun (GEN-23); food-delivery rejasi savat/checkout o'rniga Search/Orders/Profile bergan (UX-02/03).
+
 ### Tab ikonkalari hech qachon doiraga tushmaydi — GEN-21
 Baseline eval'da 104 ekranda **69 ta** yalang'och doira chiqdi: planner `users`, `file-text`, `mic`, `library` kabi to'g'ri lucide nomlarini berardi, lekin `ShellService` da atigi 37 ta ikonka bor edi va qolgani `circle` ga tushardi.
 - Ikonka geometriyasi `shell-icons.ts` ga ko'chdi: 108 ta, `lucide-react` ning o'z node'laridan olingan (qo'lda ko'chirilmagan). Kalitlar — planner ishlatadigan klassik nomlar (`home`, `bar-chart-2`), lucide ularni qayta nomlagan bo'lsa ham.
