@@ -93,6 +93,26 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(!/\bowl\b|\bDuo\b|Duolingo|mascot/i.test(duo), 'the brand and its mascot never reach a mobile prompt')
 }
 
+// GEN-18: a screen that names its design system's company is a P0 lint finding.
+{
+  const { lintScreen } = await import('../../lib/design-lint.ts')
+  const { readFileSync } = await import('node:fs')
+  const page = (title: string, body: string) => `<!doctype html><html><head><title>${title}</title></head><body>${body}</body></html>`
+  const leak = (html: string, id: string) => lintScreen(html, { leakTerms: DesignSystemService.readLeakTerms(id) }).find((f) => f.rule === 'design-system-brand-leak')
+  const owl = leak(page('Lesson Complete — Duolingo', '<h1>Lesson complete!</h1>'), 'duolingo')
+  assert.equal(owl?.severity, 'error')
+  assert.deepEqual(owl?.samples, ['Duolingo'])
+  assert.ok(leak(page('Home', '<h2>Duo says hi</h2>'), 'duolingo'), 'mascot in a heading')
+  assert.ok(!leak(page('Production', '<h1>Produce duo-tone reports</h1>'), 'duolingo'), 'whole words only')
+  assert.ok(!leak(page('Checkout', '<p>Pay securely with Stripe</p>'), 'stripe'), 'a brand in ordinary copy is fine')
+  assert.ok(leak(page('Checkout', '<h1>Stripe Dashboard</h1>'), 'stripe'), 'a brand naming the app is not')
+  assert.ok(leak(page('Car', '<p>Reserve your Cybertruck</p>'), 'tesla'), 'product names leak anywhere')
+  assert.ok(!leak(page('Lesson Complete — Duolingo', ''), 'minimal'), 'systems without terms never fire')
+  assert.ok(!lintScreen(page('Duolingo', '')).some((f) => f.rule === 'design-system-brand-leak'), 'no terms passed, no rule')
+  for (const id of Object.keys(JSON.parse(readFileSync('design-systems/leak-terms.json', 'utf8')))) assert.ok(DesignSystemService.exists(id), `leak-terms.json: unknown design system ${id}`)
+  assert.ok(!DesignSystemService.list().some((d) => d.id.includes('leak-terms')), 'the terms file is not listed as a design system')
+}
+
 // GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
 assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
 for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)

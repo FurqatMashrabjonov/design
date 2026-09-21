@@ -52,7 +52,7 @@ assert.ok(ab.includes('localStorage') && ab.includes('try {'), 'votes persist, a
 
 // EVAL-03: metrics are deterministic and catch the known failure modes.
 const circle = '<svg data-od-icon width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
-const pageA = `<!doctype html><html><head><style>.x{color:red}</style></head><body><main><section><h2>Lesson complete</h2><p>Duolingo streak for Maya Chen</p><ul><li>a</li><li>b</li></ul></section></main><nav data-od-shell="bottom-nav">${circle}</nav></body></html>`
+const pageA = `<!doctype html><html><head><style>.x{color:red}</style></head><body><main><section><h2>Lesson complete — Duo</h2><p>streak for Maya Chen</p><ul><li>a</li><li>b</li></ul></section></main><nav data-od-shell="bottom-nav">${circle}</nav></body></html>`
 const pageB = `<!doctype html><html><body><main><section><h2>Balance</h2><p>Hello Timur</p><ul><li>a</li><li>b</li></ul></section></main></body></html>`
 const pageC = `<!doctype html><html><body><header><img src="x"><h1>Feed</h1></header><article><figure><img src="y"><figcaption>z</figcaption></figure></article></body></html>`
 assert.ok(!visibleText(pageA).includes('color:red') && visibleText(pageA).includes('Lesson complete'))
@@ -75,7 +75,7 @@ assert.equal(m.sameness.pairs, 4, 'only cross-brief pairs are compared')
 assert.equal(m.sameness.sameKindPairs, 1, 'profile vs profile across apps')
 assert.ok(m.sameness.sameKindMean > m.sameness.crossBriefMean)
 assert.equal(m.usage?.estCostUsd, 0.27)
-assert.equal(computeMetrics([scr('x', 'minimal', 'root-tab', '<body><p>minimal todo</p></body>')], [1], 0).bugs.brandLeakScreens, 0, 'style-named systems are not brands')
+assert.equal(computeMetrics([scr('x', 'stripe', 'root-tab', '<body><p>Pay with Stripe</p></body>')], [1], 0).bugs.brandLeakScreens, 0, 'a brand in ordinary copy is not a leak')
 assert.deepEqual(diffMetrics({ a: { b: 1, c: 2 } }, { a: { b: 1, c: 3 }, d: 4 }), ['a.c: 2 → 3', 'd: — → 4'])
 
 console.log('ok')

@@ -5,6 +5,13 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Lint: ekran o'z dizayn tizimining kompaniyasini atasa — P0 — GEN-18
+GEN-17 oqishning manbasini yopdi; bu qator uni o'lchaydi, toki qaytsa ko'rinsin.
+- `design-systems/leak-terms.json`: 23 tizim uchun qo'lda saralangan ikki ro'yxat. `brand` — faqat ilova **o'zini atagan** joyda oqish (`<title>`, `h1`–`h3`), chunki "Pay with Stripe" yoki "Sign in with GitHub" oddiy matn. `anywhere` — begunoh ishlatilishi yo'q atamalar ("Cybertruck", "Super Duolingo", "Become a host"). Distillator bergan xom ro'yxat (shrift nomlari, rang nomlari, "Inter", "Explore") ishlatilmadi — u har ikkinchi ekranda yolg'on signal berardi.
+- `lintScreen(html, { leakTerms })` → `design-system-brand-leak`, `error`. Atamalar berilmasa qoida jim. `PlanController` va eval metrikasi (`bugs.brandLeakScreens`) shu qoidadan foydalanadi — eval'dagi vaqtinchalik regex olib tashlandi.
+- Fayllar: `design-systems/leak-terms.json` (yangi), `src/lib/design-lint.ts`, `DesignSystemService.ts`, `PlanController.ts`, `eval/metrics.ts`, `services.check.ts`, `eval/eval.check.ts`.
+- Tekshirildi: `npm run check`, `tsc` toza. Testlar: sarlavhadagi "Duolingo" va heading'dagi "Duo" yiqitadi; "duo-tone" va "Production" yiqitmaydi; paragrafdagi "Stripe" toza, `h1` dagi "Stripe" — oqish; atamasiz tizim hech qachon yonmaydi; fayldagi har ID mavjud tizim; fayl tizimlar ro'yxatiga tushmaydi. Haqiqiy ma'lumotda: `data.db` dagi 39 ekrandan aynan o'sha 3 ta "Lesson Complete — Duolingo" ekranini topdi, boshqa hech narsa; baseline'dagi 104 ekrandan 1 ta ("Guest favorite" nishoni, airbnb).
+
 ### Mobil prompt dizayn tizimining ko'rinishini oladi, kompaniyasini emas — GEN-17
 `DESIGN.md` — brend hujjati (393 qatorgacha): maskot, mahsulot, funksiya nomlari. Uni butunligicha olgan model uslubni emas, mahsulotni ko'chirardi — `duolingo` tizimidagi kaloriya ilovasi boyqush va "Lesson complete" chizgan.
 - Har 33 tizimga `STYLE.md` — **uslub kartasi**, ≤60 qator, bir xil tuzilma: Mood, Colour energy (low/medium/high), Colour use, Type, Shape and depth, Layout and density, Signature moves, Avoid. Neytral nom bilan ("Chunky Playful Green", "Monochrome Athletic Editorial"), brend va mahsulot otlarisiz, ranglar faqat `tokens.css` dagi `var(--…)` orqali, hex yo'q, 44px dan past boshqaruv yo'q, ikonka chizish haqida gap yo'q.

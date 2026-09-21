@@ -80,6 +80,12 @@ export const DesignSystemService = {
     return existsSync(path) ? readFileSync(path, 'utf8') : this.readDesignMd(id)
   },
 
+  /** Company and product names this system must never put into an app (see lib/design-lint brand-leak rule). */
+  readLeakTerms(id: string): { brand: string[]; anywhere: string[] } {
+    const all = tryReadJson(join(DS_DIR, 'leak-terms.json')) as Record<string, { brand?: string[]; anywhere?: string[] }> | null
+    return { brand: all?.[id]?.brand ?? [], anywhere: all?.[id]?.anywhere ?? [] }
+  },
+
   /** Read tokens.css if it exists, returns empty string otherwise */
   readTokensCss(id: string): string {
     const path = join(DS_DIR, id, 'tokens.css')

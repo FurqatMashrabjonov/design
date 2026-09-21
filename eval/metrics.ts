@@ -1,12 +1,11 @@
 // Deterministic measurements over an eval run. Absolute values mean little; the point is the
 // delta between two runs of the same brief set.
+import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
 
 export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string }
 export type Usage = { calls: number; promptTokens: number; cachedTokens: number; completionTokens: number }
 
-// Design systems named after a style, not a company — their id showing up in copy is not a leak.
-const STYLE_SYSTEMS = new Set(['minimal', 'midnight', 'elegant', 'retro', 'neon', 'bento', 'brutalist', 'neobrutalism', 'glassmorphism', 'doodle', 'dashboard', 'material'])
 // ponytail: fixed list of the names the model reaches for by default; replace with a per-run frequency count if it drifts.
 const DEFAULT_PERSONAS = /\b(Maya Chen|Sarah Chen|Alex Johnson|Alex Morgan|Alex Chen|John Doe|Jane Doe|Emma Wilson|Sarah Johnson)\b/
 const SCREEN_KINDS = [/profile|account/i, /setting/i, /stat|analytic|progress/i, /\bhome\b|dashboard|today/i, /search|explore|discover/i]
@@ -51,8 +50,10 @@ const PRICE = {
 export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors: number, usage?: Usage) {
   const byRule: Record<string, number> = {}
   let lintClean = 0
+  let brandLeakScreens = 0
   for (const s of screens) {
-    const findings = lintScreen(s.html)
+    const findings = lintScreen(s.html, { leakTerms: DesignSystemService.readLeakTerms(s.designSystem) })
+    if (findings.some((f) => f.rule === 'design-system-brand-leak')) brandLeakScreens++
     if (findings.length === 0) lintClean++
     for (const f of findings) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1
   }
@@ -90,7 +91,7 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
     lint: { cleanShare: share(lintClean), byRule },
     sameness: { crossBriefMean: pairs ? round(sum / pairs) : 0, pairs, sameKindMean: kindPairs ? round(kindSum / kindPairs) : 0, sameKindPairs: kindPairs },
     bugs: {
-      brandLeakScreens: screens.filter((s) => !STYLE_SYSTEMS.has(s.designSystem) && new RegExp(`\\b${s.designSystem.split('-')[0]}\\b`, 'i').test(visibleText(s.html))).length,
+      brandLeakScreens,
       fallbackIcons: screens.reduce((n, s) => n + (s.html.match(FALLBACK_ICON)?.length ?? 0), 0),
       defaultPersonaBriefs: briefIds.filter((id) => screens.some((s) => s.briefId === id && DEFAULT_PERSONAS.test(visibleText(s.html)))).length,
       rootTabShare: share(screens.filter((s) => s.screenType === 'root-tab').length),

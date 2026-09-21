@@ -44,6 +44,7 @@ export const PlanController = {
           const tokensCss = DesignSystemService.readTokensRoot(project.designSystem)
           const fontUrls = DesignSystemService.readFontUrls(project.designSystem)
           const iconStroke = DesignSystemService.readIconStroke(project.designSystem)
+          const leakTerms = DesignSystemService.readLeakTerms(project.designSystem)
           const fw = frameSize(project.device).width
           const isMobile = project.device === 'mobile'
           const screenNames = plan.screens.map((s) => s.name).join(', ')
@@ -117,7 +118,7 @@ export const PlanController = {
                   navClearance: NAV_CLEARANCE,
                 }),
               )
-              const findings = lintScreen(normalized)
+              const findings = lintScreen(normalized, { leakTerms })
               if (findings.length > 0) {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))
               }

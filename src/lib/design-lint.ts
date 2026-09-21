@@ -54,10 +54,41 @@ function uniq(values: string[], cap = 4): string[] {
   return [...new Set(values)].slice(0, cap)
 }
 
-export function lintScreen(html: string): Finding[] {
+/**
+ * Names that belong to the company a design system was modelled on (design-systems/leak-terms.json).
+ * `brand` is only a leak where an app names itself — the title and headings — because "Pay with
+ * Stripe" or "Sign in with GitHub" is ordinary copy. `anywhere` holds terms with no innocent use.
+ */
+export type LeakTerms = { brand: string[]; anywhere: string[] }
+export type LintOptions = { leakTerms?: LeakTerms }
+
+const textOf = (html: string) => html.replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ')
+const termRe = (terms: string[]) => new RegExp(`(?<![\\w-])(${terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![\\w-])`, 'gi')
+
+function brandLeaks(html: string, terms: LeakTerms): string[] {
+  const hits: string[] = []
+  if (terms.anywhere.length) hits.push(...(textOf(bodyOf(html)).match(termRe(terms.anywhere)) ?? []))
+  if (terms.brand.length) {
+    const naming = [...html.matchAll(/<(title|h[1-3])\b[^>]*>([\s\S]*?)<\/\1>/gi)].map((m) => textOf(m[2])).join(' \n ')
+    hits.push(...(naming.match(termRe(terms.brand)) ?? []))
+  }
+  return hits
+}
+
+export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
   const findings: Finding[] = []
   const body = bodyOf(html)
   const scannable = withoutRoot(html)
+
+  const leaks = opts.leakTerms ? brandLeaks(html, opts.leakTerms) : []
+  if (leaks.length) {
+    findings.push({
+      rule: 'design-system-brand-leak',
+      severity: 'error',
+      message: 'The screen names the company its design system was modelled on. A design system lends its look, not its product.',
+      samples: uniq(leaks),
+    })
+  }
 
   const indigo = scannable.match(AI_INDIGO)
   if (indigo) {
