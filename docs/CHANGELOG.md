@@ -5,6 +5,12 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Muharrir UX auditi va rejasi (taklif) — hujjat, kod o'zgarmadi
+`docs/EDITOR-PLAN.md`: muharrir kodi to'liq o'qildi, brauzerda ishlatildi, Sleek va Stitch muharrirlarining skrinshotlari bilan solishtirildi. 20 ta topilma (suhbat tarixi yo'q, elementni tahrirlash 4 qadam va qo'pol, undo/versiya strelkalari yo'q, Stop yo'q, kanvas 100% da ochiladi, 4 ta tab…), olib tashlanadiganlar ro'yxati va M0–M5 fazalari.
+- Tasdiqlangan bug (E2): `ScreenFrame` `od:select_element` xabarining manbasini tekshirmaydi — sahifaning o'zidan yuborilgan soxta xabar hech qaysi kadr tanlanmagan holda "Restaurant Feed" ni tanlab, `Target: [header]` qo'ydi. Ko'p ekranli loyihada element tahriri noto'g'ri ekranga ketishi mumkin. Tuzatish — rejada EDT-20.
+- Fayllar: `docs/EDITOR-PLAN.md` (yangi).
+- Tekshirildi: eval bazasining nusxasida alohida dev server (3112-port), `data.db` ga tegilmadi.
+
 ### Prototipda kontent ichidagi bosishlar ishlaydi — UX-05
 Preview'da faqat tab bar va "orqaga" ishlardi; taom kartasini bossang hech narsa bo'lmasdi — eng tabiiy harakat o'lik edi.
 - Planner v2 har ekranga `linksTo` beradi, `screenSpec` modelga `data-od-link="<ekran nomi>"` qo'yishni aytadi. Ko'prik (`preview-bridge.ts`) endi `[data-od-link]` bosilishini ham ushlab, `od:navigate_link` yuboradi; preview sahifasi ekranni topib o'tadi.
