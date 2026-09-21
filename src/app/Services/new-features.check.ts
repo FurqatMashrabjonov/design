@@ -307,8 +307,10 @@ console.log('Testing LLM Stream Abort...')
   const realKey = process.env.DEEPSEEK_API_KEY
   process.env.DEEPSEEK_API_KEY = 'test-key'
   let receivedSignal: AbortSignal | undefined
+  let sentBody: Record<string, unknown> = {}
   globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
     receivedSignal = init?.signal ?? undefined
+    sentBody = JSON.parse(String(init?.body))
     const body = new ReadableStream<Uint8Array>({
       start(c) {
         c.enqueue(new TextEncoder().encode('data: {"choices":[{"delta":{"content":"hi"}}]}\n'))
@@ -339,6 +341,9 @@ console.log('Testing LLM Stream Abort...')
     assert.deepEqual(seen, ['hi'], 'the first token arrived before the abort')
     assert.notEqual(outcome, 'HUNG', 'aborting must stop the stream instead of letting it run to completion')
     assert.ok(receivedSignal!.aborted, 'the upstream request was actually cancelled')
+    // Model policy: V4 Flash, thinking off. Named directly, deepseek-flash thinks by default and bills for it.
+    assert.equal(sentBody.model, process.env.DEEPSEEK_MODEL || 'deepseek-flash')
+    assert.deepEqual(sentBody.thinking, { type: 'disabled' }, 'thinking is switched off explicitly')
   } finally {
     globalThis.fetch = realFetch
     if (realKey === undefined) delete process.env.DEEPSEEK_API_KEY

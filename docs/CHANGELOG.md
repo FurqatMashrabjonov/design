@@ -5,6 +5,13 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Model: DeepSeek V4 Flash, thinking o'chiq — aniq pin qilindi
+Foydalanuvchi so'rovi: xarajat past tursin, faqat v4-flash. Tekshirdim (`GET /models` va sinov chaqiruvlari): API'da ikkita model bor — `deepseek-flash` va `deepseek-v4-pro`. Biz ishlatib kelgan `deepseek-chat` — aslida `deepseek-flash` ning thinking o'chirilgan taxallusi, ya'ni shu paytgacha ham flash'da edik. Lekin `deepseek-flash` ni **nomi bilan** chaqirsa thinking standart yoqiq keladi ("17*23" ga 1 token o'rniga 22 token, 20 tasi reasoning) — reasoning tokenlari chiqish narxida hisoblanadi va oqimning birinchi baytini kechiktiradi.
+- `LlmService`: `model: 'deepseek-flash'` + `thinking: { type: 'disabled' }` ikkala chaqiruvda. Taxallus qayta yo'naltirilsa ham xatti-harakat o'zgarmaydi.
+- `CLAUDE.md` model siyosati va `.env.example` yangilandi.
+- Fayllar: `LlmService.ts`, `new-features.check.ts`, `CLAUDE.md`, `.env.example`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza; test so'rov tanasida model va `thinking: disabled` ni tekshiradi. Haqiqiy yugurish (`flashpin`, 1 brief): 5 ekran, 52s, ekran p50 16.0s, $0.035 — oldingidek.
+
 ### Haqiqiy rasmlar: model tasvirlaydi, kod topadi — GEN-26, AST-01, AST-04
 Baseline'dagi eng ko'zga tashlanadigan kamchilik — rasm o'rnida "592 × 333" yozuvli kulrang qutilar. Model ishlaydigan rasm URL'ini bila olmaydi; qoidalar esa bir-biriga zid edi: skill `placehold.co` ni buyurardi, craft uni taqiqlab, repoda umuman yo'q `.ph-img` klassini tavsiya qilardi.
 - **Shartnoma (GEN-26):** model `<img data-od-img="grilled salmon bowl, top view" alt="…">` yozadi — `src` siz. Mobil va web skill, `craft/mobile.md`, `anti-ai-slop.md` endi bir xil gapiradi; `placehold.co` va `.ph-img` repodan chiqdi. Odamlar avatari — doira ichida bosh harflar (GEN-22 dagi persona bilan mos).

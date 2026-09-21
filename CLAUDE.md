@@ -36,7 +36,7 @@ A change to generation (prompts, planner, normalizer, linter, shell) is judged o
 
 ## Model policy
 
-Generation runs on DeepSeek's fast chat model (`deepseek-chat`) only. Never switch to `deepseek-reasoner`. Push correctness into deterministic code instead of asking a model to hold a contract — see the next section.
+Generation runs on DeepSeek V4 Flash (`deepseek-flash`) with thinking disabled, and nothing else — not `deepseek-v4-pro`, not thinking mode. Both are pinned in `LlmService`: asked for by name, `deepseek-flash` thinks by default, and reasoning tokens are billed as output. (The old `deepseek-chat` id is an alias of exactly this configuration.) Push correctness into deterministic code instead of asking a model to hold a contract — see the next section.
 
 ## Architecture rules
 
