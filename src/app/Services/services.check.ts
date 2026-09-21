@@ -5,6 +5,7 @@ import { DesignSystemService } from './DesignSystemService.ts'
 import { composeSystemPrompt } from './PromptComposer.ts'
 import { parsePlan } from './PlannerService.ts'
 import { mapLimit } from './Pool.ts'
+import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellService.ts'
 
 const h = '<!doctype html><html><head><title>T</title></head></html>'
 assert.deepEqual(extractArtifact(`<artifact title="Dash">${h}</artifact>`), { title: 'Dash', html: h })
@@ -70,5 +71,34 @@ const results = await mapLimit([1, 2, 3, 4, 5, 6], 2, async (n) => {
 })
 assert.ok(maxInFlight <= 2, `max concurrency was ${maxInFlight}`)
 assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
+
+// GEN-21: a tab icon always resolves to a glyph we can draw — the baseline eval had 69 bare circles.
+assert.ok(ICON_NAMES.length >= 80, `${ICON_NAMES.length} shell icons`)
+for (const [from, to] of Object.entries(ICON_SYNONYMS)) assert.ok(ICON_NAMES.includes(to), `synonym ${from} -> ${to} points at a missing icon`)
+// every name the planner actually produced on the baseline run
+for (const name of 'user home search plus bar-chart-2 calendar message-circle compass list bookmark users bell heart file-text check-square library camera send pie-chart refresh-cw settings shopping-cart map play star hash grid shopping-bag tag plus-circle check-circle award mic play-circle wind moon book-open'.split(' '))
+  assert.equal(resolveIcon(name), name, `${name} is drawn as itself`)
+assert.equal(resolveIcon('profile-outline'), 'user')
+assert.equal(resolveIcon('House'), 'home')
+assert.equal(resolveIcon('no-such-glyph', 'Leaderboard'), 'trophy', 'falls back to the tab label')
+assert.equal(resolveIcon('circle', 'Social'), 'users', 'the model\'s own "circle" is treated as unknown')
+assert.equal(resolveIcon('', ''), 'grid')
+
+const iconPlan = parsePlan(
+  JSON.stringify({
+    navigation: {
+      tabs: [
+        { id: 'a', label: 'Feed', icon: 'rss-feed-thing' },
+        { id: 'b', label: 'Add', icon: 'plus', isAction: true },
+        { id: 'c', label: 'Scan', icon: 'camera', isAction: true },
+        { id: 'd', label: 'Record', icon: 'mic', isAction: true },
+      ],
+    },
+    screens: [{ name: 'Feed' }],
+  }),
+)
+assert.deepEqual(iconPlan.navigation.tabs.map((t) => t.icon), ['home', 'plus', 'camera', 'mic'])
+assert.deepEqual(iconPlan.navigation.tabs.map((t) => t.isAction), [false, false, true, false], 'only one capture tab is raised; "plus" is not an action tab')
+assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.test(buildBottomNav(iconPlan.navigation, 'a')), 'no fallback circle in the tab bar')
 
 console.log('ok')
