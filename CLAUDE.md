@@ -53,7 +53,7 @@ Generation runs on DeepSeek V4 Flash (`deepseek-flash`) with thinking disabled, 
 - **Fonts are declared per design system** as `@import` in `design-systems/<id>/tokens.css` and injected by the normalizer. Every family in that URL must appear in a `--font-*` stack. Validate any new Google Fonts URL with curl; a weight the family lacks makes the whole request 400.
 - **Theme overrides are applied at render time** over stored HTML (`lib/theme-override.ts`); stored screens are never rewritten. Only validated values reach CSS — sanitize at every boundary.
 - **The eval harness runs the real controllers, never a copy of the pipeline.** `eval/run.ts` calls `PlanController.stream` in-process against a throwaway SQLite file (`DB_PATH`), so it measures what users get. `eval/alias-hook.mjs` is what lets plain `node` resolve `@/` outside Vite. Metrics in `eval/metrics.ts` are deterministic; every known failure mode gets a counter there before it gets a fix.
-- **Shell and injected markup carries markers** (`data-od-shell`, `data-od-icon`, `data-od-font`, `data-od-tab`, `data-od-back`) so the linter and the preview recognize canonical output.
+- **Shell and injected markup carries markers** (`data-od-shell`, `data-od-icon`, `data-od-font`, `data-od-tab`, `data-od-back`; the model adds `data-od-link`, `data-od-img`, `data-od-avatar`, `data-od-logo`) so the linter and the preview recognize canonical output.
 
 ## Git
 

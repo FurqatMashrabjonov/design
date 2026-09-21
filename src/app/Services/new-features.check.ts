@@ -257,6 +257,23 @@ assert.equal(screenForTab(pv, 'stats')?.id, 'c', 'A tab resolves to the root scr
 assert.equal(screenForTab(pv, 'home')?.id, 'a', 'A detail screen sharing a tab id never steals the tab')
 assert.equal(screenForTab(pv, 'nope'), undefined, 'An unclaimed tab resolves to nothing rather than a wrong screen')
 assert.equal(screenForBack(pv, 'Home')?.id, 'a', 'Back resolves to the named parent')
+{
+  const { screenByName, PREVIEW_BRIDGE } = await import('../../lib/preview-bridge.ts')
+  const named = [
+    { id: '1', name: 'GoBite — Restaurant Feed', x: 0, screenType: 'root-tab', activeTabId: 'home', parentScreenName: null },
+    { id: '2', name: 'Dish Detail — GoBite', x: 1, screenType: 'detail-view', activeTabId: null, parentScreenName: 'Restaurant Feed' },
+    { id: '3', name: 'Cart &amp; Checkout — GoBite', x: 2, screenType: 'modal-flow', activeTabId: null, parentScreenName: 'Dish Detail' },
+    { id: '4', name: 'Orders', x: 3, screenType: 'root-tab', activeTabId: 'orders', parentScreenName: null },
+  ]
+  assert.equal(screenByName(named, 'Dish Detail')?.id, '2', 'a planned name is found inside the model\'s title')
+  assert.equal(screenByName(named, 'Cart & Checkout')?.id, '3', 'entities and punctuation do not matter')
+  assert.equal(screenByName(named, 'orders')?.id, '4')
+  assert.equal(screenByName(named, 'Restaurant feed screen')?.id, '1', 'most of the wanted words is enough')
+  assert.equal(screenByName(named, 'Live Tracking'), undefined, 'an undesigned screen resolves to nothing, never to a wrong screen')
+  assert.equal(screenByName(named, ''), undefined)
+  assert.equal(screenForBack(named, 'Restaurant Feed')?.id, '1', 'Back now finds a parent stored under a longer title')
+  assert.ok(PREVIEW_BRIDGE.includes("closest('[data-od-link]')") && PREVIEW_BRIDGE.includes('od:navigate_link'))
+}
 assert.equal(screenForBack(pv, 'Missing')?.id, 'c', 'Back falls back to a root screen when the parent is gone')
 assert.ok(withPreviewBridge('<html><body>x</body></html>').includes('od:navigate_tab'), 'Bridge is injected before </body>')
 

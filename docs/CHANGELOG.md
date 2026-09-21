@@ -5,6 +5,13 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Prototipda kontent ichidagi bosishlar ishlaydi — UX-05
+Preview'da faqat tab bar va "orqaga" ishlardi; taom kartasini bossang hech narsa bo'lmasdi — eng tabiiy harakat o'lik edi.
+- Planner v2 har ekranga `linksTo` beradi, `screenSpec` modelga `data-od-link="<ekran nomi>"` qo'yishni aytadi. Ko'prik (`preview-bridge.ts`) endi `[data-od-link]` bosilishini ham ushlab, `od:navigate_link` yuboradi; preview sahifasi ekranni topib o'tadi.
+- **`screenByName`.** Reja nomi "Dish Detail", bazadagi nom esa modelning sarlavhasi — "Dish Detail — GoBite". Moslash: aniq → biri ikkinchisining ichida → so'zlarning ≥60% i. Topilmasa — hech narsa (ro'yxatdagi ko'p qatorlarning ortida ekran yo'q; xato ekranga o'tishdan ko'ra jim turish yaxshi). Shu funksiya "orqaga" ni ham tuzatdi: u ilgari faqat aniq nom bilan ishlardi va deyarli doim birinchi root ekranga tushardi.
+- Fayllar: `src/lib/preview-bridge.ts`, `src/routes/preview.$projectId.tsx`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Testlar: reja nomi sarlavha ichidan topiladi; `&amp;` va tinish belgilari farq qilmaydi; so'zlarning ko'pi yetarli; chizilmagan ekran — `undefined`; "orqaga" uzunroq sarlavhali ota-onani topadi. Chrome'da, `plan2` dagi GoBite loyihasida (eval bazasining nusxasi bilan alohida dev server, `data.db` ga tegilmadi): sandbox ichidagi haqiqiy `click` → "1 / 7 · Restaurant Feed" dan "2 / 7 · Restaurant Menu" ga, keyin "Cart &amp; Checkout" havolasi → "4 / 7 · Cart & Checkout", "Order Tracking" → "5 / 7"; URL `?s=` yangilandi. Chekka holatlar: chizilmagan ekranga havola ("Live Chat Support") va o'ziga havola — joyida qoladi. Eslatma: tab fonda (`visibilityState: hidden`) bo'lgani uchun koordinata bo'yicha bosish ishlamadi; bosish iframe ichidan skript bilan chaqirildi — hodisa zanjiri o'sha.
+
 ### Planner v2: har ekranning ishi, brief qamrovi va bitta ma'lumot modeli — UX-03, UX-04
 Piksellar tuzalgach eval'da qolgan eng katta muammo reja edi: brief "savat va checkout, jonli kuzatuv" so'rasa, planner Search / Orders / Profile berardi; 5 ekranga 5 tab ochardi; har ekran o'z kontentini to'qirdi (feed'dagi taom detalda boshqa nom, boshqa narx).
 - **Qamrov.** Planner avval brief so'ragan ekranlarni `requested[]` ga yozadi, har ekran `covers` bilan qaysi birini bajarishini aytadi. `parsePlan` qoplanmaganini hisoblaydi (`uncovered`), `planScreens` esa **bitta tuzatish aylanishi** qiladi: "bular tushib qoldi; avval hech kim so'ramagan profile/settings/search'ni almashtir". Tuzatilgan reja faqat kamroq tushirgan bo'lsa qabul qilinadi.

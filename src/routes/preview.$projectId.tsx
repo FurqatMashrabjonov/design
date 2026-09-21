@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Link2, Moon, Pencil, Sun } from 'lucide-reac
 import { toast } from 'sonner'
 import { getProject } from '../server/fns'
 import { frameSize } from '../canvas'
-import { orderScreens, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
+import { orderScreens, screenByName, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
 import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
 
 export const Route = createFileRoute('/preview/$projectId')({
@@ -65,11 +65,15 @@ function PreviewPage() {
       } else if (e.data.type === 'od:navigate_back') {
         const target = screenForBack(screens, e.data.parentName)
         if (target) goTo(target.id)
+      } else if (e.data.type === 'od:navigate_link' && typeof e.data.name === 'string') {
+        // Links to screens that were never designed stay quiet: most rows in a list have no screen behind them.
+        const target = screenByName(screens, e.data.name)
+        if (target && target.id !== screens[currentIndex]?.id) goTo(target.id)
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [screens, goTo])
+  }, [screens, goTo, currentIndex])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
