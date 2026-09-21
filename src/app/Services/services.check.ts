@@ -211,7 +211,7 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
 
 // GEN-22: the cast of an app is chosen in code — one signed-in user per project, different across projects.
 {
-  const { contentSeed, contentBlock, localeOf } = await import('../../lib/content-seed.ts')
+  const { contentSeed, contentBlock, localeOf, genderOf } = await import('../../lib/content-seed.ts')
   const day = new Date('2026-09-21T09:00:00Z')
   const a = contentSeed('project-a', 'en', day)
   assert.deepEqual(contentSeed('project-a', 'en', day), a, 'same project, same cast — on every screen and on a screen added later')
@@ -225,13 +225,16 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.equal(localeOf('Toshkent uchun taksi chaqirish ilovasi'), 'uz')
   assert.equal(localeOf('Приложение доставки продуктов'), 'ru')
   assert.equal(localeOf('Fitness tracker for runners, vague todo app'), 'en')
+  assert.equal(genderOf('Никита Соколов'), 'm', 'a male name ending in -a is still male')
+  assert.equal(genderOf('Maya Chen'), undefined, 'a name the model invented has no known gender')
+  assert.ok([a.user.name, ...a.people].every((n) => genderOf(n)), 'every seeded person has a gender, so an avatar can match')
   const uz = contentSeed('project-a', 'uz', day)
   assert.ok(/so'm/.test(uz.money) && /@gmail\.com$/.test(uz.user.email))
   const ru = contentSeed('project-a', 'ru', day)
   assert.ok(/[а-яё]/i.test(ru.user.name) && /₽/.test(ru.money) && /^user\d+@/.test(ru.user.email), 'a Cyrillic name still gets an address')
   for (const id of ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']) {
-    const [first, last] = contentSeed(id, 'ru', day).user.name.split(' ')
-    assert.equal(/[ая]$/.test(first), /а$/.test(last), `${first} ${last}: surname agrees with the first name`)
+    const name = contentSeed(id, 'ru', day).user.name
+    assert.equal(genderOf(name) === 'f', /а$/.test(name.split(' ')[1]), `${name}: surname agrees with gender`)
   }
 }
 

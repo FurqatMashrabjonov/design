@@ -5,6 +5,15 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-21
 
+### Avatarlar: bir odam — bir yuz, hamma ekranda — AST-02
+Feed, chat, reyting ekranlarida odamlar bosh harfli doiralar edi — eng "jonsiz" joy.
+- Shartnoma: `<img data-od-avatar="Full Name" alt="Full Name">`, o'lchami CSS'da. `ImageService` portretni ikki hovuzdan oladi (`woman portrait face` / `man portrait face`, har biri **bir marta** so'raladi, 40 tagacha yuz, `image_cache` da `avatar:<jins>:<n>`), indeks — ismning xeshi, shuning uchun bir odam har ekranda va keyin qo'shilgan ekranda ham o'sha yuz bilan chiqadi. 128×128 kvadrat kesim, doira, `object-fit:cover`.
+- **Yuz ismga mos bo'lishi uchun** `content-seed` dagi ismlar jins bo'yicha ajratildi (`genderOf`). Faqat urug'langan odamlar (foydalanuvchi + cast) yuz oladi; model o'zi to'qigan ism uchun jins noma'lum — u tanga tashlab tanlangan portret emas, token rangli doirada bosh harflar oladi. Yo'l-yo'lakay tuzatildi: ruscha familiya endi ismning oxirgi harfiga emas, jinsga qarab moslanadi ("Никита" → "Соколов", avval "Соколова" bo'lardi).
+- Avatar slotlari foto sloti sifatida qidirilmaydi (aks holda `alt="Zainab Novak"` bo'yicha tasodifiy rasm topilardi).
+- Eslatma: ismlar ro'yxati tuzilishi o'zgargani uchun mavjud loyihalarning urug'langan foydalanuvchisi o'zgaradi (hali launch'dan oldinmiz).
+- Fayllar: `lib/image-slots.ts`, `ImageService.ts`, `lib/content-seed.ts`, `craft/mobile.md`, `skills/mobile-screen`, `skills/web-screen`, `image.check.ts`, `services.check.ts`, `eval/metrics.ts`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Testlar: bir odam — bir yuz; model bergan o'lcham saqlanadi, o'lchamsizga 40px; portret yo'q → bosh harflar; idempotent; ayol ismi ayollar hovuzidan; har jinsga bitta so'rov, keyin keshdan (kalitsiz ham); to'qima ism → bosh harflar va so'rov ketmaydi. Eval (`ast02`: lang-learn, social-photo, chat-team): 78 ta yuz, 0 ta bosh harf, standart persona 2 → 0, placeholder URL 42 → 0. Varaqda: reyting, feed, chat ro'yxati, DM'lar — yuzlar bilan, bir odam ekranlar aro bir xil.
+
 ### Model: DeepSeek V4 Flash, thinking o'chiq — aniq pin qilindi
 Foydalanuvchi so'rovi: xarajat past tursin, faqat v4-flash. Tekshirdim (`GET /models` va sinov chaqiruvlari): API'da ikkita model bor — `deepseek-flash` va `deepseek-v4-pro`. Biz ishlatib kelgan `deepseek-chat` — aslida `deepseek-flash` ning thinking o'chirilgan taxallusi, ya'ni shu paytgacha ham flash'da edik. Lekin `deepseek-flash` ni **nomi bilan** chaqirsa thinking standart yoqiq keladi ("17*23" ga 1 token o'rniga 22 token, 20 tasi reasoning) — reasoning tokenlari chiqish narxida hisoblanadi va oqimning birinchi baytini kechiktiradi.
 - `LlmService`: `model: 'deepseek-flash'` + `thinking: { type: 'disabled' }` ikkala chaqiruvda. Taxallus qayta yo'naltirilsa ham xatti-harakat o'zgarmaydi.

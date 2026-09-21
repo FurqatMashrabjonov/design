@@ -35,6 +35,7 @@ export function normalizeQuery(raw: string): string {
 
 /** The search query a tag asks for, or null when the tag is not ours to fill (it already has a real src). */
 export function slotQuery(tag: string): string | null {
+  if (attr(tag, 'data-od-avatar')) return null // a person, not a photo subject: see applyAvatars
   const src = attrValue(tag, 'src') ?? ''
   const wanted = attrValue(tag, 'data-od-img')
   const fillable = src === '' || src === '#' || PLACEHOLDER_HOST.test(src)
@@ -78,5 +79,44 @@ export function applyImages(html: string, found: Map<string, ResolvedImage | nul
     out = setAttr(out, 'data-od-img', query)
     if (attrValue(out, 'alt') === undefined) out = setAttr(out, 'alt', '')
     return setAttr(out, 'data-od-img-resolved', '')
+  })
+}
+
+// --- avatars: <img data-od-avatar="Full Name" alt="Full Name"> ---
+
+/** Names of the people whose avatar slots are still empty. */
+export function avatarNames(html: string): string[] {
+  const names = (html.match(IMG_TAG) ?? []).filter((t) => !attr(t, 'data-od-avatar-resolved')).map((t) => (attrValue(t, 'data-od-avatar') ?? '').trim())
+  return [...new Set(names.filter(Boolean))]
+}
+
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => [...w][0] ?? '')
+    .join('')
+    .toUpperCase()
+
+/** A portrait where one was found; otherwise the person's initials in a token-coloured circle of the same size. */
+export function applyAvatars(html: string, portraits: Map<string, string | null>): string {
+  return html.replace(IMG_TAG, (tag) => {
+    const name = (attrValue(tag, 'data-od-avatar') ?? '').trim()
+    if (!name || attr(tag, 'data-od-avatar-resolved')) return tag
+    const style = (attrValue(tag, 'style') ?? '').trim().replace(/;$/, '')
+    const has = (prop: string) => new RegExp(`(^|;)\\s*${prop}\\s*:`, 'i').test(style)
+    const classes = attrValue(tag, 'class')
+    const size = [!has('width') && 'width:40px', !has('height') && 'height:40px'].filter(Boolean)
+    const round = [...size, 'border-radius:9999px', 'flex:none']
+    const url = portraits.get(name)
+    if (!url) {
+      const label = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+      const box = [style, ...round, 'display:inline-flex', 'align-items:center', 'justify-content:center', 'background:var(--surface)', 'color:var(--fg)', 'border:1px solid var(--border)', 'font-weight:600', 'font-size:0.8em', 'line-height:1'].filter(Boolean).join(';')
+      return `<span role="img" aria-label="${label}" data-od-avatar-resolved${classes ? ` class="${classes}"` : ''} style="${box}">${initialsOf(name).replace(/</g, '')}</span>`
+    }
+    let out = setAttr(dropAttr(tag, 'srcset'), 'src', url)
+    out = setAttr(out, 'style', [style, ...round, 'object-fit:cover', 'display:block', 'background:var(--surface)'].filter(Boolean).join(';'))
+    if (attrValue(out, 'alt') === undefined) out = setAttr(out, 'alt', name)
+    return setAttr(setAttr(out, 'loading', 'lazy'), 'data-od-avatar-resolved', '')
   })
 }

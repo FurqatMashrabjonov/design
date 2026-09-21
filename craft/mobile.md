@@ -59,7 +59,7 @@ Where the two disagree on look, the style card wins. Where they disagree on a nu
 
 - Icons are `<i data-lucide="name"></i>` only, sized with CSS, coloured with `currentColor`. Never draw icon SVG by hand, never use emoji as icons. One icon per meaning across the screen.
 - A leading icon sits in a 36–44px tinted container or stands alone — pick one treatment and keep it.
-- **Photos are slots, not URLs:** `<img data-od-img="grilled salmon bowl, top view" alt="Grilled salmon bowl">` with no `src`; a matching stock photo is inserted. Describe what the photo shows in 3–6 plain words, give the image its box in CSS (`width` plus `aspect-ratio` or `height`), and use photos where a real app would — food, places, products, covers — not as decoration. Avatars of people are initials in a circle.
+- **Photos are slots, not URLs:** `<img data-od-img="grilled salmon bowl, top view" alt="Grilled salmon bowl">` with no `src`; a matching stock photo is inserted. Describe what the photo shows in 3–6 plain words, give the image its box in CSS (`width` plus `aspect-ratio` or `height`), and use photos where a real app would — food, places, products, covers — not as decoration. A person's avatar is `<img data-od-avatar="Full Name" alt="Full Name">` sized in CSS: a portrait is inserted for the people in APP CONTENT, initials for anyone else.
 - Your own `<svg>` is for what no icon library has: a chart, a progress ring, a map sketch, a logo mark.
 
 ## 8. Motion and interaction

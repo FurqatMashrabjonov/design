@@ -52,7 +52,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GEN-25 | temperature aniq beriladi (ekran va planner alohida) | Generatsiya / Asosiy | MVP | Tayyor | Kichik | EVAL-02 | Qiymatlar eval'da tanlangan va LlmService'da yozilgan |
 | GEN-26 | Rasm qoidasi ziddiyatini olib tashlash (.ph-img, placehold.co) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | Repoda .ph-img va placehold.co yo'q |
 | AST-01 | Rasm resolver: data-od-img → Pexels, SQLite kesh, gradient zaxira | Generatsiya / Kontent | MVP | Tayyor | O'rta | GEN-26 | Haqiqiy rasm; keshdan; xatoda gradient; kalit faqat serverda |
-| AST-02 | Avatarlar persona urug'idan | Generatsiya / Kontent | MVP | Rejada | Kichik | GEN-22 | Har loyihada har xil, ekranlar aro bir xil |
+| AST-02 | Avatarlar persona urug'idan | Generatsiya / Kontent | MVP | Tayyor | Kichik | GEN-22 | Har loyihada har xil, ekranlar aro bir xil |
 | AST-03 | Ilova belgisi: kodda monogramma SVG | Generatsiya / Kontent | MVP | Rejada | Kichik |  | Onboarding/kirish ekranlarida; aksentga ergashadi |
 | AST-04 | Rasm sloti o'lchami qulflangan (aspect-ratio, object-fit) | Generatsiya / Kontent | MVP | Tayyor | Kichik | AST-01 | Har qanday rasm layout'ni buzmaydi |
 | UX-01 | Ekran arxetiplari katalogi (~20 blueprint) | Generatsiya / Asosiy | MVP | Rejada | O'rta |  | blueprints/<id>.json; sxema testi |

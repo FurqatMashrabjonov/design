@@ -5,19 +5,35 @@
 
 export type Locale = 'en' | 'uz' | 'ru'
 
-const NAMES: Record<Locale, { first: string[]; last: string[] }> = {
+// First names are split by gender for two reasons: Slavic and Uzbek surnames agree with it, and an
+// avatar photo has to match the name it sits next to (see lib/image-slots.ts, data-od-avatar).
+export type Gender = 'f' | 'm'
+const NAMES: Record<Locale, { f: string[]; m: string[]; last: string[] }> = {
   en: {
-    first: ['Amara', 'Jonas', 'Priya', 'Mateo', 'Ingrid', 'Kofi', 'Leila', 'Tomás', 'Nadia', 'Elliot', 'Yuki', 'Rafael', 'Zainab', 'Oskar', 'Camille', 'Dev', 'Hana', 'Marcus', 'Sofia', 'Idris', 'Freya', 'Andre', 'Mei', 'Callum', 'Noor', 'Luca', 'Anika', 'Theo', 'Ximena', 'Bram'],
+    f: ['Amara', 'Priya', 'Ingrid', 'Leila', 'Nadia', 'Yuki', 'Zainab', 'Camille', 'Hana', 'Sofia', 'Freya', 'Mei', 'Noor', 'Anika', 'Ximena'],
+    m: ['Jonas', 'Mateo', 'Kofi', 'Tomás', 'Elliot', 'Rafael', 'Oskar', 'Dev', 'Marcus', 'Idris', 'Andre', 'Callum', 'Luca', 'Theo', 'Bram'],
     last: ['Okafor', 'Lindqvist', 'Raman', 'Herrera', 'Novak', 'Mensah', 'Haddad', 'Silva', 'Petrov', 'Brennan', 'Tanaka', 'Moreau', 'Farouk', 'Bergström', 'Dubois', 'Kapoor', 'Sato', 'Whitfield', 'Rossi', 'Bello', 'Aldana', 'Costa', 'Lindahl', 'Reyes', 'Nasser', 'Marino', 'Varga', 'Ashby', 'Quint', 'Vos'],
   },
   uz: {
-    first: ['Dilnoza', 'Jasur', 'Madina', 'Sardor', 'Nigora', 'Bekzod', 'Shahzoda', 'Otabek', 'Gulnora', 'Azizbek', 'Malika', 'Ulugʻbek', 'Zarina', 'Doniyor', 'Sevara', 'Farrux', 'Kamola', 'Sherzod', 'Nodira', 'Javohir'],
+    f: ['Dilnoza', 'Madina', 'Nigora', 'Shahzoda', 'Gulnora', 'Malika', 'Zarina', 'Sevara', 'Kamola', 'Nodira'],
+    m: ['Jasur', 'Sardor', 'Bekzod', 'Otabek', 'Azizbek', 'Ulugʻbek', 'Doniyor', 'Farrux', 'Sherzod', 'Javohir'],
     last: ['Karimov', 'Yusupov', 'Rahimov', 'Toshmatov', 'Abdullayev', 'Ismoilov', 'Nazarov', 'Qodirov', 'Sobirov', 'Ergashev', 'Mirzayev', 'Usmonov', 'Xolmatov', 'Saidov', 'Tursunov'],
   },
   ru: {
-    first: ['Анна', 'Дмитрий', 'Екатерина', 'Артём', 'Мария', 'Иван', 'Ольга', 'Никита', 'Алина', 'Павел', 'Дарья', 'Роман', 'Вера', 'Кирилл', 'Полина', 'Тимур', 'Юлия', 'Глеб', 'Софья', 'Егор'],
+    f: ['Анна', 'Екатерина', 'Мария', 'Ольга', 'Алина', 'Дарья', 'Вера', 'Полина', 'Юлия', 'Софья'],
+    m: ['Дмитрий', 'Артём', 'Иван', 'Никита', 'Павел', 'Роман', 'Кирилл', 'Тимур', 'Глеб', 'Егор'],
     last: ['Соколов', 'Кузнецов', 'Орлов', 'Белов', 'Громов', 'Лебедев', 'Зайцев', 'Волков', 'Морозов', 'Егоров', 'Никитин', 'Фролов', 'Тарасов', 'Климов', 'Ершов'],
   },
+}
+
+/** Gender of a seeded person, by first name; undefined for a name the model made up. */
+export function genderOf(fullName: string): Gender | undefined {
+  const first = fullName.trim().split(/\s+/)[0]
+  for (const pool of Object.values(NAMES)) {
+    if (pool.f.includes(first)) return 'f'
+    if (pool.m.includes(first)) return 'm'
+  }
+  return undefined
 }
 
 const PLACE: Record<Locale, { cities: string[]; money: string; dateLocale: string }> = {
@@ -40,19 +56,17 @@ function hash(s: string): number {
   return h >>> 0
 }
 
-// Russian and Uzbek surnames take a feminine ending; first names ending in -a/-я are treated as feminine.
-function surnameFor(first: string, last: string, locale: Locale): string {
-  if (locale === 'en' || !/[aаяAАЯ]$/.test(first)) return last
-  return locale === 'ru' ? `${last}а` : `${last}a`
-}
+// Russian and Uzbek surnames take a feminine ending.
+const surnameFor = (last: string, gender: Gender, locale: Locale) => (gender === 'm' || locale === 'en' ? last : locale === 'ru' ? `${last}а` : `${last}a`)
 
 export type ContentSeed = { user: { name: string; initials: string; email: string; city: string }; people: string[]; today: string; money: string; locale: Locale }
 
 export function contentSeed(projectId: string, locale: Locale, now = new Date()): ContentSeed {
   const pool = NAMES[locale]
   const person = (n: number) => {
-    const first = pool.first[hash(`${projectId}:f:${n}`) % pool.first.length]
-    return `${first} ${surnameFor(first, pool.last[hash(`${projectId}:l:${n}`) % pool.last.length], locale)}`
+    const gender: Gender = hash(`${projectId}:g:${n}`) % 2 === 0 ? 'f' : 'm'
+    const first = pool[gender][hash(`${projectId}:f:${n}`) % pool[gender].length]
+    return `${first} ${surnameFor(pool.last[hash(`${projectId}:l:${n}`) % pool.last.length], gender, locale)}`
   }
   // n = 0 is the signed-in user; the cast is the next distinct names.
   const name = person(0)
@@ -87,5 +101,6 @@ Signed-in user: ${seed.user.name} (initials ${seed.user.initials}), ${seed.user.
 Other people who appear (friends, senders, reviewers, leaderboards) — use these, in this order, before inventing anyone: ${seed.people.join(', ')}.
 Today is ${seed.today}; every date and timestamp on the screen is consistent with it.
 Money: ${seed.money}.
+Avatars: <img data-od-avatar="Full Name" alt="Full Name">, sized in CSS — a portrait is inserted for the people named here; anyone else gets initials.
 Never use another name for the signed-in user, and never the stock names (Maya Chen, Sarah Chen, Alex Johnson, John Doe, Jane Doe).`
 }

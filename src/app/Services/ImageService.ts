@@ -1,5 +1,6 @@
 import { ImageCache } from '@/app/Models/ImageCache'
-import { applyImages, imageQueries, type ResolvedImage } from '@/lib/image-slots'
+import { genderOf, type Gender } from '@/lib/content-seed'
+import { applyAvatars, applyImages, avatarNames, imageQueries, type ResolvedImage } from '@/lib/image-slots'
 
 const SEARCH = 'https://api.pexels.com/v1/search'
 const PHOTO_HOST = 'https://images.pexels.com/'
@@ -34,8 +35,54 @@ async function lookup(query: string, signal?: AbortSignal): Promise<ResolvedImag
   return found
 }
 
+// Portraits come from two pools, fetched once each and kept in the cache under avatar:<gender>:<n>.
+// A person always gets the same face: the index is a hash of the name.
+const POOL = 40
+const POOL_QUERY: Record<Gender, string> = { f: 'woman portrait face', m: 'man portrait face' }
+
+async function portraitPool(gender: Gender, signal?: AbortSignal): Promise<string[]> {
+  const cached = Array.from({ length: POOL }, (_, i) => ImageCache.find(`avatar:${gender}:${i}`)?.url).filter((u): u is string => Boolean(u))
+  if (cached.length > 0) return cached
+  const key = process.env.PEXELS_API_KEY
+  if (!key) return []
+  const res = await fetch(`${SEARCH}?query=${encodeURIComponent(POOL_QUERY[gender])}&per_page=${POOL}`, {
+    headers: { Authorization: key },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000),
+  })
+  if (!res.ok) return []
+  const photos = ((await res.json()) as { photos?: { src?: { original?: string } }[] }).photos ?? []
+  const urls = photos
+    .map((p) => p.src?.original ?? '')
+    .filter((u) => u.startsWith(PHOTO_HOST))
+    // A square face crop, 2x a 64px avatar.
+    .map((u) => `${u.split('?')[0]}?auto=compress&cs=tinysrgb&w=128&h=128&fit=crop`)
+  urls.forEach((url, i) => ImageCache.save(`avatar:${gender}:${i}`, url, null))
+  return urls
+}
+
+function nameHash(name: string): number {
+  let h = 2166136261
+  for (let i = 0; i < name.length; i++) h = Math.imul(h ^ name.charCodeAt(i), 16777619)
+  return h >>> 0
+}
+
+// Only seeded people (lib/content-seed) get a face — their gender is known, so the photo can match
+// the name. A name the model invented gets initials rather than a coin-flip portrait.
+async function resolveAvatars(html: string, signal?: AbortSignal): Promise<string> {
+  const names = avatarNames(html)
+  if (names.length === 0) return html
+  const portraits = new Map<string, string | null>()
+  for (const name of names) {
+    const gender = genderOf(name)
+    const pool = gender ? await portraitPool(gender, signal).catch(() => []) : []
+    portraits.set(name, pool.length ? pool[nameHash(name) % pool.length] : null)
+  }
+  return applyAvatars(html, portraits)
+}
+
 /** Replaces every image slot in a generated screen with a stock photo, or with a plain block when none is found. */
-export async function resolveImages(html: string, signal?: AbortSignal): Promise<string> {
+export async function resolveImages(input: string, signal?: AbortSignal): Promise<string> {
+  const html = await resolveAvatars(input, signal)
   const queries = imageQueries(html)
   if (queries.length === 0) return html
   const found = new Map<string, ResolvedImage | null>()
