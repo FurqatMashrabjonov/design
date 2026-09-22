@@ -29,5 +29,19 @@
     "card",
     "image",
     "list"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Stream of large cards: full-width image cards stacked vertically, each with title and 1–2 meta lines."
+    },
+    {
+      "id": "b",
+      "layout": "Grid: a two-column grid of compact tiles (square image, title, one meta line), with one wide featured tile at the top."
+    },
+    {
+      "id": "c",
+      "layout": "Editorial: one big hero item with an overlaid title, then the rest as horizontal rows (small thumbnail left, text right)."
+    }
   ]
 }

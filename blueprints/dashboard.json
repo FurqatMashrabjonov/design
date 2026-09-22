@@ -30,5 +30,19 @@
     "list",
     "progress",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Hero card first: one large summary card with the key number, then compact tiles and today's items below."
+    },
+    {
+      "id": "b",
+      "layout": "Ring-led: a large progress ring or gauge centred near the top with the key number inside it, then a short list of today's items as rows."
+    },
+    {
+      "id": "c",
+      "layout": "Timeline: a date strip across the top, then today's items as a vertical timeline with times on the left; the key number sits in a slim banner above it."
+    }
   ]
 }

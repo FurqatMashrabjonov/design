@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process'
+import { tmpdir } from 'node:os'
+
 export type LlmUsage = { promptTokens: number; cachedTokens: number; completionTokens: number }
 
 // One listener, set by whoever measures spend (today: eval/run.ts). Called once per completed call.
@@ -26,9 +29,22 @@ const THINKING = { type: 'disabled' } as const
 const SCREEN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_SCREEN ?? 1.0)
 const PLAN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_PLAN ?? 1.0)
 
+// LLM_PROVIDER=claude-cli: for local testing only, generation runs through the developer's own
+// Claude Code login (`claude -p`) instead of DeepSeek, so trying things out costs no API balance.
+// Never in production — a subscription is personal and cannot serve other people's requests — and
+// never for evals: prompts are tuned for DeepSeek, and a Claude run says nothing about DeepSeek's.
+const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? 'claude-cli' : 'deepseek'
+function assertLocalProvider() {
+  if (process.env.NODE_ENV === 'production') throw new Error('LLM_PROVIDER=claude-cli is for local testing only; unset it in production')
+}
+
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 // `signal` lets the caller stop the request (and the token spend) when the client goes away.
 export async function* streamCompletion(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void) {
+  if (PROVIDER === 'claude-cli') {
+    yield* claudeCli(system, user, signal, onUsage)
+    return
+  }
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -72,6 +88,11 @@ export async function* streamCompletion(system: string, user: string, signal?: A
 
 // Non-streaming, JSON-only completion (planner). DeepSeek's response_format:json_object guarantees valid JSON syntax.
 export async function completeJSON(system: string, user: string, maxTokens = 1024, onUsage?: (u: LlmUsage) => void) {
+  if (PROVIDER === 'claude-cli') {
+    let text = ''
+    for await (const d of claudeCli(system, user, undefined, onUsage)) text += d
+    return jsonOnly(text)
+  }
   const key = process.env.DEEPSEEK_API_KEY
   if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
 
@@ -95,3 +116,66 @@ export async function completeJSON(system: string, user: string, maxTokens = 102
   reportUsage(json.usage, onUsage)
   return json.choices[0].message.content as string
 }
+
+/** Claude has no JSON mode: keep what lies between the first { and the last }, fences and prose dropped. */
+export function jsonOnly(text: string): string {
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  return start >= 0 && end > start ? text.slice(start, end + 1) : text
+}
+
+/**
+ * One headless Claude Code turn: no tools, no settings, hooks, MCP servers or session files, run
+ * from a temp dir so no project CLAUDE.md is read, with our system prompt replacing Claude Code's.
+ * The user message goes in on stdin (it can be long); text deltas come back as stream-json events.
+ */
+async function* claudeCli(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void): AsyncGenerator<string> {
+  assertLocalProvider()
+  const args = ['-p', '--output-format', 'stream-json', '--include-partial-messages', '--verbose', '--tools', '', '--system-prompt', system, '--setting-sources', '', '--strict-mcp-config', '--no-session-persistence', '--disable-slash-commands']
+  if (process.env.CLAUDE_CLI_MODEL) args.push('--model', process.env.CLAUDE_CLI_MODEL)
+  // Without an API key in its environment the CLI uses the logged-in subscription, never API billing.
+  const { ANTHROPIC_API_KEY: _key, ...env } = process.env
+  const child = spawn(process.env.CLAUDE_CLI_BIN || 'claude', args, { cwd: tmpdir(), env, stdio: ['pipe', 'pipe', 'pipe'] })
+  const stop = () => child.kill('SIGTERM')
+  signal?.addEventListener('abort', stop, { once: true })
+  let stderr = ''
+  child.stderr.on('data', (d) => (stderr += d))
+  const exited = new Promise<number>((resolve, reject) => {
+    child.on('error', (e) => reject(new Error(`Could not start the claude CLI (${e.message}). Is Claude Code installed and logged in?`)))
+    child.on('close', (code) => resolve(code ?? 0))
+  })
+  child.stdin.end(user)
+
+  let buf = ''
+  let stopReason = ''
+  try {
+    for await (const chunk of child.stdout) {
+      buf += chunk
+      const lines = buf.split('\n')
+      buf = lines.pop()!
+      for (const line of lines) {
+        if (!line.trim()) continue
+        let ev: any
+        try {
+          ev = JSON.parse(line)
+        } catch {
+          continue
+        }
+        if (ev.type === 'stream_event' && ev.event?.type === 'content_block_delta' && ev.event.delta?.type === 'text_delta') yield ev.event.delta.text as string
+        else if (ev.type === 'stream_event' && ev.event?.type === 'message_delta') stopReason = ev.event.delta?.stop_reason ?? stopReason
+        else if (ev.type === 'result') {
+          const u = ev.usage ?? {}
+          reportUsage({ prompt_tokens: (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), prompt_cache_hit_tokens: u.cache_read_input_tokens ?? 0, completion_tokens: u.output_tokens ?? 0 }, onUsage)
+          if (ev.is_error) throw new Error(`Claude CLI: ${String(ev.result ?? ev.subtype).slice(0, 300)}`)
+        }
+      }
+    }
+  } finally {
+    signal?.removeEventListener('abort', stop)
+  }
+  const code = await exited
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+  if (code !== 0) throw new Error(`Claude CLI exited with ${code}: ${stderr.slice(0, 300)}`)
+  if (stopReason === 'max_tokens') throw new Error('Output hit max_tokens, HTML is incomplete. Try a simpler screen.')
+}
+

@@ -26,5 +26,19 @@
     "nav-bar",
     "list",
     "toggle"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Grouped inset lists with section headers and trailing controls."
+    },
+    {
+      "id": "b",
+      "layout": "Plain list with icon tiles: each row starts with a coloured rounded icon tile, sections separated by space and small headers."
+    },
+    {
+      "id": "c",
+      "layout": "Account card first: a large account card with avatar and plan, then grouped rows below."
+    }
   ]
 }

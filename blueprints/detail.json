@@ -31,5 +31,19 @@
     "segmented",
     "stepper",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Photo hero: full-bleed image at the top, content sheet overlapping its bottom edge with rounded top corners."
+    },
+    {
+      "id": "b",
+      "layout": "Title first: large title and key facts at the top, then a horizontal gallery strip of images, then sections."
+    },
+    {
+      "id": "c",
+      "layout": "Split facts: a compact header with thumbnail beside the title, then a two-column facts table, then description and related items."
+    }
   ]
 }

@@ -30,5 +30,19 @@
     "stepper",
     "segmented",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Single column: items, delivery, payment, breakdown, each as a titled block, sticky pay bar."
+    },
+    {
+      "id": "b",
+      "layout": "Cards: each block (items, delivery, payment) inside its own card with an Edit link, breakdown in a final card."
+    },
+    {
+      "id": "c",
+      "layout": "Collapsed summary: an expandable 'N items' summary row at top, then delivery and payment as tappable rows, breakdown pinned above the pay bar."
+    }
   ]
 }

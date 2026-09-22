@@ -105,7 +105,8 @@ ${lines.join('\n')}`
 }
 
 /** A planned screen's spec, written so the drawing model composes a decided screen instead of deciding one. */
-export function screenSpec(s: PlannedScreen): string {
+/** @param seed the app (its name): picks the app's layout variant for each archetype (VAR-02). */
+export function screenSpec(s: PlannedScreen, seed?: string): string {
   return [
     s.description,
     s.userGoal && `\nUser goal: ${s.userGoal}`,
@@ -113,7 +114,7 @@ export function screenSpec(s: PlannedScreen): string {
     s.sections.length > 0 && `Sections, top to bottom:\n${s.sections.map((x, i) => `${i + 1}. ${x}`).join('\n')}`,
     s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
     // The archetype's structural pattern (blueprints/<archetype>.json); the plan's sections above say what content fills it.
-    s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype)}`,
+    s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype, seed)}`,
   ]
     .filter(Boolean)
     .join('\n')

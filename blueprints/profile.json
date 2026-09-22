@@ -27,5 +27,19 @@
     "avatar",
     "list",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Centred header: avatar centred with name and handle below, stats row, grouped rows."
+    },
+    {
+      "id": "b",
+      "layout": "Left header: avatar left with name and handle beside it and an Edit button right, stats as three cards, then rows."
+    },
+    {
+      "id": "c",
+      "layout": "Cover: a short coloured cover band with the avatar overlapping its bottom edge, then stats and a grid of the user's items."
+    }
   ]
 }

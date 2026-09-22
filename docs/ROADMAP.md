@@ -62,19 +62,20 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UX-05 | Oqim bog'lari: data-od-link, preview'da o'tish | Generatsiya / Ko'rish | MVP | Tayyor | Kichik | UX-03 | Preview'da kartadan detal ekranga o'tiladi |
 | HIG-01 | HIG/Material komponent kartalari (o'z so'zimiz bilan, 5–8 qator) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | craft/platform/ios/*.md |
 | HIG-02 | Promptga faqat arxetip ishlatadigan kartalar kiradi | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-01, UX-01 | Prompt byudjeti saqlanadi |
-| HIG-03 | HIG raqamlari → render auditi qoidalari | Generatsiya / Sifat | MVP | Rejada | Kichik |  | Shrift ≥11px, nishon ≥44px, kontrast ≥4.5, tab 3–5 — bitta faylda |
+| HIG-03 | HIG raqamlari → render auditi qoidalari | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | Shrift ≥11px, nishon ≥44px, kontrast ≥4.5, tab 3–5 — bitta faylda |
 | KIT-01 | od-kit.css: tokenlar bilan ishlaydigan ~30 komponent | Generatsiya / Izchillik | MVP | Rejada | Katta |  | Har komponent 33 tizimda galereyada to'g'ri ko'rinadi |
 | KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Rejada | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
 | KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Rejada | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
 | KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Rejada | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
 | EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Rejada | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
 | EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Rejada | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
-| EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |
+| EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |
 | VAR-01 | Loyiha art-yo'nalishi urug'i | Generatsiya / Variantlar | MVP | Rejada | O'rta | KIT-02 | Loyiha ichida barqaror, loyihalar aro farqli |
-| VAR-02 | Har arxetipga 2–3 layout varianti | Generatsiya / Variantlar | MVP | Rejada | O'rta | UX-01 | Bir xillik ko'rsatkichi bazaviydan ≥30% past |
+| VAR-02 | Har arxetipga 2–3 layout varianti | Generatsiya / Variantlar | MVP | Tayyor | O'rta | UX-01 | Bir xillik ko'rsatkichi bazaviydan ≥30% past |
 | VAR-03 | Mobilga moslangan ~400 tokenli estetika bloki | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-23 | Prompt byudjeti ichida; eval'da A/B yutadi |
 | FB-01 | 👍/👎 va 'qayta yarat' signali yoziladi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Signal tizim, arxetip, variant bilan bazada |
 | FB-02 | Foydalanuvchi tahrirlari oldin/keyin juftligi sifatida saqlanadi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Har tahrir juftligi so'rov bilan birga saqlanadi |
+| DEV-01 | Lokal sinov uchun Claude Code provayderi (LLM_PROVIDER=claude-cli) | Generatsiya / Asosiy | MVP | Tayyor | Kichik |  | Productionda va evalda rad etiladi |
 
 ## M · Muharrir UX
 

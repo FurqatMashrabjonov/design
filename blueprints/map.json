@@ -28,5 +28,19 @@
     "sheet",
     "search",
     "chip"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Full-bleed map, floating search on top, bottom sheet with nearby items."
+    },
+    {
+      "id": "b",
+      "layout": "Full-bleed map with a horizontal carousel of item cards floating near the bottom."
+    },
+    {
+      "id": "c",
+      "layout": "Map in the top half, a scrollable list of items in the bottom half with distance on each row."
+    }
   ]
 }

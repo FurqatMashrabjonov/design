@@ -26,5 +26,19 @@
     "date-picker",
     "list",
     "segmented"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Week strip on top, selected day's agenda below."
+    },
+    {
+      "id": "b",
+      "layout": "Month grid with dots on busy days, selected day's items listed under it."
+    },
+    {
+      "id": "c",
+      "layout": "Agenda: a continuous scrolling list grouped by day headers, a small month switcher at the top."
+    }
   ]
 }

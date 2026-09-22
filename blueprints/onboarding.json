@@ -28,5 +28,19 @@
     "image",
     "progress",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Large illustration top, headline, one sentence, page dots, continue button."
+    },
+    {
+      "id": "b",
+      "layout": "Full-bleed photo with the headline over a gradient at the bottom, continue button."
+    },
+    {
+      "id": "c",
+      "layout": "Headline first, then three stacked benefit rows with icons, continue button."
+    }
   ]
 }

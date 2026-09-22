@@ -27,5 +27,19 @@
   "hig": [
     "card",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Centred: big success mark, headline, summary card, next-step button."
+    },
+    {
+      "id": "b",
+      "layout": "Receipt: headline at the top, then a receipt-like card with a dashed divider and line items, next-step button."
+    },
+    {
+      "id": "c",
+      "layout": "Illustration: a large illustration filling the top half, headline and one line, then two summary facts side by side."
+    }
   ]
 }

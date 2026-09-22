@@ -216,6 +216,21 @@ assert.ok(!fixed.includes('#6366f1'), 'Indigo is rewritten to the accent token')
 assert.ok(fixed.includes('font-family: var(--font-body)'), 'Literal font stack is tokenised')
 assert.ok(fixed.includes("--accent:#2952cc"), 'The canonical token block is left intact')
 assert.ok(lintScreen(autofixScreen(fixed)).every((f) => f.rule !== 'ai-indigo-accent'), 'Autofix is idempotent')
+// HIG-03 / EYE-03: platform minimums, checked and fixed in code
+const small = `<html><head><style>:root{--text-xs:10px}.cap{font-size:9px}.hide{font-size:0px}.ok{font-size:12px}</style></head><body><span style="font-size: 8.5px">a</span><b class="text-[10px]">b</b><button class="x"><i data-lucide="x"></i></button><button>Save</button></body></html>`
+const tiny = lintScreen(small).find((f) => f.rule === 'tiny-text')
+assert.ok(tiny && tiny.samples.includes('9px') && tiny.samples.includes('8.5px') && tiny.samples.includes('10px'), 'text under 11px is flagged')
+assert.ok(!tiny!.samples.includes('0px'), 'font-size 0 hides text on purpose and is not flagged')
+const big = autofixScreen(small)
+assert.ok(big.includes('.cap{font-size:11px}') && big.includes('font-size: 11px') && big.includes('text-[11px]'), 'tiny text is raised to 11px')
+assert.ok(big.includes('--text-xs:10px') && big.includes('font-size:0px') && big.includes('font-size:12px'), 'the token block, hidden text and legal sizes are untouched')
+assert.ok(!lintScreen(big).some((f) => f.rule === 'tiny-text'), 'after the fix nothing is flagged')
+assert.equal((big.match(/data-od-hit-area/g) ?? []).length, 1, 'icon buttons get one hit-area rule')
+assert.ok(big.includes('width:max(100%,44px)'), 'the hit area is at least 44px and never shrinks a larger button')
+assert.equal(autofixScreen(big), big, 'the whole autofix is idempotent')
+assert.ok(!autofixScreen('<html><head></head><body><p>no buttons</p></body></html>').includes('data-od-hit-area'), 'no rule when there is no button')
+const badged = autofixScreen('<html><head><style>.bell::after{content:"";width:8px;height:8px}</style></head><body><button class="bell"><i data-lucide="bell"></i></button></body></html>')
+assert.ok(badged.includes('button:not(.bell):has('), 'a button whose class already has an ::after (a badge) keeps it')
 
 console.log('Testing Prototype Navigation...')
 // Mirrors navigateToTab / navigateBack in routes/p.$projectId.tsx: every tab the shell

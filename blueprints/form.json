@@ -30,5 +30,19 @@
     "picker",
     "toggle",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Stacked sections: labelled fields grouped into 2–3 titled sections, save button at the bottom."
+    },
+    {
+      "id": "b",
+      "layout": "Inset rows: settings-style grouped rows where each row opens or holds a value (label left, value right), plus one text area."
+    },
+    {
+      "id": "c",
+      "layout": "Stepped: a progress indicator at the top showing step 1 of 3, only this step's fields below, Continue at the bottom."
+    }
   ]
 }

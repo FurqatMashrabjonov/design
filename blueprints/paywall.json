@@ -29,5 +29,19 @@
     "card",
     "segmented",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Headline, benefit checklist, plan cards, subscribe button."
+    },
+    {
+      "id": "b",
+      "layout": "Comparison: a Free vs Pro table with checkmarks, then plan selection and subscribe."
+    },
+    {
+      "id": "c",
+      "layout": "Hero: a large illustration or photo on top, one benefit headline, plans as a segmented toggle, subscribe."
+    }
   ]
 }

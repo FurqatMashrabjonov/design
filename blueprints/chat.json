@@ -28,5 +28,19 @@
     "avatar",
     "text-field",
     "keyboard"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Classic bubbles: mine right in accent, theirs left in surface, composer pinned."
+    },
+    {
+      "id": "b",
+      "layout": "Flat thread: messages as left-aligned rows with avatar and name (team-chat style), day separators, composer pinned."
+    },
+    {
+      "id": "c",
+      "layout": "Bubbles with context card: a pinned card at the top about the item being discussed, then bubbles, composer pinned."
+    }
   ]
 }

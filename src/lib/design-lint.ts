@@ -1,4 +1,5 @@
 import { extractRootBlock } from './screen-normalizer.ts'
+import { HIG, declaredFontSizes } from './hig-rules.ts'
 
 /**
  * Deterministic checks for the craft rules that are mechanically checkable.
@@ -206,6 +207,17 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
     })
   }
 
+  // font-size: 0 hides text on purpose; anything else below the minimum is unreadable on a phone.
+  const tiny = declaredFontSizes(scannable).filter((px) => px > 0 && px < HIG.minFontPx)
+  if (tiny.length > 0) {
+    findings.push({
+      rule: 'tiny-text',
+      severity: 'warn',
+      message: `Text smaller than ${HIG.minFontPx}px.`,
+      samples: uniq(tiny.map((px) => `${px}px`)),
+    })
+  }
+
   return findings
 }
 
@@ -232,6 +244,23 @@ export function autofixScreen(html: string): string {
         : '--font-body'
     return `font-family: var(${token})${trailing}`
   })
+
+  // Text below the platform minimum is raised to it (EYE-03). Zero stays: it hides text on purpose.
+  const rootEnd = (() => { const b = extractRootBlock(out); return b ? out.indexOf(b) + b.length : 0 })()
+  out = out.slice(0, rootEnd) + out.slice(rootEnd).replace(/(font-size\s*:\s*)(\d+(?:\.\d+)?)px/gi, (m, pre: string, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `${pre}${HIG.minFontPx}px` : m))
+  out = out.replace(/\btext-\[(\d+(?:\.\d+)?)px\]/g, (m, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `text-[${HIG.minFontPx}px]` : m))
+
+  // An icon-only button gets a 44×44 invisible hit area centred on it, whatever its drawn size.
+  // :where() keeps the position rule at zero specificity, so a button the screen positions itself
+  // (a fixed FAB) keeps its own position and the hit area still centres on it.
+  // A button whose class the screen already decorates with ::after (a badge dot) is left alone.
+  if (!out.includes('data-od-hit-area') && /<button\b/i.test(out)) {
+    const t = HIG.minTargetPx
+    const decorated = [...new Set([...out.matchAll(/\.([\w-]+)[^{},]*?::?(?:after|before)/g)].map((m) => m[1]))]
+    const btn = `button${decorated.map((c) => `:not(.${c})`).join('')}:has(> i[data-lucide]:only-child, > svg:only-child)`
+    const css = `<style data-od-hit-area>:where(${btn}){position:relative}${btn}::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,${t}px);height:max(100%,${t}px);transform:translate(-50%,-50%)}</style>`
+    out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, `${css}</head>`) : css + out
+  }
 
   return out
 }

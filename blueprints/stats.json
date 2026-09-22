@@ -28,5 +28,19 @@
     "segmented",
     "card",
     "list"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Chart first: period segmented control, headline number, one large chart, breakdown list."
+    },
+    {
+      "id": "b",
+      "layout": "Cards grid: headline number, then a 2x2 grid of metric cards with small sparklines, then the breakdown list."
+    },
+    {
+      "id": "c",
+      "layout": "Ranked: headline number with change, then the breakdown as horizontal bars ranked largest first, chart smaller below."
+    }
   ]
 }

@@ -84,7 +84,7 @@ export const PlanController = {
               content,
               data,
               heading: `Screen to design: ${s.name}`,
-              description: screenSpec(s),
+              description: screenSpec(s, plan.appName),
             })
 
           const renderScreen = async (s: PlannedScreen, i: number, digest: string): Promise<string | null> => {
@@ -125,7 +125,7 @@ export const PlanController = {
                 screenType: s.screenType,
                 activeTabId: s.activeTabId ?? null,
                 parentScreenName: s.parentScreen ?? null,
-                spec: screenSpec(s),
+                spec: screenSpec(s, plan.appName),
               })
               drawnScreens.push({ id: screen.id, name: screen.name, created: true })
               planIndex.set(screen.id, i)
@@ -151,7 +151,7 @@ export const PlanController = {
                   screenType: s.screenType,
                   activeTabId: s.activeTabId ?? null,
                   parentScreenName: s.parentScreen ?? null,
-                  spec: screenSpec(s),
+                  spec: screenSpec(s, plan.appName),
                   error: message,
                 })
               }

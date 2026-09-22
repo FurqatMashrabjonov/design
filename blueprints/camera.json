@@ -26,5 +26,19 @@
   "hig": [
     "image",
     "button"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Full-screen viewfinder, framing guide, bottom control row with large shutter."
+    },
+    {
+      "id": "b",
+      "layout": "Viewfinder with a result sheet peeking from the bottom showing the last capture's analysis."
+    },
+    {
+      "id": "c",
+      "layout": "Viewfinder with a mode switcher above the shutter (photo, scan, barcode) and hints at the top."
+    }
   ]
 }

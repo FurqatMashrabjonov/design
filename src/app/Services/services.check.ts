@@ -412,6 +412,16 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
     assert.ok(BlueprintService.brief(id).length < 900, `${id}: the brief stays short`)
     assert.ok(!/\b(Airbnb|Uber|Spotify|Instagram|Duolingo|Apple|Google)\b/.test(JSON.stringify(b)), `${id}: no brand names`)
   }
+  // VAR-02: layout variants, picked per app, stable
+  for (const id of ARCHETYPES) {
+    const vs = BlueprintService.find(id)!.variants ?? []
+    assert.ok(vs.length >= 2 && vs.length <= 3 && new Set(vs.map((v) => v.id)).size === vs.length, `${id}: 2–3 distinct variants`)
+  }
+  assert.deepEqual(BlueprintService.variant('feed', 'GoBite'), BlueprintService.variant('feed', ' gobite '), 'the same app always gets the same layout')
+  const picks = new Set(['GoBite', 'NovaBank', 'Tasky', 'Stayfinder', 'Tempo', 'Habitly', 'Zen', 'Pagely', 'Shelf', 'Trailmate'].map((a) => BlueprintService.variant('feed', a)!.id))
+  assert.ok(picks.size >= 2, 'different apps land on different layouts')
+  assert.ok(BlueprintService.brief('detail', 'GoBite').includes('layout '), 'a seeded brief names its layout')
+  assert.ok(!BlueprintService.brief('detail').includes('layout '), 'unseeded, the base pattern')
   assert.equal(BlueprintService.find('../etc'), null, 'ids are validated before touching the disk')
   assert.equal(BlueprintService.brief('nope'), '')
 }
@@ -438,6 +448,14 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   assert.equal(kind('Cardio plan with heart zones'), null, 'a short keyword ("card") must be a whole word')
   assert.equal(kind('find and pay for parking'), null, 'no pattern rather than a wrong one')
   assert.equal(kind(''), null)
+}
+
+// the local claude-cli provider has no JSON mode: the JSON is cut out of whatever surrounds it
+{
+  const { jsonOnly } = await import('./LlmService.ts')
+  assert.equal(jsonOnly('```json\n{"a":{"b":1}}\n```'), '{"a":{"b":1}}')
+  assert.equal(jsonOnly('Here is the plan: {"x":[1]} Hope it helps.'), '{"x":[1]}')
+  assert.equal(jsonOnly('no json'), 'no json', 'nothing to cut: the caller\'s JSON.parse reports it')
 }
 
 console.log('ok')

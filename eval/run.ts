@@ -10,6 +10,12 @@ import { parseArgs } from 'node:util'
 import { computeMetrics, diffMetrics, type ScreenInput, type Usage } from './metrics.ts'
 import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet.ts'
 
+// Evals measure what users get, which is DeepSeek. A Claude Code run would be tuned against the wrong model.
+if (process.env.LLM_PROVIDER === 'claude-cli') {
+  console.error('LLM_PROVIDER=claude-cli is set: evals run on DeepSeek only. Unset it to run the eval.')
+  process.exit(1)
+}
+
 type Brief = { id: string; brief: string; designSystem: string; expect?: string[] }
 
 const { values: args } = parseArgs({

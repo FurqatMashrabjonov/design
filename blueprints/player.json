@@ -28,5 +28,19 @@
     "image",
     "player-controls",
     "progress"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Square artwork centred, title, scrubber, transport controls."
+    },
+    {
+      "id": "b",
+      "layout": "Full-bleed artwork as the background with a dark gradient, title and controls over the lower third."
+    },
+    {
+      "id": "c",
+      "layout": "Compact artwork with lyrics or chapters list below; controls in a bar at the bottom."
+    }
   ]
 }

@@ -27,5 +27,19 @@
     "search",
     "chip",
     "list"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Field then chips: search field, recent searches as chips, then categories as a grid of tiles."
+    },
+    {
+      "id": "b",
+      "layout": "Field then lists: search field, then 'Recent' and 'Trending' as two short row lists with icons."
+    },
+    {
+      "id": "c",
+      "layout": "Field then visual browse: search field, then large image tiles for categories in a two-column grid."
+    }
   ]
 }

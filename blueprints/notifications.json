@@ -28,5 +28,19 @@
     "avatar",
     "badge",
     "segmented"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Rows grouped by Today / Earlier, unread markers."
+    },
+    {
+      "id": "b",
+      "layout": "Filter tabs at the top, cards for actionable items with inline buttons, plain rows for the rest."
+    },
+    {
+      "id": "c",
+      "layout": "Avatar-led rows with the related thumbnail on the right (like, comment, follow), grouped by time."
+    }
   ]
 }

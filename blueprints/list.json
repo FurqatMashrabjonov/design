@@ -29,5 +29,19 @@
     "segmented",
     "list",
     "badge"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Plain rows: dense rows with leading thumbnail or icon, two lines of text and a trailing value, grouped under section headers."
+    },
+    {
+      "id": "b",
+      "layout": "Inset groups: rows inside rounded grouped containers (one container per section), trailing values right-aligned."
+    },
+    {
+      "id": "c",
+      "layout": "Summary + rows: a small summary strip (count, total) on top, then segmented tabs, then rows with status pills."
+    }
   ]
 }
