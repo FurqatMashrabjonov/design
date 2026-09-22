@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { applyThemeOverride, themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
 import { repairPartialHtml } from '@/lib/partial-html'
 import { STREAM_MESSAGE, streamFrameDoc } from '@/lib/stream-frame'
+import { SERIALIZE_BRIDGE, parseTree, type ODTree } from '@/lib/figma-serialize'
 import { clampFrameHeight, parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
 import { annotateElements } from '@/lib/element-ops'
 import { parseRect, safeElementId, withEditBridge, type BridgeRect } from '@/lib/edit-bridge'
@@ -14,6 +15,15 @@ import { AUDIT_BRIDGE, parseAudit, type AuditFinding } from '@/lib/render-audit'
 //
 // A saved screen always carries the edit bridge (lib/edit-bridge.ts) and is switched between
 // "look" and "edit" by message, so selecting it never reloads the frame.
+// FIG-01: frames that can hand over their layer tree, by frame id, and replies still awaited.
+const serializers = new Map<string, () => Promise<ODTree>>()
+const serializeWaits = new Map<string, { resolve: (t: ODTree) => void; reject: (e: Error) => void }>()
+/** The rendered screen's layer tree, read inside its frame (lib/figma-serialize.ts). */
+export function serializeScreen(frameId: string): Promise<ODTree> {
+  const run = serializers.get(frameId)
+  return run ? run() : Promise.reject(new Error('Open the screen on the canvas first'))
+}
+
 export function ScreenFrame(props: {
   html: string
   title: string
@@ -114,7 +124,7 @@ export function ScreenFrame(props: {
     // Removed after annotation, so element ids are computed from exactly what the server sees.
     const base = (editable ? annotateElements(rawHtml) : rawHtml).replace(/\sloading="lazy"/g, '')
     const themed = withLiveTheme(base, themeRef.current)
-    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${AUDIT_BRIDGE}</body>`) : themed
+    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${AUDIT_BRIDGE}${SERIALIZE_BRIDGE}</body>`) : themed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawHtml, editable, props.streaming, props.frameId, f.height])
 
@@ -127,6 +137,20 @@ export function ScreenFrame(props: {
   function pushMode() {
     if (editable) send({ type: 'od:mode', active, selectedId: active ? (props.selectedElementId ?? null) : null })
   }
+  // FIG-01: another part of the editor asks for this screen's layer tree by frame id.
+  useEffect(() => {
+    if (!props.frameId || props.streaming) return
+    const id = props.frameId
+    serializers.set(id, () => {
+      const requestId = Math.random().toString(36).slice(2)
+      return new Promise<ODTree>((resolve, reject) => {
+        serializeWaits.set(requestId, { resolve, reject })
+        setTimeout(() => serializeWaits.delete(requestId) && reject(new Error('The screen did not answer')), 8000)
+        send({ type: 'od:serialize', requestId })
+      })
+    })
+    return () => void serializers.delete(id)
+  }, [props.frameId, props.streaming])
   useEffect(pushTheme, [props.theme])
   useEffect(() => {
     if (!active || !props.selectedElementId) setRect(null)
@@ -163,6 +187,14 @@ export function ScreenFrame(props: {
         p.onEscape?.()
       } else if (d?.type === 'od:undo') {
         p.onUndo?.(d.redo === true)
+      } else if (d?.type === 'od:serialized') {
+        const wait = serializeWaits.get(d.requestId)
+        if (wait) {
+          serializeWaits.delete(d.requestId)
+          const tree = parseTree(d.tree)
+          if (tree) wait.resolve(tree)
+          else wait.reject(new Error(d.error || 'The screen could not be read'))
+        }
       } else if (d?.type === 'od:audit') {
         p.onAudit?.(parseAudit(d.findings))
       } else if (d?.type === 'od:wheel') {

@@ -84,6 +84,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LP-03 | Preview: skelet, reveal va chegara animatsiyasi | Generatsiya / Render | MVP | Tayyor | O'rta | LP-02 | docs/LIVE-PREVIEW-PLAN.md |
 | LP-04 | Preview: tugaganda va tahrirda ham reload yo'q | Generatsiya / Render | MVP | Tayyor | Kichik | LP-02 | docs/LIVE-PREVIEW-PLAN.md |
 | LP-05 | Preview: oqim fixture'lari va o'lchov | Generatsiya / Render | MVP | Tayyor | Kichik |  | docs/LIVE-PREVIEW-PLAN.md |
+| FIG-01 | Figma: frame ichida DOM → ODNode serializer | Eksport / Integratsiyalar | MVP | Tayyor | O'rta |  | docs/FIGMA-EXPORT-PLAN.md |
+| FIG-02 | Figma: Copy as SVG (plagin'siz paste) | Eksport / Integratsiyalar | MVP | Tayyor | Kichik | FIG-01 | docs/FIGMA-EXPORT-PLAN.md |
+| FIG-03 | Figma: plagin — Auto Layout, matn, rasmlar, butun ilova | Eksport / Integratsiyalar | Keyin | Rejada | Katta | FIG-01 | docs/FIGMA-EXPORT-PLAN.md |
+| FIG-04 | Figma: tokenlar → Variables va matn stillari | Eksport / Integratsiyalar | Keyin | Rejada | Kichik | FIG-03 | docs/FIGMA-EXPORT-PLAN.md |
+| FIG-05 | Figma: eksport qamrovi o'lchovi | Eksport / Integratsiyalar | MVP | Tayyor | Kichik | FIG-01 | docs/FIGMA-EXPORT-PLAN.md |
 | EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Tayyor | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
 | EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
 | EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |

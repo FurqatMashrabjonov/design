@@ -9,7 +9,8 @@ import type { Plan } from '@/app/Services/PlannerService'
 import { extractArtifact } from '../artifact'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
-import { ScreenFrame } from '../ScreenFrame'
+import { ScreenFrame, serializeScreen } from '../ScreenFrame'
+import { copyTreeToFigma } from '@/lib/figma-copy'
 import { Canvas, type CanvasFrame } from '@/components/canvas/Canvas'
 import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
@@ -448,6 +449,17 @@ function ProjectPage() {
     await run({ prompt: '', projectId: project.id, regenerateScreenId: screen.id })
   }
 
+  // FIG-02: the screen as it is rendered, as Figma layers on the clipboard (paste with ⌘V).
+  async function copyToFigma(screenId: string) {
+    const id = toast.loading('Preparing layers for Figma…')
+    try {
+      const { bytes } = await copyTreeToFigma(await serializeScreen(screenId))
+      toast.success('Copied — paste into Figma with ⌘V', { id, description: `${Math.round(bytes / 1024)} KB of layers, photos included` })
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e), { id })
+    }
+  }
+
   async function copyHtml(html: string) {
     try {
       await navigator.clipboard.writeText(html)
@@ -463,6 +475,7 @@ function ProjectPage() {
   const frameActions = (s: (typeof screens)[number]) => ({
     onRegenerate: () => regenerateScreen(s),
     onCopyHtml: () => copyHtml(applyThemeOverride(s.html, theme)),
+    onCopyFigma: () => copyToFigma(s.id),
     onViewCode: () => setCodeScreenId(s.id),
     onDownload: () => downloadHtml(s),
   })
@@ -681,7 +694,7 @@ function ProjectPage() {
                 // screen takes over (LP-04).
                 const noop = () => {}
                 return (
-                  <FrameContextMenu onRename={noop} onDuplicate={noop} onDelete={noop} onRegenerate={noop} onCopyHtml={noop} onViewCode={noop} onDownload={noop}>
+                  <FrameContextMenu onRename={noop} onDuplicate={noop} onDelete={noop} onRegenerate={noop} onCopyHtml={noop} onCopyFigma={noop} onViewCode={noop} onDownload={noop}>
                     <div>
                       <ScreenFrame
                         html={extractArtifact(planTexts[i] ?? '').html}

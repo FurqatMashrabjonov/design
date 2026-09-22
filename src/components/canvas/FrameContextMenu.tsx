@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2 } from 'lucide-react'
+import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2, PenTool } from 'lucide-react'
 import type { FrameActions } from './FrameToolbar'
 import {
   ContextMenu,
@@ -32,6 +32,9 @@ export function FrameContextMenu(props: FrameActions & {
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={props.onCopyHtml}>
           <ClipboardCopy /> Copy HTML
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={props.onCopyFigma}>
+          <PenTool /> Copy to Figma
         </ContextMenuItem>
         <ContextMenuItem onSelect={props.onViewCode}>
           <Code2 /> View code

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, TriangleAlert } from 'lucide-react'
+import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, TriangleAlert, PenTool } from 'lucide-react'
 import type { AuditFinding } from '@/lib/render-audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,8 @@ export function FrameHandle() {
 export type FrameActions = {
   onRegenerate: () => void
   onCopyHtml: () => void
+  /** FIG-02: copy the screen as layers for Figma (paste with ⌘V). */
+  onCopyFigma: () => void
   onViewCode: () => void
   onDownload: () => void
 }
@@ -216,6 +218,9 @@ export function FrameToolbar(props: FrameActions & {
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={props.onCopyHtml}>
               <ClipboardCopy /> Copy HTML
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={props.onCopyFigma}>
+              <PenTool /> Copy to Figma
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={props.onViewCode}>
               <Code2 /> View code
