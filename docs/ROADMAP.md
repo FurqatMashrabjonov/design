@@ -97,12 +97,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | CHAT-07 | Agent jurnali (ochiladigan) | MVP | Tayyor | O'rta |
 | CHAT-08 | Keyingi qadam takliflari, kodda | MVP | Tayyor | Kichik |
 | EDT-23 | Har mazmunli element tanlanadi | MVP | Tayyor | O'rta |
-| EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Jarayonda | O'rta |
+| EDT-24 | Tugmasiz tanlash: ekran → element → Esc | MVP | Tayyor | O'rta |
 | EDT-17 | Element yonida suzuvchi "AI bilan tahrirlash" paneli | MVP | Tayyor | O'rta |
 | EDT-25 | Matnni joyida tahrirlash, LLM'siz | MVP | Tayyor | O'rta |
 | EDT-26 | Tezkor amallar LLM'siz: o'chirish, nusxalash, surish, boshqa rasm | MVP | Tayyor | O'rta |
 | EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | MVP | Tayyor | O'rta |
-| EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Rejada | O'rta |
+| EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Tayyor | O'rta |
 | EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Rejada | O'rta |
 | EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Rejada | O'rta |
 | EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Rejada | Kichik |

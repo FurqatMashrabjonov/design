@@ -68,13 +68,14 @@ export function planReply(p: {
   return lines.join('\n')
 }
 
-export function changeReply(p: { kind: 'add' | 'edit' | 'element' | 'regenerate'; screen: string; element?: string | null; version?: number; slot?: string }): string {
+export function changeReply(p: { kind: 'add' | 'edit' | 'element' | 'regenerate'; screen: string; element?: string | null; version?: number; slot?: string; parts?: string[] }): string {
   if (p.kind === 'add') return `Added “${p.screen}”${p.slot ? ` ${p.slot}` : ''}.`
   if (p.kind === 'regenerate') return `Redrew “${p.screen}” from its plan.${p.version && p.version > 1 ? ` The previous design is kept as v${p.version - 1}.` : ''}`
   // An element label already carries its quotes (Button “Add to cart”); a bare id does not.
   const element = p.element && (p.element.includes('“') ? p.element : `“${p.element}”`)
   const what = p.kind === 'element' && element ? `${element} on “${p.screen}”` : `“${p.screen}”`
-  return `Updated ${what}${p.version ? ` — now v${p.version}` : ''}.`
+  const parts = p.parts?.length ? `: ${list(p.parts.slice(0, 4))}${p.parts.length > 4 ? ` and ${p.parts.length - 4} more` : ''}` : ''
+  return `Updated ${what}${p.version ? ` — now v${p.version}` : ''}${parts}.`
 }
 
 export const formatTokens = (u: { promptTokens: number; cachedTokens: number; completionTokens: number }) =>

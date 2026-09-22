@@ -10,6 +10,7 @@ import { nextFramePosition } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
 import { annotateElements, elementInfo } from '@/lib/element-ops'
+import { applyEdits, EDIT_MODE, parseAffects, parseEdits } from '@/lib/screen-patch'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
@@ -77,8 +78,11 @@ export const GenerateController = {
       )
       userMessage = `Please update element with data-od-id="${editElementId}". Instruction: ${prompt}`
     } else if (editScreen) {
-      systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill)
-      userMessage = `Current screen HTML:\n\`\`\`html\n${editScreen.html}\n\`\`\`\n\nEdit instruction: ${prompt}\n\nRewrite the full HTML applying this instruction. Keep everything else the same.`
+      // Edit by parts (lib/screen-patch.ts): the model returns only what changes, addressed by the
+      // same ids the canvas shows, and everything else stays byte-identical.
+      systemPrompt = `${composeSystemPrompt(project.designSystem, project.device, skill)}\n\n---\n\n${EDIT_MODE}`
+      const data = dataBlock(parseStoredPlan(project.plan)?.entities ?? [])
+      userMessage = [data, `Current screen (${editScreen.name}):\n\`\`\`html\n${editBase}\n\`\`\``, `Change request: ${prompt}`].filter(Boolean).join('\n\n')
     } else {
       systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill)
       userMessage = prompt
@@ -159,6 +163,7 @@ export const GenerateController = {
 
           let title: string
           let finalHtml: string
+          let patchNote: { parts: string[]; log: string[] } | undefined
 
           const normalizeOpts = {
             tokensCss: DesignSystemService.readTokensRoot(projectRef.designSystem),
@@ -173,9 +178,29 @@ export const GenerateController = {
             finalHtml = patchElement(editBase, editElementId, newElementSnippet)
             title = editScreen.name
             finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
+          } else if (editScreen && parseEdits(text).length > 0) {
+            const edits = parseEdits(text)
+            const result = applyEdits(editBase, edits)
+            if (result.applied.length === 0) throw new Error(`The change did not match anything on the screen (${result.skipped.join('; ')})`)
+            title = editScreen.name
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(result.html, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
+            patchNote = {
+              parts: result.applied.map((a) => (a.op === 'insert' ? `added next to ${a.label}` : a.op === 'delete' ? `removed ${a.label}` : a.label)),
+              log: [
+                `Edited by parts: ${result.applied.map((a) => `${a.op} ${a.target}`).join(', ')} — ${(text.length / 1024).toFixed(1)} KB returned instead of the whole ${(editBase.length / 1024).toFixed(0)} KB screen`,
+                ...result.skipped.map((x) => `Skipped ${x}`),
+                // Said to be affected but not edited: the usual way a by-parts edit leaves a stale value behind.
+                ...(() => {
+                  const edited = new Set(edits.map((e) => e.target))
+                  const missed = parseAffects(text).filter((id) => !edited.has(id))
+                  return missed.length ? [`Listed as affected but not edited: ${missed.join(', ')} — check them`] : []
+                })(),
+              ],
+            }
           } else {
             const extracted = extractArtifact(text)
             title = extracted.title
+            if (editScreen && title === 'Untitled') title = editScreen.name
             const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title)
             finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })), abort.signal, { name: projectRef.name ?? title }))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
@@ -227,10 +252,10 @@ export const GenerateController = {
             projectId: projectRef.id,
             role: 'agent',
             kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
             meta: {
               screens: [changed],
-              log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],
+              log: [...(patchNote?.log ?? []), `${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],
               durationMs: Date.now() - startedAt,
             },
           })

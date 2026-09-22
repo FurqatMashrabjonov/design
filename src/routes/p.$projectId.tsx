@@ -250,8 +250,8 @@ function ProjectPage() {
     inFlight.current = ctl
     setWorking(true)
     try {
-      // An element edit streams only the element, which is not a page: keep the screen in view instead.
-      await generate(body, body.editElementId ? () => {} : setLive, ctl.signal)
+      // An edit streams only the parts that change, which is not a page: keep the screen in view instead.
+      await generate(body, body.editScreenId ? () => {} : setLive, ctl.signal)
     } catch (e) {
       const stopped = e instanceof DOMException && e.name === 'AbortError'
       if (!stopped) toast.error(e instanceof Error ? e.message : String(e))

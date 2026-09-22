@@ -1,5 +1,6 @@
 import assert from 'node:assert'
 import { attr, findById, ownTextRanges, parseTree, textOf } from './html-tree.ts'
+import { applyEdits, parseAffects, parseEdits } from './screen-patch.ts'
 import { annotateElements, describeElement, duplicateElement, elementInfo, ElementOpError, isTextEditable, moveElement, removeElement, setElementText, setImageQuery } from './element-ops.ts'
 
 // --- tree ---
@@ -91,5 +92,37 @@ assert.throws(() => setImageQuery(annotateElements('<img data-od-avatar="Mei Tan
 
 assert.deepEqual(elementInfo(a1, 'img-1'), { label: 'Image “Pad Thai”', textEditable: false, isPhoto: true, photoQuery: 'pad thai' })
 assert.equal(elementInfo(a1, 'button-1').textEditable, true)
+
+// --- editing a whole screen by parts (EDT-19) ---
+{
+  const reply = `Sure! Here are the changes.
+<edit target="button-1"><button class="btn" data-od-id="button-1"><i data-lucide="bag"></i> Checkout</button></edit>
+<edit target="p-2" op="delete"></edit>
+<edit after="card-1">
+\`\`\`html
+<p class="promo">Free delivery tonight</p>
+\`\`\`
+</edit>
+<edit before="h1-1"><span>Hi</span></edit>
+<edit target="card-1"><div>whole card</div></edit>
+<edit target="p-1"><p>inside the card</p></edit>
+<edit target="nowhere"><p>x</p></edit>
+<edit target="h1-1" op="delete"></edit>`
+  const edits = parseEdits(reply)
+  assert.deepEqual(edits.map((e) => `${e.op}:${e.target}${e.where ? ':' + e.where : ''}`), ['replace:button-1', 'delete:p-2', 'insert:card-1:after', 'insert:h1-1:before', 'replace:card-1', 'replace:p-1', 'replace:nowhere', 'delete:h1-1'])
+  assert.equal(edits[2].html, '<p class="promo">Free delivery tonight</p>', 'a fenced body is unwrapped')
+
+  const r = applyEdits(a1, edits)
+  assert.deepEqual(r.applied.map((x) => x.target), ['button-1', 'p-2', 'card-1', 'h1-1', 'card-1', 'h1-1'], 'inserting before an element and deleting it do not clash')
+  assert.deepEqual(r.skipped, ['replace p-1: overlaps another change', 'replace nowhere: not on this screen'], 'an edit inside a replaced element, or on a missing one, is skipped')
+  assert.ok(r.html.includes('<i data-lucide="bag"></i> Checkout</button>') && !r.html.includes('Free delivery over'))
+  assert.ok(r.html.includes('<div>whole card</div>\n<p class="promo">Free delivery tonight</p>'), 'an insertion after a replaced element lands after the new version')
+  assert.ok(r.html.includes('<header data-od-id="header"><span>Hi</span>\n</header>'), 'inserted before the heading, which was then deleted')
+  assert.equal(r.html.slice(r.html.indexOf('<nav data-od-shell')), a1.slice(a1.indexOf('<nav data-od-shell')), 'the shell and everything untouched is byte-identical')
+  assert.deepEqual(applyEdits(a1, [{ op: 'replace', target: 'bottom-nav', html: 'x' }]).skipped, ['replace bottom-nav: not on this screen'])
+  assert.deepEqual(parseEdits('<artifact title="x"><!doctype html></artifact>'), [], 'a full document is not an edit')
+  assert.deepEqual(parseAffects('<affects>row-2, total-1,\n row-2 "bad id"</affects>'), ['row-2', 'total-1'])
+  assert.deepEqual(parseAffects('no line'), [])
+}
 
 console.log('ok')

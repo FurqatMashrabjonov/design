@@ -11,6 +11,7 @@ const { PlanController } = await import('./PlanController.ts')
 const { HistoryController } = await import('./HistoryController.ts')
 const { Message } = await import('../../Models/Message.ts')
 const { parseMeta } = await import('../../../lib/agent-messages.ts')
+const { annotateElements } = await import('../../../lib/element-ops.ts')
 
 const page = (title: string) => `<artifact title="${title}"><!doctype html><html><head><title>${title}</title><style>:root{--accent:#111}.card{border-radius:16px}</style></head><body><main><h1>${title}</h1></main></body></html></artifact>`
 const sse = (text: string) => new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\ndata: [DONE]\n`, { status: 200 })
@@ -166,6 +167,31 @@ await post(GenerateController, { projectId: 'p3', prompt: 'say checkout', editSc
 assert.ok(Screen.find('s3')!.html.includes('>Checkout</button>'))
 assert.match(Message.forProject('p3').at(-1)!.text, /^Updated Button “Order now” on “Home” — now v\d+\.$/)
 assert.equal((await GenerateController.stream(new Request('http://t/api', { method: 'POST', body: JSON.stringify({ projectId: 'p3', prompt: 'x', editScreenId: 's3', editElementId: 'nope' }) }))).status, 409, 'a stale element is refused before any tokens are spent')
+
+// editing a whole screen by parts (EDT-19)
+const beforePatch = Screen.find('s3')!.html
+sent = []
+reply = () => sse('<affects>p-1, button-1</affects>\n<edit target="p-1"><p data-od-id="p-1">Free delivery tonight</p></edit>\n<edit after="p-1"><p>New line</p></edit>')
+await post(GenerateController, { projectId: 'p3', prompt: 'mention free delivery', editScreenId: 's3' })
+assert.ok(sent[0].system.includes('Editing an existing screen') && sent[0].user.includes('data-od-id="button-1"'), 'the model sees the annotated screen and the edit contract')
+let patched = Screen.find('s3')!.html
+assert.ok(/Free delivery tonight<\/p>\n<p[^>]*>New line<\/p>/.test(patched), 'the replacement, then the insertion right after it')
+const untouched = (h: string) => h.slice(h.indexOf('<button'), h.indexOf('</button>'))
+assert.equal(untouched(patched), untouched(annotateElements(beforePatch)), 'what the request did not touch is byte-identical')
+assert.match(Message.forProject('p3').at(-1)!.text, /^Updated “Home” — now v\d+: Text “Note” and added next to Text “Note”\.$/)
+const patchLog = parseMeta(Message.forProject('p3').at(-1)!.meta).log ?? []
+assert.ok(patchLog[0].startsWith('Edited by parts: replace p-1, insert p-1'))
+assert.ok(patchLog.includes('Listed as affected but not edited: button-1 — check them'), 'a place the model named but did not change is surfaced')
+
+reply = () => sse('<edit target="gone"><p>x</p></edit>')
+const beforeMiss = Screen.find('s3')!.html
+await post(GenerateController, { projectId: 'p3', prompt: 'x', editScreenId: 's3' })
+assert.equal(Screen.find('s3')!.html, beforeMiss, 'an edit that matches nothing changes nothing')
+assert.equal(Message.forProject('p3').at(-1)!.kind, 'error')
+
+reply = () => sse(page('Home v2'))
+await post(GenerateController, { projectId: 'p3', prompt: 'redo the whole layout', editScreenId: 's3' })
+assert.ok(Screen.find('s3')!.html.includes('<h1>Home v2</h1>'), 'a full document still works for a whole-layout change')
 
 // theme from chat
 const t1 = ProjectController.themeFromChat({ projectId: 'p3', prompt: 'make it blue' })
