@@ -1,10 +1,11 @@
 import type { Plan } from './app/Services/PlannerService'
 
 export type PlanEvent =
-  | ({ type: 'plan' } & Plan)
+  | ({ type: 'plan'; screenIds: string[] } & Plan)
   | { type: 'screen_start'; index: number; name: string }
   | { type: 'screen_delta'; index: number; text: string }
   | { type: 'screen_done'; index: number; screenId: string; name: string }
+  | { type: 'screen_image'; index: number; query: string; url: string }
   | { type: 'screen_error'; index: number; message: string }
   | { type: 'done' }
   | { type: 'error'; message: string }

@@ -7,7 +7,8 @@ import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
 import { planScreensWithRetry, type PlannedScreen } from '@/app/Services/PlannerService'
 import { mapLimit } from '@/app/Services/Pool'
-import { resolveImages } from '@/app/Services/ImageService'
+import { prefetchImage, resolveImages } from '@/app/Services/ImageService'
+import { imageQueries } from '@/lib/image-slots'
 import { NAV_CLEARANCE } from '@/app/Services/ShellService'
 import { dataBlock, screenBrief, screenSpec, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
 import { extractArtifact } from '@/artifact'
@@ -17,12 +18,17 @@ import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
+import { PlanRuns } from '@/app/Services/PlanRuns'
+import { briefStyle } from '@/lib/intent'
+import { isEmptyTheme, parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
 // Only used to seed a brand-new, empty project — positions are assigned by plan order (0, 1, 2, ...).
+// GQ-07: the run is not tied to the response. If the page goes away the events stop, the drawing
+// does not; only Stop (PlanRuns.stop) ends it. `onFinish` is called when the run is really over.
 export const PlanController = {
-  async stream(request: Request): Promise<Response> {
+  async stream(request: Request, opts: { onFinish?: () => void } = {}): Promise<Response> {
     const body = await request.json().catch(() => ({}))
     const brief = typeof body.brief === 'string' ? body.brief.trim() : ''
     if (!brief || brief.length > 4000) return new Response('Brief must be 1-4000 characters', { status: 400 })
@@ -30,13 +36,15 @@ export const PlanController = {
     if (!project) return new Response('Project not found', { status: 404 })
 
     const enc = new TextEncoder()
-    const abort = new AbortController()
+    const abort = PlanRuns.start(project.id)
+    let detached = false
     const stream = new ReadableStream({
       cancel() {
-        abort.abort()
+        detached = true // the page left: keep drawing, stop sending
       },
       async start(controller) {
         const send = (obj: unknown) => {
+          if (detached) return
           try {
             controller.enqueue(enc.encode(JSON.stringify(obj) + '\n'))
           } catch {}
@@ -54,6 +62,13 @@ export const PlanController = {
         const drawnScreens: MessageScreen[] = []
         const planIndex = new Map<string, number>() // screens finish out of order; the reply lists them in plan order
         const failedNames: string[] = []
+        // GQ-02: the look the brief asks for ("yellow accents", "#FFC107", "rounded corners") becomes the
+        // project's theme, which every screen renders with. A theme set by hand is never replaced.
+        const style = briefStyle(brief)
+        if (Object.keys(style.theme).length && isEmptyTheme(parseTheme(project.theme))) {
+          Project.saveTheme(project.id, sanitizeTheme(style.theme))
+          log.push(`From the brief: ${style.said.join(', ')}`)
+        }
         try {
           const plan = await planScreensWithRetry(brief, project.device, tally)
           log.push(
@@ -63,7 +78,10 @@ export const PlanController = {
           Project.rename(project.id, plan.appName)
           Project.saveNavigation(project.id, plan.navigation)
           Project.savePlan(project.id, { summary: plan.summary, appType: plan.appType, entities: plan.entities })
-          send({ type: 'plan', ...plan })
+          // Screen ids are decided now (LP-04): the canvas keys each plan frame by the id its screen
+          // will be saved under, so the frame that streamed is the frame that stays.
+          const screenIds = plan.screens.map(() => crypto.randomUUID())
+          send({ type: 'plan', ...plan, screenIds })
 
           const system = composeSystemPrompt(project.designSystem, project.device)
           const tokensCss = DesignSystemService.readTokensRoot(project.designSystem)
@@ -96,9 +114,22 @@ export const PlanController = {
             try {
               let text = ''
               const t0 = Date.now()
+              // LP-06: a photo slot is looked up the moment its tag is complete, and the URL goes to
+              // the preview, so photos appear while the screen is still being written. The lookup is
+              // cached, so resolveImages below puts the same photo in the saved screen.
+              const asked = new Set<string>()
               for await (const d of streamCompletion(system, buildUser(s, digest), abort.signal, tally)) {
                 text += d
                 send({ type: 'screen_delta', index: i, text })
+                if (d.includes('>')) {
+                  for (const q of imageQueries(text)) {
+                    if (asked.has(q) || asked.size >= 12) continue
+                    asked.add(q)
+                    prefetchImage(q, abort.signal)
+                      .then((img) => img && send({ type: 'screen_image', index: i, query: q, url: img.url }))
+                      .catch(() => {})
+                  }
+                }
               }
               const { title, html } = extractArtifact(text)
               if (!/<\/html>/i.test(html)) throw new Error('Model returned incomplete HTML')
@@ -119,7 +150,7 @@ export const PlanController = {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))
               }
               const screen = Screen.create({
-                id: crypto.randomUUID(),
+                id: screenIds[i]!,
                 projectId: project.id,
                 name: title || s.name,
                 prompt: s.description,
@@ -145,7 +176,7 @@ export const PlanController = {
               // retried in place, instead of a six-screen plan quietly becoming five.
               if (!abort.signal.aborted) {
                 Screen.create({
-                  id: crypto.randomUUID(),
+                  id: screenIds[i]!,
                   projectId: project.id,
                   name: s.name,
                   prompt: s.description,
@@ -201,12 +232,15 @@ export const PlanController = {
           Message.add({ projectId: project.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { log: [...log, raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
           send({ type: 'error', message: friendlyError(raw) })
         }
+        PlanRuns.finish(project.id, abort)
+        opts.onFinish?.()
         try {
-          controller.close()
+          if (!detached) controller.close()
         } catch {}
       },
     })
 
-    return new Response(stream, { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8' } })
+    // The header tells guardGeneration not to treat a closed page as the end of the run.
+    return new Response(stream, { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'X-OD-Detached': '1' } })
   },
 }

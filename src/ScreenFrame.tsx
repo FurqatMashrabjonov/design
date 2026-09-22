@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { frameSize } from './canvas'
 import { cn } from '@/lib/utils'
-import { themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
-import { parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
+import { applyThemeOverride, themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
+import { repairPartialHtml } from '@/lib/partial-html'
+import { STREAM_MESSAGE, streamFrameDoc } from '@/lib/stream-frame'
+import { clampFrameHeight, parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
 import { annotateElements } from '@/lib/element-ops'
 import { parseRect, safeElementId, withEditBridge, type BridgeRect } from '@/lib/edit-bridge'
 import { AUDIT_BRIDGE, parseAudit, type AuditFinding } from '@/lib/render-audit'
@@ -21,6 +23,8 @@ export function ScreenFrame(props: {
   /** False when other screens are selected too: the frame shows the ring but does not take the pointer. */
   solo?: boolean
   streaming?: boolean
+  /** Photo URLs by slot query, found while the screen streams (LP-06). */
+  photos?: Record<string, string>
   theme?: Theme
   label?: ReactNode
   /** Identifies this frame in height messages; omit to keep the frame at the device height. */
@@ -44,9 +48,10 @@ export function ScreenFrame(props: {
   editRequest?: { elementId: string; key: number }
 }) {
   const f = frameSize(props.device)
-  const height = Math.max(f.height, props.height ?? f.height)
-  // A new srcdoc reloads the iframe, so a streaming preview refreshes at most every 600ms
-  const rawHtml = useThrottled(props.html, props.streaming ? 600 : 0)
+  const height0 = Math.max(f.height, props.height ?? f.height)
+  // While streaming, updates are posted into a frame opened once (LP-02); 300ms is what the eye
+  // needs and what Tailwind's JIT keeps up with.
+  const rawHtml = useThrottled(props.html, props.streaming ? 300 : 0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [rect, setRect] = useState<BridgeRect | null>(null)
   const editable = Boolean(props.frameId) && !props.streaming
@@ -56,14 +61,62 @@ export function ScreenFrame(props: {
   // pushed into the running frame instead, so dragging a colour never reloads it.
   const themeRef = useRef(props.theme)
   themeRef.current = props.theme
+  // A half-written screen is repaired and gets no scripts at all (LP-01): appended to a cut
+  // document, a script prints as text. It is posted into the stream frame, never set as srcdoc.
+  const streamHtml = useMemo(() => (props.streaming && rawHtml ? applyThemeOverride(repairPartialHtml(rawHtml), themeRef.current) : ''), [rawHtml, props.streaming]) // eslint-disable-line react-hooks/exhaustive-deps
+  const streamReady = useRef(false)
+  const streamRef = useRef<HTMLIFrameElement>(null)
+  const streamDoc = useMemo(streamFrameDoc, [])
+  const sendStream = (m: unknown) => streamRef.current?.contentWindow?.postMessage(m, '*')
+  useEffect(() => {
+    if (props.streaming && streamReady.current && streamHtml) sendStream({ type: STREAM_MESSAGE, html: streamHtml })
+  }, [streamHtml, props.streaming])
+  useEffect(() => {
+    if (props.streaming && streamReady.current && props.photos) sendStream({ type: STREAM_MESSAGE, photos: props.photos })
+  }, [props.photos, props.streaming])
+  // LP-04: when streaming ends, the finished screen loads in a frame underneath while the streamed
+  // one stays on top, then fades out — the swap to the real document is never seen as a reload.
+  const [handoff, setHandoff] = useState(false)
+  const [fading, setFading] = useState(false)
+  const wasStreaming = useRef(props.streaming)
+  useEffect(() => {
+    if (wasStreaming.current && !props.streaming) setHandoff(true)
+    wasStreaming.current = props.streaming
+  }, [props.streaming])
+  const showStream = props.streaming || handoff
+  // LP-06: the frame grows with its content while it streams, instead of jumping at the end.
+  const [streamHeight, setStreamHeight] = useState(0)
+  const height = props.streaming || handoff ? Math.max(height0, streamHeight) : height0
+  useEffect(() => {
+    if (!props.streaming) return
+    // The runtime says when it is listening; a message sent before that is lost.
+    const onReady = (e: MessageEvent) => {
+      if (e.source !== streamRef.current?.contentWindow) return
+      if (e.data?.type === `${STREAM_MESSAGE}:height`) {
+        const h = clampFrameHeight(e.data.height, f.height)
+        if (h) {
+          setStreamHeight(h)
+          if (props.frameId) props.onHeight?.(props.frameId, h)
+        }
+        return
+      }
+      if (e.data?.type !== `${STREAM_MESSAGE}:ready`) return
+      streamReady.current = true
+      if (streamHtml) sendStream({ type: STREAM_MESSAGE, html: streamHtml, photos: props.photos ?? {} })
+    }
+    window.addEventListener('message', onReady)
+    return () => window.removeEventListener('message', onReady)
+  }, [props.streaming, streamHtml]) // eslint-disable-line react-hooks/exhaustive-deps
   const themedHtml = useMemo(() => {
-    if (!rawHtml) return rawHtml
+    if (props.streaming || !rawHtml) return ''
     // The same annotation the server applies before an element edit, so both see the same ids.
-    const base = editable ? annotateElements(rawHtml) : rawHtml
+    // Photos load at once on the canvas: a lazy photo popped in after the streamed frame faded out.
+    // Removed after annotation, so element ids are computed from exactly what the server sees.
+    const base = (editable ? annotateElements(rawHtml) : rawHtml).replace(/\sloading="lazy"/g, '')
     const themed = withLiveTheme(base, themeRef.current)
     return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${AUDIT_BRIDGE}</body>`) : themed
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawHtml, editable, props.frameId, f.height])
+  }, [rawHtml, editable, props.streaming, props.frameId, f.height])
 
   function send(message: unknown) {
     iframeRef.current?.contentWindow?.postMessage(message, '*')
@@ -138,25 +191,46 @@ export function ScreenFrame(props: {
       <div className="relative">
         <div
           className={cn(
-            'overflow-hidden rounded-xl border bg-white shadow-sm transition-all',
+            'relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all',
             props.selected ? 'border-primary ring-2 ring-primary/30' : 'border-border',
-            props.streaming && 'ring-2 ring-primary/40'
+            props.streaming && 'od-stream-ring'
           )}
           style={{ width: f.width, height }}
         >
-          <iframe
-            ref={iframeRef}
-            onLoad={() => {
-              pushTheme()
-              pushMode()
-            }}
-            title={props.title}
-            srcDoc={themedHtml}
-            sandbox="allow-scripts"
-            // Only the selected screen takes the pointer; the others stay whole objects to click and drag.
-            className={cn('size-full', active ? 'pointer-events-auto' : 'pointer-events-none')}
-            style={{ width: f.width, height }}
-          />
+          {!props.streaming && (
+            <iframe
+              key="main"
+              ref={iframeRef}
+              onLoad={() => {
+                pushTheme()
+                pushMode()
+                if (handoff) setTimeout(() => setFading(true), 250) // fonts and photos settle first
+              }}
+              title={props.title}
+              srcDoc={themedHtml}
+              sandbox="allow-scripts"
+              // Only the selected screen takes the pointer; the others stay whole objects to click and drag.
+              className={cn('size-full', active ? 'pointer-events-auto' : 'pointer-events-none')}
+              style={{ width: f.width, height }}
+            />
+          )}
+          {showStream && (
+            <iframe
+              key="stream"
+              ref={streamRef}
+              title={props.title}
+              srcDoc={streamDoc}
+              sandbox="allow-scripts"
+              aria-hidden={!props.streaming}
+              className="pointer-events-none absolute inset-0 size-full transition-opacity duration-300"
+              style={{ width: f.width, height, opacity: fading ? 0 : 1 }}
+              onTransitionEnd={() => {
+                if (!fading) return
+                setHandoff(false)
+                setFading(false)
+              }}
+            />
+          )}
         </div>
 
         {active && rect && props.panel && (

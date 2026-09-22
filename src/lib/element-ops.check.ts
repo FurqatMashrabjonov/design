@@ -258,6 +258,9 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.equal(parseAudit(Array.from({ length: 99 }, () => ({ rule: 'overflow', id: 'a', detail: '' }))).length, 40, 'capped')
   assert.ok(AUDIT_SOURCE.includes('MIN_TARGET = 44') && AUDIT_SOURCE.includes('TEXT = 4.5'), 'the audit uses the HIG numbers')
   assert.doesNotThrow(() => new Function(AUDIT_SOURCE), 'the audit source is valid JavaScript')
+  const { fixInstruction } = await import('./render-audit.ts')
+  assert.deepEqual(parseAudit([{ rule: 'squeezed-text', id: 'title-3', detail: 'x' }]).map((f) => f.rule), ['squeezed-text'], 'GQ-01: a squeezed text column is a finding')
+  assert.ok(/min-width: 0 and flex: 1/.test(fixInstruction([{ rule: 'squeezed-text', id: 'title-3', detail: '' }])), 'and "Fix" knows how to repair it')
 }
 
 console.log('ok')

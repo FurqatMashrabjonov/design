@@ -23,6 +23,7 @@ const AUDIT_LABEL: Record<AuditFinding['rule'], string> = {
   'small-target': 'Tap target under 44px',
   'low-contrast': 'Text too faint',
   overlap: 'Text overlaps',
+  'squeezed-text': 'Text squeezed into a narrow column',
 }
 
 /** The only place a frame can be dragged from (Canvas looks for data-canvas-handle). */

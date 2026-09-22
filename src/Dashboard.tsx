@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { Check, ChevronDown, Grid2x2, Home, LayoutList, Monitor, Moon, MoreHorizontal, Pencil, Search, Smartphone, Sparkles, Star, Sun, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, Grid2x2, Home, LayoutList, Moon, MoreHorizontal, Pencil, Search, Sparkles, Star, Sun, Trash2 } from 'lucide-react'
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
@@ -25,7 +25,7 @@ const VIEW_KEY = 'od:projects-view'
 export const THEME_KEY = 'od:theme'
 
 /** The project's first screen, loaded only when the card scrolls into view. */
-function Thumb({ screenId, device, width }: { screenId: string; device: string; width: number }) {
+export function Thumb({ screenId, device, width }: { screenId: string; device: string; width: number }) {
   const size = frameSize(device)
   const scale = width / size.width
   return (
@@ -42,7 +42,7 @@ function Thumb({ screenId, device, width }: { screenId: string; device: string; 
   )
 }
 
-function ago(unix: number) {
+export function ago(unix: number) {
   const s = Math.max(0, Date.now() / 1000 - unix)
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
   if (s < 60) return 'just now'
@@ -64,7 +64,7 @@ function write(key: string, value: string) {
   try { localStorage.setItem(key, value) } catch {}
 }
 
-function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size?: number }) {
+export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size?: number }) {
   return (
     <span className="inline-flex shrink-0 overflow-hidden rounded-full ring-1 ring-black/10" style={{ width: size, height: size }} aria-hidden>
       <span className="h-full w-1/2" style={{ background: s?.bg ?? '#fff' }} />
@@ -80,14 +80,27 @@ function SystemPicker({ systems, value, onChange }: { systems: System[]; value: 
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button type="button" className="inline-flex h-8 items-center gap-2 rounded-lg border bg-background px-2.5 text-sm hover:bg-muted" aria-label="Design system">
-          <Swatch s={current?.swatch} />
-          <span className="max-w-[140px] truncate">{current?.name ?? value}</span>
+          {current ? <Swatch s={current.swatch} /> : <Sparkles className="size-3.5" />}
+          <span className="max-w-[140px] truncate">{current?.name ?? 'Auto'}</span>
           <ChevronDown className="size-3.5 opacity-50" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="max-h-[420px] w-[min(92vw,560px)] overflow-y-auto p-2">
         {/* One grid, already ordered by category: most categories hold one or two systems. */}
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {/* GQ-03: the default — the brief picks a system that suits the app. */}
+          <DropdownMenuItem onSelect={() => onChange('auto')} className="flex-col items-stretch gap-0 overflow-hidden rounded-lg border p-0 focus:ring-2 focus:ring-ring">
+            <div className="flex h-14 items-center justify-center gap-2 bg-gradient-to-br from-amber-100 via-rose-100 to-sky-100 text-sm font-semibold text-neutral-800">
+              <Sparkles className="size-4" /> Auto
+            </div>
+            <div className="flex items-center justify-between gap-1 px-2.5 py-1.5">
+              <span className="min-w-0">
+                <span className="block truncate text-xs">Auto</span>
+                <span className="block truncate text-[10px] text-muted-foreground">Chosen from your brief</span>
+              </span>
+              {value === 'auto' && <Check className="size-3.5 shrink-0" />}
+            </div>
+          </DropdownMenuItem>
           {systems.map((s) => (
             <DropdownMenuItem key={s.id} onSelect={() => onChange(s.id)} className="flex-col items-stretch gap-0 overflow-hidden rounded-lg border p-0 focus:ring-2 focus:ring-ring">
               <div className="flex h-14 items-center justify-between px-3" style={{ background: s.swatch.bg ?? undefined, color: s.swatch.fg ?? undefined }}>
@@ -162,8 +175,7 @@ function ProjectMenu({ card, onRename, onDelete }: { card: Card; onRename: () =>
 export function Dashboard({ projects, designSystems, usage, user }: { projects: Card[]; designSystems: System[]; usage: { calls: number; limit: number }; user: User | undefined }) {
   const navigate = useNavigate()
   const router = useRouter()
-  const [device, setDevice] = useState<'mobile' | 'desktop'>('mobile')
-  const [designSystem, setDesignSystem] = useState('minimal')
+  const [designSystem, setDesignSystem] = useState('auto')
   const [fill, setFill] = useState<{ text: string; key: number }>()
   const [tab, setTab] = useState<'all' | 'favorites'>('all')
   const [query, setQuery] = useState('')
@@ -198,7 +210,6 @@ export function Dashboard({ projects, designSystems, usage, user }: { projects: 
   }
   function pickIdea(i: number) {
     const s = SETS[i]!
-    setDevice('mobile')
     if (systems.has(s.systemId)) setDesignSystem(s.systemId)
     setFill({ text: s.prompt, key: Date.now() })
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -274,24 +285,11 @@ export function Dashboard({ projects, designSystems, usage, user }: { projects: 
                 fill={fill}
                 extra={
                   <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button type="button" className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-sm hover:bg-muted" aria-label="Device">
-                          {device === 'mobile' ? <Smartphone className="size-3.5" /> : <Monitor className="size-3.5" />}
-                          {device === 'mobile' ? 'iPhone' : 'Desktop'}
-                          <ChevronDown className="size-3.5 opacity-50" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem onSelect={() => setDevice('mobile')}><Smartphone /> iPhone</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setDevice('desktop')}><Monitor /> Desktop</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                     <SystemPicker systems={designSystems} value={designSystem} onChange={setDesignSystem} />
                   </>
                 }
                 onSubmit={async (prompt) => {
-                  const { id } = await createProject({ data: { device, designSystem } })
+                  const { id } = await createProject({ data: { designSystem, brief: prompt } })
                   navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
                 }}
               />

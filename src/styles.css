@@ -129,3 +129,8 @@
     }
 }
 @keyframes dash { to { stroke-dashoffset: -280; } }
+
+/* LP-03: a screen being designed breathes; the ring settles once it is done. */
+@keyframes od-ring{0%,100%{box-shadow:0 0 0 2px color-mix(in oklab,var(--primary) 25%,transparent)}50%{box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 70%,transparent),0 0 28px color-mix(in oklab,var(--primary) 30%,transparent)}}
+.od-stream-ring{animation:od-ring 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.od-stream-ring{animation:none;box-shadow:0 0 0 2px var(--primary)}}

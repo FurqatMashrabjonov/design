@@ -29,7 +29,7 @@ const COLORS: [RegExp, string, string][] = [
   [word('coral|salmon'), '#f0634f', 'coral'],
   [word("orange|to['‘’]?q sariq|оранжев\\p{L}*"), '#ea580c', 'orange'],
   [word('gold|amber'), '#b45309', 'amber'],
-  [word('yellow|sariq|ж[её]лт\\p{L}*'), '#ca8a04', 'yellow'],
+  [word('yellow|sariq|ж[её]лт\\p{L}*'), '#eab308', 'yellow'], // bright; the theme layer puts dark text on it (onAccent)
   [word('red|qizil|красн\\p{L}*'), '#dc2626', 'red'],
   [word('brown|jigarrang|коричнев\\p{L}*'), '#92400e', 'brown'],
   [word('black|qora|ч[её]рн\\p{L}*'), '#111111', 'black'],
@@ -75,4 +75,27 @@ export function routeIntent(prompt: string, ctx: { elementSelected: boolean }): 
 function normalizeHex(hex: string): string {
   const h = hex.slice(1).toLowerCase()
   return `#${h.length === 3 ? [...h].map((c) => c + c).join('') : h}`
+}
+
+// GQ-02: a brief often says the look it wants ("…with yellow accents", "primary colour teal",
+// "#FFC107"). A colour counts only next to a word that makes it the app's colour — "a red wine
+// shop" names a product, not a palette. Hex codes count anywhere.
+const ACCENT_WORD = word("accents?|primary|brand|theme|palette|colou?rs?|colou?r scheme|highlights?|buttons?|cta|rang\\p{L}*|urg['‘’]?u|акцент\\p{L}*|цвет\\p{L}*").source
+const NEAR = (color: string) =>
+  new RegExp(`${color}(?:[\\s,/&-]+[\\p{L}'’]+){0,2}[\\s,/&-]+${ACCENT_WORD}|${ACCENT_WORD}(?:[\\s,:/&-]+[\\p{L}'’]+){0,3}[\\s,:/&-]+${color}`, 'iu')
+const BRIEF_COLORS = COLORS.map(([re, hex, name]) => [NEAR(re.source), hex, name] as const)
+
+/** The accent and corners a brief asks for, if it says so clearly; applied as the project's theme. */
+export function briefStyle(brief: string): { theme: Partial<Theme>; said: string[] } {
+  const theme: Partial<Theme> = {}
+  const said: string[] = []
+  const hex = brief.match(HEX)?.[0]
+  const named = hex ? undefined : BRIEF_COLORS.find(([re]) => re.test(brief))
+  if (hex || named) {
+    theme.accent = hex ? normalizeHex(hex) : named![1]
+    said.push(`accent ${hex ? theme.accent : named![2]}`)
+  }
+  if (word('pill[- ]shaped|very rounded|fully rounded|rounded corners|soft rounded').test(brief)) (theme.radius = 'round'), said.push('rounded corners')
+  else if (word('sharp corners|square corners|no rounded corners|brutalist').test(brief)) (theme.radius = 'sharp'), said.push('sharp corners')
+  return { theme, said }
 }

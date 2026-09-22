@@ -46,7 +46,7 @@ export const GenerateController = {
     } else {
       const designSystem = String(body.designSystem ?? 'minimal')
       if (!DesignSystemService.exists(designSystem)) return new Response('Unknown design system', { status: 400 })
-      project = { id: crypto.randomUUID(), designSystem, device: body.device === 'mobile' ? 'mobile' : 'desktop' }
+      project = { id: crypto.randomUUID(), designSystem, device: 'mobile' }
       isNew = true
     }
 

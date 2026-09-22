@@ -80,6 +80,10 @@ async function resolveAvatars(html: string, signal?: AbortSignal): Promise<strin
   return applyAvatars(html, portraits)
 }
 
+/** One photo for one slot, from the cache when it was looked up before — the streaming preview asks
+ *  as soon as a slot is written, so the finished screen gets the very same photo (LP-06). */
+export const prefetchImage = (query: string, signal?: AbortSignal) => lookup(query, signal)
+
 /** Fills every slot of a generated screen: the app mark, people's avatars, and photos (a plain block when none is found). */
 export async function resolveImages(input: string, signal?: AbortSignal, app?: { name: string }): Promise<string> {
   const html = await resolveAvatars(app ? applyLogo(input, app.name) : input, signal)

@@ -100,6 +100,11 @@ export const user = sqliteTable('user', {
   image: text('image'),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
+  // ADM-01 (Better Auth admin plugin)
+  role: text('role').notNull().default('user'),
+  banned: integer('banned', { mode: 'boolean' }).notNull().default(false),
+  banReason: text('ban_reason'),
+  banExpires: ts('ban_expires'),
 })
 export const session = sqliteTable('session', {
   id: text('id').primaryKey(),
@@ -109,6 +114,7 @@ export const session = sqliteTable('session', {
   updatedAt: ts('updated_at').notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
+  impersonatedBy: text('impersonated_by'),
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
@@ -154,3 +160,20 @@ export const llmCalls = sqliteTable('llm_calls', {
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 
+
+// ADM-01: every admin action (ban, pause, limit, role), who did it and when.
+export const adminActions = sqliteTable('admin_actions', {
+  id: text('id').primaryKey(),
+  adminId: text('admin_id').notNull(),
+  action: text('action').notNull(),
+  target: text('target'),
+  detail: text('detail'),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+})
+
+// ADM-08: runtime switches (pause, limits, budget, per-user limits) as key/value.
+export const settings = sqliteTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch())`),
+})

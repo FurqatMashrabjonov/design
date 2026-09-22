@@ -40,7 +40,7 @@ function Home() {
     } catch {}
     if (!prompt || started.current) return
     started.current = true
-    createProject({ data: { device: 'mobile', designSystem: 'minimal' } }).then(({ id }) =>
+    createProject({ data: { designSystem: 'auto', brief: prompt } }).then(({ id }) =>
       navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }),
     )
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

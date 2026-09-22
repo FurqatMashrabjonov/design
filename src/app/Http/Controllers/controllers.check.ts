@@ -348,6 +348,112 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.ok(Project.find('orphan-1'), "and nobody else's")
 }
 
+// GQ-07: a planned run outlives its page; only Stop ends it
+{
+  const { PlanRuns } = await import('../../Services/PlanRuns.ts')
+  reply = (req) => (req.json ? new Response(JSON.stringify({ choices: [{ message: { content: planJson } }] }), { status: 200 }) : sse(page('Drawn')))
+  Project.create({ id: 'p-detach', name: 'x', designSystem: 'minimal', device: 'mobile' })
+  let finished = 0
+  const res = await PlanController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p-detach', brief: 'todo app' }) }), { onFinish: () => finished++ })
+  assert.equal(res.headers.get('X-OD-Detached'), '1')
+  await res.body!.cancel() // the tab closed before anything arrived
+  for (let i = 0; i < 50 && (finished === 0 || PlanRuns.running('p-detach')); i++) await new Promise((r) => setTimeout(r, 20))
+  assert.equal(finished, 1, 'the run reports its own end')
+  assert.equal(Screen.forProject('p-detach').filter((s) => s.html).length, 2, 'every planned screen was still drawn and saved')
+  assert.ok(!Message.forProject('p-detach').some((m) => /Stopped/.test(m.text)), 'and the chat does not say it stopped')
+
+  // Stop reaches the run on the server.
+  let release!: () => void
+  const gate = new Promise<void>((r) => (release = r))
+  reply = (req) => (req.json ? new Response(JSON.stringify({ choices: [{ message: { content: planJson } }] }), { status: 200 }) : new Response(new ReadableStream({ async start(c) { await gate; c.close() } })))
+  Project.create({ id: 'p-stop', name: 'x', designSystem: 'minimal', device: 'mobile' })
+  const res2 = await PlanController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p-stop', brief: 'todo app' }) }))
+  const reader = res2.body!.getReader()
+  await reader.read() // the plan event: the anchor screen is now waiting on the model
+  assert.equal(PlanRuns.stop('p-stop'), true, 'Stop finds the run')
+  release()
+  while (!(await reader.read()).done) {}
+  assert.equal(PlanRuns.running('p-stop'), false)
+  assert.equal(Screen.forProject('p-stop').filter((s) => s.html).length, 0, 'nothing more is drawn after Stop')
+  assert.ok(Message.forProject('p-stop').some((m) => m.role === 'agent' && /Stopped/i.test(m.text)), 'and the chat says it stopped')
+  reply = () => sse(page('Screen'))
+}
+
+// GQ-02: a brief's palette becomes the project's theme — unless one was set by hand
+{
+  reply = (req) => (req.json ? new Response(JSON.stringify({ choices: [{ message: { content: planJson } }] }), { status: 200 }) : sse(page('Drawn')))
+  Project.create({ id: 'p-style', name: 'x', designSystem: 'minimal', device: 'mobile' })
+  await post(PlanController, { projectId: 'p-style', brief: 'Food delivery app with yellow accents and rounded corners' })
+  assert.deepEqual(JSON.parse(Project.find('p-style')!.theme!), { accent: '#eab308', radius: 'round' })
+  const log = parseMeta(Message.forProject('p-style').find((m) => m.role === 'agent')!.meta).log ?? []
+  assert.ok(log.some((l) => /From the brief: accent yellow, rounded corners/.test(l)), 'the agent log says where the theme came from')
+  Project.create({ id: 'p-style2', name: 'x', designSystem: 'minimal', device: 'mobile' })
+  Project.saveTheme('p-style2', { accent: '#111111' })
+  await post(PlanController, { projectId: 'p-style2', brief: 'Food delivery app with yellow accents' })
+  assert.equal(JSON.parse(Project.find('p-style2')!.theme!).accent, '#111111', 'a theme set by hand is kept')
+  reply = () => sse(page('Screen'))
+}
+
+// GQ-03: nobody picked a system — the brief does
+{
+  const { DesignSystemService } = await import('../../Services/DesignSystemService.ts')
+  const { ProjectController } = await import('./ProjectController.ts')
+  const auto = (b: string) => ProjectController.store({ designSystem: 'auto', brief: b }).designSystem
+  assert.equal(auto('A food delivery app with restaurant menus and live order tracking'), 'airbnb', 'app type decides')
+  assert.equal(auto('Neobank: balance, cards, transfers and spending insights'), 'stripe')
+  assert.equal(auto('Language learning with lessons and a leaderboard'), 'duolingo')
+  assert.equal(auto('A neo-brutalist habit tracker'), 'neobrutalism', 'a style the brief names beats the app type')
+  assert.equal(auto('Crypto wallet with a dark theme'), 'midnight')
+  assert.equal(auto('zzz'), 'minimal', 'nothing to go on: minimal')
+  assert.equal(ProjectController.store({ designSystem: 'nike', brief: 'A dark neo-brutalist bank' }).designSystem, 'nike', 'a system picked by hand is kept')
+  assert.equal(DesignSystemService.autoFor('', null), 'minimal')
+}
+
+// ADM-01/04/08: admins, bans, runtime settings, audit trail
+{
+  const { isAdmin } = await import('../../Services/AuthService.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const { UsageService } = await import('../../Services/UsageService.ts')
+  const { AdminStatsService } = await import('../../Services/AdminStatsService.ts')
+  const { Setting } = await import('../../Models/Setting.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user, session } = await import('../../../database/schema.ts')
+  const { eq } = await import('drizzle-orm')
+  process.env.ADMIN_EMAILS = 'Boss@x.uz, other@x.uz'
+  assert.ok(isAdmin({ email: 'boss@x.uz' }) && isAdmin({ email: 'z@x.uz', role: 'admin' }) && !isAdmin({ email: 'z@x.uz', role: 'user' }), 'admins come from ADMIN_EMAILS or the role')
+  const now = new Date()
+  db.insert(user).values({ id: 'adm', name: 'Boss', email: 'boss@x.uz', createdAt: now, updatedAt: now }).run()
+  db.insert(session).values({ id: 'sess-u2', token: 't-u2', userId: 'u2', expiresAt: new Date(Date.now() + 1e7), createdAt: now, updatedAt: now }).run()
+  AdminController.ban('adm', { userId: 'u2', reason: 'spam' })
+  const banned = db.select().from(user).where(eq(user.id, 'u2')).get()!
+  assert.ok(banned.banned && banned.banReason === 'spam', 'a ban is saved with its reason')
+  assert.equal(db.select().from(session).where(eq(session.userId, 'u2')).all().length, 0, 'and signs the user out everywhere')
+  assert.throws(() => AdminController.ban('adm', { userId: 'adm', reason: '' }), /yourself/)
+  AdminController.unban('adm', 'u2')
+  assert.equal(db.select().from(user).where(eq(user.id, 'u2')).get()!.banned, false)
+  assert.throws(() => AdminController.setRole('adm', { userId: 'adm', role: 'user' }), /own admin role/)
+
+  AdminController.setSetting('adm', { key: 'generation.paused', value: '1' })
+  assert.equal(UsageService.refusal('u2')?.status, 503, 'a pause set in the panel stops generation without a deploy')
+  AdminController.setSetting('adm', { key: 'generation.paused', value: null })
+  assert.equal(UsageService.limits().paused, false)
+  assert.throws(() => AdminController.setSetting('adm', { key: 'limits.callsPerDay', value: '-3' }), /Invalid value/)
+  AdminController.setSetting('adm', { key: 'limits.callsPerDay', value: '40' })
+  AdminController.setUserLimit('adm', { userId: 'u2', limit: 500 })
+  assert.deepEqual([UsageService.limits().callsPerDay, UsageService.limits('u2').callsPerDay, UsageService.limits('adm').callsPerDay], [40, 500, 40], 'a per-user limit beats the global one')
+  AdminController.setUserLimit('adm', { userId: 'u2', limit: null })
+  AdminController.setSetting('adm', { key: 'limits.callsPerDay', value: null })
+  assert.equal(Setting.all().length, 0, 'clearing a setting falls back to the default')
+
+  const trail = AdminStatsService.controls().actions.map((a) => a.action)
+  assert.deepEqual(trail.slice(0, 3), ['set-setting', 'set-user-limit', 'set-user-limit'], 'every admin write is logged, newest first')
+  assert.ok(trail.includes('ban') && trail.includes('unban'))
+  const o = AdminStatsService.overview(7)
+  assert.equal(o.series.length >= 30, true, 'a 30-day series with a row per day')
+  assert.ok(o.current.newUsers >= 1 && typeof o.current.failRate === 'number')
+  assert.ok(AdminStatsService.users().some((u) => u.email === 'boss@x.uz'))
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

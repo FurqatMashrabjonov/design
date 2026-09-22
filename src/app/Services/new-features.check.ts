@@ -447,10 +447,12 @@ console.log('Testing LLM Stream Abort...')
     else process.env.DEEPSEEK_API_KEY = realKey
   }
 }
-// Both controllers must tie the response stream's cancellation to the upstream abort.
+// An edit ties the response stream's cancellation to the upstream abort. A planned run does not
+// (GQ-07: it outlives its page) — it is stopped through PlanRuns, and still passes its signal on.
 for (const f of ['GenerateController', 'PlanController']) {
   const src = (await import('node:fs')).readFileSync(`src/app/Http/Controllers/${f}.ts`, 'utf8')
-  assert.ok(/cancel\(\)\s*\{\s*abort\.abort\(\)/.test(src), `${f} must abort the LLM call when the client cancels`)
+  if (f === 'GenerateController') assert.ok(/cancel\(\)\s*\{\s*abort\.abort\(\)/.test(src), `${f} must abort the LLM call when the client cancels`)
+  else assert.ok(/const abort = PlanRuns\.start\(/.test(src) && !/cancel\(\)\s*\{\s*abort\.abort\(\)/.test(src), `${f} is stopped by Stop, not by a closed page`)
   assert.ok(/streamCompletion\(.*abort\.signal[,)]/.test(src), `${f} must pass abort.signal to streamCompletion`)
 }
 

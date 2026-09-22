@@ -112,6 +112,11 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       slots: screens.reduce((n, s) => n + (s.html.match(/data-od-chart-rendered/g)?.length ?? 0), 0),
       handDrawnScreens: screens.filter((s) => handDrawnChart(s.html)).length,
     },
+    // GQ-04: maps drawn by code, versus a photo standing in for a map (the "street photo" bug).
+    maps: {
+      drawn: screens.reduce((n, s) => n + (s.html.match(/data-od-map-rendered/g)?.length ?? 0), 0),
+      photoAsMap: screens.reduce((n, s) => n + (s.html.match(/<img\b[^>]*data-od-img="[^"]*\b(map|maps|route|directions)\b[^"]*"[^>]*data-od-img-resolved/gi)?.length ?? 0), 0),
+    },
     time: { screenP50Ms: median(screens.map((s) => s.ms)), briefP50Ms: median(briefMs) },
     usage: usage && {
       ...usage,

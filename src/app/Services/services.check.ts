@@ -484,3 +484,76 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
 }
 
 console.log('ok')
+
+// GQ-05: a tab is named after the screen it opens
+{
+  const plan = parsePlan(JSON.stringify({
+    appName: 'Feast',
+    navigation: { type: 'bottom-tabs', tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'orders', label: 'Orders', icon: 'receipt' }, { id: 'profile', label: 'Profile', icon: 'user' }] },
+    screens: [
+      { name: 'Feast Home', screenType: 'root-tab', activeTabId: 'home' },
+      { name: 'Feastly · Live Order Tracking', screenType: 'root-tab', activeTabId: 'orders' },
+      { name: 'Feast — Cart', screenType: 'root-tab', activeTabId: 'profile' },
+    ],
+  }))
+  const tab = plan.navigation.tabs.find((t) => t.id === 'profile')!
+  assert.deepEqual([tab.label, tab.icon], ['Cart', 'shopping-cart'], 'the cart no longer lights up "Profile"')
+  assert.deepEqual(plan.navigation.tabs.slice(0, 2).map((t) => t.label), ['Home', 'Orders'], 'a synonym in the same section group ("Order Tracking" on "Orders") keeps the tab\'s name')
+  const uz = parsePlan(JSON.stringify({ appName: 'Taom', navigation: { tabs: [{ id: 'a', label: 'Bosh', icon: 'home' }, { id: 'b', label: 'Savat', icon: 'shopping-cart' }] }, screens: [{ name: 'Бош саҳифа', screenType: 'root-tab', activeTabId: 'a' }, { name: 'Savat', screenType: 'root-tab', activeTabId: 'b' }] }))
+  assert.equal(uz.navigation.tabs[0].label, 'Bosh', 'names in another script are left alone')
+}
+
+// GQ-02: the look a brief asks for
+{
+  const { briefStyle } = await import('../../lib/intent.ts')
+  const feast = briefStyle('A clean and modern UI design for a food delivery app… The overall design features rounded corners, a light color palette with yellow accents, and high-quality food photography.')
+  assert.deepEqual(feast.theme, { accent: '#eab308', radius: 'round' }, 'yellow accents and rounded corners are read from a long brief')
+  assert.equal(briefStyle('Crypto wallet, brand color #7C3AED').theme.accent, '#7c3aed')
+  assert.equal(briefStyle('Primary colour: teal. Fitness tracker.').theme.accent, '#0d9488')
+  for (const b of ['A red wine shop with tasting notes', 'Language app with a green owl mascot', 'Yellow taxi booking app', 'Black Friday deals tracker'])
+    assert.deepEqual(briefStyle(b).theme, {}, `"${b}" names a subject, not a palette`)
+}
+
+// GQ-04: maps are drawn by code, and a "map photo" slot becomes a map
+{
+  const { renderMaps } = await import('../../lib/maps.ts')
+  const slot = renderMaps('<main><div data-od-map data-pins="Burger Palace, 14 Kloof St" data-route data-you style="height:300px"></div></main>')
+  assert.ok(slot.includes('data-od-map-rendered') && slot.includes('<svg') && slot.includes('Burger Palace') && slot.includes('14 Kloof St'), 'pins carry their labels')
+  assert.ok(/stroke="var\(--accent\)" stroke-width="5"/.test(slot), 'the route is drawn in the accent')
+  assert.ok(!/#[0-9a-f]{6}/i.test(slot.replace(/data-[^=]+="[^"]*"/g, '')), 'colours are tokens only, so the theme restyles the map')
+  assert.ok(/data-od-map[^>]*style="height:300px"/.test(slot) && slot.includes(':where([data-od-map-rendered]){display:block;width:100%;height:100%;min-height:200px;overflow:hidden}'), 'the model\'s own height is kept; the default is a zero-specificity rule, so a class height wins too')
+  assert.equal(renderMaps(slot), slot, 'idempotent')
+  assert.equal(slot, renderMaps('<main><div data-od-map data-pins="Burger Palace, 14 Kloof St" data-route data-you style="height:300px"></div></main>'), 'the same map every render')
+  const photo = renderMaps('<img data-od-img="city street map downtown cape town" alt="Map" class="map-hero">')
+  assert.ok(photo.includes('<div data-od-map') && photo.includes('class="map-hero"') && photo.includes('<svg'), 'a map photo slot becomes a drawn map')
+  assert.equal(renderMaps('<img data-od-img="classic cheeseburger" alt="">'), '<img data-od-img="classic cheeseburger" alt="">', 'other photos are left alone')
+}
+
+// GQ-06: a brief that counts its screens gets that many — the requested ones first
+{
+  const { screenCountAsked, trimToBrief } = await import('./PlannerService.ts')
+  assert.equal(screenCountAsked('A food delivery UI presented on two smartphone screens'), 2)
+  assert.equal(screenCountAsked('3 ta ekran'), 3)
+  assert.equal(screenCountAsked('Нужно 4 экрана'), 4)
+  for (const b of ['A food app', 'screen time tracker for kids', 'two-factor auth screen', 'Show 12 screens']) assert.equal(screenCountAsked(b), null, `"${b}" does not count screens`)
+  const plan = parsePlan(JSON.stringify({
+    appName: 'Feast',
+    requested: ['home page with offers', 'cart with checkout'],
+    navigation: { type: 'bottom-tabs', tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'search', label: 'Search', icon: 'search' }, { id: 'orders', label: 'Orders', icon: 'receipt' }, { id: 'profile', label: 'Profile', icon: 'user' }] },
+    screens: [
+      { name: 'Feast Home', screenType: 'root-tab', activeTabId: 'home', covers: [0], linksTo: ['Dish Detail', 'Cart'] },
+      { name: 'Dish Detail', screenType: 'detail-view', parentScreen: 'Feast Home' },
+      { name: 'Search', screenType: 'root-tab', activeTabId: 'search' },
+      { name: 'Orders', screenType: 'root-tab', activeTabId: 'orders' },
+      { name: 'Cart', screenType: 'root-tab', activeTabId: 'profile', covers: [1] },
+      { name: 'Profile', screenType: 'detail-view', parentScreen: 'Feast Home' },
+    ],
+  }))
+  const two = trimToBrief(plan, 'A food delivery UI presented on two smartphone screens: home and cart')
+  assert.deepEqual(two.screens.map((s) => s.name), ['Feast Home', 'Cart'], 'the two screens the brief asked for')
+  assert.deepEqual(two.navigation.tabs.map((t) => t.label), ['Home', 'Cart'], 'tabs nobody opens are gone; the cart tab is named for the cart')
+  assert.deepEqual(two.screens[0].linksTo, ['Cart'], 'links to dropped screens are dropped')
+  assert.deepEqual(two.uncovered, [])
+  assert.equal(trimToBrief(plan, 'A food app').screens.length, 6, 'no count, no trimming')
+  assert.equal(plan.screens.length, 6, 'the original plan is not changed')
+}

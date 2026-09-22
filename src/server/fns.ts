@@ -31,7 +31,7 @@ export const getProject = createServerFn({ method: 'GET' })
 export const createProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     const o = obj(d)
-    return { device: oneOf(o.device, ['mobile', 'desktop'] as const), designSystem: str(o.designSystem, 60) }
+    return { designSystem: str(o.designSystem, 60), brief: o.brief === undefined ? undefined : str(o.brief, 4000) }
   })
   .handler(async ({ data }) => ProjectController.store({ ...data, userId: (await requireUser()).id }))
 

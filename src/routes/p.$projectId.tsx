@@ -52,7 +52,7 @@ type ScreenStatus = 'pending' | 'running' | 'done' | 'error'
 const DS_FRAME_HEIGHT_MOBILE = 1100
 
 function ProjectPage() {
-  const { project, screens, messages, tokens } = Route.useLoaderData()
+  const { project, screens, messages, tokens, planRunning } = Route.useLoaderData()
   const search = Route.useSearch()
   const router = useRouter()
   const navigate = useNavigate()
@@ -267,9 +267,27 @@ function ProjectPage() {
   // Multi-screen planning state — only populated when this project was just created from the home page composer.
   const [plan, setPlan] = useState<Plan | null>(null)
   const [planning, setPlanning] = useState(false)
+  // GQ-07: a planned run lives on the server, so closing its stream does not stop it; Stop does.
+  function stopPlan() {
+    fetch('/api/stop-plan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId: project.id }) }).finally(() => {
+      inFlight.current?.abort()
+      router.invalidate()
+    })
+  }
+  // GQ-07: back on a project whose planned run is still drawing on the server — refresh until it ends.
+  useEffect(() => {
+    if (!planRunning || planning) return
+    const t = setInterval(() => router.invalidate(), 3000)
+    return () => clearInterval(t)
+  }, [planRunning, planning, router])
   const [status, setStatus] = useState<Record<number, ScreenStatus>>({})
   const [planErrors, setPlanErrors] = useState<Record<number, string>>({})
   const [planTexts, setPlanTexts] = useState<Record<number, string>>({})
+  // LP-04: plan frames are keyed by the id each screen will be saved under (the server decides
+  // them up front), so the frame that streamed is the frame the saved screen lands in.
+  const [planIds, setPlanIds] = useState<string[]>([])
+  // LP-06: photos found while each planned screen streams, by slot query.
+  const [planPhotos, setPlanPhotos] = useState<Record<number, Record<string, string>>>({})
   // Once the real screens (loaded via router.invalidate()) land at the same positions the plan
   // frames used, the plan frames must stop rendering or they'd sit duplicated on top of them.
   const [planFramesSettled, setPlanFramesSettled] = useState(false)
@@ -293,11 +311,14 @@ function ProjectPage() {
     generatePlan(project.id, brief, (e) => {
       if (e.type === 'plan') {
         setPlan(e)
+        setPlanIds(e.screenIds ?? [])
         setStatus(Object.fromEntries(e.screens.map((_, i) => [i, 'pending' as ScreenStatus])))
       } else if (e.type === 'screen_start') {
         setStatus((p) => ({ ...p, [e.index]: 'running' }))
       } else if (e.type === 'screen_delta') {
         setPlanTexts((p) => ({ ...p, [e.index]: e.text }))
+      } else if (e.type === 'screen_image') {
+        setPlanPhotos((p) => ({ ...p, [e.index]: { ...p[e.index], [e.query]: e.url } }))
       } else if (e.type === 'screen_done') {
         setStatus((p) => ({ ...p, [e.index]: 'done' }))
       } else if (e.type === 'screen_error') {
@@ -346,7 +367,11 @@ function ProjectPage() {
 
   const planFrames: CanvasFrame[] =
     plan && !planFramesSettled
-      ? plan.screens.map((_, i) => ({ id: `plan-${i}`, x: i * (f.width + FRAME_GAP), y: 0, width: f.width, height: f.height }))
+      ? plan.screens.flatMap((_, i) => {
+          const id = planIds[i] ?? `plan-${i}`
+          if (screenIds.has(id)) return [] // the saved screen has taken over this frame
+          return [{ id, x: i * (f.width + FRAME_GAP), y: 0, width: f.width, height: heights[id] ?? f.height }]
+        })
       : []
 
   // The design-system frame (THM-08) stands left of the screens; it is drawn from tokens, not stored.
@@ -357,11 +382,14 @@ function ProjectPage() {
       ? { id: '__ds__', x: Math.min(...visibleScreens.map((s) => s.x)) - f.width - FRAME_GAP, y: Math.min(...visibleScreens.map((s) => s.y)), width: f.width, height: dsHeight }
       : null
 
+  // The order is kept stable on purpose: moving an iframe in the DOM reloads it. The design-system
+  // frame goes last, so its arrival moves nothing (LP-04).
   const frames: CanvasFrame[] = [
-    ...(dsFrame ? [dsFrame] : []),
-    ...visibleScreens.map((s) => ({ id: s.id, x: s.x, y: s.y, width: f.width, height: frameHeight(s) })),
+    // Sorted by id: a plan frame already carries its screen's id, so it keeps its place when the
+    // saved screen takes over, and dragging (which changes x) never reorders anything.
+    ...[...visibleScreens.map((s) => ({ id: s.id, x: s.x, y: s.y, width: f.width, height: frameHeight(s) })), ...planFrames].sort((a, z) => (a.id < z.id ? -1 : a.id > z.id ? 1 : 0)),
     ...(liveFrame ? [liveFrame] : []),
-    ...planFrames,
+    ...(dsFrame ? [dsFrame] : []),
   ]
 
   const fileName = (name: string) => name.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'design'
@@ -489,7 +517,21 @@ function ProjectPage() {
                 }}
                 running={
                   planning && plan ? (
-                    <PlanCard plan={plan} status={status} errors={planErrors} />
+                    <div className="space-y-2">
+                      <PlanCard plan={plan} status={status} errors={planErrors} />
+                      {/* The planned run has no prompt-box Stop (it started from the dashboard); this is its Stop. */}
+                      <button type="button" className="text-xs text-muted-foreground underline" onClick={stopPlan}>
+                        Stop generating
+                      </button>
+                    </div>
+                  ) : planRunning && !planning ? (
+                    <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
+                      <Loader2 className="size-4 animate-spin" />
+                      <span className="flex-1">Still designing this app — screens appear as they finish.</span>
+                      <button type="button" className="text-xs underline" onClick={stopPlan}>
+                        Stop
+                      </button>
+                    </div>
                   ) : working ? (
                     <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
                       <Loader2 className="size-4 animate-spin" />
@@ -554,7 +596,7 @@ function ProjectPage() {
                           : 'Add another screen to this project…'
                 }
                 fill={fill}
-                onStop={() => inFlight.current?.abort()}
+                onStop={() => (planning || planRunning ? stopPlan() : inFlight.current?.abort())}
                 onSubmit={async (prompt) => {
                   // "make it blue" is a theme change: instant, every screen, no generation.
                   if (routeIntent(prompt, { elementSelected: Boolean(selectedElementId) }).kind === 'theme') {
@@ -623,9 +665,10 @@ function ProjectPage() {
               if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={theme} height={dsHeight} />
               if (id === '__live__')
                 return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={theme} streaming />
-              if (id.startsWith('plan-')) {
-                const i = Number(id.slice(5))
-                const s = plan!.screens[i]
+              const planAt = planIds.indexOf(id)
+              if (id.startsWith('plan-') || (planAt !== -1 && !screenIds.has(id))) {
+                const i = planAt !== -1 ? planAt : Number(id.slice(5))
+                const s = plan!.screens[i]!
                 const st = status[i]
                 if (st === 'pending')
                   return (
@@ -634,14 +677,26 @@ function ProjectPage() {
                       <Skeleton style={{ width: f.width, height: f.height }} className="rounded-xl" />
                     </div>
                   )
+                // The same wrapper shape as a saved frame, so React keeps this iframe when the saved
+                // screen takes over (LP-04).
+                const noop = () => {}
                 return (
-                  <ScreenFrame
-                    html={extractArtifact(planTexts[i] ?? '').html}
-                    title={s.name}
-                    device={project.device}
-                    theme={theme}
-                    streaming={st === 'running'}
-                  />
+                  <FrameContextMenu onRename={noop} onDuplicate={noop} onDelete={noop} onRegenerate={noop} onCopyHtml={noop} onViewCode={noop} onDownload={noop}>
+                    <div>
+                      <ScreenFrame
+                        html={extractArtifact(planTexts[i] ?? '').html}
+                        title={s.name}
+                        device={project.device}
+                        theme={theme}
+                        streaming={st === 'running' || st === 'done'}
+                        photos={planPhotos[i]}
+                        frameId={planAt !== -1 ? id : undefined}
+                        height={planAt !== -1 ? heights[id] : undefined}
+                        // Kept in memory only: the screen is not saved yet. Its saved frame starts from it.
+                        onHeight={(fid, h) => setHeights((prev) => (prev[fid] === h ? prev : { ...prev, [fid]: h }))}
+                      />
+                    </div>
+                  </FrameContextMenu>
                 )
               }
               const s = screens.find((sc) => sc.id === id)!

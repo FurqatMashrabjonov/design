@@ -1,6 +1,7 @@
 import { extractRootBlock } from './screen-normalizer.ts'
 import { HIG, declaredFontSizes } from './hig-rules.ts'
 import { renderCharts } from './charts.ts'
+import { renderMaps } from './maps.ts'
 
 /**
  * Deterministic checks for the craft rules that are mechanically checkable.
@@ -263,8 +264,10 @@ export function autofixScreen(html: string): string {
   out = out.slice(0, rootEnd) + out.slice(rootEnd).replace(/(font-size\s*:\s*)(\d+(?:\.\d+)?)px/gi, (m, pre: string, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `${pre}${HIG.minFontPx}px` : m))
   out = out.replace(/\btext-\[(\d+(?:\.\d+)?)px\]/g, (m, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `text-[${HIG.minFontPx}px]` : m))
 
-  // Chart slots are drawn from their data (lib/charts.ts, KIT-03).
+  // Chart slots are drawn from their data (lib/charts.ts, KIT-03); map slots, and image slots that
+  // ask for a map photo, become a drawn street plan (lib/maps.ts, GQ-04) before photos are looked up.
   out = renderCharts(out)
+  out = renderMaps(out)
 
   // An icon-only button gets a 44×44 invisible hit area centred on it, whatever its drawn size.
   // :where() keeps the position rule at zero specificity, so a button the screen positions itself

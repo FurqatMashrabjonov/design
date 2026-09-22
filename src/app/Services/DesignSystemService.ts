@@ -43,7 +43,46 @@ function extractCategory(md: string): string | undefined {
   return m?.[1]?.trim()
 }
 
+// GQ-03: when nobody picks a system, the brief does. A style the brief names wins; otherwise the
+// app type decides (a food app gets warmth, a bank gets calm polish); otherwise minimal.
+// ponytail: word lists and a table, not a model — add a line when a brief lands on the wrong look.
+export const AUTO = 'auto'
+const STYLE_WORDS: [RegExp, string][] = [
+  [/neo-?brutalis/i, 'neobrutalism'],
+  [/brutalis/i, 'brutalist'],
+  [/glass(morphism)?\b|frosted/i, 'glassmorphism'],
+  [/\bneon\b|cyberpunk/i, 'neon'],
+  [/\bretro\b|vintage|8-?bit|pixel art/i, 'retro'],
+  [/hand-?drawn|doodle|sketchy/i, 'doodle'],
+  [/\bbento\b/i, 'bento'],
+  [/luxury|elegant|premium|high-end/i, 'elegant'],
+  [/\bdark (mode|theme|ui|background)|night mode|all-black/i, 'midnight'],
+  [/playful|gamif|for kids|children/i, 'duolingo'],
+  [/\bminimal(ist)?\b|clean and simple/i, 'minimal'],
+]
+const BY_APP_TYPE: Record<string, string> = {
+  fintech: 'stripe',
+  'food-delivery': 'airbnb',
+  commerce: 'shopify',
+  marketplace: 'airbnb',
+  booking: 'airbnb',
+  travel: 'airbnb',
+  fitness: 'nike',
+  health: 'apple',
+  learning: 'duolingo',
+  media: 'spotify',
+  productivity: 'notion',
+  social: 'apple',
+}
+
 export const DesignSystemService = {
+  /** The system for a brief when the person left the choice to us. */
+  autoFor(brief: string, appType?: string | null): string {
+    const byStyle = STYLE_WORDS.find(([re]) => re.test(brief))?.[1]
+    const pick = byStyle ?? (appType ? BY_APP_TYPE[appType] : undefined) ?? 'minimal'
+    return DesignSystemService.exists(pick) ? pick : 'minimal'
+  },
+
   list(): DesignSystemEntry[] {
     return readdirSync(DS_DIR, { withFileTypes: true })
       .filter((d) => d.isDirectory() && d.name !== '_schema')

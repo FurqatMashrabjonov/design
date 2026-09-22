@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { magicLink } from 'better-auth/plugins/magic-link'
+import { admin } from 'better-auth/plugins/admin'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '@/database/connection'
 import { account, session, user, verification } from '@/database/schema'
@@ -46,8 +47,18 @@ export const auth = betterAuth({
         console.log(`\n[auth] magic link for ${email}:\n${url}\n`)
       },
     }),
+    // ADM-01: roles and bans. Its hooks refuse sign-in to a banned user; server/auth.ts also treats
+    // one as signed out, so a ban takes effect on the next request.
+    admin({ defaultRole: 'user', adminRoles: ['admin'] }),
     tanstackStartCookies(),
   ],
 })
+
+/** ADM-01: the first admins come from ADMIN_EMAILS (comma-separated); more can be named in the panel. */
+export function isAdmin(u: { email: string; role?: string | null }): boolean {
+  if (u.role === 'admin') return true
+  const list = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
+  return list.includes(u.email.toLowerCase())
+}
 
 export const signInMethods = { google: Boolean(google), magicLink: true }

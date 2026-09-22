@@ -6,7 +6,7 @@
 
 import { HIG } from './hig-rules.ts'
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'small-target', 'low-contrast', 'overlap'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'small-target', 'low-contrast', 'overlap', 'squeezed-text'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; id: string | null; detail: string }
 
@@ -48,8 +48,16 @@ var all = document.body ? document.body.querySelectorAll('*') : [];
 var texts = [];
 for (var i = 0; i < all.length; i++) {
   var el = all[i];
-  if (/^(SCRIPT|STYLE|SVG|PATH|I|BR|HEAD|META|LINK|TEMPLATE)$/i.test(el.tagName) || !visible(el)) continue;
+  if (/^(SCRIPT|STYLE|SVG|PATH|I|BR|HEAD|META|LINK|TEMPLATE)$/i.test(el.tagName)) continue;
   var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+  // 6. Text squeezed into a sliver because a sibling took the row — checked before the visibility
+  // filter, since the squeezed box can be 0px wide while its text spills out.
+  // Screen-reader-only text (1px, absolutely placed) and deliberate narrow stacks ("Sun / 10:12") are not squeezed.
+  if (ownText(el) && !inShell(el) && cs.display !== 'none' && cs.position !== 'absolute' && r.height > 0 && r.width < 64) {
+    var lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3, len = (el.textContent || '').trim().length;
+    if ((r.width < 16 && len > 10 && el.scrollWidth > r.width + 24) || (len > 16 && r.height > lh * 3.5)) add('squeezed-text', el, label(el) + ' is ' + Math.round(r.width) + 'px wide');
+  }
+  if (!visible(el)) continue;
   // 1. Pushed past the right edge (fixed chrome and horizontal scrollers are allowed to).
   if (r.right > vw + 2 && cs.position !== 'fixed' && !(el.closest && el.closest('[style*="overflow-x"], .od-carousel')) && !inShell(el)) {
     var p = el.parentElement, scroller = false;
@@ -99,6 +107,7 @@ const HOW: Record<AuditRule, string> = {
   'small-target': `is too small to tap — make it at least ${HIG.minTargetPx}×${HIG.minTargetPx}px (min-height / min-width or padding), without changing its look otherwise`,
   'low-contrast': `text is too faint — it needs ${HIG.contrast.text}:1 against its background (${HIG.contrast.largeText}:1 from ${HIG.contrast.largeTextPx}px): darken the text (var(--fg), var(--fg-2), or a colour mixed toward var(--fg)); never lighten the background`,
   overlap: 'two texts are drawn over each other — give each its own line or enough space (display: block, gap, line-height)',
+  'squeezed-text': 'text is squeezed into a narrow column because something beside it takes the row — give the text min-width: 0 and flex: 1, and give the image or control next to it a fixed width (flex: none)',
 }
 
 /**

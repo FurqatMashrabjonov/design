@@ -3,6 +3,7 @@ import { and, eq, gte, sql } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { llmCalls } from '@/database/schema'
 import { costOf, onLlmCall } from './LlmService'
+import { Setting } from '@/app/Models/Setting'
 
 // OBS-01 + LIM-01/02/03. Every model call made inside a request is written to llm_calls with the
 // user and project of that request (carried by AsyncLocalStorage, so no controller has to pass
@@ -54,14 +55,34 @@ export const UsageService = {
     return ctx.run(who, fn)
   },
 
+  /** ADM-08: the limits in force — an admin's setting wins over the env/code default. */
+  limits(userId?: string) {
+    const num = (key: string, fallback: number) => {
+      const v = Number(Setting.get(key))
+      return Setting.get(key) !== null && Number.isFinite(v) && v >= 0 ? v : fallback
+    }
+    const callsPerDay = num('limits.callsPerDay', LIMITS.callsPerDay)
+    return {
+      callsPerDay: userId ? num(`limits.user.${userId}`, callsPerDay) : callsPerDay,
+      dailyBudgetUsd: num('limits.dailyBudgetUsd', LIMITS.dailyBudgetUsd),
+      paused: process.env.GENERATION_PAUSED === '1' || Setting.get('generation.paused') === '1',
+    }
+  },
+
+  /** Generations running right now (ADM-02's "now" panel). */
+  running(): string[] {
+    return [...running]
+  },
+
   /** Why this user may not start a generation now, or null. */
   refusal(userId: string): { status: number; message: string } | null {
-    if (process.env.GENERATION_PAUSED === '1') return { status: 503, message: 'Generation is paused for maintenance. Try again later.' }
+    const limits = UsageService.limits(userId)
+    if (limits.paused) return { status: 503, message: 'Generation is paused for maintenance. Try again later.' }
     if (running.has(userId)) return { status: 429, message: 'A generation is already running. Wait for it to finish or stop it.' }
-    if (UsageService.callsToday(userId) >= LIMITS.callsPerDay) return { status: 429, message: 'You have reached today’s generation limit. It resets within 24 hours.' }
+    if (UsageService.callsToday(userId) >= limits.callsPerDay) return { status: 429, message: 'You have reached today’s generation limit. It resets within 24 hours.' }
     const midnight = Math.floor(new Date().setUTCHours(0, 0, 0, 0) / 1000)
     const spent = db.select({ usd: sql<number>`coalesce(sum(cost_usd), 0)` }).from(llmCalls).where(gte(llmCalls.createdAt, midnight)).get()?.usd ?? 0
-    if (spent >= LIMITS.dailyBudgetUsd) return { status: 503, message: 'Generation is paused for today — the service reached its daily limit. Try again tomorrow.' }
+    if (spent >= limits.dailyBudgetUsd) return { status: 503, message: 'Generation is paused for today — the service reached its daily limit. Try again tomorrow.' }
     return null
   },
 

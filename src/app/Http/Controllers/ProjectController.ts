@@ -4,9 +4,11 @@ import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Feedback } from '@/app/Models/Feedback'
 import { Message } from '@/app/Models/Message'
-import { DesignSystemService } from '@/app/Services/DesignSystemService'
+import { AUTO, DesignSystemService } from '@/app/Services/DesignSystemService'
+import { AppPatternService } from '@/app/Services/AppPatternService'
 import { SkillService } from '@/app/Services/SkillService'
-import { UsageService, LIMITS } from '@/app/Services/UsageService'
+import { UsageService } from '@/app/Services/UsageService'
+import { PlanRuns } from '@/app/Services/PlanRuns'
 import { parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { routeIntent } from '@/lib/intent'
 import { clampFrameHeight } from '@/lib/frame-height'
@@ -16,7 +18,7 @@ export const ProjectController = {
   index(userId: string) {
     return {
       projects: Project.cardsForUser(userId),
-      usage: { calls: UsageService.callsToday(userId), limit: LIMITS.callsPerDay },
+      usage: { calls: UsageService.callsToday(userId), limit: UsageService.limits(userId).callsPerDay },
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),
     }
@@ -39,15 +41,19 @@ export const ProjectController = {
       messages: Message.forProject(id),
       // For the design-system frame on the canvas (lib/ds-sample.ts).
       tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
+      // GQ-07: a planned run still drawing (its page may have closed); the editor refreshes until it ends.
+      planRunning: PlanRuns.running(id),
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),
     }
   },
 
-  store(data: { device: string; designSystem: string; userId?: string }) {
-    DesignSystemService.assertExists(data.designSystem)
-    const device = data.device === 'mobile' ? 'mobile' : 'desktop'
-    return Project.create({ id: crypto.randomUUID(), name: 'Untitled', designSystem: data.designSystem, device, userId: data.userId ?? null })
+  // 2026-09-22: the product designs phone apps only; desktop projects made before stay viewable.
+  store(data: { designSystem: string; brief?: string; userId?: string }) {
+    // GQ-03: "auto" means the brief chooses (its named style, else its app type).
+    const designSystem = data.designSystem === AUTO ? DesignSystemService.autoFor(data.brief ?? '', AppPatternService.classify(data.brief ?? '')?.id) : data.designSystem
+    DesignSystemService.assertExists(designSystem)
+    return Project.create({ id: crypto.randomUUID(), name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null })
   },
 
   moveScreen(data: { id: string; x: number; y: number }) {

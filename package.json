@@ -4,9 +4,10 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "check": "node src/app/Services/services.check.ts && node src/lib/element-ops.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts && DB_PATH=:memory: node --import ./eval/alias-hook.mjs src/app/Services/image.check.ts && DB_PATH=:memory: node --import ./eval/alias-hook.mjs src/app/Http/Controllers/controllers.check.ts && node eval/eval.check.ts",
+    "check": "node src/app/Services/services.check.ts && node src/lib/element-ops.check.ts && node src/lib/partial-html.check.ts && node src/database/database.check.ts && node src/app/Services/new-features.check.ts && DB_PATH=:memory: node --import ./eval/alias-hook.mjs src/app/Services/image.check.ts && DB_PATH=:memory: node --import ./eval/alias-hook.mjs src/app/Http/Controllers/controllers.check.ts && node eval/eval.check.ts && node --import ./eval/alias-hook.mjs eval/stream.check.ts",
     "start": "node --env-file-if-exists=.env server.prod.mjs",
-    "eval": "node --env-file=.env --import ./eval/alias-hook.mjs eval/run.ts"
+    "eval": "node --env-file=.env --import ./eval/alias-hook.mjs eval/run.ts",
+    "judge": "node --import ./eval/alias-hook.mjs eval/judge.ts"
   },
   "license": "ISC",
   "type": "module",
@@ -24,6 +25,7 @@
     "radix-ui": "^1.6.7",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "recharts": "^3.10.1",
     "shadcn": "^4.21.0",
     "sonner": "^2.0.8",
     "tw-animate-css": "^1.4.0"

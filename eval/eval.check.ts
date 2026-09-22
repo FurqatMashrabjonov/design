@@ -6,14 +6,15 @@ import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet
 // EVAL-01: the brief set is fixed and every brief is runnable.
 const briefs: { id: string; brief: string; designSystem: string; kind?: string; lang?: string; appType: string; expect: string[] }[] =
   JSON.parse(readFileSync('eval/briefs.json', 'utf8'))
-assert.equal(briefs.length, 25)
-assert.equal(new Set(briefs.map((b) => b.id)).size, 25, 'brief ids are unique')
+// 25 original briefs, plus 3 (GQ-06) that count their screens / pick "auto" (GQ-03).
+assert.equal(briefs.length, 28)
+assert.equal(new Set(briefs.map((b) => b.id)).size, 28, 'brief ids are unique')
 assert.equal(briefs.filter((b) => b.kind === 'vague').length, 5)
 assert.equal(briefs.filter((b) => b.lang).length, 3)
 assert.ok(new Set(briefs.map((b) => b.appType)).size >= 10, 'at least 10 app types')
 for (const b of briefs) {
   assert.match(b.id, /^[a-z0-9-]+$/, `${b.id}: id is used as a file name`)
-  assert.ok(existsSync(`design-systems/${b.designSystem}/tokens.css`), `${b.id}: unknown design system ${b.designSystem}`)
+  assert.ok(b.designSystem === 'auto' || existsSync(`design-systems/${b.designSystem}/tokens.css`), `${b.id}: unknown design system ${b.designSystem}`)
   assert.ok(b.brief.length > 0 && b.brief.length <= 4000, `${b.id}: brief length`)
   assert.ok(b.expect.length > 0, `${b.id}: expected archetypes listed`)
 }
@@ -79,3 +80,14 @@ assert.equal(computeMetrics([scr('x', 'stripe', 'root-tab', '<body><p>Pay with S
 assert.deepEqual(diffMetrics({ a: { b: 1, c: 2 } }, { a: { b: 1, c: 3 }, d: 4 }), ['a.c: 2 → 3', 'd: — → 4'])
 
 console.log('ok')
+
+// GQ-08: the judge's reply parser and rubric
+{
+  const { parseJudgement, RUBRIC, PAIRWISE } = await import('./judge.ts')
+  assert.deepEqual(parseJudgement<{ coherence: number }>('```json\n{"coherence": 4}\n```'), { coherence: 4 }, 'a fenced reply parses')
+  assert.equal(parseJudgement('no json here'), null)
+  assert.equal(parseJudgement('{broken'), null)
+  for (const k of ['hierarchy', 'spacing', 'polish', 'fidelity', 'overall', 'coherence']) assert.ok(RUBRIC.includes(k), `the rubric scores ${k}`)
+  assert.ok(RUBRIC.includes('"competent but generic" is a 3'), 'the rubric anchors generic output at 3')
+  assert.ok(PAIRWISE.includes('"winner":"A"|"B"|"tie"'))
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { LogOut, Trash2 } from 'lucide-react'
+import { LogOut, Shield, Trash2 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { deleteAccount } from '@/server/fns'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 // AUTH-08: who is signed in, sign out, and (AUTH-09) delete the account with everything in it.
 export function AccountMenu() {
-  const { user } = useRouteContext({ strict: false }) as { user?: { name: string; email: string; image?: string | null } }
+  const { user } = useRouteContext({ strict: false }) as { user?: { name: string; email: string; image?: string | null; admin?: boolean } }
   const navigate = useNavigate()
   const [confirm, setConfirm] = useState(false)
   if (!user) return null
@@ -33,6 +33,11 @@ export function AccountMenu() {
             <div className="truncate text-xs text-muted-foreground">{user.email}</div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {user.admin && (
+            <DropdownMenuItem onSelect={() => navigate({ to: '/admin' })}>
+              <Shield /> Admin panel
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onSelect={signOut}>
             <LogOut /> Sign out
           </DropdownMenuItem>

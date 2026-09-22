@@ -2,7 +2,7 @@
 // through one of these; controllers below them trust the caller, so the eval harness and the
 // tests can call controllers directly.
 import { getRequest } from '@tanstack/react-start/server'
-import { auth } from '@/app/Services/AuthService'
+import { auth, isAdmin } from '@/app/Services/AuthService'
 import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 
@@ -14,12 +14,22 @@ export class HttpError extends Error {
   }
 }
 
-export type SessionUser = { id: string; name: string; email: string; image?: string | null }
+export type SessionUser = { id: string; name: string; email: string; image?: string | null; admin: boolean }
 
-/** The signed-in user for a request, or null. */
+/** The signed-in user for a request, or null. A banned user counts as signed out (ADM-04). */
 export async function userFrom(request: Request): Promise<SessionUser | null> {
   const s = await auth.api.getSession({ headers: request.headers })
-  return s ? { id: s.user.id, name: s.user.name, email: s.user.email, image: s.user.image } : null
+  if (!s) return null
+  const u = s.user as typeof s.user & { role?: string | null; banned?: boolean | null; banExpires?: Date | null }
+  if (u.banned && (!u.banExpires || new Date(u.banExpires) > new Date())) return null
+  return { id: u.id, name: u.name, email: u.email, image: u.image, admin: isAdmin(u) }
+}
+
+/** ADM-01: only an admin gets past; anyone else gets the same 404 as a page that does not exist. */
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await userFrom(getRequest())
+  if (!user?.admin) throw new HttpError(404, 'Not found')
+  return user
 }
 
 /** Inside a server function: the signed-in user, or a 401. */

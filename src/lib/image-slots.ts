@@ -48,24 +48,39 @@ export function imageQueries(html: string): string[] {
   return [...new Set((html.match(IMG_TAG) ?? []).map(slotQuery).filter((q): q is string => q !== null))]
 }
 
-// A slot keeps its box whatever photo lands in it: a photo never decides the layout.
+// A slot keeps its box whatever photo lands in it: a photo never decides the layout. The default
+// box (full width, 4:3) lives in a zero-specificity rule, not in the inline style: a size the model
+// gave by class (`.cart-thumb { width: 64px }`) must win. An inline width:100% once beat it and blew
+// every list thumbnail up to the full row (GQ-01).
+export const SLOT_CSS =
+  ':where([data-od-img-resolved],[data-od-img-fallback]){display:block;width:100%;aspect-ratio:4/3}' +
+  ':where([data-od-avatar-resolved]){width:40px;height:40px}' +
+  ':where([data-od-logo-resolved]){width:56px;height:56px;border-radius:22%}'
+
+/** Adds the slot defaults once, ahead of the page's own styles so any rule of the page wins. */
+export function withSlotCss(html: string): string {
+  if (html.includes('data-od-slots')) return html
+  const tag = `<style data-od-slots>${SLOT_CSS}</style>`
+  if (/<head\b[^>]*>/i.test(html)) return html.replace(/<head\b[^>]*>/i, (m) => m + tag)
+  return tag + html
+}
+
 function lockBox(style: string, background: string): string {
   const has = (prop: string) => new RegExp(`(^|;)\\s*${prop}\\s*:`, 'i').test(style)
   const add: string[] = []
   if (!has('object-fit')) add.push('object-fit:cover')
-  if (!has('display')) add.push('display:block')
-  if (!has('width')) add.push('width:100%')
-  if (!has('aspect-ratio') && !has('height')) add.push('aspect-ratio:4/3')
   if (!has('background') && !has('background-color')) add.push(`background:${background}`)
   return [style.trim().replace(/;$/, ''), ...add].filter(Boolean).join(';')
 }
 
 /** Fills every slot from `found`; a slot with no photo becomes a token-coloured block instead of a broken image. */
 export function applyImages(html: string, found: Map<string, ResolvedImage | null>): string {
-  return html.replace(IMG_TAG, (tag) => {
+  let touched = false
+  const out = html.replace(IMG_TAG, (tag) => {
     const query = slotQuery(tag)
     if (query === null) return tag
     const image = found.get(query)
+    touched = true
     const style = attrValue(tag, 'style') ?? ''
     const classes = attrValue(tag, 'class')
     if (!image) {
@@ -80,6 +95,7 @@ export function applyImages(html: string, found: Map<string, ResolvedImage | nul
     if (attrValue(out, 'alt') === undefined) out = setAttr(out, 'alt', '')
     return setAttr(out, 'data-od-img-resolved', '')
   })
+  return touched ? withSlotCss(out) : out
 }
 
 // --- avatars: <img data-od-avatar="Full Name" alt="Full Name"> ---
@@ -100,14 +116,15 @@ const initialsOf = (name: string) =>
 
 /** A portrait where one was found; otherwise the person's initials in a token-coloured circle of the same size. */
 export function applyAvatars(html: string, portraits: Map<string, string | null>): string {
-  return html.replace(IMG_TAG, (tag) => {
+  let touched = false
+  const done = html.replace(IMG_TAG, (tag) => {
     const name = (attrValue(tag, 'data-od-avatar') ?? '').trim()
     if (!name || attr(tag, 'data-od-avatar-resolved')) return tag
+    touched = true
     const style = (attrValue(tag, 'style') ?? '').trim().replace(/;$/, '')
-    const has = (prop: string) => new RegExp(`(^|;)\\s*${prop}\\s*:`, 'i').test(style)
     const classes = attrValue(tag, 'class')
-    const size = [!has('width') && 'width:40px', !has('height') && 'height:40px'].filter(Boolean)
-    const round = [...size, 'border-radius:9999px', 'flex:none']
+    // The default 40px size is in SLOT_CSS, so a size set by class wins.
+    const round = ['border-radius:9999px', 'flex:none']
     const url = portraits.get(name)
     if (!url) {
       const label = name.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
@@ -119,6 +136,7 @@ export function applyAvatars(html: string, portraits: Map<string, string | null>
     if (attrValue(out, 'alt') === undefined) out = setAttr(out, 'alt', name)
     return setAttr(setAttr(out, 'loading', 'lazy'), 'data-od-avatar-resolved', '')
   })
+  return touched ? withSlotCss(done) : done
 }
 
 // --- app mark: <img data-od-logo alt=""> ---
@@ -134,17 +152,16 @@ export function monogram(appName: string): string {
 
 /** The app's mark is drawn in code from its name and the accent tokens, so it is the same on every screen and follows the theme. */
 export function applyLogo(html: string, appName: string): string {
-  return html.replace(IMG_TAG, (tag) => {
+  let touched = false
+  const done = html.replace(IMG_TAG, (tag) => {
     if (!/\sdata-od-logo(?=[\s=>/])/i.test(tag)) return tag
+    touched = true
     const style = (attrValue(tag, 'style') ?? '').trim().replace(/;$/, '')
-    const has = (prop: string) => new RegExp(`(^|;)\\s*${prop}\\s*:`, 'i').test(style)
     const classes = attrValue(tag, 'class')
     const label = appName.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
+    // Default size and corner are in SLOT_CSS, so a size set by class wins.
     const box = [
       style,
-      !has('width') && 'width:56px',
-      !has('height') && 'height:56px',
-      !has('border-radius') && 'border-radius:22%',
       'display:inline-flex',
       'align-items:center',
       'justify-content:center',
@@ -161,4 +178,5 @@ export function applyLogo(html: string, appName: string): string {
       .join(';')
     return `<span role="img" aria-label="${label}" data-od-logo-resolved${classes ? ` class="${classes}"` : ''} style="${box}">${monogram(appName)}</span>`
   })
+  return touched ? withSlotCss(done) : done
 }

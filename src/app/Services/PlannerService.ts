@@ -159,16 +159,7 @@ export function parsePlan(raw: string): Plan {
     }
   })
 
-  const screens = assignScreenSlots(drafted, navigation)
-  // A link only means something if it names another screen of this plan.
-  for (const s of screens) {
-    s.linksTo = [...new Set(s.linksTo.map((l) => screens.find((o) => o.name.toLowerCase() === l.toLowerCase() && o.name !== s.name)?.name).filter((n): n is string => Boolean(n)))]
-  }
-
-  // A tab nobody can open is a dead end in a prototype. Keep the bar the plan asked for only when
-  // pruning would leave fewer than two tabs.
-  const live = navigation.tabs.filter((t) => screens.some((s) => s.screenType === 'root-tab' && s.activeTabId === t.id))
-  if (live.length >= 2) navigation.tabs = live
+  const screens = settleScreens(drafted, navigation, text(plan.appName, 60))
 
   const covered = new Set(screens.flatMap((s) => s.covers))
   return {
@@ -185,6 +176,90 @@ export function parsePlan(raw: string): Plan {
 }
 
 export const MAX_SCREENS = 6
+
+/** Slots, links and tabs made consistent with each other — after parsing, and again after trimming. */
+function settleScreens(drafted: PlannedScreen[], navigation: AppNavigation, appName: string): PlannedScreen[] {
+  const screens = assignScreenSlots(drafted, navigation)
+  // A link only means something if it names another screen of this plan.
+  for (const s of screens) {
+    s.linksTo = [...new Set(s.linksTo.map((l) => screens.find((o) => o.name.toLowerCase() === l.toLowerCase() && o.name !== s.name)?.name).filter((n): n is string => Boolean(n)))]
+  }
+  // A tab nobody can open is a dead end in a prototype. Keep the bar the plan asked for only when
+  // pruning would leave fewer than two tabs.
+  const live = navigation.tabs.filter((t) => screens.some((s) => s.screenType === 'root-tab' && s.activeTabId === t.id))
+  if (live.length >= 2) navigation.tabs = live
+  alignTabLabels(screens, navigation, appName)
+  return screens
+}
+
+// GQ-06: "presented on two smartphone screens", "3 ta ekran", "4 экрана". A brief that counts its
+// screens gets that many — the ones it asked for first — not the planner's usual five or six.
+const COUNT_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, bir: 1, ikki: 2, uch: 3, "to'rt": 4, besh: 5, olti: 6 }
+export function screenCountAsked(brief: string): number | null {
+  const t = brief.toLowerCase().replace(/[ʻʼ’‘`]/g, "'")
+  const m =
+    t.match(/\b(\d|one|two|three|four|five|six)\s+(?:[a-z-]+\s+){0,2}screens?\b/) ??
+    t.match(/(\d|bir|ikki|uch|to'rt|besh|olti)\s*(?:ta\s+)?(?:[a-z']+\s+)?ekran/) ??
+    t.match(/(\d)\s+(?:[а-я]+\s+)?экран/)
+  if (!m) return null
+  const n = COUNT_WORDS[m[1]!] ?? Number(m[1])
+  return n >= 1 && n <= MAX_SCREENS ? n : null
+}
+
+export function trimToBrief(plan: Plan, brief: string): Plan {
+  const n = screenCountAsked(brief)
+  if (!n || plan.screens.length <= n) return plan
+  // Screens that cover a requested one first (in the order they were asked for), then the rest.
+  const firstCover = (s: PlannedScreen) => (s.covers.length ? Math.min(...s.covers) : Infinity)
+  const ranked = plan.screens.map((s, i) => ({ s, i })).sort((a, z) => firstCover(a.s) - firstCover(z.s) || a.i - z.i)
+  const keep = new Set(ranked.slice(0, n).map((r) => r.i))
+  const kept = plan.screens.filter((_, i) => keep.has(i)).map((s) => ({ ...s }))
+  const navigation = { ...plan.navigation, tabs: plan.navigation.tabs.map((t) => ({ ...t })) }
+  const screens = settleScreens(kept, navigation, plan.appName)
+  const covered = new Set(screens.flatMap((s) => s.covers))
+  return { ...plan, navigation, screens, uncovered: plan.requested.filter((_, i) => !covered.has(i)) }
+}
+
+
+// Section words, grouped by what a tab is for. A screen and its tab may use different words of one
+// group ("Today" on "Home", "Order Tracking" on "Orders"); words from two groups are a contradiction.
+const SECTION_GROUPS: Record<string, string[]> = {
+  home: ['home', 'today', 'feed', 'dashboard', 'overview'],
+  search: ['search', 'explore', 'discover', 'browse'],
+  cart: ['cart', 'basket', 'bag', 'checkout'],
+  profile: ['profile', 'account'],
+  orders: ['order', 'orders', 'purchases', 'tracking', 'deliveries'],
+  stats: ['stats', 'statistics', 'progress', 'analytics', 'insights', 'history', 'reports'],
+  messages: ['messages', 'chat', 'chats', 'inbox', 'dms'],
+  saved: ['saved', 'favorites', 'favourites', 'wishlist', 'library'],
+  notifications: ['notifications', 'alerts'],
+  settings: ['settings', 'preferences'],
+  wallet: ['wallet', 'cards', 'payments'],
+}
+// Singular and plural count as one word ("Notification Settings" is on the "Notifications" tab).
+const wordsOf = (text: string) => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).map((w) => w.replace(/s$/, ''))
+const groupsOf = (words: string[]) => Object.entries(SECTION_GROUPS).filter(([, g]) => g.some((x) => words.includes(x.replace(/s$/, '')))).map(([g]) => g)
+
+/**
+ * GQ-05: a planner can claim a tab for an unrelated screen ("Cart" on the "Profile" tab), and the
+ * bar then lights "Profile" on the cart. When the screen's name belongs to one section group and
+ * its tab to another, the tab takes the screen's section word and an icon for it. Synonyms within a
+ * group, and names in other scripts, are left alone.
+ */
+export function alignTabLabels(screens: PlannedScreen[], navigation: AppNavigation, appName = '') {
+  const app = new Set(wordsOf(appName)) // "Nova Wallet — Portfolio" is about the portfolio, not a wallet tab
+  for (const tab of navigation.tabs) {
+    const root = screens.find((s) => s.screenType === 'root-tab' && s.activeTabId === tab.id)
+    if (!root || tab.isAction) continue
+    const w = wordsOf(root.name).filter((x) => !app.has(x))
+    const tabGroups = groupsOf(wordsOf(`${tab.label} ${tab.id}`))
+    const screenGroups = groupsOf(w)
+    if (!tabGroups.length || !screenGroups.length || screenGroups.some((g) => tabGroups.includes(g))) continue
+    const word = SECTION_GROUPS[screenGroups[0]!]!.find((x) => w.includes(x.replace(/s$/, '')))!
+    tab.label = word[0]!.toUpperCase() + word.slice(1)
+    tab.icon = resolveIcon(word, word)
+  }
+}
 
 function parseEntities(raw: unknown): Entity[] {
   if (!Array.isArray(raw)) return []
@@ -293,7 +368,7 @@ export async function planScreens(brief: string, device: string, onUsage?: (u: L
   const pattern = AppPatternService.classify(brief)
   const user = `Brief: ${brief}\nPlatform: ${device}${pattern ? `\n\n${AppPatternService.brief(pattern)}` : ''}`
   const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS, onUsage)
-  const plan = parsePlan(raw)
+  const plan = trimToBrief(parsePlan(raw), brief)
   if (plan.uncovered.length === 0) return plan
 
   // One repair round. The model likes to spend its screens on Search / Profile / Settings and
@@ -306,7 +381,7 @@ ${raw}
 It leaves these requested screens without a screen of their own: ${plan.uncovered.map((r) => `"${r}"`).join(', ')}.
 Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace screens nobody asked for (profile, settings, search, notifications) before anything else. Keep "requested" unchanged and set "covers" truthfully.`
   try {
-    const fixed = parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS, onUsage))
+    const fixed = trimToBrief(parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS, onUsage)), brief)
     return fixed.uncovered.length < plan.uncovered.length ? { ...fixed, repaired: true } : plan
   } catch {
     return plan

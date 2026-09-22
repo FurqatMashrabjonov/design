@@ -52,6 +52,8 @@ const { Screen } = await import('@/app/Models/Screen')
 const { PlanController } = await import('@/app/Http/Controllers/PlanController')
 const { GenerateController } = await import('@/app/Http/Controllers/GenerateController')
 const { mapLimit } = await import('@/app/Services/Pool')
+const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
+const { AppPatternService } = await import('@/app/Services/AppPatternService')
 const { onLlmUsage } = await import('@/app/Services/LlmService')
 
 let usage: Usage = { calls: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
@@ -71,7 +73,10 @@ if (briefs.length === 0) throw new Error('No briefs selected')
 async function runBrief(b: Brief): Promise<BriefResult> {
   const started = Date.now()
   const projectId = crypto.randomUUID()
-  Project.create({ id: projectId, name: b.id, designSystem: b.designSystem, device: 'mobile' })
+  // "auto" briefs go through the same choice the product makes (GQ-03).
+  const designSystem = b.designSystem === 'auto' ? DesignSystemService.autoFor(b.brief, AppPatternService.classify(b.brief)?.id) : b.designSystem
+  b.designSystem = designSystem
+  Project.create({ id: projectId, name: b.id, designSystem, device: 'mobile' })
 
   const res = await PlanController.stream(
     new Request('http://eval/api/generate-plan', { method: 'POST', body: JSON.stringify({ projectId, brief: b.brief }) }),

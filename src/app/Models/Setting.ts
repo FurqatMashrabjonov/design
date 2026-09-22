@@ -1,0 +1,26 @@
+import { eq, sql } from 'drizzle-orm'
+import { db } from '@/database/connection'
+import { settings } from '@/database/schema'
+
+// ADM-08: runtime switches an admin changes without a deploy. Keys in use:
+//   generation.paused = '1'          limits.callsPerDay = '150'       limits.dailyBudgetUsd = '5'
+//   limits.user.<userId> = '300'     (a per-user daily call limit)
+export const Setting = {
+  get(key: string): string | null {
+    return db.select({ value: settings.value }).from(settings).where(eq(settings.key, key)).get()?.value ?? null
+  },
+
+  /** null removes the key, so the default (env or code) applies again. */
+  set(key: string, value: string | null) {
+    if (value === null) db.delete(settings).where(eq(settings.key, key)).run()
+    else
+      db.insert(settings)
+        .values({ key, value })
+        .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: sql`(unixepoch())` } })
+        .run()
+  },
+
+  all() {
+    return db.select().from(settings).all()
+  },
+}

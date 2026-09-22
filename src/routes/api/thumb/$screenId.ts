@@ -5,7 +5,7 @@ import { Project } from '@/app/Models/Project'
 import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
 
 // DSH-11: a dashboard card's thumbnail is the project's first screen, served as its own page so the
-// card can load it lazily in an iframe. Only the owner gets it; anyone else gets the same 404 as a
+// card can load it lazily in an iframe. Only the owner (or an admin) gets it; anyone else gets the same 404 as a
 // screen that does not exist. The project's theme is applied the way the canvas applies it.
 export const Route = createFileRoute('/api/thumb/$screenId')({
   server: {
@@ -13,7 +13,8 @@ export const Route = createFileRoute('/api/thumb/$screenId')({
       GET: async ({ request, params }) => {
         const user = await userFrom(request)
         const screen = user ? Screen.find(params.screenId) : undefined
-        const project = screen && !screen.deletedAt && screen.html ? Project.findOwned(screen.projectId, user!.id) : undefined
+        // The owner, or an admin (ADM-05) — the panel shows every project's cover the same way.
+        const project = screen && !screen.deletedAt && screen.html ? (user!.admin ? Project.find(screen.projectId) : Project.findOwned(screen.projectId, user!.id)) : undefined
         if (!screen || !project) return new Response('Not found', { status: 404 })
         return new Response(applyThemeOverride(screen.html, parseTheme(project.theme)), {
           headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, max-age=60', 'x-content-type-options': 'nosniff',

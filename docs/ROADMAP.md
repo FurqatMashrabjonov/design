@@ -67,6 +67,23 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
 | KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Tayyor | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
 | KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Jarayonda | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
+| GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-04 | Xarita sloti kodda chiziladi (foto emas) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-05 | Root ekran va tab nomi mosligi parsePlan'da | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-06 | Brief sanagan ekranlar chegara bo'ladi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-07 | Sahifa yopilsa ham generatsiya serverda davom etadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-08 | Eval'da vizual hakam (skrinshot + rubrika + pairwise) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-09 | Mobil uchun jilo tizimlari | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-10 | Vizual tanqid sikli (1 marta, vision model) | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-11 | Anchor ekran kuchliroq modelda | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-12 | Desktop prompt yo'li va web skill'larni tozalash | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| LP-01 | Preview: chala HTML'ga skript qo'shilmaydi, kod ko'rinmaydi | Generatsiya / Render | MVP | Tayyor | Kichik |  | docs/LIVE-PREVIEW-PLAN.md |
+| LP-02 | Preview: iframe bir marta ochiladi, ichi morph bilan yangilanadi | Generatsiya / Render | MVP | Tayyor | O'rta | LP-01 | docs/LIVE-PREVIEW-PLAN.md |
+| LP-03 | Preview: skelet, reveal va chegara animatsiyasi | Generatsiya / Render | MVP | Tayyor | O'rta | LP-02 | docs/LIVE-PREVIEW-PLAN.md |
+| LP-04 | Preview: tugaganda va tahrirda ham reload yo'q | Generatsiya / Render | MVP | Tayyor | Kichik | LP-02 | docs/LIVE-PREVIEW-PLAN.md |
+| LP-05 | Preview: oqim fixture'lari va o'lchov | Generatsiya / Render | MVP | Tayyor | Kichik |  | docs/LIVE-PREVIEW-PLAN.md |
 | EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Tayyor | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
 | EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
 | EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |
@@ -196,7 +213,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | OBS-02 | Holat tekshiruvi va ishlash monitori | Monitoring / Ishlash nazorati | MVP | Rejada | Kichik | INF-05 | Sayt tushsa sizga xabar keladi |
 | OBS-03 | Server va brauzer xatolarini kuzatish | Monitoring / Xatolar | MVP | Rejada | Kichik | INF-05 | Kutilmagan xatolar foydalanuvchi ID si bilan bitta panelga tushadi |
 | OBS-04 | Asosiy hodisalar analitikasi | Monitoring / Analitika | MVP | Rejada | Kichik | INF-05 | Ro'yxatdan o'tish, birinchi generatsiya, ko'rish, ulashish, eksport, xarid sanaladi |
-| OBS-05 | Foydalanuvchi xarajati bo'yicha admin sahifasi | Monitoring / LLM xarajati | MVP | Rejada | Kichik | OBS-01 | Faqat admin ko'radi: foydalanuvchilar xarajat va kredit bo'yicha |
+| OBS-05 | Foydalanuvchi xarajati bo'yicha admin sahifasi | Monitoring / LLM xarajati | MVP | Tayyor | Kichik | OBS-01 | Faqat admin ko'radi: foydalanuvchilar xarajat va kredit bo'yicha |
 | EML-01 | Email provayderi va domen uchun SPF/DKIM | Email / O'rnatish | MVP | Rejada | Kichik | INF-06 | Kirish havolalari spam'ga emas, inbox'ga tushadi |
 | LEG-01 | Foydalanish shartlari | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /terms da e'lon qilingan |
 | LEG-02 | Maxfiylik siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /privacy da e'lon qilingan |
@@ -240,6 +257,14 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | DSH-08 | Sevimlilar va grid/ro'yxat almashtirgich | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  |  |
 | DSH-11 | Loyiha kartasida birinchi ekranning jonli kichik rasmi | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  |  |
 | DSH-12 | Kunlik limit ko'rsatkichi yon panelda | Bosh sahifa / Bosh sahifa | MVP | Tayyor | Kichik |  |  |
+| ADM-01 | Admin: kirish huquqi va qobiq | Monitoring / Kirish nazorati | MVP | Tayyor | O'rta |  | docs/ADMIN-PLAN.md |
+| ADM-02 | Admin: Overview — KPI, grafiklar, aktivatsiya | Monitoring / Analitika | MVP | Tayyor | O'rta | ADM-01 | docs/ADMIN-PLAN.md |
+| ADM-03 | Admin: foydalanuvchilar jadvali va sahifasi | Monitoring / Analitika | MVP | Tayyor | O'rta | ADM-01 | docs/ADMIN-PLAN.md |
+| ADM-04 | Admin: bloklash, sessiyalar, rol, alohida limit | Monitoring / Kirish nazorati | MVP | Tayyor | Kichik | ADM-03 | docs/ADMIN-PLAN.md |
+| ADM-05 | Admin: hamma loyihalar, faqat o'qish | Monitoring / Ko'rish | MVP | Tayyor | Kichik | ADM-01 | docs/ADMIN-PLAN.md |
+| ADM-06 | Admin: generatsiyalar jurnali va xatolar | Monitoring / Xatolar | MVP | Tayyor | O'rta | ADM-01 | docs/ADMIN-PLAN.md |
+| ADM-07 | Admin: feedback galereyasi va juftliklar eksporti | Monitoring / Sifat | MVP | Tayyor | Kichik | ADM-01 | docs/ADMIN-PLAN.md |
+| ADM-08 | Admin: pauza, limitlar va byudjet — bazadagi sozlamalar | Monitoring / Xarajat nazorati | MVP | Tayyor | Kichik | ADM-01 | docs/ADMIN-PLAN.md |
 | EXP-04 | PNG eksport | Eksport / Fayllar | Keyin | Rejada | O'rta |  |  |
 | EXP-05 | Figma eksport | Eksport / Integratsiyalar | Keyin | Rejada | Katta |  |  |
 | EXP-06 | React yoki boshqa framework kodiga eksport | Eksport / Integratsiyalar | Bekor | Rejada |  |  |  |
