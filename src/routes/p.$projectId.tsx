@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
+import { getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -20,6 +20,9 @@ import { ScreensList } from '@/components/canvas/ScreensList'
 import { ElementPanel, type ElementInfo } from '@/components/canvas/ElementPanel'
 import { routeIntent } from '@/lib/intent'
 import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
+import { exportApp } from '@/lib/export-app'
+import { zip } from '@/lib/zip'
+import { designSystemSample } from '@/lib/ds-sample'
 import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
@@ -39,8 +42,11 @@ export const Route = createFileRoute('/p/$projectId')({
 
 type ScreenStatus = 'pending' | 'running' | 'done' | 'error'
 
+// Tall enough for the design-system sample at phone width (measured; see lib/ds-sample.ts).
+const DS_FRAME_HEIGHT_MOBILE = 1100
+
 function ProjectPage() {
-  const { project, screens, messages } = Route.useLoaderData()
+  const { project, screens, messages, tokens } = Route.useLoaderData()
   const search = Route.useSearch()
   const router = useRouter()
   const navigate = useNavigate()
@@ -237,6 +243,11 @@ function ProjectPage() {
   useEffect(() => {
     if (!themeSavePending.current) setTheme(parseTheme(project.theme))
   }, [project.theme])
+  // The design system's own token values, for the Theme panel to show until one is overridden.
+  const baseTokens = useMemo(() => {
+    const block = extractRootBlock(tokens.root)
+    return block ? parseDeclarations(block) : new Map<string, string>()
+  }, [tokens.root])
   // The design system's own accent, read back from a generated screen (the normalizer put it there).
   const baseAccent = useMemo(() => {
     const drawn = screens.find((sc) => sc.html)
@@ -330,20 +341,48 @@ function ProjectPage() {
       ? plan.screens.map((_, i) => ({ id: `plan-${i}`, x: i * (f.width + FRAME_GAP), y: 0, width: f.width, height: f.height }))
       : []
 
+  // The design-system frame (THM-08) stands left of the screens; it is drawn from tokens, not stored.
+  const dsSample = useMemo(() => designSystemSample(tokens.root, tokens.fonts, project.designSystem.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())), [tokens, project.designSystem])
+  const dsHeight = project.device === 'mobile' ? DS_FRAME_HEIGHT_MOBILE : f.height
+  const dsFrame: CanvasFrame | null =
+    tokens.root && visibleScreens.length > 0
+      ? { id: '__ds__', x: Math.min(...visibleScreens.map((s) => s.x)) - f.width - FRAME_GAP, y: Math.min(...visibleScreens.map((s) => s.y)), width: f.width, height: dsHeight }
+      : null
+
   const frames: CanvasFrame[] = [
+    ...(dsFrame ? [dsFrame] : []),
     ...visibleScreens.map((s) => ({ id: s.id, x: s.x, y: s.y, width: f.width, height: frameHeight(s) })),
     ...(liveFrame ? [liveFrame] : []),
     ...planFrames,
   ]
 
-  function downloadHtml(screen: { name: string; html: string }) {
-    const blob = new Blob([applyThemeOverride(screen.html, theme)], { type: 'text/html' })
+  const fileName = (name: string) => name.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'design'
+  function save(blob: Blob, name: string) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${screen.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.html`
+    a.download = name
     a.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  function downloadHtml(screen: { name: string; html: string }) {
+    save(new Blob([applyThemeOverride(screen.html, theme)], { type: 'text/html' }), `${fileName(screen.name)}.html`)
+  }
+  // Every drawn screen with the theme baked in, linked like the preview (lib/export-app.ts).
+  function downloadApp() {
+    const files = exportApp(screens, theme, project.name)
+    save(new Blob([zip(files) as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), `${fileName(project.name)}.zip`)
+    toast.success(`Exported ${files.length - 1} screens`)
+  }
+  async function sharePreview() {
+    // ponytail: no accounts yet, so the preview link opens for anyone who has it (SHR-02 adds real sharing).
+    const first = [...screens].filter((s) => s.html).sort((a, b) => a.x - b.x)[0]
+    try {
+      await navigator.clipboard.writeText(`${location.origin}/preview/${project.id}${first ? `?s=${first.id}` : ''}`)
+      toast.success('Preview link copied', { description: 'Anyone with the link can view the prototype.' })
+    } catch {
+      toast.error('Could not copy — clipboard access was blocked')
+    }
   }
 
   // Every generation request goes through here — one, or one per selected screen — under a single
@@ -401,11 +440,23 @@ function ProjectPage() {
   return (
     <div className="flex h-screen flex-col">
       <TopBar
-        name={plan?.appName ?? project.name}
+        // While the plan streams, the project is still "Untitled" on the server; the plan already has the name.
+        name={planning && plan ? plan.appName : project.name}
+        onRename={async (name) => {
+          const was = project.name
+          const save = (n: string) => renameProject({ data: { id: project.id, name: n } })
+          await save(name)
+          history.current.record(pairStep(() => save(was), () => save(name)))
+          await router.invalidate()
+        }}
         device={project.device}
         designSystem={project.designSystem}
-        onExport={selectedScreen ? () => downloadHtml(selectedScreen) : undefined}
-        canPreview={screens.length > 0}
+        screenName={selectedScreen?.html && !multi ? selectedScreen.name : null}
+        onDownloadScreen={() => selectedScreen && downloadHtml(selectedScreen)}
+        onCopyScreenHtml={() => selectedScreen && copyHtml(applyThemeOverride(selectedScreen.html, theme))}
+        onDownloadApp={downloadApp}
+        onShare={sharePreview}
+        hasScreens={screens.some((s) => s.html)}
         onPreview={openPreview}
         onDeleteProject={async () => {
           try {
@@ -515,7 +566,7 @@ function ProjectPage() {
           }
           theme={
             <div className="space-y-6 text-sm">
-              <ThemePanel theme={theme} baseAccent={baseAccent} onChange={changeTheme} />
+              <ThemePanel theme={theme} baseAccent={baseAccent} base={baseTokens} onChange={changeTheme} />
               <div>
                 <div className="mb-1 text-muted-foreground">Device</div>
                 <Badge variant="secondary" className="capitalize">
@@ -561,6 +612,7 @@ function ProjectPage() {
               place('to').then(() => router.invalidate())
             }}
             renderFrame={(id) => {
+              if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={theme} height={dsHeight} />
               if (id === '__live__')
                 return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={theme} streaming />
               if (id.startsWith('plan-')) {

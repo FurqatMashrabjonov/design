@@ -27,6 +27,8 @@ export const ProjectController = {
       // Each screen carries where it stands in its own version timeline, for the ‹ v3 › on the frame.
       screens: Screen.forProject(id).map((s) => ({ ...s, version: ScreenVersion.position(s) })),
       messages: Message.forProject(id),
+      // For the design-system frame on the canvas (lib/ds-sample.ts).
+      tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),
     }
@@ -66,7 +68,9 @@ export const ProjectController = {
     const intent = routeIntent(prompt, { elementSelected: false })
     if (intent.kind !== 'theme') return { applied: false as const }
     const previous = parseTheme(project.theme)
-    const theme = sanitizeTheme({ ...previous, ...intent.theme })
+    const next = { ...previous, ...intent.theme }
+    if (intent.theme.radius) delete next.radiusPx // "rounder corners" must not stay hidden behind the slider
+    const theme = sanitizeTheme(next)
     Project.saveTheme(project.id, theme)
     Message.add({ projectId: project.id, role: 'user', kind: 'theme', text: prompt })
     Message.add({
@@ -84,6 +88,14 @@ export const ProjectController = {
     const theme = sanitizeTheme(data.theme)
     Project.saveTheme(data.projectId, theme)
     return theme
+  },
+
+  // The name in the top bar, edited in place. Later screens are generated under the new name.
+  rename(data: { id: string; name: string }) {
+    const name = data.name.trim().slice(0, 80)
+    if (!name) throw new Error('Name cannot be empty')
+    if (!Project.find(data.id)) throw notFound()
+    Project.rename(data.id, name)
   },
 
   destroy(id: string) {

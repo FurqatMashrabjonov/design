@@ -298,6 +298,19 @@ assert.ok(css.includes('--radius-md:16px'), 'Radius preset expands to the scale'
 assert.ok(css.includes('--font-display:"Fraunces", Georgia'), 'Serif heading gets a serif fallback')
 assert.ok(css.includes('--font-body:"Inter", -apple-system'), 'Sans body gets a sans fallback')
 assert.equal(T.themeCss({}), '', 'An empty theme produces no CSS')
+// THM-02 / THM-03: every colour token, a radius slider, squircle corners
+assert.deepEqual(
+  T.sanitizeTheme({ colors: { bg: '#0B0B0C', fg: 'red', 'x-evil': '#ffffff', border: '#e5e5e7' }, radiusPx: 99, shape: 'blob' }),
+  { colors: { bg: '#0b0b0c', border: '#e5e5e7' }, radiusPx: 40 },
+  'Only known colour tokens with hex values survive; the radius is clamped; an unknown shape is dropped',
+)
+assert.deepEqual(T.sanitizeTheme({ colors: { fg: 'nope' } }), {}, 'A colours object with nothing valid is dropped entirely')
+const palette = T.themeCss({ colors: { bg: '#0b0b0c', 'fg-2': '#a1a1aa' } })
+assert.ok(palette.includes('--bg:#0b0b0c') && palette.includes('--fg-2:#a1a1aa'), 'Each colour becomes its token')
+assert.ok(T.themeCss({ radiusPx: 20, radius: 'sharp' }).includes('--radius-sm:12px;--radius-md:20px;--radius-lg:30px'), 'The slider scales sm/lg from md and wins over a preset')
+assert.ok(T.themeCss({ radiusPx: 0 }).includes('--radius-md:0px'), 'Zero is a real radius, not "unset"')
+const squircle = T.themeCss({ radiusPx: 12, shape: 'squircle' })
+assert.ok(squircle.includes('--radius-md:12px;') && squircle.includes('@supports (corner-shape:squircle){:root{--radius-sm:11px;--radius-md:18px;--radius-lg:27px}*,*::before,*::after{corner-shape:squircle}}'), 'Squircle corners only where supported, with a larger radius; everyone else keeps round corners')
 
 assert.equal(T.onAccent('#111113'), '#ffffff', 'Dark accent gets white text')
 assert.equal(T.onAccent('#ffd23f'), '#111111', 'Light accent gets dark text (buttons stay legible)')

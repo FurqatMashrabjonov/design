@@ -263,4 +263,12 @@ ScreenController.restore({ id: 's9b', projectId: 'p9' })
 assert.ok(Screen.forProject('p9').some((s) => s.id === 's9b'), 'restore brings it back')
 assert.throws(() => ScreenController.restore({ id: 's9b', projectId: 'p1' }), 'restore is scoped to the project')
 
+// the project name is edited from the breadcrumb (EDT-10)
+ProjectController.rename({ id: 'p9', name: '  Veggie Box  ' })
+assert.equal(Project.find('p9')!.name, 'Veggie Box', 'trimmed')
+assert.throws(() => ProjectController.rename({ id: 'p9', name: '   ' }), /cannot be empty/)
+assert.throws(() => ProjectController.rename({ id: 'nope', name: 'x' }))
+ProjectController.rename({ id: 'p9', name: 'x'.repeat(200) })
+assert.equal(Project.find('p9')!.name.length, 80, 'capped')
+
 console.log('ok')

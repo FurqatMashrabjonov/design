@@ -165,4 +165,63 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.deepEqual(framesIn({ x: 0, y: 0, w: 400, h: 500 }, frames), ['a', 'b', 'c'])
 }
 
+// --- lib/zip.ts and lib/export-app.ts (EXP-03) ---
+{
+  const { zip, crc32 } = await import('./zip.ts')
+  const zlib = await import('node:zlib')
+  const sample = new TextEncoder().encode('Déjà vu — ü')
+  assert.equal(crc32(sample), zlib.crc32(sample), 'crc32 matches Node')
+  const archive = zip([{ name: 'index.html', data: '<h1>hi</h1>' }, { name: 'screens/ünï.html', data: sample }])
+  const dv = new DataView(archive.buffer)
+  const end = archive.length - 22
+  assert.equal(dv.getUint32(end, true), 0x06054b50, 'ends with the end-of-central-directory record')
+  assert.equal(dv.getUint16(end + 10, true), 2, 'two entries')
+  let at = dv.getUint32(end + 16, true)
+  const names: string[] = []
+  for (let i = 0; i < 2; i++) {
+    assert.equal(dv.getUint32(at, true), 0x02014b50)
+    const len = dv.getUint16(at + 28, true)
+    const local = dv.getUint32(at + 42, true)
+    assert.equal(dv.getUint32(local, true), 0x04034b50, 'each central entry points at its local header')
+    names.push(new TextDecoder().decode(archive.subarray(at + 46, at + 46 + len)))
+    at += 46 + len
+  }
+  assert.deepEqual(names, ['index.html', 'screens/ünï.html'])
+
+  const { exportApp } = await import('./export-app.ts')
+  const page = (body: string) => `<!doctype html><html><head><style>:root{--accent:#111}</style></head><body>${body}</body></html>`
+  const files = exportApp(
+    [
+      { id: 'b', name: 'Dish Detail — GoBite', x: 500, screenType: 'detail-view', activeTabId: null, parentScreenName: 'Home', html: page('<button data-od-back="Home">‹</button>') },
+      { id: 'a', name: 'Home', x: 0, screenType: 'root-tab', activeTabId: 'home', parentScreenName: null, html: page('<a data-od-link="Dish Detail">Pad Thai</a><a data-od-link="Dish &amp; Detail">x</a><nav><a data-od-tab="home">Home</a><a data-od-tab="orders">Orders</a></nav>') },
+      { id: 'c', name: 'Home', x: 900, screenType: 'root-tab', activeTabId: 'orders', parentScreenName: null, html: page('orders') },
+      { id: 'd', name: 'Failed', x: 1200, screenType: 'root-tab', activeTabId: null, parentScreenName: null, html: '' },
+    ],
+    { accent: '#2563eb' },
+    'Go<Bite>',
+  )
+  assert.deepEqual(files.map((f) => f.name), ['index.html', 'screens/home.html', 'screens/dish-detail-gobite.html', 'screens/home-2.html'], 'canvas order, unique names, failed screens left out')
+  assert.ok(files[0].data.includes('Go&lt;Bite&gt;') && files[0].data.includes('href="screens/dish-detail-gobite.html"'), 'the index lists every screen, escaped')
+  const home = files[1].data
+  assert.ok(home.includes('"Dish Detail":"dish-detail-gobite.html"'), 'a link resolves by planned name to the file')
+  assert.ok(home.includes('"Dish & Detail":'), 'keys are decoded, as getAttribute returns them')
+  assert.ok(home.includes('"orders":"home-2.html"') && home.includes('"home":"home.html"'), 'tabs resolve to their root screens')
+  assert.ok(files[2].data.includes('"Home":"home.html"'), 'Back resolves to the parent')
+  assert.ok(home.includes('#2563eb'), 'the theme is baked in')
+  assert.deepEqual(exportApp([{ id: 'x', name: 'Café Menü', x: 0, screenType: 'root-tab', activeTabId: null, parentScreenName: null, html: page('') }, { id: 'y', name: 'Главная', x: 1, screenType: 'root-tab', activeTabId: null, parentScreenName: null, html: page('') }], null, 'A').map((f) => f.name), ['index.html', 'screens/cafe-menu.html', 'screens/screen.html'], 'file names are ASCII')
+}
+
+// --- lib/ds-sample.ts (THM-08) ---
+{
+  const { designSystemSample } = await import('./ds-sample.ts')
+  const root = ':root {\n  --accent: #ff385c;\n  --bg: #fff;\n  --fg: #222;\n  --border: #ddd;\n  --radius-md: 8px;\n  --radius-pill: 9999px;\n}'
+  const html = designSystemSample(root, ['https://fonts.googleapis.com/css2?family=Inter', 'https://evil.example/x.css'], 'Air<bnb>')
+  assert.ok(html.includes('--accent: #ff385c'), 'the tokens are the page\'s own :root')
+  assert.ok(html.includes('background:var(--accent)') && !html.includes('var(--success)'), 'a swatch per token the system defines, none for missing ones')
+  assert.ok(html.includes('border-radius:var(--radius-pill)') && !html.includes('border-radius:var(--radius-lg)'), 'radii likewise')
+  assert.ok(html.includes('fonts.googleapis.com') && !html.includes('evil.example'), 'only Google Fonts stylesheets are linked')
+  assert.ok(html.includes('Air&lt;bnb&gt;'), 'the name is escaped')
+  assert.ok(!/#[0-9a-f]{3,6}/i.test(html.replace(root, '').replace(/#fff\b/, '')), 'no colour is hardcoded outside the tokens (so the theme restyles everything)')
+}
+
 console.log('ok')

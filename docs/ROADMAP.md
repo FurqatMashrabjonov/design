@@ -111,10 +111,10 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Tayyor | Kichik |
 | EDT-30 | Bir nechta ekranni tanlash | MVP | Tayyor | O'rta |
 | EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Tayyor | O'rta |
-| EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Rejada | Kichik |
-| EDT-32 | Yuqori panel: Preview · Share · Export menyusi; o'chirish ⋯ ichida | MVP | Rejada | Kichik |
-| EXP-03 | Butun ilovani zip qilib yuklab olish (tema bilan) | MVP | Rejada | O'rta |
-| THM-08 | Kanvasda dizayn tizimi namunasi | MVP | Rejada | O'rta |
+| EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Tayyor | Kichik |
+| EDT-32 | Yuqori panel: Preview · Share · Export menyusi; o'chirish ⋯ ichida | MVP | Tayyor | Kichik |
+| EXP-03 | Butun ilovani zip qilib yuklab olish (tema bilan) | MVP | Tayyor | O'rta |
+| THM-08 | Kanvasda dizayn tizimi namunasi | MVP | Tayyor | O'rta |
 
 ## B1 · Hisoblar
 
@@ -154,8 +154,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
 | EDT-15 | Kadr balandligi kontent bo'yicha o'lchanadi | Muharrir / Kanvas | MVP | Tayyor | O'rta | EDT-01 | Uzun ekran kanvasda to'liq ko'rinadi; balandlikni iframe o'zi xabar qiladi va bazada saqlanadi |
-| THM-02 | To'liq rang palitrasi (fon, matn, ikkinchi rang, karta, chegara) | Tema / Tema | MVP | Rejada | O'rta |  | To'liq token ro'yxati tahrirlanadi va har o'zgarish barcha kadrlarda darhol ko'rinadi |
-| THM-03 | Radius slayderi va Round/Squircle shakli | Tema / Tema | MVP | Rejada | Kichik |  | Radius slayderi uzluksiz ishlaydi; Squircle Safari va Firefox’da zaxira orqali silliq ko‘rinadi |
+| THM-02 | To'liq rang palitrasi (fon, matn, ikkinchi rang, karta, chegara) | Tema / Tema | MVP | Tayyor | O'rta |  | To'liq token ro'yxati tahrirlanadi va har o'zgarish barcha kadrlarda darhol ko'rinadi |
+| THM-03 | Radius slayderi va Round/Squircle shakli | Tema / Tema | MVP | Tayyor | Kichik |  | Radius slayderi uzluksiz ishlaydi; Squircle Safari va Firefox’da zaxira orqali silliq ko‘rinadi |
 | DSH-09 | Qorong'u rejim | Bosh sahifa / Interfeys | MVP | Rejada | Kichik |  | Tugma rejimni almashtiradi, tanlov eslab qolinadi va sahifa yuklanganda miltillamaydi |
 | DSH-10 | Bosh sahifa qobig'i: yon panel va hisob menyusi | Bosh sahifa / Bosh sahifa | MVP | Rejada | O'rta |  | Yon panelli qobiq, pastda hisob menyusi; tor ekranda yon panel yig'iladi |
 | DSH-04 | Loyiha kartasi: bosh harflar va "N kun oldin yaratilgan" | Bosh sahifa / Loyihalar | MVP | Rejada | Kichik |  | Bo'sh joy yo'qoladi |

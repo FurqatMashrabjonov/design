@@ -10,9 +10,30 @@
 
 export type Radius = 'sharp' | 'soft' | 'round'
 
+/** The colour tokens every design system defines (services.check enforces the schema), editable one by one. */
+export const COLOR_TOKENS = [
+  { id: 'bg', label: 'Background' },
+  { id: 'surface', label: 'Card / surface' },
+  { id: 'surface-warm', label: 'Surface 2' },
+  { id: 'fg', label: 'Text' },
+  { id: 'fg-2', label: 'Secondary text' },
+  { id: 'muted', label: 'Muted text' },
+  { id: 'border', label: 'Border' },
+  { id: 'success', label: 'Success' },
+  { id: 'warn', label: 'Warning' },
+  { id: 'danger', label: 'Danger' },
+] as const
+export type ColorToken = (typeof COLOR_TOKENS)[number]['id']
+
 export type Theme = {
   accent?: string
+  /** A preset (from chat: "rounder corners"). The slider's radiusPx wins when both are set. */
   radius?: Radius
+  /** The slider: the medium radius in px (0–40); small and large scale from it. */
+  radiusPx?: number
+  /** Squircle corners where the browser has corner-shape; plain rounded corners elsewhere. */
+  shape?: 'round' | 'squircle'
+  colors?: Partial<Record<ColorToken, string>>
   headingFont?: string
   bodyFont?: string
 }
@@ -52,12 +73,6 @@ const RADII: Record<Radius, [number, number, number]> = {
   round: [16, 24, 32],
 }
 
-export const RADIUS_OPTIONS: { id: Radius; label: string }[] = [
-  { id: 'sharp', label: 'Sharp' },
-  { id: 'soft', label: 'Soft' },
-  { id: 'round', label: 'Round' },
-]
-
 const HEX = /^#[0-9a-f]{6}$/i
 export const THEME_STYLE_ID = '__od_theme'
 const FONT_HOST = 'https://fonts.googleapis.com/'
@@ -71,6 +86,16 @@ export function sanitizeTheme(input: unknown): Theme {
   const out: Theme = {}
   if (typeof raw.accent === 'string' && HEX.test(raw.accent)) out.accent = raw.accent.toLowerCase()
   if (typeof raw.radius === 'string' && raw.radius in RADII) out.radius = raw.radius as Radius
+  if (typeof raw.radiusPx === 'number' && Number.isFinite(raw.radiusPx)) out.radiusPx = Math.round(Math.min(40, Math.max(0, raw.radiusPx)))
+  if (raw.shape === 'squircle') out.shape = 'squircle'
+  if (raw.colors && typeof raw.colors === 'object') {
+    const colors: Partial<Record<ColorToken, string>> = {}
+    for (const { id } of COLOR_TOKENS) {
+      const v = (raw.colors as Record<string, unknown>)[id]
+      if (typeof v === 'string' && HEX.test(v)) colors[id] = v.toLowerCase()
+    }
+    if (Object.keys(colors).length) out.colors = colors
+  }
   if (typeof raw.headingFont === 'string' && fontById(raw.headingFont)) out.headingFont = raw.headingFont
   if (typeof raw.bodyFont === 'string' && fontById(raw.bodyFont)) out.bodyFont = raw.bodyFont
   return out
@@ -126,13 +151,25 @@ export function themeCss(theme: Theme): string {
       '--accent-active:color-mix(in oklab,var(--accent),black 14%)',
     )
   }
-  if (t.radius) {
-    const [sm, md, lg] = RADII[t.radius]
-    decls.push(`--radius-sm:${sm}px`, `--radius-md:${md}px`, `--radius-lg:${lg}px`)
-  }
+  const radii = radiiOf(t)
+  if (radii) decls.push(`--radius-sm:${radii[0]}px`, `--radius-md:${radii[1]}px`, `--radius-lg:${radii[2]}px`)
+  for (const [id, hex] of Object.entries(t.colors ?? {})) decls.push(`--${id}:${hex}`)
   if (t.headingFont) decls.push(`--font-display:${fontStack(t.headingFont)}`)
   if (t.bodyFont) decls.push(`--font-body:${fontStack(t.bodyFont)}`)
-  return decls.length ? `:root{${decls.join(';')}}` : ''
+  let css = decls.length ? `:root{${decls.join(';')}}` : ''
+  // A squircle with the same radius reads flatter than a circle arc, so it gets ~1.5× the radius.
+  // Browsers without corner-shape (Safari, Firefox today) skip the block and keep round corners.
+  if (t.shape === 'squircle') {
+    const [sm, md, lg] = radii ?? [8, 12, 16]
+    css += `@supports (corner-shape:squircle){:root{--radius-sm:${Math.round(sm * 1.5)}px;--radius-md:${Math.round(md * 1.5)}px;--radius-lg:${Math.round(lg * 1.5)}px}*,*::before,*::after{corner-shape:squircle}}`
+  }
+  return css
+}
+
+/** [sm, md, lg] from the slider (md, scaled) or the preset; null leaves the system's own. */
+function radiiOf(t: Theme): [number, number, number] | null {
+  if (t.radiusPx !== undefined) return [Math.round(t.radiusPx * 0.6), t.radiusPx, Math.round(t.radiusPx * 1.5)]
+  return t.radius ? RADII[t.radius] : null
 }
 
 export function themeFontUrls(theme: Theme): string[] {

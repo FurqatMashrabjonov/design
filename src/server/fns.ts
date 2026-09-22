@@ -55,6 +55,10 @@ export const replaceElementPhoto = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; screenId: string; elementId: string; query: string }) => d)
   .handler(({ data }) => ElementController.replacePhoto(data))
 
+export const renameProject = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; name: string }) => d)
+  .handler(({ data }) => ProjectController.rename(data))
+
 export const deleteProject = createServerFn({ method: 'POST' })
   .validator((id: string) => id)
   .handler(({ data }) => ProjectController.destroy(data))

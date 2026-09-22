@@ -27,13 +27,13 @@ Ikki bosqich parallel: **G · Generatsiya sifati** (`docs/GENERATION-PLAN.md`) v
 | Bosqich | Tayyor | Qolgan |
 |---|---|---|
 | G · Generatsiya | EVAL-01…04, GEN-17…26, AST-01…04, UX-03…05 | UX-01/02 (blueprint'lar), HIG-01…03, KIT-01…04, EYE-01…03, VAR-01…03, FB-01/02 |
-| M · Muharrir | M0 (EDT-20/21/16/22, GEN-08), M1 (CHAT-01…08, GEN-09, EDT-29), M2 (EDT-23, 24, 17, 25, 26, 18, 19, 31), M3 (EDT-09, EDT-12), M4 (EDT-27, 11, 28, 30) | M5 (EDT-10, 32, EXP-03, THM-08) |
+| M · Muharrir | M0 (EDT-20/21/16/22, GEN-08), M1 (CHAT-01…08, GEN-09, EDT-29), M2 (EDT-23, 24, 17, 25, 26, 18, 19, 31), M3 (EDT-09, EDT-12), M4 (EDT-27, 11, 28, 30), M5 (EDT-10, 32, EXP-03, THM-08), THM-02/03 | — |
 
 Batafsil — `docs/CHANGELOG.md` (eng yangisi tepada), Notion'da "Muharrir doskasi" va "Generatsiya doskasi" ko'rinishlari.
 
 ## 3. Keyingi ish
 
-1. **M5**: EDT-10 yo'l ko'rsatkich, EDT-32 yuqori panel (Preview · Share · Export menyusi, o'chirish `⋯` ichida), EXP-03 zip eksport (tema bilan), THM-08 kanvasda dizayn tizimi namunasi; keyin THM-02/03. M4 to'liq tayyor (EDT-27, 11, 28, 30). Foydalanuvchi qarori (2026-09-22): avval muharrir qatorlari tugaydi, keyin generatsiya (G) qatorlari, deploy undan keyin. M3 tayyor: `‹ v3 ›` (`screens.version_id`), Cmd+Z/Shift+Cmd+Z (`lib/undo-stack.ts`, soft delete `screens.deleted_at`, redo = revert'ning revert'i).
+1. **Muharrir rejasi tugadi** (M0–M5, THM-02/03). Foydalanuvchi qarori (2026-09-22): endi generatsiya sifati — G qatorlari `docs/GENERATION-PLAN.md` tartibida (UX-01/02 blueprint'lar birinchi), har o'zgarish eval bilan. Deploy (AUTH, limitlar, Postgres, hosting) undan keyin. M4 to'liq tayyor (EDT-27, 11, 28, 30). Foydalanuvchi qarori (2026-09-22): avval muharrir qatorlari tugaydi, keyin generatsiya (G) qatorlari, deploy undan keyin. M3 tayyor: `‹ v3 ›` (`screens.version_id`), Cmd+Z/Shift+Cmd+Z (`lib/undo-stack.ts`, soft delete `screens.deleted_at`, redo = revert'ning revert'i).
    Qaror (foydalanuvchi, 2026-09-22): Postgres'ga (Supabase yoki Neon) o'tish **keyin**, INF-02 qatorida — hozir SQLite qoladi.
 2. Keyin M5 (yo'l ko'rsatkich, Preview · Share · Export menyusi, zip eksport, dizayn tizimi namunasi), so'ng generatsiyaning qolgani.
 3. Ma'lum cheklov: bo'laklab tahrirlashda (EDT-19) bitta qiymat bir necha joyda bo'lsa, model ba'zan bir joyni unutadi — agent jurnalida "Listed as affected but not edited" bo'lib ko'rinadi. "Replace photo" haqiqiy Pexels bilan brauzerda hali bosib ko'rilmagan.
