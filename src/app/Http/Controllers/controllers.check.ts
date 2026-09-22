@@ -95,7 +95,7 @@ assert.equal(talk[5].text, 'The AI provider had an error on its side. Try again 
 assert.ok(talk[5].meta.log?.[0].includes('DeepSeek 500'), 'the raw error is kept for the log')
 
 // go back to before the second regenerate
-const v1Html = ScreenVersion.forScreen('s-cart').at(-1)!.html
+const v1Html = ScreenVersion.forScreen('s-cart')[0].html
 HistoryController.revertMessage({ projectId: 'p1', messageId: talk[3].id })
 assert.equal(Screen.find('s-cart')!.html, v1Html, 'the screen is back to the snapshot taken before that message')
 assert.equal(ScreenVersion.forScreen('s-cart').length, 2, 'the design that was reverted is itself kept')
@@ -110,8 +110,22 @@ const added = Message.forProject('p1').at(-1)!
 assert.match(added.text, /^Added “Live Tracking — GoBite” under “Home”\.$/)
 const addedId = parseMeta(added.meta).screens![0].id
 assert.ok(Screen.find(addedId))
-HistoryController.revertMessage({ projectId: 'p1', messageId: added.id })
-assert.equal(Screen.find(addedId), undefined)
+const removal = HistoryController.revertMessage({ projectId: 'p1', messageId: added.id })
+assert.ok(!Screen.forProject('p1').some((s) => s.id === addedId), 'the added screen is gone from the project')
+assert.ok(Screen.find(addedId)?.deletedAt, 'but its row is kept')
+assert.equal(Message.find(removal)!.text, 'Removed “Live Tracking — GoBite”.')
+// redo = revert the revert
+const comeback = HistoryController.revertMessage({ projectId: 'p1', messageId: removal })
+assert.ok(Screen.forProject('p1').some((s) => s.id === addedId), 'reverting the removal brings the screen back')
+assert.equal(Message.find(comeback)!.text, 'Brought back “Live Tracking — GoBite”.')
+assert.throws(() => HistoryController.revertMessage({ projectId: 'p1', messageId: removal }), /cannot be undone/, 'a revert is itself reverted once')
+HistoryController.revertMessage({ projectId: 'p1', messageId: comeback })
+assert.ok(!Screen.forProject('p1').some((s) => s.id === addedId), 'and removed again')
+// redo of a content change
+const cartVersions = ScreenVersion.count('s-cart')
+const undoEdit = HistoryController.revertMessage({ projectId: 'p1', messageId: Message.forProject('p1').find((m) => m.kind === 'revert')!.id })
+assert.equal(ScreenVersion.count('s-cart'), cartVersions + 1, 'reverting the first revert is itself a recorded change')
+assert.match(Message.find(undoEdit)!.text, /^Applied that change again on “Cart — GoBite”\.$/)
 
 // the plan run
 const planTalk = Message.forProject('p2')
@@ -201,7 +215,52 @@ const themeMsg = Message.forProject('p3').at(-1)!
 assert.match(themeMsg.text, /Changed the accent colour to blue on every screen/)
 ProjectController.themeFromChat({ projectId: 'p3', prompt: 'rounder corners' })
 assert.equal(Project.find('p3')!.theme, JSON.stringify({ accent: '#2563eb', radius: 'round' }), 'theme changes accumulate')
-HistoryController.revertMessage({ projectId: 'p3', messageId: Message.forProject('p3').at(-1)!.id })
+const themeUndo = HistoryController.revertMessage({ projectId: 'p3', messageId: Message.forProject('p3').at(-1)!.id })
 assert.equal(Project.find('p3')!.theme, JSON.stringify({ accent: '#2563eb' }), 'and undo one at a time')
+HistoryController.revertMessage({ projectId: 'p3', messageId: themeUndo })
+assert.equal(Project.find('p3')!.theme, JSON.stringify({ accent: '#2563eb', radius: 'round' }), 'redo puts the theme change back')
+
+// --- ‹ › walks a screen's versions and back (EDT-09) ---
+const doc = (t: string) => `<!doctype html><html><body><h1>${t}</h1></body></html>`
+Project.create({ id: 'p9', name: 'V', designSystem: 'minimal', device: 'mobile' })
+Screen.create({ id: 's9', projectId: 'p9', name: 'Home', prompt: 'a', html: doc('A'), x: 0, y: 0 })
+Screen.create({ id: 's9b', projectId: 'p9', name: 'Lone', prompt: 'x', html: doc('X'), x: 0, y: 0 })
+for (const t of ['B', 'C']) {
+  ScreenVersion.captureFrom(Screen.find('s9')!)
+  Screen.updateContent('s9', { name: 'Home', prompt: t.toLowerCase(), html: doc(t) })
+}
+const stepTo = (dir: number) => HistoryController.stepVersion({ projectId: 'p9', screenId: 's9', dir })
+const shows = (t: string) => assert.ok(Screen.find('s9')!.html.includes(`<h1>${t}</h1>`), `the screen shows ${t}`)
+assert.deepEqual(ScreenVersion.position(Screen.find('s9')!), { position: 3, total: 3 }, 'two snapshots plus the newest work')
+assert.deepEqual(stepTo(-1), { position: 2, total: 3 })
+shows('B')
+assert.equal(ScreenVersion.count('s9'), 3, 'stepping back first keeps the newest work as a snapshot')
+assert.deepEqual(stepTo(-1), { position: 1, total: 3 })
+shows('A')
+assert.deepEqual(stepTo(-1), { position: 1, total: 3 }, 'nothing before v1')
+assert.deepEqual(stepTo(1), { position: 2, total: 3 })
+assert.deepEqual(stepTo(1), { position: 3, total: 3 })
+shows('C')
+assert.deepEqual(stepTo(1), { position: 3, total: 3 }, 'nothing after the newest')
+assert.equal(ScreenVersion.count('s9'), 3, 'walking never adds snapshots')
+// an edit made while an older version is shown continues from it, without copying it again
+stepTo(-1)
+shows('B')
+const shownId = Screen.find('s9')!.versionId!
+assert.equal(ScreenVersion.captureFrom(Screen.find('s9')!), shownId, 'the shown version is already a snapshot')
+Screen.updateContent('s9', { name: 'Home', prompt: 'd', html: doc('D') })
+assert.equal(Screen.find('s9')!.versionId, null, 'new content is the newest work again')
+assert.deepEqual(ScreenVersion.position(Screen.find('s9')!), { position: 4, total: 4 })
+assert.deepEqual(HistoryController.stepVersion({ projectId: 'p9', screenId: 's9b', dir: -1 }), { position: 1, total: 1 }, 'a screen with no snapshots stays put')
+assert.equal(ScreenVersion.count('s9b'), 0, 'and gets none from trying')
+assert.throws(() => HistoryController.stepVersion({ projectId: 'p1', screenId: 's9', dir: -1 }), 'a screen is only stepped inside its own project')
+
+// a deleted screen keeps its row, leaves every listing, and comes back
+const { ScreenController } = await import('./ScreenController.ts')
+ScreenController.destroy({ id: 's9b', projectId: 'p9' })
+assert.ok(!Screen.forProject('p9').some((s) => s.id === 's9b') && Screen.positions('p9').length === 1, 'a deleted screen is not listed or counted for placement')
+ScreenController.restore({ id: 's9b', projectId: 'p9' })
+assert.ok(Screen.forProject('p9').some((s) => s.id === 's9b'), 'restore brings it back')
+assert.throws(() => ScreenController.restore({ id: 's9b', projectId: 'p1' }), 'restore is scoped to the project')
 
 console.log('ok')

@@ -2,7 +2,8 @@
 // It is always present and switched on/off by the editor, so selecting a screen never reloads it.
 //
 // Switched on (the screen is selected): hovering outlines the element under the pointer, a click
-// selects it, a double click on text edits it in place, Esc steps back out, and the wheel is handed
+// selects it, a double click on text edits it in place, Esc steps back out, Cmd+Z is handed to the
+// editor's undo, and the wheel is handed
 // to the canvas so panning and zooming keep working over the selected frame.
 //
 // Selectable means: carries data-od-id (see lib/element-ops.ts annotateElements) and is not part of
@@ -116,6 +117,7 @@ export const EDIT_BRIDGE = `
       return;
     }
     if (e.key === 'Escape' && active) { e.preventDefault(); post({ type: 'od:escape' }); }
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'z' && active) { e.preventDefault(); post({ type: 'od:undo', redo: e.shiftKey }); }
   }, true);
   document.addEventListener('focusout', function (e) { if (editing && e.target === editing) endEdit(true); }, true);
   // Over the selected frame the page gets the wheel; the canvas still has to pan and zoom.

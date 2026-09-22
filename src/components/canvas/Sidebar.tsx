@@ -8,7 +8,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 export function Sidebar(props: {
   chat: ReactNode
   theme: ReactNode
-  history: ReactNode
   tab: string
   onTabChange: (tab: string) => void
 }) {
@@ -41,8 +40,6 @@ export function Sidebar(props: {
           <TabsList className="w-fit">
             <TabsTrigger value="chat">Chat</TabsTrigger>
             <TabsTrigger value="theme">Theme</TabsTrigger>
-            {/* ponytail: stays until version arrows on each frame (EDT-09) replace it */}
-            <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
           <button type="button" onClick={() => toggle(true)} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Hide the panel" aria-label="Hide the panel">
             <PanelLeftClose className="size-4" />
@@ -53,9 +50,6 @@ export function Sidebar(props: {
         </TabsContent>
         <TabsContent value="theme" className="min-h-0 flex-1">
           <ScrollArea className="h-full p-3">{props.theme}</ScrollArea>
-        </TabsContent>
-        <TabsContent value="history" className="min-h-0 flex-1">
-          <ScrollArea className="h-full p-3">{props.history}</ScrollArea>
         </TabsContent>
       </Tabs>
     </aside>

@@ -45,10 +45,11 @@ function AgentMessage(props: { message: MessageRow; screenIds: Set<string>; onFo
   const [error, setError] = useState('')
   const isError = m.kind === 'error'
   // Only a step that left something to go back to: a snapshot, or a screen it created that still exists.
+  // A revert message is revertible too: undoing an undo is the redo.
   const revertible =
     !meta.reverted &&
-    ((m.kind === 'theme' && meta.previousTheme !== undefined) ||
-      (['add', 'edit', 'element', 'regenerate', 'direct'].includes(m.kind) && (meta.screens ?? []).some((s) => props.screenIds.has(s.id) && (s.created || s.versionId))))
+    (meta.previousTheme !== undefined ||
+      (['add', 'edit', 'element', 'regenerate', 'direct', 'revert'].includes(m.kind) && (meta.screens ?? []).some((s) => s.removed || (props.screenIds.has(s.id) && (s.created || s.versionId)))))
 
   return (
     <div className={cn('space-y-2 rounded-xl border bg-card p-3 text-sm', isError && 'border-destructive/40 bg-destructive/5')}>
@@ -117,7 +118,7 @@ function AgentMessage(props: { message: MessageRow; screenIds: Set<string>; onFo
               title="Put the screen back the way it was before this step"
             >
               {reverting ? <Loader2 className="size-3 animate-spin" /> : <Undo2 className="size-3" />}
-              Undo this step
+              {m.kind === 'revert' ? 'Redo this step' : 'Undo this step'}
             </button>
           )}
         </div>

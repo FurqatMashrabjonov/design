@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, History, Trash2 } from 'lucide-react'
+import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2 } from 'lucide-react'
+import type { FrameActions } from './FrameToolbar'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -8,16 +9,11 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 
-// Right-click menu for a real (saved) screen frame — same actions as the hover toolbar plus the
-// less-frequent ones (regenerate, copy HTML, view code, jump to history) that would clutter it.
-export function FrameContextMenu(props: {
+// Right-click menu for a real (saved) screen frame — the same actions as the hover toolbar and its ⋯ menu.
+export function FrameContextMenu(props: FrameActions & {
   children: ReactNode
   onRename: () => void
   onDuplicate: () => void
-  onRegenerate: () => void
-  onCopyHtml: () => void
-  onViewCode: () => void
-  onOpenHistory: () => void
   onDelete: () => void
 }) {
   return (
@@ -40,8 +36,8 @@ export function FrameContextMenu(props: {
         <ContextMenuItem onSelect={props.onViewCode}>
           <Code2 /> View code
         </ContextMenuItem>
-        <ContextMenuItem onSelect={props.onOpenHistory}>
-          <History /> Show history
+        <ContextMenuItem onSelect={props.onDownload}>
+          <Download /> Download HTML
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" onSelect={props.onDelete}>

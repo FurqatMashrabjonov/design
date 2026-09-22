@@ -34,6 +34,10 @@ export const screens = sqliteTable('screens', {
   spec: text('spec'),
   // Set while the last attempt to draw the screen failed; html is '' in that case.
   error: text('error'),
+  // The snapshot the screen is showing when the user stepped back with ‹ (null = the newest work).
+  versionId: text('version_id'),
+  // Set when the user deleted the screen; the row stays so Cmd+Z can bring it back (see migration 0014).
+  deletedAt: integer('deleted_at'),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 

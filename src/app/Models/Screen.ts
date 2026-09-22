@@ -1,12 +1,16 @@
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, isNull } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { screens } from '@/database/schema'
 
 export type ScreenRow = typeof screens.$inferSelect
 
+// A deleted screen keeps its row (deleted_at) so it can be brought back; listings leave it out,
+// lookups by id still find it.
+const live = (projectId: string) => and(eq(screens.projectId, projectId), isNull(screens.deletedAt))
+
 export const Screen = {
   forProject(projectId: string): ScreenRow[] {
-    return db.select().from(screens).where(eq(screens.projectId, projectId)).orderBy(desc(screens.createdAt)).all()
+    return db.select().from(screens).where(live(projectId)).orderBy(desc(screens.createdAt)).all()
   },
 
   find(id: string): ScreenRow | undefined {
@@ -24,7 +28,7 @@ export const Screen = {
 
   // For auto-placing a new frame to the right of the rest — only x/y are needed.
   positions(projectId: string): { x: number; y: number }[] {
-    return db.select({ x: screens.x, y: screens.y }).from(screens).where(eq(screens.projectId, projectId)).all()
+    return db.select({ x: screens.x, y: screens.y }).from(screens).where(live(projectId)).all()
   },
 
   // Measured by the frame itself once it has rendered; see lib/frame-height.ts.
@@ -56,9 +60,10 @@ export const Screen = {
     db.update(screens).set({ error: error.slice(0, 500) }).where(eq(screens.id, id)).run()
   },
 
-  // A successful draw always clears the failure note.
-  updateContent(id: string, data: { name: string; prompt: string; html: string }) {
-    db.update(screens).set({ ...data, error: null }).where(eq(screens.id, id)).run()
+  // A successful draw always clears the failure note, and any new content is the newest work: the
+  // screen stops pointing at an older version unless the caller is the one stepping to it.
+  updateContent(id: string, data: { name: string; prompt: string; html: string; versionId?: string | null }) {
+    db.update(screens).set({ versionId: null, ...data, error: null }).where(eq(screens.id, id)).run()
   },
 
   move(id: string, x: number, y: number) {
@@ -70,6 +75,10 @@ export const Screen = {
   },
 
   delete(id: string) {
-    db.delete(screens).where(eq(screens.id, id)).run()
+    db.update(screens).set({ deletedAt: Math.floor(Date.now() / 1000) }).where(eq(screens.id, id)).run()
+  },
+
+  restore(id: string) {
+    db.update(screens).set({ deletedAt: null }).where(eq(screens.id, id)).run()
   },
 }

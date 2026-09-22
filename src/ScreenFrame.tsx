@@ -31,6 +31,8 @@ export function ScreenFrame(props: {
   /** Resolves false when the edit was refused, so the frame puts the old text back. */
   onTextEdit?: (elementId: string, text: string) => Promise<boolean>
   onEscape?: () => void
+  /** Cmd+Z (redo: Shift+Cmd+Z) pressed inside the frame. */
+  onUndo?: (redo: boolean) => void
   /** Floating panel shown under the selected element. */
   panel?: ReactNode
   /** Start editing the selected element's text in place (a panel button); bump `key` to repeat. */
@@ -101,6 +103,8 @@ export function ScreenFrame(props: {
         })
       } else if (d?.type === 'od:escape') {
         p.onEscape?.()
+      } else if (d?.type === 'od:undo') {
+        p.onUndo?.(d.redo === true)
       } else if (d?.type === 'od:wheel') {
         forwardWheel(iframeRef.current, d)
       } else {

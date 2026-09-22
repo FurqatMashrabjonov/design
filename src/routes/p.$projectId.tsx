@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
+import { getProject, moveScreen, deleteProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -17,9 +17,9 @@ import { ChatPanel } from '@/components/canvas/ChatPanel'
 import { suggestions } from '@/lib/suggestions'
 import { friendlyError } from '@/lib/agent-messages'
 import { ScreensList } from '@/components/canvas/ScreensList'
-import { HistoryPanel } from '@/components/canvas/HistoryPanel'
 import { ElementPanel, type ElementInfo } from '@/components/canvas/ElementPanel'
 import { routeIntent } from '@/lib/intent'
+import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
 import { FrameToolbar } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
@@ -87,15 +87,69 @@ function ProjectPage() {
     if (selectedElementId) setSelectedElementId(null)
     else selectScreen(null)
   }
+
+  // Cmd+Z / Shift+Cmd+Z (lib/undo-stack.ts). Canvas actions record their own inverse below; changes
+  // the conversation recorded are picked up from new agent messages, so hand edits, model edits and
+  // theme-from-chat all land on the same stack.
+  const history = useRef(new UndoStack())
+  const revertChain = (messageId: string) => revertMessage({ data: { projectId: project.id, messageId } })
+  const seenMessages = useRef<Set<string> | null>(null)
+  useEffect(() => {
+    if (!seenMessages.current) {
+      seenMessages.current = new Set(messages.map((m) => m.id))
+      return
+    }
+    for (const m of messages) {
+      if (seenMessages.current.has(m.id)) continue
+      seenMessages.current.add(m.id)
+      if (m.role === 'agent' && ['add', 'edit', 'element', 'regenerate', 'direct', 'theme'].includes(m.kind)) history.current.record(messageStep(revertChain, m.id))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages])
+  async function undo(redo = false) {
+    if (working || handBusy) return
+    try {
+      if (!(redo ? await history.current.redo() : await history.current.undo())) return
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    }
+    await router.invalidate()
+  }
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const t = e.target
-      if (e.key !== 'Escape' || (t instanceof Element && t.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]'))) return
-      escape()
+      if (t instanceof Element && t.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]')) return
+      if (e.key === 'Escape') escape()
+      else if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        undo(e.shiftKey)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   })
+
+  // Canvas actions, each recorded with its inverse.
+  const screenRef = (id: string) => ({ data: { id, projectId: project.id } })
+  async function removeScreen(id: string) {
+    await deleteScreen(screenRef(id))
+    history.current.record(pairStep(() => restoreScreen(screenRef(id)), () => deleteScreen(screenRef(id))))
+    if (selected === id) selectScreen(null)
+    await router.invalidate()
+  }
+  async function copyScreen(id: string) {
+    const copy = await duplicateScreen(screenRef(id))
+    history.current.record(pairStep(() => deleteScreen(screenRef(copy.id)), () => restoreScreen(screenRef(copy.id))))
+    await router.invalidate()
+  }
+  async function renameScreenTo(id: string, name: string) {
+    const was = screens.find((s) => s.id === id)?.name ?? name
+    const call = (n: string) => renameScreen({ data: { id, projectId: project.id, name: n } })
+    await call(name)
+    history.current.record(pairStep(() => call(was), () => call(name)))
+    await router.invalidate()
+  }
 
   // Hand edits: no model, applied at once, recorded in the conversation like any other change.
   async function hand(fn: () => Promise<unknown>, after?: () => void) {
@@ -119,12 +173,18 @@ function ProjectPage() {
   const [theme, setTheme] = useState<Theme>(() => parseTheme(project.theme))
   const themeSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const themeSavePending = useRef(false)
+  const themeBefore = useRef<Theme>(theme)
   function changeTheme(next: Theme) {
+    // One undo step per burst of changes (a colour drag), from the theme it started at.
+    if (!themeSavePending.current) themeBefore.current = theme
     setTheme(next)
     clearTimeout(themeSaveTimer.current)
     themeSavePending.current = true
     themeSaveTimer.current = setTimeout(() => {
-      saveTheme({ data: { projectId: project.id, theme: next } })
+      const save = (t: Theme) => saveTheme({ data: { projectId: project.id, theme: t } })
+      const was = themeBefore.current
+      save(next)
+        .then(() => history.current.record(pairStep(() => save(was), () => save(next))))
         .catch((e) => toast.error(e instanceof Error ? e.message : 'Could not save the theme'))
         .finally(() => (themeSavePending.current = false))
     }, 400)
@@ -232,13 +292,12 @@ function ProjectPage() {
     ...planFrames,
   ]
 
-  function exportSelected() {
-    if (!selectedScreen) return
-    const blob = new Blob([applyThemeOverride(selectedScreen.html, theme)], { type: 'text/html' })
+  function downloadHtml(screen: { name: string; html: string }) {
+    const blob = new Blob([applyThemeOverride(screen.html, theme)], { type: 'text/html' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${selectedScreen.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.html`
+    a.download = `${screen.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.html`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -281,6 +340,14 @@ function ProjectPage() {
 
   const codeScreen = screens.find((s) => s.id === codeScreenId) ?? null
 
+  // The same four actions in the frame's ⋯ menu and its right-click menu.
+  const frameActions = (s: (typeof screens)[number]) => ({
+    onRegenerate: () => regenerateScreen(s),
+    onCopyHtml: () => copyHtml(applyThemeOverride(s.html, theme)),
+    onViewCode: () => setCodeScreenId(s.id),
+    onDownload: () => downloadHtml(s),
+  })
+
   function openPreview() {
     const first = [...screens].sort((a, b) => a.x - b.x)[0]
     const start = screens.find((sc) => sc.id === selected) ?? first
@@ -293,7 +360,7 @@ function ProjectPage() {
         name={plan?.appName ?? project.name}
         device={project.device}
         designSystem={project.designSystem}
-        onExport={selectedScreen ? exportSelected : undefined}
+        onExport={selectedScreen ? () => downloadHtml(selectedScreen) : undefined}
         canPreview={screens.length > 0}
         onPreview={openPreview}
         onDeleteProject={async () => {
@@ -413,7 +480,6 @@ function ProjectPage() {
               </p>
             </div>
           }
-          history={<HistoryPanel screenId={selected} onRestored={() => router.invalidate()} />}
           tab={sidebarTab}
           onTabChange={setSidebarTab}
         />
@@ -426,7 +492,12 @@ function ProjectPage() {
             onBackgroundClick={() => selectScreen(null)}
             onMove={(id, x, y) => {
               if (id.startsWith('plan-') || id === '__live__') return
-              moveScreen({ data: { id, x, y } })
+              const was = screens.find((s) => s.id === id)
+              if (!was || (was.x === x && was.y === y)) return
+              const move = (px: number, py: number) => moveScreen({ data: { id, x: px, y: py } })
+              history.current.record(pairStep(() => move(was.x, was.y), () => move(x, y)))
+              // Reload once saved, so the frame's position comes from the server (and an undo can move it back).
+              move(x, y).then(() => router.invalidate())
             }}
             renderFrame={(id) => {
               if (id === '__live__')
@@ -461,26 +532,14 @@ function ProjectPage() {
                     width={f.width}
                     height={f.height}
                     onRetry={() => regenerateScreen(s)}
-                    onDelete={async () => {
-                      await deleteScreen({ data: { id: s.id, projectId: project.id } })
-                      await router.invalidate()
-                    }}
+                    onDelete={() => removeScreen(s.id)}
                   />
                 )
               return (
                 <FrameContextMenu
                   onRename={() => setRenamingId(s.id)}
-                  onDuplicate={async () => {
-                    await duplicateScreen({ data: { id: s.id, projectId: project.id } })
-                    await router.invalidate()
-                  }}
-                  onRegenerate={() => regenerateScreen(s)}
-                  onCopyHtml={() => copyHtml(applyThemeOverride(s.html, theme))}
-                  onViewCode={() => setCodeScreenId(s.id)}
-                  onOpenHistory={() => {
-                    selectScreen(s.id)
-                    setSidebarTab('history')
-                  }}
+                  onDuplicate={() => copyScreen(s.id)}
+                  {...frameActions(s)}
                   onDelete={() => setDeleteTargetId(s.id)}
                 >
                   <div onClick={() => s.id !== selected && selectScreen(s.id)}>
@@ -501,6 +560,7 @@ function ProjectPage() {
                         if (elId) setSidebarTab('chat')
                       }}
                       onEscape={escape}
+                      onUndo={(redo) => undo(redo)}
                       editRequest={s.id === selected ? editRequest : undefined}
                       onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
                       panel={
@@ -524,26 +584,28 @@ function ProjectPage() {
                         <FrameToolbar
                           name={s.name}
                           hint={s.prompt}
+                          {...frameActions(s)}
+                          version={s.version}
+                          onStepVersion={async (dir) => {
+                            const step = (d: number) => stepVersion({ data: { projectId: project.id, screenId: s.id, dir: d } })
+                            await step(dir)
+                            history.current.record(pairStep(() => step(-dir), () => step(dir)))
+                            await router.invalidate()
+                          }}
                           editing={renamingId === s.id}
                           onStartRename={() => setRenamingId(s.id)}
                           onCancelRename={() => setRenamingId(null)}
                           onRename={async (name) => {
-                            await renameScreen({ data: { id: s.id, projectId: project.id, name } })
+                            await renameScreenTo(s.id, name)
                             setRenamingId(null)
-                            await router.invalidate()
                           }}
-                          onDuplicate={async () => {
-                            await duplicateScreen({ data: { id: s.id, projectId: project.id } })
-                            await router.invalidate()
-                          }}
+                          onDuplicate={() => copyScreen(s.id)}
                           deleteConfirming={deleteTargetId === s.id}
                           onRequestDelete={() => setDeleteTargetId(s.id)}
                           onCancelDelete={() => setDeleteTargetId(null)}
                           onDelete={async () => {
-                            await deleteScreen({ data: { id: s.id, projectId: project.id } })
-                            if (selected === s.id) selectScreen(null)
+                            await removeScreen(s.id)
                             setDeleteTargetId(null)
-                            await router.invalidate()
                           }}
                         />
                       }

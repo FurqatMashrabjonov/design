@@ -16,6 +16,12 @@ export const ScreenController = {
     Screen.delete(data.id)
   },
 
+  // Cmd+Z after a delete.
+  restore(data: { id: string; projectId: string }) {
+    if (!Screen.findInProject(data.id, data.projectId)) throw notFound()
+    Screen.restore(data.id)
+  },
+
   // Copies a screen's content as a new screen, placed to the right of the rest — for trying a
   // variant without losing the original.
   duplicate(data: { id: string; projectId: string }) {

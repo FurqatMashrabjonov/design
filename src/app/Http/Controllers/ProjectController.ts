@@ -1,6 +1,7 @@
 import { notFound } from '@tanstack/react-router'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
+import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { SkillService } from '@/app/Services/SkillService'
@@ -23,7 +24,8 @@ export const ProjectController = {
     if (!project) throw notFound()
     return {
       project,
-      screens: Screen.forProject(id),
+      // Each screen carries where it stands in its own version timeline, for the ‹ v3 › on the frame.
+      screens: Screen.forProject(id).map((s) => ({ ...s, version: ScreenVersion.position(s) })),
       messages: Message.forProject(id),
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),

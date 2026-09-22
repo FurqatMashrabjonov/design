@@ -27,14 +27,15 @@ Ikki bosqich parallel: **G · Generatsiya sifati** (`docs/GENERATION-PLAN.md`) v
 | Bosqich | Tayyor | Qolgan |
 |---|---|---|
 | G · Generatsiya | EVAL-01…04, GEN-17…26, AST-01…04, UX-03…05 | UX-01/02 (blueprint'lar), HIG-01…03, KIT-01…04, EYE-01…03, VAR-01…03, FB-01/02 |
-| M · Muharrir | M0 (EDT-20/21/16/22, GEN-08), M1 (CHAT-01…08, GEN-09, EDT-29), M2 (EDT-23, 24, 17, 25, 26, 18, 19, 31) | M3 (EDT-09, EDT-12), M4 (EDT-11, 27, 28, 30), M5 (EDT-10, 32, EXP-03, THM-08) |
+| M · Muharrir | M0 (EDT-20/21/16/22, GEN-08), M1 (CHAT-01…08, GEN-09, EDT-29), M2 (EDT-23, 24, 17, 25, 26, 18, 19, 31), M3 (EDT-09, EDT-12) | M4 (EDT-11, 27, 28, 30), M5 (EDT-10, 32, EXP-03, THM-08) |
 
 Batafsil — `docs/CHANGELOG.md` (eng yangisi tepada), Notion'da "Muharrir doskasi" va "Generatsiya doskasi" ko'rinishlari.
 
 ## 3. Keyingi ish
 
-1. **M3**: kadr ustida `‹ v3 ›` versiya strelkalari (EDT-09) va Cmd+Z / Shift+Cmd+Z (EDT-12). EDT-09 tayyor bo'lgach sidebar'dagi **History** tabini olib tashla (foydalanuvchi rozi).
-2. Keyin M4 (tanlash/qo'l asboblari, tutqichdan sudrash, yorliqlar, ko'p tanlash) va M5.
+1. **M4**: EDT-11 tanlash/qo'l asboblari (Space bilan surish), EDT-27 kadr faqat tutqichdan sudraladi, EDT-28 klaviatura yorliqlari (Delete, Cmd+D, Cmd+0/1, ←/→, `/`, `?`), EDT-30 ko'p tanlash. M3 tayyor: `‹ v3 ›` (`screens.version_id`), Cmd+Z/Shift+Cmd+Z (`lib/undo-stack.ts`, soft delete `screens.deleted_at`, redo = revert'ning revert'i).
+   Qaror (foydalanuvchi, 2026-09-22): Postgres'ga (Supabase yoki Neon) o'tish **keyin**, INF-02 qatorida — hozir SQLite qoladi.
+2. Keyin M5 (yo'l ko'rsatkich, Preview · Share · Export menyusi, zip eksport, dizayn tizimi namunasi), so'ng generatsiyaning qolgani.
 3. Ma'lum cheklov: bo'laklab tahrirlashda (EDT-19) bitta qiymat bir necha joyda bo'lsa, model ba'zan bir joyni unutadi — agent jurnalida "Listed as affected but not edited" bo'lib ko'rinadi. "Replace photo" haqiqiy Pexels bilan brauzerda hali bosib ko'rilmagan.
 
 ## 4. Loyiha qoidalari va o'rganilgan narsalar

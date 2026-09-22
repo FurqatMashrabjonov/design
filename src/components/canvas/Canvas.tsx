@@ -16,7 +16,7 @@ const ZOOM_PRESETS = [25, 50, 75, 100, 150, 200]
 
 type Drag =
   | { mode: 'pan'; startX: number; startY: number; startTx: number; startTy: number }
-  | { mode: 'frame'; id: string; startX: number; startY: number; startFx: number; startFy: number }
+  | { mode: 'frame'; id: string; startX: number; startY: number; startFx: number; startFy: number; fromX: number; fromY: number }
 
 export function Canvas(props: {
   frames: CanvasFrame[]
@@ -30,10 +30,30 @@ export function Canvas(props: {
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
-  const [positions, setPositions] = useState<Record<string, { x: number; y: number }>>({})
+  // Where a frame was dragged to, ahead of the saved position arriving through props. An entry
+  // remembers the props it was dragged from and stops applying once they change (the save landed,
+  // or an undo moved the frame back), so props win again without a flicker.
+  const [positions, setPositions] = useState<Record<string, { x: number; y: number; fromX: number; fromY: number }>>({})
   const drag = useRef<Drag | null>(null)
 
-  const pos = useCallback((f: CanvasFrame) => positions[f.id] ?? { x: f.x, y: f.y }, [positions])
+  const pos = useCallback(
+    (f: CanvasFrame) => {
+      const p = positions[f.id]
+      return p && p.fromX === f.x && p.fromY === f.y ? { x: p.x, y: p.y } : { x: f.x, y: f.y }
+    },
+    [positions],
+  )
+  // Once the props have moved on, the drag is history — forget it, or an undo back to the very
+  // position it was dragged from would show the dragged position again.
+  useEffect(() => {
+    setPositions((prev) => {
+      const stale = props.frames.filter((f) => prev[f.id] && (prev[f.id].fromX !== f.x || prev[f.id].fromY !== f.y))
+      if (stale.length === 0) return prev
+      const next = { ...prev }
+      for (const f of stale) delete next[f.id]
+      return next
+    })
+  }, [props.frames])
 
   // Zoom keeping the (vx, vy) viewport point visually fixed. Takes a functional updater so the
   // native wheel listener below (attached once, never stale) always computes from the latest view.
@@ -145,7 +165,7 @@ export function Canvas(props: {
       if (e.button !== 0) return
       e.stopPropagation()
       const p = pos(f)
-      drag.current = { mode: 'frame', id, startX: e.clientX, startY: e.clientY, startFx: p.x, startFy: p.y }
+      drag.current = { mode: 'frame', id, startX: e.clientX, startY: e.clientY, startFx: p.x, startFy: p.y, fromX: f.x, fromY: f.y }
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     }
   }
@@ -159,7 +179,7 @@ export function Canvas(props: {
       userMoved.current = true
       setView((prev) => ({ ...prev, x: d.startTx + dx, y: d.startTy + dy }))
     } else {
-      setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / view.scale, y: d.startFy + dy / view.scale } }))
+      setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / view.scale, y: d.startFy + dy / view.scale, fromX: d.fromX, fromY: d.fromY } }))
     }
   }
 

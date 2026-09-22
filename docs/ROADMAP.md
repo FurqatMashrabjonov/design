@@ -103,8 +103,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-26 | Tezkor amallar LLM'siz: o'chirish, nusxalash, surish, boshqa rasm | MVP | Tayyor | O'rta |
 | EDT-18 | Niyat yo'naltirgich: ekran qo'shish / tahrir / element / tema | MVP | Tayyor | O'rta |
 | EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Tayyor | O'rta |
-| EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Rejada | O'rta |
-| EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Rejada | O'rta |
+| EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Tayyor | O'rta |
+| EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Tayyor | O'rta |
 | EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Rejada | Kichik |
 | EDT-27 | Kadr faqat sarlavhadagi tutqichdan sudraladi | MVP | Rejada | Kichik |
 | EDT-28 | Klaviatura yorliqlari | MVP | Rejada | Kichik |

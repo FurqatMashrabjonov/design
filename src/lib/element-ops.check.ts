@@ -125,4 +125,31 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.deepEqual(parseAffects('no line'), [])
 }
 
+
+// --- lib/undo-stack.ts (EDT-12) ---
+{
+  const { UndoStack, messageStep, pairStep } = await import('./undo-stack.ts')
+  const log: string[] = []
+  const stack = new UndoStack()
+  stack.record(pairStep(async () => log.push('undo a'), async () => log.push('redo a')))
+  stack.record(pairStep(async () => log.push('undo b'), async () => log.push('redo b')))
+  assert.equal(await stack.undo(), true)
+  assert.equal(await stack.undo(), true)
+  assert.equal(await stack.undo(), false, 'nothing left to undo')
+  assert.equal(await stack.redo(), true)
+  stack.record(pairStep(async () => log.push('undo c'), async () => log.push('redo c')))
+  assert.equal(await stack.redo(), false, 'a new step clears the redo side')
+  assert.equal(await stack.undo(), true)
+  assert.deepEqual(log, ['undo b', 'undo a', 'redo a', 'undo c'])
+  // a failing step is dropped and its error surfaces
+  stack.record(pairStep(async () => { throw new Error('no') }, async () => {}))
+  await assert.rejects(stack.undo(), /no/)
+  assert.equal(stack.past.length, 1)
+  // a message chain: undo reverts the message, redo reverts the revert
+  const reverted: string[] = []
+  const step = messageStep(async (id) => { reverted.push(id); return `rev(${id})` }, 'm1')
+  await step.undo(); await step.redo(); await step.undo()
+  assert.deepEqual(reverted, ['m1', 'rev(m1)', 'rev(rev(m1))'])
+}
+
 console.log('ok')

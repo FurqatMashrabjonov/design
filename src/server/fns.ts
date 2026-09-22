@@ -31,13 +31,9 @@ export const saveTheme = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; theme: unknown }) => d)
   .handler(({ data }) => ProjectController.saveTheme(data))
 
-export const getScreenVersions = createServerFn({ method: 'GET' })
-  .validator((screenId: string) => screenId)
-  .handler(({ data }) => HistoryController.versions(data))
-
-export const restoreVersion = createServerFn({ method: 'POST' })
-  .validator((d: { screenId: string; versionId: string }) => d)
-  .handler(({ data }) => HistoryController.restore(data))
+export const stepVersion = createServerFn({ method: 'POST' })
+  .validator((d: { projectId: string; screenId: string; dir: number }) => d)
+  .handler(({ data }) => HistoryController.stepVersion(data))
 
 export const revertMessage = createServerFn({ method: 'POST' })
   .validator((d: { projectId: string; messageId: string }) => d)
@@ -74,6 +70,10 @@ export const deleteScreen = createServerFn({ method: 'POST' })
 export const duplicateScreen = createServerFn({ method: 'POST' })
   .validator((d: { id: string; projectId: string }) => d)
   .handler(({ data }) => ScreenController.duplicate(data))
+
+export const restoreScreen = createServerFn({ method: 'POST' })
+  .validator((d: { id: string; projectId: string }) => d)
+  .handler(({ data }) => ScreenController.restore(data))
 
 export const runCritique = createServerFn({ method: 'POST' })
   .validator((d: { screenId: string; projectId: string }) => d)

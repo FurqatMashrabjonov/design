@@ -11,6 +11,8 @@ export type MessageScreen = {
   /** The snapshot taken just before this message changed the screen; absent when the message created it. */
   versionId?: string
   created?: boolean
+  /** Set on a revert message for a screen it removed, so reverting the revert brings it back. */
+  removed?: boolean
 }
 
 export type MessageMeta = {
