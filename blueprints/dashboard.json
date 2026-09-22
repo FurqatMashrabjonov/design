@@ -1,0 +1,34 @@
+{
+  "id": "dashboard",
+  "purpose": "At a glance: where the user stands today and the one thing to do next.",
+  "layout": "A greeting or date line, then one hero summary card with the key number, then 2–4 compact tiles or a short list of today's items. Scrolls; nothing below needs more than a glance.",
+  "sections": {
+    "required": [
+      "Greeting or date context",
+      "Hero summary card with the single most important number",
+      "Today's items or progress (3–5 rows)"
+    ],
+    "optional": [
+      "Quick actions row (2–4 icon buttons)",
+      "Streak or goal ring",
+      "Recent activity",
+      "Tip or nudge card"
+    ]
+  },
+  "primaryAction": {
+    "placement": "inline",
+    "note": "Inside or directly under the hero card — the next step, e.g. \"Start workout\"."
+  },
+  "avoid": [
+    "Four equal stat tiles with no hierarchy",
+    "Charts that repeat the hero number",
+    "More than one filled button"
+  ],
+  "hig": [
+    "large-title",
+    "card",
+    "list",
+    "progress",
+    "button"
+  ]
+}

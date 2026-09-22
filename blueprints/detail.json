@@ -1,0 +1,35 @@
+{
+  "id": "detail",
+  "purpose": "Everything about one item, and the action to take on it.",
+  "layout": "A large hero (photo or big title block) at the top, then key facts in a compact row (rating, price, time), then descriptive sections. A sticky bottom bar holds the price or summary and the primary button.",
+  "sections": {
+    "required": [
+      "Hero image or title block",
+      "Key facts row (3–4 facts)",
+      "Description or main content",
+      "Sticky bottom bar with the primary action"
+    ],
+    "optional": [
+      "Options or variants picker",
+      "Related items carousel",
+      "Reviews summary",
+      "Map or location snippet"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Filled button in a sticky bottom bar, with the price or total beside it."
+  },
+  "avoid": [
+    "The primary button scrolled out of reach",
+    "Repeating the title in hero and header",
+    "Facts as a long paragraph"
+  ],
+  "hig": [
+    "nav-bar",
+    "image",
+    "segmented",
+    "stepper",
+    "button"
+  ]
+}

@@ -304,6 +304,7 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   const spec = screenSpec(v2.screens[0])
   for (const part of ['User goal: Find dinner', 'Primary action', '1. Search', '3. Featured', 'data-od-link', '"Dish Detail"']) assert.ok(spec.includes(part), `spec carries ${part}`)
   assert.ok(!screenSpec(v2.screens[3]).includes('Sections'), 'an old-shape screen still yields a usable brief')
+  assert.ok(spec.includes(`Screen pattern (${v2.screens[0].archetype}):`) && spec.includes('It must show:') && spec.includes('Avoid:'), 'the archetype\'s blueprint is in the spec')
   assert.deepEqual(parseStoredPlan(JSON.stringify({ summary: 's', entities: v2.entities }))?.entities, v2.entities)
   for (const junk of [null, '', '{', '"x"']) assert.equal(parseStoredPlan(junk), null)
 }
@@ -390,5 +391,53 @@ const iconPlan = parsePlan(
 assert.deepEqual(iconPlan.navigation.tabs.map((t) => t.icon), ['home', 'plus', 'camera', 'mic'])
 assert.deepEqual(iconPlan.navigation.tabs.map((t) => t.isAction), [false, false, true, false], 'only one capture tab is raised; "plus" is not an action tab')
 assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.test(buildBottomNav(iconPlan.navigation, 'a')), 'no fallback circle in the tab bar')
+
+// UX-01: one blueprint per planner archetype, all in one shape
+{
+  const { ARCHETYPES } = await import('./PlannerService.ts')
+  const { BlueprintService } = await import('./BlueprintService.ts')
+  const { readdirSync } = await import('node:fs')
+  const HIG = ['tab-bar', 'nav-bar', 'large-title', 'list', 'card', 'button', 'text-field', 'search', 'segmented', 'toggle', 'sheet', 'alert', 'progress', 'chip', 'avatar', 'image', 'map', 'player-controls', 'keyboard', 'badge', 'stepper', 'date-picker', 'picker']
+  const files = readdirSync('blueprints').filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5)).sort()
+  assert.deepEqual(files, [...ARCHETYPES].sort(), 'exactly one blueprint per archetype, no strays')
+  for (const id of ARCHETYPES) {
+    const b = BlueprintService.find(id)!
+    assert.equal(b.id, id)
+    for (const k of ['purpose', 'layout'] as const) assert.ok(typeof b[k] === 'string' && b[k].length > 20 && b[k].length < 400, `${id}.${k}`)
+    assert.ok(b.sections.required.length >= 2 && b.sections.required.length <= 6, `${id}: 2–6 required sections`)
+    assert.ok(Array.isArray(b.sections.optional), `${id}: optional sections`)
+    assert.ok(['bottom-bar', 'inline', 'header', 'none'].includes(b.primaryAction.placement) && b.primaryAction.note.length > 10, `${id}: primary action`)
+    assert.ok(b.avoid.length >= 2 && b.avoid.length <= 4, `${id}: 2–4 things to avoid`)
+    for (const h of b.hig) assert.ok(HIG.includes(h), `${id}: unknown HIG card "${h}"`)
+    assert.ok(BlueprintService.brief(id).length < 900, `${id}: the brief stays short`)
+    assert.ok(!/\b(Airbnb|Uber|Spotify|Instagram|Duolingo|Apple|Google)\b/.test(JSON.stringify(b)), `${id}: no brand names`)
+  }
+  assert.equal(BlueprintService.find('../etc'), null, 'ids are validated before touching the disk')
+  assert.equal(BlueprintService.brief('nope'), '')
+}
+
+// UX-02: app-type patterns, matched in code, only one reaches the planner
+{
+  const { AppPatternService } = await import('./AppPatternService.ts')
+  const { ARCHETYPES } = await import('./PlannerService.ts')
+  const all = AppPatternService.all()
+  assert.equal(all.length, 12)
+  assert.equal(new Set(all.map((p) => p.priority)).size, 12, 'priorities are unique, so ties are deterministic')
+  for (const p of all) {
+    assert.ok(p.match.length >= 5 && p.loop.length > 10 && p.flows.length >= 1 && p.pitfalls.length >= 1, `${p.id}: complete`)
+    assert.ok(p.screens.length >= 4 && p.screens.length <= 6, `${p.id}: 4–6 typical screens`)
+    for (const s of p.screens) assert.ok((ARCHETYPES as readonly string[]).includes(s.archetype), `${p.id}: ${s.archetype} is a planner archetype`)
+    assert.ok(AppPatternService.brief(p).length < 1200, `${p.id}: brief stays short`)
+  }
+  const kind = (brief: string) => AppPatternService.classify(brief)?.id ?? null
+  assert.equal(kind('Food delivery: restaurant feed, dish detail, cart, order tracking'), 'food-delivery', 'the specific type beats commerce')
+  assert.equal(kind('Neobank app: balance, cards, send money'), 'fintech')
+  assert.equal(kind('Shifokor qabuliga yozilish ilovasi: mutaxassislik boʻyicha shifokor qidirish'), 'health', 'Uzbek, with its own apostrophe')
+  assert.equal(kind('Приложение для тренировок и бега'), 'fitness', 'Russian inflections match by stem')
+  assert.equal(kind('Recipe app: ingredients and steps, cooking mode step by step'), null, '"steps" of a recipe is not fitness')
+  assert.equal(kind('Cardio plan with heart zones'), null, 'a short keyword ("card") must be a whole word')
+  assert.equal(kind('find and pay for parking'), null, 'no pattern rather than a wrong one')
+  assert.equal(kind(''), null)
+}
 
 console.log('ok')

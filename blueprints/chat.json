@@ -1,0 +1,32 @@
+{
+  "id": "chat",
+  "purpose": "Hold a conversation with one person or a group.",
+  "layout": "Header with the other party's avatar and status, then message bubbles (mine right in accent, theirs left in surface) with timestamps grouped by day, then a composer pinned at the bottom.",
+  "sections": {
+    "required": [
+      "Header with avatar, name and status",
+      "Message bubbles, two sides, with day separator",
+      "Composer pinned to the bottom with send button"
+    ],
+    "optional": [
+      "Attachment or photo message",
+      "Typing indicator",
+      "Quick reply chips above the composer"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Send button inside the composer."
+  },
+  "avoid": [
+    "Tab bar under the composer",
+    "Both sides in the same colour",
+    "Bubbles spanning the full width"
+  ],
+  "hig": [
+    "nav-bar",
+    "avatar",
+    "text-field",
+    "keyboard"
+  ]
+}

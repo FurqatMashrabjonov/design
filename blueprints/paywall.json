@@ -1,0 +1,33 @@
+{
+  "id": "paywall",
+  "purpose": "Show what paying unlocks and let the user choose a plan.",
+  "layout": "A short benefit headline, 3–4 benefits with checkmarks, plan options as selectable cards (the recommended one marked), then the subscribe button and restore / terms in small text.",
+  "sections": {
+    "required": [
+      "Benefit headline",
+      "3–4 benefits with checkmarks",
+      "Selectable plan cards with price and period",
+      "Subscribe button",
+      "Restore purchases and terms"
+    ],
+    "optional": [
+      "Free-trial note",
+      "Close button in the corner",
+      "Social proof line"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Full-width subscribe button naming the trial or price."
+  },
+  "avoid": [
+    "Hidden price or period",
+    "Pre-selecting the most expensive plan without marking it",
+    "No way to close"
+  ],
+  "hig": [
+    "card",
+    "segmented",
+    "button"
+  ]
+}

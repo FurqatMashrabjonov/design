@@ -1,0 +1,31 @@
+{
+  "id": "result",
+  "purpose": "Confirm that something happened and say what comes next.",
+  "layout": "Centred success mark or illustration, a one-line headline, a short explanation, then a compact summary card of what was done. One primary next step and one quiet secondary link.",
+  "sections": {
+    "required": [
+      "Success icon or illustration",
+      "Headline stating the outcome",
+      "Summary card (what, when, how much)",
+      "Next-step button"
+    ],
+    "optional": [
+      "Secondary text link (\"View receipt\")",
+      "Estimated time or tracking hint",
+      "Share action"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "One filled next-step button at the bottom; the secondary is a text link."
+  },
+  "avoid": [
+    "Tab bar on a result screen of a flow",
+    "Confetti with no information",
+    "Two filled buttons"
+  ],
+  "hig": [
+    "card",
+    "button"
+  ]
+}

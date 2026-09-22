@@ -1,0 +1,59 @@
+{
+  "id": "food-delivery",
+  "priority": 0,
+  "match": [
+    "food delivery",
+    "delivery",
+    "restaurant",
+    "takeaway",
+    "takeout",
+    "order food",
+    "courier",
+    "dish",
+    "menu",
+    "yetkazib",
+    "taom",
+    "restoran",
+    "ovqat",
+    "доставка",
+    "ресторан",
+    "еда",
+    "блюд"
+  ],
+  "loop": "Pick a dish from a restaurant, pay, and watch it arrive.",
+  "screens": [
+    {
+      "name": "Home / restaurant feed",
+      "archetype": "feed"
+    },
+    {
+      "name": "Restaurant menu",
+      "archetype": "list"
+    },
+    {
+      "name": "Dish detail with options",
+      "archetype": "detail"
+    },
+    {
+      "name": "Cart & checkout",
+      "archetype": "checkout"
+    },
+    {
+      "name": "Order tracking",
+      "archetype": "map"
+    },
+    {
+      "name": "Orders history",
+      "archetype": "list"
+    }
+  ],
+  "flows": [
+    "Feed → Restaurant → Dish → Cart → Checkout → Tracking",
+    "Orders → Tracking"
+  ],
+  "data": "Restaurant, Dish (price, time, rating), Order (status, ETA, courier)",
+  "pitfalls": [
+    "Tracking is a map with a courier and ETA, not a list",
+    "Cart total must equal items + fees in every screen"
+  ]
+}

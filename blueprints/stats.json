@@ -1,0 +1,32 @@
+{
+  "id": "stats",
+  "purpose": "Understand trends over time.",
+  "layout": "A period selector (segmented: week / month / year), a headline number with its change, one main chart, then a breakdown list of the categories behind the number.",
+  "sections": {
+    "required": [
+      "Period segmented control",
+      "Headline number with change vs previous period",
+      "One main chart",
+      "Breakdown list with values"
+    ],
+    "optional": [
+      "Secondary small chart",
+      "Insight sentence",
+      "Goal line on the chart"
+    ]
+  },
+  "primaryAction": {
+    "placement": "none",
+    "note": "Reading is the action; no filled button unless the brief asks for one."
+  },
+  "avoid": [
+    "Several charts of the same data",
+    "Charts without axis labels or values",
+    "Numbers that disagree with the list"
+  ],
+  "hig": [
+    "segmented",
+    "card",
+    "list"
+  ]
+}

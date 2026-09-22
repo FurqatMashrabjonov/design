@@ -1,0 +1,32 @@
+{
+  "id": "onboarding",
+  "purpose": "Explain the value in one idea and move the user forward.",
+  "layout": "One large illustration or photo, a short headline, one sentence of support, page dots, and the continue button at the bottom with a quiet skip.",
+  "sections": {
+    "required": [
+      "Large illustration or photo",
+      "Headline (under 8 words)",
+      "One supporting sentence",
+      "Page indicator",
+      "Continue button"
+    ],
+    "optional": [
+      "Skip link in the top corner",
+      "Permission explanation"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Full-width \"Continue\" at the bottom."
+  },
+  "avoid": [
+    "Tab bar during onboarding",
+    "Paragraphs of text",
+    "Three value props on one page"
+  ],
+  "hig": [
+    "image",
+    "progress",
+    "button"
+  ]
+}

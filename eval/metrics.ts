@@ -2,6 +2,7 @@
 // delta between two runs of the same brief set.
 import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
+import { BlueprintService } from '../src/app/Services/BlueprintService.ts'
 
 export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string; added?: boolean }
 export type PlanInput = { briefId: string; expect: string[]; archetypes: string[]; requested: string[]; uncovered: string[]; tabs: number; entityItems: string[] }
@@ -149,9 +150,23 @@ function planMetrics(plans: PlanInput[], screens: ScreenInput[]) {
       if (on >= 2) shared++
     }
   }
+  // Blueprint adherence (UX-01): screens whose pattern puts the primary action in a bottom bar —
+  // detail, checkout, form, result… — should pin something to the bottom of the screen.
+  let wantBar = 0
+  let hasBar = 0
+  for (const p of plans) {
+    const planned = screens.filter((s) => s.briefId === p.briefId && !s.added)
+    p.archetypes.forEach((a, i) => {
+      if (!planned[i] || BlueprintService.find(a)?.primaryAction.placement !== 'bottom-bar') return
+      wantBar++
+      if (pinnedBottom(planned[i].html)) hasBar++
+    })
+  }
   const r = (a: number, b: number) => (b ? Number((a / b).toFixed(3)) : 0)
   return {
     archetypeRecall: r(matched, expected),
+    bottomBarScreens: wantBar,
+    bottomBarShare: r(hasBar, wantBar),
     requestedScreens: plans.reduce((n, p) => n + p.requested.length, 0),
     uncoveredScreens: plans.reduce((n, p) => n + p.uncovered.length, 0),
     tabsMean: r(plans.reduce((n, p) => n + p.tabs, 0), plans.length),
@@ -172,3 +187,13 @@ export function diffMetrics(before: unknown, after: unknown, path = ''): string[
     )
   return []
 }
+
+/** Something other than the injected shell is pinned to the bottom (fixed or sticky, with bottom set). */
+export function pinnedBottom(html: string): boolean {
+  const own = html.replace(/<[a-z]+\b[^>]*data-od-shell[^>]*>/gi, '')
+  const pinned = (css: string) => /position\s*:\s*(fixed|sticky)/i.test(css) && /(^|[;\s{])bottom\s*:/i.test(css)
+  for (const block of own.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) for (const rule of block[1].matchAll(/\{([^{}]*)\}/g)) if (pinned(rule[1])) return true
+  for (const m of own.matchAll(/\sstyle="([^"]*)"/gi)) if (pinned(m[1])) return true
+  return /class="[^"]*\b(fixed|sticky)\b[^"]*\bbottom-\d/.test(own) || /class="[^"]*\bbottom-\d[^"]*\b(fixed|sticky)\b/.test(own)
+}
+

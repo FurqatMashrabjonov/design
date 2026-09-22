@@ -1,0 +1,57 @@
+{
+  "id": "commerce",
+  "priority": 2,
+  "match": [
+    "shop",
+    "store",
+    "sneaker",
+    "fashion",
+    "e-commerce",
+    "ecommerce",
+    "product",
+    "cart",
+    "clothing",
+    "do'kon",
+    "kiyim",
+    "магазин",
+    "товар",
+    "корзин",
+    "одежд"
+  ],
+  "loop": "Find a product, choose the variant, buy it.",
+  "screens": [
+    {
+      "name": "Home with collections",
+      "archetype": "feed"
+    },
+    {
+      "name": "Category / search results",
+      "archetype": "list"
+    },
+    {
+      "name": "Product detail with variants",
+      "archetype": "detail"
+    },
+    {
+      "name": "Cart",
+      "archetype": "checkout"
+    },
+    {
+      "name": "Order confirmation",
+      "archetype": "result"
+    },
+    {
+      "name": "Wishlist or orders",
+      "archetype": "list"
+    }
+  ],
+  "flows": [
+    "Home → Product → Cart → Checkout → Confirmation",
+    "Search → Product"
+  ],
+  "data": "Product (price, sizes/colours, rating, stock), Order",
+  "pitfalls": [
+    "Size or colour choice before Add to bag",
+    "Price and Add to bag in a sticky bar on product detail"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "id": "fitness",
+  "priority": 4,
+  "match": [
+    "fitness",
+    "workout",
+    "gym",
+    "training",
+    "run",
+    "running",
+    "exercise",
+    "calorie",
+    "yoga",
+    "sport",
+    "mashq",
+    "sport zal",
+    "тренир",
+    "фитнес",
+    "бег",
+    "калори",
+    "спорт",
+    "step count",
+    "step tracker",
+    "pedometer"
+  ],
+  "loop": "Follow a plan, do the workout, see progress.",
+  "screens": [
+    {
+      "name": "Today dashboard",
+      "archetype": "dashboard"
+    },
+    {
+      "name": "Workout / plan list",
+      "archetype": "list"
+    },
+    {
+      "name": "Workout detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Active session",
+      "archetype": "player"
+    },
+    {
+      "name": "Progress stats",
+      "archetype": "stats"
+    },
+    {
+      "name": "Profile",
+      "archetype": "profile"
+    }
+  ],
+  "flows": [
+    "Today → Workout detail → Active session → Result",
+    "Progress → Workout history"
+  ],
+  "data": "Workout (exercises, duration, calories), Session (date, stats), Goal",
+  "pitfalls": [
+    "An active session screen with a big timer",
+    "Progress numbers agree with the history"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "player",
+  "purpose": "Play media and control it.",
+  "layout": "Large artwork, title and artist, a scrubber with elapsed and remaining time, then the transport controls (previous, play/pause large, next) and secondary controls below.",
+  "sections": {
+    "required": [
+      "Large artwork",
+      "Title and subtitle",
+      "Scrubber with times",
+      "Transport controls with a large play/pause"
+    ],
+    "optional": [
+      "Volume slider",
+      "Queue or lyrics entry",
+      "Like / add to library"
+    ]
+  },
+  "primaryAction": {
+    "placement": "inline",
+    "note": "The play/pause button, the largest control, centred."
+  },
+  "avoid": [
+    "Small artwork with lots of text",
+    "Controls all the same size",
+    "Scrubber without times"
+  ],
+  "hig": [
+    "image",
+    "player-controls",
+    "progress"
+  ]
+}

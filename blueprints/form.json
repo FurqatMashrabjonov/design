@@ -1,0 +1,34 @@
+{
+  "id": "form",
+  "purpose": "Enter or edit information and save it.",
+  "layout": "A clear title, then labelled fields grouped into 2–3 short sections, each field with a label above and helper text where needed. The save button stays reachable at the bottom.",
+  "sections": {
+    "required": [
+      "Title stating what is being created or edited",
+      "Grouped labelled fields (label above input)",
+      "Save / Create button"
+    ],
+    "optional": [
+      "Pickers (date, category) instead of free text",
+      "Toggle rows for yes/no options",
+      "Inline validation message on one field",
+      "Cancel in the header"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Full-width filled button at the bottom, labelled with the verb (\"Create habit\")."
+  },
+  "avoid": [
+    "Placeholder text as the only label",
+    "One long ungrouped column of 10 fields",
+    "Two competing filled buttons"
+  ],
+  "hig": [
+    "nav-bar",
+    "text-field",
+    "picker",
+    "toggle",
+    "button"
+  ]
+}

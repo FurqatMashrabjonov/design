@@ -1,0 +1,32 @@
+{
+  "id": "map",
+  "purpose": "See where things are and pick one.",
+  "layout": "A full-bleed map with pins, a floating search or filter bar at the top, and a bottom sheet listing the nearby items (the first one peeking).",
+  "sections": {
+    "required": [
+      "Full-bleed map with pins",
+      "Floating search or filter bar",
+      "Bottom sheet with nearby items"
+    ],
+    "optional": [
+      "Recenter button",
+      "Selected pin callout",
+      "Filter chips"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "Inside the bottom sheet, on the selected item (\"Directions\", \"Book\")."
+  },
+  "avoid": [
+    "A small map in a card",
+    "Pins with no list",
+    "Controls covering the pins"
+  ],
+  "hig": [
+    "map",
+    "sheet",
+    "search",
+    "chip"
+  ]
+}

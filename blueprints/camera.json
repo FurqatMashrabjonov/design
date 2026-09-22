@@ -1,0 +1,30 @@
+{
+  "id": "camera",
+  "purpose": "Capture or scan something.",
+  "layout": "A full-screen viewfinder with a framing guide, a short instruction line, and a bottom control row: gallery thumbnail, large shutter, flash or flip.",
+  "sections": {
+    "required": [
+      "Full-screen viewfinder (image) with framing guide",
+      "Instruction line",
+      "Large shutter button centred at the bottom"
+    ],
+    "optional": [
+      "Gallery thumbnail",
+      "Flash / flip toggles",
+      "Mode switcher (photo / scan)"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "The round shutter, centred, in thumb reach."
+  },
+  "avoid": [
+    "White background around a small preview",
+    "Tab bar over the viewfinder",
+    "Shutter off-centre"
+  ],
+  "hig": [
+    "image",
+    "button"
+  ]
+}

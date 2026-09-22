@@ -1,0 +1,55 @@
+{
+  "id": "marketplace",
+  "priority": 1,
+  "match": [
+    "marketplace",
+    "second-hand",
+    "used",
+    "resell",
+    "sell my",
+    "listing",
+    "classifieds",
+    "buy and sell",
+    "e'lon",
+    "ikkinchi qo'l",
+    "объявлен",
+    "барахолк",
+    "б/у"
+  ],
+  "loop": "Browse listings from other people, message a seller, list your own item.",
+  "screens": [
+    {
+      "name": "Browse feed",
+      "archetype": "feed"
+    },
+    {
+      "name": "Listing detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Chat with seller",
+      "archetype": "chat"
+    },
+    {
+      "name": "Create listing",
+      "archetype": "form"
+    },
+    {
+      "name": "My listings",
+      "archetype": "list"
+    },
+    {
+      "name": "Search with filters",
+      "archetype": "search"
+    }
+  ],
+  "flows": [
+    "Feed → Listing → Chat with seller",
+    "My listings → Create listing → Result"
+  ],
+  "data": "Listing (price, condition, location, seller), Seller (rating, response time), Conversation",
+  "pitfalls": [
+    "The seller and their rating are on the listing",
+    "Creating a listing is a form with photos first"
+  ]
+}

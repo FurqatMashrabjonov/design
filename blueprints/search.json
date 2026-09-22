@@ -1,0 +1,31 @@
+{
+  "id": "search",
+  "purpose": "Find something fast by typing or by browsing suggestions.",
+  "layout": "A focused search field at the very top, then recent searches as removable chips, then suggested categories or trending items. Results, when shown, are dense rows.",
+  "sections": {
+    "required": [
+      "Search field (focused look, with clear button)",
+      "Recent searches",
+      "Suggested categories or trending"
+    ],
+    "optional": [
+      "Filter chips",
+      "Result rows with thumbnail",
+      "Voice or scan icon in the field"
+    ]
+  },
+  "primaryAction": {
+    "placement": "none",
+    "note": "Typing and tapping a suggestion are the actions."
+  },
+  "avoid": [
+    "A hero or marketing banner above the field",
+    "Search field that looks disabled",
+    "Results as big cards"
+  ],
+  "hig": [
+    "search",
+    "chip",
+    "list"
+  ]
+}

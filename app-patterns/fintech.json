@@ -1,0 +1,66 @@
+{
+  "id": "fintech",
+  "priority": 3,
+  "match": [
+    "bank",
+    "banking",
+    "wallet",
+    "payment",
+    "money",
+    "transfer",
+    "budget",
+    "crypto",
+    "card",
+    "expense",
+    "invest",
+    "finance",
+    "karta",
+    "pul",
+    "o'tkazma",
+    "hamyon",
+    "банк",
+    "кошел",
+    "перевод",
+    "карт",
+    "бюджет",
+    "крипт"
+  ],
+  "loop": "Check the balance, move money, understand spending.",
+  "screens": [
+    {
+      "name": "Home with balance and recent transactions",
+      "archetype": "dashboard"
+    },
+    {
+      "name": "Transactions list",
+      "archetype": "list"
+    },
+    {
+      "name": "Transaction detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Send / transfer",
+      "archetype": "form"
+    },
+    {
+      "name": "Transfer result",
+      "archetype": "result"
+    },
+    {
+      "name": "Spending stats",
+      "archetype": "stats"
+    }
+  ],
+  "flows": [
+    "Home → Send → Confirm → Result",
+    "Home → Transactions → Transaction detail",
+    "Stats → Category transactions"
+  ],
+  "data": "Account (balance, card last 4), Transaction (merchant, amount, date, category), Contact",
+  "pitfalls": [
+    "Balance on home matches the transactions",
+    "Money amounts right-aligned with sign and currency",
+    "Transfer ends on a result screen"
+  ]
+}

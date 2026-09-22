@@ -1,0 +1,58 @@
+{
+  "id": "booking",
+  "priority": 6,
+  "match": [
+    "booking",
+    "book a",
+    "reservation",
+    "reserve",
+    "hotel",
+    "appointment",
+    "salon",
+    "ticket",
+    "table",
+    "bron",
+    "mehmonxona",
+    "chipta",
+    "бронир",
+    "отель",
+    "билет",
+    "запис"
+  ],
+  "loop": "Pick a place and a time, then confirm the booking.",
+  "screens": [
+    {
+      "name": "Search / explore",
+      "archetype": "search"
+    },
+    {
+      "name": "Results list",
+      "archetype": "list"
+    },
+    {
+      "name": "Place detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Date & slot picker",
+      "archetype": "calendar"
+    },
+    {
+      "name": "Checkout",
+      "archetype": "checkout"
+    },
+    {
+      "name": "Booking confirmation",
+      "archetype": "result"
+    }
+  ],
+  "flows": [
+    "Search → Results → Detail → Dates → Checkout → Confirmation",
+    "Trips / bookings → Booking detail"
+  ],
+  "data": "Place (price per night/slot, rating, location), Slot or dates, Booking (code, status)",
+  "pitfalls": [
+    "Dates and guests visible on results and checkout",
+    "Price per night and the total are both shown"
+  ]
+}

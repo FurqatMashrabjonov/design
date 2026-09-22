@@ -1,0 +1,31 @@
+{
+  "id": "profile",
+  "purpose": "Who the user is, their stats, and the way into their settings.",
+  "layout": "Avatar, name and one-line bio or handle at the top, a row of 2–4 stats, then grouped rows (account, preferences, help) each with an icon and chevron.",
+  "sections": {
+    "required": [
+      "Avatar, name and handle",
+      "Stats row (2–4 numbers)",
+      "Grouped navigation rows with chevrons"
+    ],
+    "optional": [
+      "Edit profile button",
+      "Achievements or badges",
+      "Sign out row (destructive colour, last)"
+    ]
+  },
+  "primaryAction": {
+    "placement": "inline",
+    "note": "\"Edit profile\" as a secondary or small button under the name."
+  },
+  "avoid": [
+    "Huge cover image that pushes content down",
+    "Stats with no labels",
+    "Sign out as a filled button"
+  ],
+  "hig": [
+    "avatar",
+    "list",
+    "button"
+  ]
+}

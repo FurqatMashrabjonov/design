@@ -1,0 +1,59 @@
+{
+  "id": "productivity",
+  "priority": 10,
+  "match": [
+    "todo",
+    "to-do",
+    "task",
+    "notes",
+    "note",
+    "project",
+    "habit",
+    "planner",
+    "calendar",
+    "reminder",
+    "vazifa",
+    "eslatma",
+    "odat",
+    "задач",
+    "заметк",
+    "привычк",
+    "планер"
+  ],
+  "loop": "Capture a thing, organise it, get it done.",
+  "screens": [
+    {
+      "name": "Today / inbox",
+      "archetype": "list"
+    },
+    {
+      "name": "Item detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Create / edit",
+      "archetype": "form"
+    },
+    {
+      "name": "Calendar or board view",
+      "archetype": "calendar"
+    },
+    {
+      "name": "Stats or streak",
+      "archetype": "stats"
+    },
+    {
+      "name": "Settings",
+      "archetype": "settings"
+    }
+  ],
+  "flows": [
+    "Today → Item → Edit",
+    "Today → Create → Today"
+  ],
+  "data": "Task or Note or Habit (title, due, done, tags), Project or List",
+  "pitfalls": [
+    "Checkable rows with a done state",
+    "Creating is fast: one field and a Save"
+  ]
+}

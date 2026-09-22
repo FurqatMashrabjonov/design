@@ -1,6 +1,7 @@
 import type { AppNavigation, Entity, PlannedScreen } from './PlannerService.ts'
 import { buildBottomNav, buildDetailHeader, HEADER_HEIGHT, NAV_CLEARANCE, NAV_HEIGHT } from './ShellService.ts'
 import type { ShellParts } from '../../lib/screen-normalizer.ts'
+import { BlueprintService } from './BlueprintService.ts'
 
 // What one screen needs to know about the app it belongs to. Shared by the planned run
 // (PlanController) and by adding a screen to an existing app (GenerateController): the second
@@ -111,6 +112,8 @@ export function screenSpec(s: PlannedScreen): string {
     s.primaryAction && `Primary action (the one filled button, within thumb reach): ${s.primaryAction}`,
     s.sections.length > 0 && `Sections, top to bottom:\n${s.sections.map((x, i) => `${i + 1}. ${x}`).join('\n')}`,
     s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
+    // The archetype's structural pattern (blueprints/<archetype>.json); the plan's sections above say what content fills it.
+    s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype)}`,
   ]
     .filter(Boolean)
     .join('\n')

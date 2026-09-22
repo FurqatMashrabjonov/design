@@ -1,0 +1,34 @@
+{
+  "id": "checkout",
+  "purpose": "Review what is being bought and pay.",
+  "layout": "Item summary with thumbnails and quantities, then delivery or contact block, then payment method row, then a price breakdown ending in the total. A sticky bottom bar repeats the total with the pay button.",
+  "sections": {
+    "required": [
+      "Items with thumbnail, name, quantity and price",
+      "Delivery / address block",
+      "Payment method row",
+      "Price breakdown ending in Total",
+      "Sticky pay button with the total"
+    ],
+    "optional": [
+      "Promo code field",
+      "Delivery time picker",
+      "Tip selector"
+    ]
+  },
+  "primaryAction": {
+    "placement": "bottom-bar",
+    "note": "\"Place order · $29.47\" — the total inside or beside the button."
+  },
+  "avoid": [
+    "Totals that do not add up",
+    "The pay button above the breakdown",
+    "Hiding the payment method"
+  ],
+  "hig": [
+    "list",
+    "stepper",
+    "segmented",
+    "button"
+  ]
+}

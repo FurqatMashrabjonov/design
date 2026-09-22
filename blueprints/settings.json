@@ -1,0 +1,30 @@
+{
+  "id": "settings",
+  "purpose": "Change how the app behaves.",
+  "layout": "Grouped inset lists with section headers; each row has an icon, a label and a trailing control (toggle, value + chevron). Destructive actions sit alone at the bottom.",
+  "sections": {
+    "required": [
+      "Section headers",
+      "Rows with trailing toggle or value",
+      "App version or footer note"
+    ],
+    "optional": [
+      "Account row with avatar at the top",
+      "Destructive row (Delete account) at the bottom"
+    ]
+  },
+  "primaryAction": {
+    "placement": "none",
+    "note": "Controls act immediately; no save button."
+  },
+  "avoid": [
+    "Cards with shadows for each row",
+    "Toggles without labels",
+    "A save button for toggles"
+  ],
+  "hig": [
+    "nav-bar",
+    "list",
+    "toggle"
+  ]
+}

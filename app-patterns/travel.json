@@ -1,0 +1,55 @@
+{
+  "id": "travel",
+  "priority": 7,
+  "match": [
+    "travel",
+    "trip",
+    "itinerary",
+    "flight",
+    "journey",
+    "vacation",
+    "tour",
+    "sayohat",
+    "parvoz",
+    "путешеств",
+    "поездк",
+    "перелёт",
+    "тур"
+  ],
+  "loop": "Plan a trip day by day and keep everything for it in one place.",
+  "screens": [
+    {
+      "name": "Trips home",
+      "archetype": "dashboard"
+    },
+    {
+      "name": "Itinerary by day",
+      "archetype": "list"
+    },
+    {
+      "name": "Place or activity detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Map of the trip",
+      "archetype": "map"
+    },
+    {
+      "name": "Add activity",
+      "archetype": "form"
+    },
+    {
+      "name": "Documents / bookings",
+      "archetype": "list"
+    }
+  ],
+  "flows": [
+    "Trips → Itinerary → Place detail",
+    "Itinerary → Map"
+  ],
+  "data": "Trip (dates, destination), Day, Activity (time, place, booking)",
+  "pitfalls": [
+    "Itinerary grouped by day with times",
+    "The map shows the same places as the itinerary"
+  ]
+}

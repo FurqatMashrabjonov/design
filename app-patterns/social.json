@@ -1,0 +1,59 @@
+{
+  "id": "social",
+  "priority": 8,
+  "match": [
+    "social",
+    "friends",
+    "followers",
+    "feed",
+    "post",
+    "photo sharing",
+    "community",
+    "dating",
+    "match",
+    "stories",
+    "do'st",
+    "ijtimoiy",
+    "друз",
+    "соцсет",
+    "пост",
+    "знакомств"
+  ],
+  "loop": "See what people you follow share, react, and share your own.",
+  "screens": [
+    {
+      "name": "Feed",
+      "archetype": "feed"
+    },
+    {
+      "name": "Post detail with comments",
+      "archetype": "detail"
+    },
+    {
+      "name": "Profile",
+      "archetype": "profile"
+    },
+    {
+      "name": "Create post",
+      "archetype": "form"
+    },
+    {
+      "name": "Notifications",
+      "archetype": "notifications"
+    },
+    {
+      "name": "Messages",
+      "archetype": "chat"
+    }
+  ],
+  "flows": [
+    "Feed → Post → Comments",
+    "Feed → Profile",
+    "Create → Feed"
+  ],
+  "data": "User (name, handle, avatar), Post (image, caption, likes, comments), Comment",
+  "pitfalls": [
+    "Real faces and names on every post",
+    "Like and comment counts consistent between feed and detail"
+  ]
+}

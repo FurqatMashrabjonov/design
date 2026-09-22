@@ -1,0 +1,32 @@
+{
+  "id": "notifications",
+  "purpose": "Catch up on what changed.",
+  "layout": "Rows grouped by time (Today, Earlier), each with an icon or avatar, a one-line message with the key noun bold, a timestamp, and an unread marker.",
+  "sections": {
+    "required": [
+      "Time group headers",
+      "Rows with avatar or icon, message and timestamp",
+      "Unread marker"
+    ],
+    "optional": [
+      "Filter segmented (All / Mentions)",
+      "Inline action on one row (Accept)",
+      "Mark all read in the header"
+    ]
+  },
+  "primaryAction": {
+    "placement": "header",
+    "note": "\"Mark all read\" as a text button in the header."
+  },
+  "avoid": [
+    "All rows looking read",
+    "Cards with big shadows",
+    "Messages longer than two lines"
+  ],
+  "hig": [
+    "list",
+    "avatar",
+    "badge",
+    "segmented"
+  ]
+}

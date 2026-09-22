@@ -1,0 +1,62 @@
+{
+  "id": "health",
+  "priority": 5,
+  "match": [
+    "health",
+    "doctor",
+    "clinic",
+    "medication",
+    "pill",
+    "symptom",
+    "appointment",
+    "sleep",
+    "meditation",
+    "mental",
+    "therapy",
+    "shifokor",
+    "klinika",
+    "dori",
+    "uyqu",
+    "врач",
+    "клиник",
+    "лекарств",
+    "сон",
+    "медитац"
+  ],
+  "loop": "Keep track of a health routine and reach care when needed.",
+  "screens": [
+    {
+      "name": "Today overview",
+      "archetype": "dashboard"
+    },
+    {
+      "name": "Appointments / sessions list",
+      "archetype": "list"
+    },
+    {
+      "name": "Detail (doctor, session)",
+      "archetype": "detail"
+    },
+    {
+      "name": "Booking or log form",
+      "archetype": "form"
+    },
+    {
+      "name": "History stats",
+      "archetype": "stats"
+    },
+    {
+      "name": "Profile",
+      "archetype": "profile"
+    }
+  ],
+  "flows": [
+    "Today → Detail → Book → Result",
+    "Today → Log → History"
+  ],
+  "data": "Doctor or Session (name, time, duration), Appointment or Log entry, Reminder",
+  "pitfalls": [
+    "Calm, readable type; no alarming colours except for real alerts",
+    "Times and dates are exact"
+  ]
+}

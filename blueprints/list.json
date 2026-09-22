@@ -1,0 +1,33 @@
+{
+  "id": "list",
+  "purpose": "See all items of one kind, scan, and open or manage one.",
+  "layout": "Title, then search or segmented filter, then dense rows (leading icon or thumbnail, title, secondary line, trailing value or chevron). Group with section headers when the data has natural groups (date, status).",
+  "sections": {
+    "required": [
+      "Search or segmented filter",
+      "Rows with leading visual, title, secondary line and trailing value"
+    ],
+    "optional": [
+      "Section headers",
+      "Count or summary line",
+      "Swipe hint on a row",
+      "Add button in the header"
+    ]
+  },
+  "primaryAction": {
+    "placement": "header",
+    "note": "\"Add\" as an icon button in the header, or a floating button when adding is the core loop."
+  },
+  "avoid": [
+    "Cards where rows would do",
+    "Rows without a trailing value or state",
+    "Empty space at row ends"
+  ],
+  "hig": [
+    "nav-bar",
+    "search",
+    "segmented",
+    "list",
+    "badge"
+  ]
+}

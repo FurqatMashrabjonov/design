@@ -1,0 +1,33 @@
+{
+  "id": "feed",
+  "purpose": "Browse a stream of items and pick one.",
+  "layout": "Optional search or category chips pinned near the top, then a vertical stream of rich cards (image, title, 1–2 meta lines). A featured row may scroll horizontally above the main stream.",
+  "sections": {
+    "required": [
+      "Category chips or filter row",
+      "Vertical stream of item cards with image, title and meta"
+    ],
+    "optional": [
+      "Search field",
+      "Featured horizontal carousel",
+      "Section headers with \"See all\"",
+      "Promo banner (one, not repeated)"
+    ]
+  },
+  "primaryAction": {
+    "placement": "none",
+    "note": "Tapping a card is the action; no filled button on the screen."
+  },
+  "avoid": [
+    "Every card the same height with no featured item",
+    "Text-only cards when the items are visual",
+    "Stacking three carousels"
+  ],
+  "hig": [
+    "search",
+    "chip",
+    "card",
+    "image",
+    "list"
+  ]
+}

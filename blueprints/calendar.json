@@ -1,0 +1,30 @@
+{
+  "id": "calendar",
+  "purpose": "See what happens when and pick a date or slot.",
+  "layout": "Month or week strip with the selected day highlighted, then the selected day's agenda as time-ordered rows or bookable slots.",
+  "sections": {
+    "required": [
+      "Week strip or month grid with today and selection marked",
+      "Agenda or slots for the selected day"
+    ],
+    "optional": [
+      "Month switcher",
+      "Legend for event colours",
+      "Add event button"
+    ]
+  },
+  "primaryAction": {
+    "placement": "header",
+    "note": "Add as a header icon; for booking, the chosen slot's \"Book\" in a bottom bar."
+  },
+  "avoid": [
+    "A full month grid with nothing below",
+    "Days without dots or counts",
+    "Times without end or duration"
+  ],
+  "hig": [
+    "date-picker",
+    "list",
+    "segmented"
+  ]
+}

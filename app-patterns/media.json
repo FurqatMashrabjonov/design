@@ -1,0 +1,57 @@
+{
+  "id": "media",
+  "priority": 11,
+  "match": [
+    "music",
+    "podcast",
+    "video",
+    "stream",
+    "playlist",
+    "album",
+    "movie",
+    "audio",
+    "book",
+    "musiqa",
+    "kino",
+    "музык",
+    "подкаст",
+    "видео",
+    "фильм"
+  ],
+  "loop": "Find something to watch or listen to and play it.",
+  "screens": [
+    {
+      "name": "Home with rows",
+      "archetype": "feed"
+    },
+    {
+      "name": "Search",
+      "archetype": "search"
+    },
+    {
+      "name": "Album / show detail",
+      "archetype": "detail"
+    },
+    {
+      "name": "Player",
+      "archetype": "player"
+    },
+    {
+      "name": "Library",
+      "archetype": "list"
+    },
+    {
+      "name": "Profile",
+      "archetype": "profile"
+    }
+  ],
+  "flows": [
+    "Home → Album → Player",
+    "Search → Result → Player"
+  ],
+  "data": "Track or Episode (title, artist/show, duration), Album or Show, Playlist",
+  "pitfalls": [
+    "Artwork everywhere",
+    "A mini player bar when something is playing"
+  ]
+}

@@ -1,3 +1,4 @@
+import { AppPatternService } from './AppPatternService.ts'
 import { completeJSON, type LlmUsage } from './LlmService.ts'
 import { ICON_NAMES, isActionIcon, resolveIcon } from './ShellService.ts'
 
@@ -288,7 +289,9 @@ export function assignScreenSlots(screens: PlannedScreen[], navigation: AppNavig
 }
 
 export async function planScreens(brief: string, device: string, onUsage?: (u: LlmUsage) => void): Promise<Plan> {
-  const user = `Brief: ${brief}\nPlatform: ${device}`
+  // Only the pattern of the one app type the brief matches goes in (UX-02); none when nothing matches.
+  const pattern = AppPatternService.classify(brief)
+  const user = `Brief: ${brief}\nPlatform: ${device}${pattern ? `\n\n${AppPatternService.brief(pattern)}` : ''}`
   const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS, onUsage)
   const plan = parsePlan(raw)
   if (plan.uncovered.length === 0) return plan

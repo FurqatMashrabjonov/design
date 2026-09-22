@@ -1,0 +1,60 @@
+{
+  "id": "learning",
+  "priority": 9,
+  "match": [
+    "learn",
+    "learning",
+    "course",
+    "lesson",
+    "language",
+    "study",
+    "quiz",
+    "school",
+    "kids",
+    "tutor",
+    "o'rganish",
+    "dars",
+    "kurs",
+    "til",
+    "учить",
+    "урок",
+    "курс",
+    "язык"
+  ],
+  "loop": "Take the next lesson, practise, and see the streak grow.",
+  "screens": [
+    {
+      "name": "Home with continue card",
+      "archetype": "dashboard"
+    },
+    {
+      "name": "Course path / lessons",
+      "archetype": "list"
+    },
+    {
+      "name": "Lesson or exercise",
+      "archetype": "form"
+    },
+    {
+      "name": "Lesson result",
+      "archetype": "result"
+    },
+    {
+      "name": "Progress stats",
+      "archetype": "stats"
+    },
+    {
+      "name": "Profile",
+      "archetype": "profile"
+    }
+  ],
+  "flows": [
+    "Home → Lesson → Exercise → Result",
+    "Path → Lesson"
+  ],
+  "data": "Course, Lesson (title, duration, done), Progress (streak, XP)",
+  "pitfalls": [
+    "One clear Continue action on home",
+    "The result screen shows what was earned"
+  ]
+}
