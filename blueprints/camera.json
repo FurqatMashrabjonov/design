@@ -40,5 +40,6 @@
       "id": "c",
       "layout": "Viewfinder with a mode switcher above the shutter (photo, scan, barcode) and hints at the top."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-media\" style=\"aspect-ratio:auto;height:70vh;border-radius:0\"><img data-od-img=\"[what is being scanned]\" alt=\"\"></div><div class=\"od-page\" style=\"align-items:center\"><p class=\"od-hero__sub\">[instruction]</p><div style=\"display:flex;gap:32px;align-items:center\"><button class=\"od-icon-btn\" aria-label=\"Gallery\"><i data-lucide=\"image\"></i></button><button class=\"od-btn\" aria-label=\"Capture\" style=\"width:76px;height:76px;border-radius:50%\"></button><button class=\"od-icon-btn\" aria-label=\"Flash\"><i data-lucide=\"zap\"></i></button></div></div>"
 }

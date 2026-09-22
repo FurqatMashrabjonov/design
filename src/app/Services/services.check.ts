@@ -409,7 +409,7 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
     assert.ok(['bottom-bar', 'inline', 'header', 'none'].includes(b.primaryAction.placement) && b.primaryAction.note.length > 10, `${id}: primary action`)
     assert.ok(b.avoid.length >= 2 && b.avoid.length <= 4, `${id}: 2–4 things to avoid`)
     for (const h of b.hig) assert.ok(HIG.includes(h), `${id}: unknown HIG card "${h}"`)
-    assert.ok(BlueprintService.brief(id).length < 900, `${id}: the brief stays short`)
+    assert.ok(BlueprintService.brief(id).length < 4200, `${id}: the brief stays short (pattern + platform notes + kit sketch): ${BlueprintService.brief(id).length}`)
     assert.ok(!/\b(Airbnb|Uber|Spotify|Instagram|Duolingo|Apple|Google)\b/.test(JSON.stringify(b)), `${id}: no brand names`)
   }
   // VAR-02: layout variants, picked per app, stable
@@ -420,8 +420,23 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   assert.deepEqual(BlueprintService.variant('feed', 'GoBite'), BlueprintService.variant('feed', ' gobite '), 'the same app always gets the same layout')
   const picks = new Set(['GoBite', 'NovaBank', 'Tasky', 'Stayfinder', 'Tempo', 'Habitly', 'Zen', 'Pagely', 'Shelf', 'Trailmate'].map((a) => BlueprintService.variant('feed', a)!.id))
   assert.ok(picks.size >= 2, 'different apps land on different layouts')
-  assert.ok(BlueprintService.brief('detail', 'GoBite').includes('layout '), 'a seeded brief names its layout')
-  assert.ok(!BlueprintService.brief('detail').includes('layout '), 'unseeded, the base pattern')
+  assert.ok(BlueprintService.brief('detail', 'GoBite').includes('Screen pattern (detail, layout '), 'a seeded brief names its layout')
+  assert.ok(BlueprintService.brief('detail').startsWith('Screen pattern (detail): '), 'unseeded, the base pattern')
+  for (const id of ARCHETYPES) {
+    const kit = BlueprintService.find(id)!.kit ?? ''
+    assert.ok(/class="od-/.test(kit) && kit.length < 1200, `${id}: a short kit sketch built from od- classes`)
+  }
+  // HIG-01 / HIG-02: platform cards, and only the ones a screen's archetype uses
+  const { readFileSync } = await import('node:fs')
+  for (const id of ARCHETYPES) for (const h of BlueprintService.find(id)!.hig) for (const p of ['ios', 'android']) {
+    const text = readFileSync(`craft/platform/${p}/${h}.md`, 'utf8')
+    const lines = text.split(/(?<=\.) /).length
+    assert.ok(text.length < 700 && lines >= 3 && lines <= 9, `${p}/${h}: a short card (${text.length} chars, ${lines} sentences)`)
+    assert.ok(!/\b(Apple|Google|iPhone|SwiftUI|UIKit|Jetpack)\b/.test(text), `${p}/${h}: our wording, no brand or framework names`)
+  }
+  const notes = BlueprintService.platformNotes('checkout')
+  assert.ok(notes.startsWith('Platform notes (iOS)') && notes.includes('**List.**') && notes.includes('**Stepper.**') && !notes.includes('**Map.**'), 'checkout carries its own components\' cards, not others')
+  assert.ok(BlueprintService.brief('checkout').includes('Platform notes (iOS)'), 'the cards are in the screen brief')
   assert.equal(BlueprintService.find('../etc'), null, 'ids are validated before touching the disk')
   assert.equal(BlueprintService.brief('nope'), '')
 }
@@ -456,6 +471,16 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   assert.equal(jsonOnly('```json\n{"a":{"b":1}}\n```'), '{"a":{"b":1}}')
   assert.equal(jsonOnly('Here is the plan: {"x":[1]} Hope it helps.'), '{"x":[1]}')
   assert.equal(jsonOnly('no json'), 'no json', 'nothing to cut: the caller\'s JSON.parse reports it')
+}
+
+// VAR-01: one art direction per project, stable, suited to the app type, varied across projects
+{
+  const { artDirection, artBlock } = await import('../../lib/art-direction.ts')
+  assert.deepEqual(artDirection('p-123', 'fintech'), artDirection('p-123', 'fintech'), 'stable for a project')
+  for (let i = 0; i < 30; i++) assert.ok(['dense', 'calm', 'mosaic'].includes(artDirection(`bank-${i}`, 'fintech').id), 'a bank only lands on directions that suit banking')
+  assert.ok(new Set(Array.from({ length: 30 }, (_, i) => artDirection(`p${i}`, 'media').id)).size >= 2, 'different projects get different directions')
+  assert.ok(new Set(Array.from({ length: 60 }, (_, i) => artDirection(`x${i}`).id)).size >= 5, 'an unknown type can land anywhere')
+  assert.match(artBlock(artDirection('p', 'travel')), /^ART DIRECTION for this whole app — /)
 }
 
 console.log('ok')

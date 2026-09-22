@@ -10,11 +10,18 @@ import { parseArgs } from 'node:util'
 import { computeMetrics, diffMetrics, type ScreenInput, type Usage } from './metrics.ts'
 import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet.ts'
 
-// Evals measure what users get, which is DeepSeek. A Claude Code run would be tuned against the wrong model.
-if (process.env.LLM_PROVIDER === 'claude-cli') {
-  console.error('LLM_PROVIDER=claude-cli is set: evals run on DeepSeek only. Unset it to run the eval.')
-  process.exit(1)
+// Which model drew the run. A Claude Code run (LLM_PROVIDER=claude-cli, the developer's own
+// subscription) is only ever compared with other Claude runs: its numbers say how a code change
+// moves quality, not what DeepSeek users get, so the result is re-checked on DeepSeek before launch.
+const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? `claude-cli${process.env.CLAUDE_CLI_MODEL ? `:${process.env.CLAUDE_CLI_MODEL}` : ''}` : 'deepseek'
+const providerOf = (d: string) => {
+  try {
+    return (JSON.parse(readFileSync(join(OUT_ROOT, d, 'run.json'), 'utf8')) as { provider: string }).provider
+  } catch {
+    return 'deepseek' // runs from before run.json existed were all DeepSeek
+  }
 }
+if (PROVIDER !== 'deepseek') console.log(`[eval] provider ${PROVIDER} — compared only with runs on the same provider`)
 
 type Brief = { id: string; brief: string; designSystem: string; expect?: string[] }
 
@@ -151,7 +158,7 @@ const inputsOf = (d: string, rs: BriefResult[]): ScreenInput[] =>
 // "Before" is the earlier run that drew the most of these briefs (newest on a tie). Runs are usually
 // --only subsets, so both sides are cut down to the briefs they share before anything is compared.
 const drew = new Set(results.filter((r) => r.screens.length).map((r) => r.id))
-const overlap = (d: string) => (existsSync(join(OUT_ROOT, d, 'results.json')) ? loadRun(d).filter((r) => r.screens.length && drew.has(r.id)).length : 0)
+const overlap = (d: string) => (existsSync(join(OUT_ROOT, d, 'results.json')) && providerOf(d) === PROVIDER ? loadRun(d).filter((r) => r.screens.length && drew.has(r.id)).length : 0)
 const prevLabel = readdirSync(OUT_ROOT)
   .filter((d) => d < label && overlap(d) > 0)
   .sort((a, z) => overlap(a) - overlap(z) || a.localeCompare(z))
@@ -162,6 +169,7 @@ const expectOf = Object.fromEntries((JSON.parse(readFileSync('eval/briefs.json',
 const planInputs = (rs: BriefResult[]) => rs.flatMap((r) => (r.plan ? [{ briefId: r.id, expect: expectOf[r.id] ?? [], ...r.plan }] : []))
 const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage, planInputs(results))
 writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2))
+writeFileSync(join(outDir, 'run.json'), JSON.stringify({ provider: PROVIDER }))
 
 let delta: string[] = []
 if (prevLabel) {

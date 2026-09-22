@@ -44,5 +44,6 @@
       "id": "c",
       "layout": "Timeline: a date strip across the top, then today's items as a vertical timeline with times on the left; the key number sits in a slim banner above it."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><div><div class=\"od-hero__eyebrow\">[date]</div><h1 class=\"od-hero__title\">[greeting]</h1></div><div class=\"od-card\"><div class=\"od-stat\"><span class=\"od-stat__label\">[label]</span><span class=\"od-stat__value\">[value]</span><span class=\"od-stat__delta od-stat__delta--up\">[change]</span></div><div class=\"od-progress\" style=\"--value:[pct]%\"><span></span></div><button class=\"od-btn od-btn--block\">[next step]</button></div><section class=\"od-section\"><div class=\"od-section__head\"><h2 class=\"od-section__title\">[section]</h2><button class=\"od-section__link\">[see all]</button></div><div class=\"od-list\">[od-row × 3]</div></section></div>"
 }

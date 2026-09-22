@@ -1,0 +1,1 @@
+**Avatar.** Circles: 28px in rows and comments, 40px in lists, 72–96px on a profile header. A real photo or initials on a tinted fill — never a generic silhouette icon. Stacks of avatars overlap by a third with a surface-coloured ring.

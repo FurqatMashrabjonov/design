@@ -1,5 +1,7 @@
+import { artBlock, artDirection } from '@/lib/art-direction'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
+import { KitService } from '@/app/Services/KitService'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
@@ -83,6 +85,7 @@ export const PlanController = {
               digest,
               content,
               data,
+              art: artBlock(artDirection(project.id, plan.appType)),
               heading: `Screen to design: ${s.name}`,
               description: screenSpec(s, plan.appName),
             })
@@ -107,6 +110,7 @@ export const PlanController = {
                   iconStroke,
                   shell: shellPartsFor(s, plan.navigation, isMobile, s.name),
                   navClearance: NAV_CLEARANCE,
+                  kitCss: KitService.css(),
                 }),
               )
               const withImages = await resolveImages(normalized, abort.signal, { name: plan.appName })

@@ -1,0 +1,1 @@
+**Keyboard.** When a screen is about typing (chat, compose, search), the input sits directly above the keyboard area at the bottom; nothing important hides under it. The send button is inside or beside the field and only enabled with text. Long forms scroll the focused field into view above the keyboard.

@@ -42,5 +42,6 @@
       "id": "c",
       "layout": "Avatar-led rows with the related thumbnail on the right (like, comment, follow), grouped by time."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><section class=\"od-section\"><h2 class=\"od-section__title\">[today]</h2><div class=\"od-list\"><div class=\"od-row\"><span class=\"od-avatar\"><img data-od-avatar=\"[person]\" alt=\"\"></span><span class=\"od-row__body\"><span class=\"od-row__title\">[who did what]</span><span class=\"od-row__sub\">[time]</span></span><span class=\"od-badge\">[n]</span></div></div></section></div>"
 }

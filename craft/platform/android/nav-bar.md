@@ -1,0 +1,1 @@
+**Nav bar.** The top bar holds the back arrow (with the previous screen's title if short), the left-aligned title, and at most two trailing icon buttons. Top app bars are 64px with a 22px title; large (medium/large app bar) titles only on root screens. Never put a primary action here except Save/Done on a form.

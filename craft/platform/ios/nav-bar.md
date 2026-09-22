@@ -1,0 +1,1 @@
+**Nav bar.** The top bar holds the back chevron (with the previous screen's title if short), the centred title, and at most two trailing icon buttons. Large titles (34px bold, left-aligned) only on root screens; pushed screens use the 17px semibold inline title. Never put a primary action here except Save/Done on a form.

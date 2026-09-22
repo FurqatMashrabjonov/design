@@ -10,6 +10,8 @@ export async function generate(
     editElementId?: string
     /** Redraw this screen from its stored spec (also how a failed screen is retried); `prompt` is ignored. */
     regenerateScreenId?: string
+    /** Fix these render-audit findings on editScreenId in one edit (EYE-02); `prompt` is ignored. */
+    fixFindings?: unknown[]
     skill?: string
   },
   onText: (text: string) => void,

@@ -43,5 +43,6 @@
       "id": "c",
       "layout": "Hero: a large illustration or photo on top, one benefit headline, plans as a segmented toggle, subscribe."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><h1 class=\"od-hero__title\">[benefit headline]</h1><div class=\"od-list od-list--plain\"><div class=\"od-row\"><span class=\"od-row__lead\"><i data-lucide=\"check\"></i></span><span class=\"od-row__body\"><span class=\"od-row__title\">[benefit]</span></span></div></div><div class=\"od-grid\"><button class=\"od-card\" style=\"border-color:var(--accent)\"><span class=\"od-tag\">[best value]</span><span class=\"od-price\">[price]</span><span class=\"od-card__meta\">[period]</span></button><button class=\"od-card\"><span class=\"od-price\">[price]</span><span class=\"od-card__meta\">[period]</span></button></div></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[start trial]</button></div>"
 }

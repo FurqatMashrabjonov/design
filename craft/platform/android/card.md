@@ -1,0 +1,1 @@
+**Card.** A card groups one thing you can act on. 16px padding, 12–20px radius, one border or one soft shadow — not both heavy. Inside: title, 1–2 meta lines, optional image on top. Cards in a list share one width; don't nest cards in cards.

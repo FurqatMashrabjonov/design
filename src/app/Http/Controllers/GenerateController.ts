@@ -1,6 +1,10 @@
+import { artBlock, artDirection } from '@/lib/art-direction'
+import { fixInstruction, parseAudit } from '@/lib/render-audit'
+import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen, type ScreenRow } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
+import { KitService } from '@/app/Services/KitService'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { streamCompletion } from '@/app/Services/LlmService'
 import { resolveImages } from '@/app/Services/ImageService'
@@ -22,10 +26,16 @@ import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/li
 // POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, regenerateScreenId?, skill? } -> text/plain stream
 // regenerateScreenId redraws that screen from its stored spec — also how a failed screen is retried.
 export const GenerateController = {
-  async stream(request: Request): Promise<Response> {
+  // opts.userId: the signed-in owner, set by the API route (server/guard.ts); a new project is theirs.
+  async stream(request: Request, opts: { userId?: string } = {}): Promise<Response> {
     const body = await request.json().catch(() => ({}))
     const regenerateId = typeof body.regenerateScreenId === 'string' && body.regenerateScreenId ? body.regenerateScreenId : null
     let prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+    // EYE-02: "fix what the render audit found" — the findings come from the browser, so they are
+    // validated and turned into the instruction here; the prompt field is not used.
+    const fixes = Array.isArray(body.fixFindings) && typeof body.editScreenId === 'string' ? parseAudit(body.fixFindings) : []
+    if (fixes.length) prompt = fixInstruction(fixes)
+    if (Array.isArray(body.fixFindings) && !prompt) return new Response('No problem with an element to fix', { status: 400 })
     if (!regenerateId && (!prompt || prompt.length > 4000)) return new Response('Prompt must be 1-4000 characters', { status: 400 })
 
     let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation' | 'plan'>>) | undefined
@@ -102,6 +112,8 @@ export const GenerateController = {
         userMessage = screenBrief({
           app: stored?.summary ? `${project.name ?? 'Untitled'} — ${stored.summary}` : (project.name ?? 'Untitled'),
           data: dataBlock(stored?.entities ?? []),
+          // The same direction the planned screens got: seeded by the project, not by the request.
+          art: artBlock(artDirection(project.id, stored?.appType)),
           screenNames: siblings.map((s) => s.name),
           contract: shellContract(slot, nav, project.device === 'mobile'),
           digest: anchor ? extractStyleDigest(anchor.html) : '',
@@ -120,9 +132,12 @@ export const GenerateController = {
     // has no row yet, so its first exchange is written once the project exists.
     const startedAt = Date.now()
     const kind: MessageKind = redraw ? 'regenerate' : editScreen && editElementId ? 'element' : editScreen ? 'edit' : 'add'
-    const ask = redraw ? `Regenerate “${redraw.name}”` : String(body.prompt).trim()
+    const fixCount = fixes.length ? fixInstruction(fixes).split('\n').length - 1 : 0
+    const ask = redraw ? `Regenerate “${redraw.name}”` : fixCount ? `Fix ${fixCount} problem${fixCount === 1 ? '' : 's'} found in the rendered screen` : String(body.prompt).trim()
     const target = redraw ?? editScreen
     if (!isNew) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    // Asking for a drawn screen again is a signal about it (FB-01); retrying a failed one is not.
+    if (redraw?.html) FeedbackController.record(project.id, redraw.id, 'regenerate')
     const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
     const fail = (raw: string) =>
       Message.add({ projectId: projectRef.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { screens: target ? [{ id: target.id, name: target.name }] : [], log: [raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
@@ -169,6 +184,7 @@ export const GenerateController = {
             tokensCss: DesignSystemService.readTokensRoot(projectRef.designSystem),
             fontUrls: DesignSystemService.readFontUrls(projectRef.designSystem),
             iconStroke: DesignSystemService.readIconStroke(projectRef.designSystem),
+            kitCss: KitService.css(),
           }
 
           if (editScreen && editElementId) {
@@ -212,6 +228,7 @@ export const GenerateController = {
               name: title,
               designSystem: projectRef.designSystem,
               device: projectRef.device,
+              userId: opts.userId ?? null,
             })
           }
 

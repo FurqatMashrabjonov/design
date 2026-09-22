@@ -5,7 +5,13 @@
  * a precision editorial language built around white-space discipline,
  * SF Pro typography, and a single restrained blue accent. This file
  * is the *machine-readable* form of the values described in
- * `DESIGN.md`. Agents are expected to paste the `:root { … }` block
+ * `DESIGN.md`. Agents are expected to paste the `:root { … 
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-border: 0;
+  --od-card-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  --od-control-border: 1px solid transparent;
+  --od-row-min: 52px;
+}` block
  * verbatim into the first `<style>` of every artifact they generate
  * against this design system, then reference everything via
  * var(--name) from then on.

@@ -3,6 +3,40 @@ import { tmpdir } from 'node:os'
 
 export type LlmUsage = { promptTokens: number; cachedTokens: number; completionTokens: number }
 
+// DeepSeek list prices, USD per million tokens — for estimates in the eval and the spend log.
+export const PRICE = {
+  cached: Number(process.env.LLM_PRICE_IN_CACHED ?? 0.07),
+  input: Number(process.env.LLM_PRICE_IN ?? 0.27),
+  output: Number(process.env.LLM_PRICE_OUT ?? 1.1),
+}
+export const costOf = (u: LlmUsage) => ((u.promptTokens - u.cachedTokens) * PRICE.input + u.cachedTokens * PRICE.cached + u.completionTokens * PRICE.output) / 1e6
+
+/** One finished model call: how long, whether it worked, what it used. For the spend log (OBS-01). */
+export type LlmCall = { provider: string; ms: number; ok: boolean; error?: string; usage: LlmUsage }
+let callListener: ((c: LlmCall) => void) | undefined
+export function onLlmCall(fn: typeof callListener) {
+  callListener = fn
+}
+/** Wraps a call so its duration, outcome and usage are reported once, however it ends. */
+async function* tracked(run: (tally: (u: LlmUsage) => void) => AsyncGenerator<string>): AsyncGenerator<string> {
+  const started = Date.now()
+  const usage: LlmUsage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
+  const tally = (u: LlmUsage) => {
+    usage.promptTokens += u.promptTokens
+    usage.cachedTokens += u.cachedTokens
+    usage.completionTokens += u.completionTokens
+  }
+  let error: string | undefined
+  try {
+    yield* run(tally)
+  } catch (e) {
+    error = e instanceof Error ? e.message : String(e)
+    throw e
+  } finally {
+    callListener?.({ provider: PROVIDER, ms: Date.now() - started, ok: !error, error: error?.slice(0, 300), usage })
+  }
+}
+
 // One listener, set by whoever measures spend (today: eval/run.ts). Called once per completed call.
 let usageListener: ((u: LlmUsage) => void) | undefined
 export function onLlmUsage(fn: typeof usageListener) {
@@ -31,8 +65,8 @@ const PLAN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_PLAN ?? 1.0)
 
 // LLM_PROVIDER=claude-cli: for local testing only, generation runs through the developer's own
 // Claude Code login (`claude -p`) instead of DeepSeek, so trying things out costs no API balance.
-// Never in production — a subscription is personal and cannot serve other people's requests — and
-// never for evals: prompts are tuned for DeepSeek, and a Claude run says nothing about DeepSeek's.
+// Never in production — a subscription is personal and cannot serve other people's requests. Evals
+// may run on it (the user's call, 2026-09-22), tagged by provider and compared only with each other.
 const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? 'claude-cli' : 'deepseek'
 function assertLocalProvider() {
   if (process.env.NODE_ENV === 'production') throw new Error('LLM_PROVIDER=claude-cli is for local testing only; unset it in production')
@@ -40,7 +74,11 @@ function assertLocalProvider() {
 
 // Yields text deltas from DeepSeek's OpenAI-compatible SSE stream.
 // `signal` lets the caller stop the request (and the token spend) when the client goes away.
-export async function* streamCompletion(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void) {
+export async function* streamCompletion(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void): AsyncGenerator<string> {
+  yield* tracked((tally) => rawStream(system, user, signal, (u) => (tally(u), onUsage?.(u))))
+}
+
+async function* rawStream(system: string, user: string, signal?: AbortSignal, onUsage?: (u: LlmUsage) => void): AsyncGenerator<string> {
   if (PROVIDER === 'claude-cli') {
     yield* claudeCli(system, user, signal, onUsage)
     return
@@ -87,7 +125,15 @@ export async function* streamCompletion(system: string, user: string, signal?: A
 }
 
 // Non-streaming, JSON-only completion (planner). DeepSeek's response_format:json_object guarantees valid JSON syntax.
-export async function completeJSON(system: string, user: string, maxTokens = 1024, onUsage?: (u: LlmUsage) => void) {
+export async function completeJSON(system: string, user: string, maxTokens = 1024, onUsage?: (u: LlmUsage) => void): Promise<string> {
+  let out = ''
+  for await (const part of tracked(async function* (tally) {
+    yield await rawJSON(system, user, maxTokens, (u) => (tally(u), onUsage?.(u)))
+  })) out += part
+  return out
+}
+
+async function rawJSON(system: string, user: string, maxTokens = 1024, onUsage?: (u: LlmUsage) => void): Promise<string> {
   if (PROVIDER === 'claude-cli') {
     let text = ''
     for await (const d of claudeCli(system, user, undefined, onUsage)) text += d

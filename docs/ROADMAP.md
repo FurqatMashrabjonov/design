@@ -60,21 +60,21 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UX-03 | Planner v2: archetype, userGoal, primaryAction, sections[], linksTo[] | Generatsiya / Asosiy | MVP | Tayyor | O'rta | UX-01 | Sxemaga mos kelmagan reja o'tmaydi yoki tuzatiladi |
 | UX-04 | Ilova ma'lumot modeli: ekranlararo bir xil kontent | Generatsiya / Izchillik | MVP | Tayyor | O'rta | UX-03 | Bosh ekrandagi element detal ekranida shu nom va raqam bilan |
 | UX-05 | Oqim bog'lari: data-od-link, preview'da o'tish | Generatsiya / Ko'rish | MVP | Tayyor | Kichik | UX-03 | Preview'da kartadan detal ekranga o'tiladi |
-| HIG-01 | HIG/Material komponent kartalari (o'z so'zimiz bilan, 5–8 qator) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | craft/platform/ios/*.md |
-| HIG-02 | Promptga faqat arxetip ishlatadigan kartalar kiradi | Generatsiya / Sifat | MVP | Rejada | Kichik | HIG-01, UX-01 | Prompt byudjeti saqlanadi |
+| HIG-01 | HIG/Material komponent kartalari (o'z so'zimiz bilan, 5–8 qator) | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | craft/platform/ios/*.md |
+| HIG-02 | Promptga faqat arxetip ishlatadigan kartalar kiradi | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-01, UX-01 | Prompt byudjeti saqlanadi |
 | HIG-03 | HIG raqamlari → render auditi qoidalari | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | Shrift ≥11px, nishon ≥44px, kontrast ≥4.5, tab 3–5 — bitta faylda |
-| KIT-01 | od-kit.css: tokenlar bilan ishlaydigan ~30 komponent | Generatsiya / Izchillik | MVP | Rejada | Katta |  | Har komponent 33 tizimda galereyada to'g'ri ko'rinadi |
-| KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Rejada | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
-| KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Rejada | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
-| KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Rejada | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
-| EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Rejada | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
-| EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Rejada | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
+| KIT-01 | od-kit.css: tokenlar bilan ishlaydigan ~30 komponent | Generatsiya / Izchillik | MVP | Tayyor | Katta |  | Har komponent 33 tizimda galereyada to'g'ri ko'rinadi |
+| KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
+| KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Tayyor | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
+| KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Jarayonda | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
+| EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Tayyor | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
+| EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
 | EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |
-| VAR-01 | Loyiha art-yo'nalishi urug'i | Generatsiya / Variantlar | MVP | Rejada | O'rta | KIT-02 | Loyiha ichida barqaror, loyihalar aro farqli |
+| VAR-01 | Loyiha art-yo'nalishi urug'i | Generatsiya / Variantlar | MVP | Tayyor | O'rta | KIT-02 | Loyiha ichida barqaror, loyihalar aro farqli |
 | VAR-02 | Har arxetipga 2–3 layout varianti | Generatsiya / Variantlar | MVP | Tayyor | O'rta | UX-01 | Bir xillik ko'rsatkichi bazaviydan ≥30% past |
-| VAR-03 | Mobilga moslangan ~400 tokenli estetika bloki | Generatsiya / Sifat | MVP | Rejada | Kichik | GEN-23 | Prompt byudjeti ichida; eval'da A/B yutadi |
-| FB-01 | 👍/👎 va 'qayta yarat' signali yoziladi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Signal tizim, arxetip, variant bilan bazada |
-| FB-02 | Foydalanuvchi tahrirlari oldin/keyin juftligi sifatida saqlanadi | Generatsiya / Analitika | MVP | Rejada | Kichik |  | Har tahrir juftligi so'rov bilan birga saqlanadi |
+| VAR-03 | Mobilga moslangan ~400 tokenli estetika bloki | Generatsiya / Sifat | MVP | Tayyor | Kichik | GEN-23 | Prompt byudjeti ichida; eval'da A/B yutadi |
+| FB-01 | 👍/👎 va 'qayta yarat' signali yoziladi | Generatsiya / Analitika | MVP | Tayyor | Kichik |  | Signal tizim, arxetip, variant bilan bazada |
+| FB-02 | Foydalanuvchi tahrirlari oldin/keyin juftligi sifatida saqlanadi | Generatsiya / Analitika | MVP | Tayyor | Kichik |  | Har tahrir juftligi so'rov bilan birga saqlanadi |
 | DEV-01 | Lokal sinov uchun Claude Code provayderi (LLM_PROVIDER=claude-cli) | Generatsiya / Asosiy | MVP | Tayyor | Kichik |  | Productionda va evalda rad etiladi |
 
 ## M · Muharrir UX
@@ -121,34 +121,34 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
-| AUTH-01 | Kirish usullarini tanlash | Kirish va hisoblar / Qarorlar | MVP | Rejada | Kichik |  | Usullar tanlangan va shu yerda yozilgan |
-| AUTH-02 | Better Auth ni Drizzle SQLite bilan o'rnatish | Kirish va hisoblar / O'rnatish | MVP | Rejada | O'rta | AUTH-01 | Migratsiya user/session/account/verification jadvallarini yaratadi; /api/auth/* ishlaydi |
-| AUTH-03 | Google orqali kirish | Kirish va hisoblar / Kirish usullari | MVP | Rejada | Kichik | AUTH-02 | Yangi va qaytgan Google foydalanuvchilari bosh sahifaga tushadi |
-| AUTH-04 | Emailga sehrli havola orqali kirish | Kirish va hisoblar / Kirish usullari | MVP | Rejada | O'rta | AUTH-02, EML-01 | Havola keladi, bir marta ishlaydi, muddati tugaydi |
-| AUTH-05 | Kirish sahifasi va chiqish | Kirish va hisoblar / Interfeys | MVP | Rejada | Kichik | AUTH-03 | Kirmagan odam kirish sahifasini ko'radi; chiqish sessiyani o'chiradi |
-| AUTH-06 | Server funksiyalari uchun requireUser() yordamchisi | Kirish va hisoblar / Sessiya | MVP | Rejada | Kichik | AUTH-02 | Har controller foydalanuvchini bitta yordamchidan oladi; kirmaganlarga 401 |
-| AUTH-07 | Bosh sahifa, muharrir va ko'rishni himoyalash | Kirish va hisoblar / Sessiya | MVP | Rejada | Kichik | AUTH-06 | Kirmagan odam /, /p/:id, /preview/:id dan kirish sahifasiga yo'naltiriladi |
-| AUTH-08 | Hisob menyusi (ism, rasm, chiqish) | Kirish va hisoblar / Interfeys | MVP | Rejada | Kichik | AUTH-05 | Bosh sahifa va muharrirda ko'rinadi |
-| AUTH-09 | Hisobni va barcha ma'lumotlarini o'chirish | Kirish va hisoblar / Hisob | MVP | Rejada | Kichik | OWN-02 | Loyihalar, ekranlar, versiyalar, kreditlar va sessiyalar o'chadi |
-| OWN-01 | projects jadvaliga user_id ustuni va migratsiya | Egalik / Sxema | MVP | Rejada | Kichik | AUTH-02 | 0008 migratsiyasi foreign key bilan ustun qo'shadi |
-| OWN-02 | Har loyiha va ekran so'rovini joriy foydalanuvchi bilan cheklash | Egalik / Kirish nazorati | MVP | Rejada | O'rta | OWN-01, AUTH-06 | Boshqa foydalanuvchining loyiha ID si har server funksiyasida 404 qaytaradi |
-| OWN-03 | /api/generate va /api/generate-plan da egalikni tekshirish | Egalik / Kirish nazorati | MVP | Rejada | Kichik | OWN-02 | Birovning loyihasiga generatsiya 404 qaytaradi |
-| OWN-04 | Ko'rish sahifasi faqat egaga (ommaviy ulashish chiqquncha) | Egalik / Kirish nazorati | MVP | Rejada | Kichik | OWN-02 | Kirmagan yoki boshqa foydalanuvchiga ko'rish yopiq |
-| OWN-05 | Mavjud lokal loyihalarni birinchi hisobga biriktirish | Egalik / Ko'chirish | MVP | Rejada | Kichik | OWN-01 | Yangilangandan keyin egasiz loyiha qolmaydi |
+| AUTH-01 | Kirish usullarini tanlash | Kirish va hisoblar / Qarorlar | MVP | Tayyor | Kichik |  | Usullar tanlangan va shu yerda yozilgan |
+| AUTH-02 | Better Auth ni Drizzle SQLite bilan o'rnatish | Kirish va hisoblar / O'rnatish | MVP | Tayyor | O'rta | AUTH-01 | Migratsiya user/session/account/verification jadvallarini yaratadi; /api/auth/* ishlaydi |
+| AUTH-03 | Google orqali kirish | Kirish va hisoblar / Kirish usullari | MVP | Jarayonda | Kichik | AUTH-02 | Yangi va qaytgan Google foydalanuvchilari bosh sahifaga tushadi |
+| AUTH-04 | Emailga sehrli havola orqali kirish | Kirish va hisoblar / Kirish usullari | MVP | Bloklangan | O'rta | AUTH-02, EML-01 | Havola keladi, bir marta ishlaydi, muddati tugaydi |
+| AUTH-05 | Kirish sahifasi va chiqish | Kirish va hisoblar / Interfeys | MVP | Tayyor | Kichik | AUTH-03 | Kirmagan odam kirish sahifasini ko'radi; chiqish sessiyani o'chiradi |
+| AUTH-06 | Server funksiyalari uchun requireUser() yordamchisi | Kirish va hisoblar / Sessiya | MVP | Tayyor | Kichik | AUTH-02 | Har controller foydalanuvchini bitta yordamchidan oladi; kirmaganlarga 401 |
+| AUTH-07 | Bosh sahifa, muharrir va ko'rishni himoyalash | Kirish va hisoblar / Sessiya | MVP | Tayyor | Kichik | AUTH-06 | Kirmagan odam /, /p/:id, /preview/:id dan kirish sahifasiga yo'naltiriladi |
+| AUTH-08 | Hisob menyusi (ism, rasm, chiqish) | Kirish va hisoblar / Interfeys | MVP | Tayyor | Kichik | AUTH-05 | Bosh sahifa va muharrirda ko'rinadi |
+| AUTH-09 | Hisobni va barcha ma'lumotlarini o'chirish | Kirish va hisoblar / Hisob | MVP | Tayyor | Kichik | OWN-02 | Loyihalar, ekranlar, versiyalar, kreditlar va sessiyalar o'chadi |
+| OWN-01 | projects jadvaliga user_id ustuni va migratsiya | Egalik / Sxema | MVP | Tayyor | Kichik | AUTH-02 | 0008 migratsiyasi foreign key bilan ustun qo'shadi |
+| OWN-02 | Har loyiha va ekran so'rovini joriy foydalanuvchi bilan cheklash | Egalik / Kirish nazorati | MVP | Tayyor | O'rta | OWN-01, AUTH-06 | Boshqa foydalanuvchining loyiha ID si har server funksiyasida 404 qaytaradi |
+| OWN-03 | /api/generate va /api/generate-plan da egalikni tekshirish | Egalik / Kirish nazorati | MVP | Tayyor | Kichik | OWN-02 | Birovning loyihasiga generatsiya 404 qaytaradi |
+| OWN-04 | Ko'rish sahifasi faqat egaga (ommaviy ulashish chiqquncha) | Egalik / Kirish nazorati | MVP | Tayyor | Kichik | OWN-02 | Kirmagan yoki boshqa foydalanuvchiga ko'rish yopiq |
+| OWN-05 | Mavjud lokal loyihalarni birinchi hisobga biriktirish | Egalik / Ko'chirish | MVP | Tayyor | Kichik | OWN-01 | Yangilangandan keyin egasiz loyiha qolmaydi |
 
 ## B2 · Xavfsizlik va limitlar
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
-| SEC-01 | POST API'larda saytning o'zidan kelganini tekshirish | Xavfsizlik / So'rovlar | MVP | Rejada | Kichik |  | Boshqa saytdan /api/* ga POST rad etiladi |
-| SEC-02 | Har server funksiyasida kiruvchi ma'lumotni tekshirish | Xavfsizlik / So'rovlar | MVP | Rejada | Kichik | OWN-02 | Turlar, uzunliklar va ID lar har chegarada tekshiriladi |
+| SEC-01 | POST API'larda saytning o'zidan kelganini tekshirish | Xavfsizlik / So'rovlar | MVP | Tayyor | Kichik |  | Boshqa saytdan /api/* ga POST rad etiladi |
+| SEC-02 | Har server funksiyasida kiruvchi ma'lumotni tekshirish | Xavfsizlik / So'rovlar | MVP | Tayyor | Kichik | OWN-02 | Turlar, uzunliklar va ID lar har chegarada tekshiriladi |
 | SEC-03 | Generatsiya HTML i sandbox ichida qoladi (allow-same-origin hech qachon) | Xavfsizlik / Render | MVP | Tayyor | Kichik |  | Test har iframe'dagi sandbox atributini tekshiradi |
 | SEC-04 | Maxfiy kalitlar faqat serverda; brauzer kodini tekshirish | Xavfsizlik / Maxfiy kalitlar | MVP | Tayyor | Kichik |  | Yig'ilgan brauzer fayllarida hech qanday kalit yo'q |
-| LIM-01 | Generatsiya uchun foydalanuvchiga so'rovlar limiti | Limitlar va xarajat / So'rov chegarasi | MVP | Rejada | O'rta | AUTH-06 | Ortiqcha so'rov 429 va kutish vaqtini oladi |
-| LIM-02 | Bir vaqtda faqat bitta generatsiya | Limitlar va xarajat / So'rov chegarasi | MVP | Rejada | Kichik | AUTH-06 | Biri ishlayotganda ikkinchisi rad etiladi |
-| LIM-03 | Kunlik umumiy LLM xarajati chegarasi (to'xtatish tugmasi) | Limitlar va xarajat / Xarajat nazorati | MVP | Rejada | Kichik | OBS-01 | Chegara tugasa generatsiya aniq xabar bilan to'xtaydi |
+| LIM-01 | Generatsiya uchun foydalanuvchiga so'rovlar limiti | Limitlar va xarajat / So'rov chegarasi | MVP | Tayyor | O'rta | AUTH-06 | Ortiqcha so'rov 429 va kutish vaqtini oladi |
+| LIM-02 | Bir vaqtda faqat bitta generatsiya | Limitlar va xarajat / So'rov chegarasi | MVP | Tayyor | Kichik | AUTH-06 | Biri ishlayotganda ikkinchisi rad etiladi |
+| LIM-03 | Kunlik umumiy LLM xarajati chegarasi (to'xtatish tugmasi) | Limitlar va xarajat / Xarajat nazorati | MVP | Tayyor | Kichik | OBS-01 | Chegara tugasa generatsiya aniq xabar bilan to'xtaydi |
 | LIM-04 | Foydalanuvchi uzilsa LLM oqimini to'xtatish | Limitlar va xarajat / Xarajat nazorati | MVP | Tayyor | Kichik |  | Tab yopilsa token sarfi to'xtaydi |
-| OBS-01 | Har LLM chaqiruvi yoziladi (foydalanuvchi, loyiha, token, narx, vaqt, natija) | Monitoring / LLM xarajati | MVP | Rejada | O'rta | AUTH-06 | Bitta so'rov "bu foydalanuvchi bu oy qanchaga tushdi" ga javob beradi |
+| OBS-01 | Har LLM chaqiruvi yoziladi (foydalanuvchi, loyiha, token, narx, vaqt, natija) | Monitoring / LLM xarajati | MVP | Tayyor | O'rta | AUTH-06 | Bitta so'rov "bu foydalanuvchi bu oy qanchaga tushdi" ga javob beradi |
 
 ## B3 · Mahsulotni sayqallash
 
@@ -157,12 +157,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-15 | Kadr balandligi kontent bo'yicha o'lchanadi | Muharrir / Kanvas | MVP | Tayyor | O'rta | EDT-01 | Uzun ekran kanvasda to'liq ko'rinadi; balandlikni iframe o'zi xabar qiladi va bazada saqlanadi |
 | THM-02 | To'liq rang palitrasi (fon, matn, ikkinchi rang, karta, chegara) | Tema / Tema | MVP | Tayyor | O'rta |  | To'liq token ro'yxati tahrirlanadi va har o'zgarish barcha kadrlarda darhol ko'rinadi |
 | THM-03 | Radius slayderi va Round/Squircle shakli | Tema / Tema | MVP | Tayyor | Kichik |  | Radius slayderi uzluksiz ishlaydi; Squircle Safari va Firefox’da zaxira orqali silliq ko‘rinadi |
-| DSH-09 | Qorong'u rejim | Bosh sahifa / Interfeys | MVP | Rejada | Kichik |  | Tugma rejimni almashtiradi, tanlov eslab qolinadi va sahifa yuklanganda miltillamaydi |
-| DSH-10 | Bosh sahifa qobig'i: yon panel va hisob menyusi | Bosh sahifa / Bosh sahifa | MVP | Rejada | O'rta |  | Yon panelli qobiq, pastda hisob menyusi; tor ekranda yon panel yig'iladi |
-| DSH-04 | Loyiha kartasi: bosh harflar va "N kun oldin yaratilgan" | Bosh sahifa / Loyihalar | MVP | Rejada | Kichik |  | Bo'sh joy yo'qoladi |
-| DSH-05 | Loyihalarni qidirish | Bosh sahifa / Loyihalar | MVP | Rejada | Kichik |  | Yozish bilan ro'yxat nom bo'yicha filtrlanadi |
-| DSH-03 | Ilhom kartalari (tavsifni to'ldiradigan uslubli boshlang'ichlar) | Bosh sahifa / Bosh sahifa | MVP | Rejada | Kichik |  | 4–6 ta karta, har biri tavsif va dizayn tizimini qo'yadi |
-| DSH-06 | Birinchi kirishdagi bo'sh holat | Bosh sahifa / Birinchi tanishuv | MVP | Rejada | Kichik | DSH-03 | Yangi foydalanuvchi ilhom kartalari va bir qatorli tushuntirishni ko'radi |
+| DSH-09 | Qorong'u rejim | Bosh sahifa / Interfeys | MVP | Tayyor | Kichik |  | Tugma rejimni almashtiradi, tanlov eslab qolinadi va sahifa yuklanganda miltillamaydi |
+| DSH-10 | Bosh sahifa qobig'i: yon panel va hisob menyusi | Bosh sahifa / Bosh sahifa | MVP | Tayyor | O'rta |  | Yon panelli qobiq, pastda hisob menyusi; tor ekranda yon panel yig'iladi |
+| DSH-04 | Loyiha kartasi: bosh harflar va "N kun oldin yaratilgan" | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  | Bo'sh joy yo'qoladi |
+| DSH-05 | Loyihalarni qidirish | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  | Yozish bilan ro'yxat nom bo'yicha filtrlanadi |
+| DSH-03 | Ilhom kartalari (tavsifni to'ldiradigan uslubli boshlang'ichlar) | Bosh sahifa / Bosh sahifa | MVP | Tayyor | Kichik |  | 4–6 ta karta, har biri tavsif va dizayn tizimini qo'yadi |
+| DSH-06 | Birinchi kirishdagi bo'sh holat | Bosh sahifa / Birinchi tanishuv | MVP | Tayyor | Kichik | DSH-03 | Yangi foydalanuvchi ilhom kartalari va bir qatorli tushuntirishni ko'radi |
 | SHR-02 | Loyiha ko'rinishi uchun ommaviy ulashish havolasi | Ko'rish va ulashish / Ulashish | MVP | Rejada | O'rta | OWN-04 | Ega ulashishni yoqadi; taxmin qilib bo'lmaydigan havola bilan har kim faqat ko'radi |
 
 ## B4 · Pul ishlash
@@ -202,7 +202,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LEG-02 | Maxfiylik siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /privacy da e'lon qilingan |
 | LEG-03 | Pulni qaytarish siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik | BIL-02 | E'lon qilingan va narxlar sahifasidan havola bor |
 | LEG-04 | Yordam uchun aloqa | Huquqiy va yordam / Yordam | MVP | Rejada | Kichik |  | Yordam emaili pastki qismda va hisob menyusida |
-| MKT-01 | Landing sahifa: tavsif maydoni, galereya, narxlar, savol-javob | Marketing / Sayt | MVP | Rejada | O'rta | BIL-12 | Kirmagan mehmon mahsulotni kirishdan oldin ko'radi |
+| MKT-01 | Landing sahifa: tavsif maydoni, galereya, narxlar, savol-javob | Marketing / Sayt | MVP | Jarayonda | O'rta | BIL-12 | Kirmagan mehmon mahsulotni kirishdan oldin ko'radi |
 | MKT-02 | SEO va ijtimoiy tarmoq uchun rasm | Marketing / Sayt | MVP | Rejada | Kichik | MKT-01 | Telegram, X va LinkedIn'da havola chiroyli ko'rinadi |
 | MKT-03 | Demo video yoki GIF | Marketing / Kontent | MVP | Rejada | Kichik |  | Bitta tavsifdan bosiladigan ilovagacha, bir daqiqadan kam |
 
@@ -236,8 +236,10 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | THM-05 | O'z dizayn tizimini import qilish (Figma o'zgaruvchilari / tokens.css) | Tema / Dizayn tizimlari | Keyin | Rejada | Katta |  |  |
 | THM-06 | Model qo'lda yozgan ranglar ham temaga ergashsin | Tema / Tema | Keyin | Rejada | O'rta |  |  |
 | THM-07 | Glassmorphism tizimini Liquid Glass darajasiga kuchaytirish | Tema / Tema | Keyin | Rejada | O'rta |  | glassmorphism tizimi blur, qirra yorug'ligi va sinish qoidalarini oladi; Safari va Firefox'da 1-qatlam buzilmasdan ishlaydi |
-| DSH-07 | Dizayn tizimini nomlar ro'yxati o'rniga rasmli kartalardan tanlash | Bosh sahifa / Bosh sahifa | Keyin | Rejada | Kichik |  |  |
-| DSH-08 | Sevimlilar va grid/ro'yxat almashtirgich | Bosh sahifa / Loyihalar | Keyin | Rejada | Kichik |  |  |
+| DSH-07 | Dizayn tizimini nomlar ro'yxati o'rniga rasmli kartalardan tanlash | Bosh sahifa / Bosh sahifa | MVP | Tayyor | Kichik |  |  |
+| DSH-08 | Sevimlilar va grid/ro'yxat almashtirgich | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  |  |
+| DSH-11 | Loyiha kartasida birinchi ekranning jonli kichik rasmi | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  |  |
+| DSH-12 | Kunlik limit ko'rsatkichi yon panelda | Bosh sahifa / Bosh sahifa | MVP | Tayyor | Kichik |  |  |
 | EXP-04 | PNG eksport | Eksport / Fayllar | Keyin | Rejada | O'rta |  |  |
 | EXP-05 | Figma eksport | Eksport / Integratsiyalar | Keyin | Rejada | Katta |  |  |
 | EXP-06 | React yoki boshqa framework kodiga eksport | Eksport / Integratsiyalar | Bekor | Rejada |  |  |  |

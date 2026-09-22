@@ -40,5 +40,6 @@
       "id": "c",
       "layout": "Agenda: a continuous scrolling list grouped by day headers, a small month switcher at the top."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><div class=\"od-carousel\">[day chips: <button class=\"od-chip is-active\">[day]</button>]</div><section class=\"od-section\"><h2 class=\"od-section__title\">[selected day]</h2><div class=\"od-timeline\"><div class=\"od-timeline__item is-current\"><span class=\"od-timeline__dot\"></span><div><b>[event]</b><div class=\"od-row__sub\">[time · place]</div></div></div></div></section></div>"
 }

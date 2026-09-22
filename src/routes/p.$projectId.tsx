@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Check, Loader2, CircleX, Circle, Sparkles, X } from 'lucide-react'
-import { getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
+import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
@@ -23,6 +23,7 @@ import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
 import { exportApp } from '@/lib/export-app'
 import { zip } from '@/lib/zip'
 import { designSystemSample } from '@/lib/ds-sample'
+import type { AuditFinding } from '@/lib/render-audit'
 import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
@@ -35,6 +36,11 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/p/$projectId')({
+  beforeLoad: async ({ location }) => {
+    const { user } = await getSession()
+    if (!user) throw redirect({ to: '/login', search: { next: location.href } })
+    return { user }
+  },
   validateSearch: (s: Record<string, unknown>): { brief?: string } => (typeof s.brief === 'string' ? { brief: s.brief } : {}),
   loader: ({ params }) => getProject({ data: params.projectId }),
   component: ProjectPage,
@@ -65,6 +71,8 @@ function ProjectPage() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  // Render-audit findings per screen, reported by each frame once it has settled (EYE-01).
+  const [audits, setAudits] = useState<Record<string, AuditFinding[]>>({})
   const [focus, setFocus] = useState<{ id: string; key: number } | undefined>(undefined)
   const [fill, setFill] = useState<{ text: string; key: number } | undefined>(undefined)
   // One request at a time; this is what Stop cancels. The server stops spending tokens when the stream closes.
@@ -680,6 +688,7 @@ function ProjectPage() {
                       }}
                       onEscape={escape}
                       onUndo={(redo) => undo(redo)}
+                      onAudit={(findings) => setAudits((a) => ({ ...a, [s.id]: findings }))}
                       editRequest={s.id === selected ? editRequest : undefined}
                       onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
                       panel={
@@ -705,6 +714,16 @@ function ProjectPage() {
                           hint={s.prompt}
                           {...frameActions(s)}
                           version={s.version}
+                          rating={s.rating}
+                          audit={audits[s.id]}
+                          onFixAudit={() => {
+                            selectScreen(s.id)
+                            run({ prompt: '', projectId: project.id, editScreenId: s.id, fixFindings: audits[s.id] })
+                          }}
+                          onRate={async (value) => {
+                            await rateScreen({ data: { projectId: project.id, screenId: s.id, value } })
+                            await router.invalidate()
+                          }}
                           onStepVersion={async (dir) => {
                             const step = (d: number) => stepVersion({ data: { projectId: project.id, screenId: s.id, dir: d } })
                             await step(dir)

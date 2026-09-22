@@ -9,7 +9,12 @@
  *
  * This file pre-compiles the values described in `DESIGN.md` into the
  * schema shared with every OD design system. Agents should paste the
- * `:root { … }` block verbatim into the first `<style>` of an artifact,
+ * `:root { … 
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-border: 0;
+  --od-card-shadow: 0 6px 16px rgba(0,0,0,.12);
+  --od-row-min: 60px;
+}` block verbatim into the first `<style>` of an artifact,
  * then resolve every value via `var(--*)` from that point on.
  *
  * Schema notes (brand-specific bindings worth flagging — section

@@ -1,0 +1,1 @@
+**Toggle.** A switch (52×32) at the trailing edge of a row whose label says what is on. It acts immediately — no Save button. Accent when on, grey when off. Never a switch for choosing between two named options (use a segmented control).

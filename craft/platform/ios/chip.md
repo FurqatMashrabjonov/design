@@ -1,0 +1,1 @@
+**Chip.** Chips filter or pick: 32–36px tall, pill-shaped, one short word, in a horizontally scrolling row that bleeds off the edge. The selected chip is filled (text colour on background inverted); the rest are outlined. Don't wrap chips onto several lines.

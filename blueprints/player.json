@@ -42,5 +42,6 @@
       "id": "c",
       "layout": "Compact artwork with lyrics or chapters list below; controls in a bar at the bottom."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\" style=\"align-items:center\"><div class=\"od-media od-media--square\" style=\"border-radius:var(--radius-lg)\"><img data-od-img=\"[artwork]\" alt=\"\"></div><div style=\"width:100%\"><h1 class=\"od-hero__title\">[title]</h1><p class=\"od-hero__sub\">[artist]</p></div><div class=\"od-progress\" style=\"--value:[pct]%;width:100%\"><span></span></div><div style=\"display:flex;gap:24px;align-items:center\"><button class=\"od-icon-btn\" aria-label=\"Previous\"><i data-lucide=\"skip-back\"></i></button><button class=\"od-btn\" aria-label=\"Play\" style=\"width:72px;height:72px;border-radius:50%\"><i data-lucide=\"play\"></i></button><button class=\"od-icon-btn\" aria-label=\"Next\"><i data-lucide=\"skip-forward\"></i></button></div></div>"
 }

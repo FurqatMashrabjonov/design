@@ -1,0 +1,1 @@
+**Text field.** Label above the field (not only a placeholder), 44–48px tall, one field per line. Use the right keyboard (email, number, phone). Helper text under the field; errors replace it in red with what to do. Group related fields; put Save at the bottom, reachable.

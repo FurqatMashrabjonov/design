@@ -45,5 +45,6 @@
       "id": "c",
       "layout": "Split facts: a compact header with thumbnail beside the title, then a two-column facts table, then description and related items."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-media od-media--wide\"><img data-od-img=\"[subject]\" alt=\"\"></div><div class=\"od-page\"><div><h1 class=\"od-hero__title\">[name]</h1><p class=\"od-hero__sub\">[one line]</p></div><div class=\"od-grid\"><div class=\"od-stat\"><span class=\"od-stat__label\">[fact]</span><span class=\"od-stat__value\">[value]</span></div><div class=\"od-stat\"><span class=\"od-stat__label\">[fact]</span><span class=\"od-stat__value\">[value]</span></div></div><section class=\"od-section\"><h2 class=\"od-section__title\">[section]</h2><p>[description]</p></section></div><div class=\"od-bottom-bar\"><span class=\"od-price\">[price]</span><button class=\"od-btn\">[primary action]</button></div>"
 }

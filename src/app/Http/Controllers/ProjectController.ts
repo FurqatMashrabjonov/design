@@ -2,21 +2,28 @@ import { notFound } from '@tanstack/react-router'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
+import { Feedback } from '@/app/Models/Feedback'
 import { Message } from '@/app/Models/Message'
 import { DesignSystemService } from '@/app/Services/DesignSystemService'
 import { SkillService } from '@/app/Services/SkillService'
+import { UsageService, LIMITS } from '@/app/Services/UsageService'
 import { parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { routeIntent } from '@/lib/intent'
 import { clampFrameHeight } from '@/lib/frame-height'
 import { frameSize } from '@/canvas'
 
 export const ProjectController = {
-  index() {
+  index(userId: string) {
     return {
-      projects: Project.all(),
+      projects: Project.cardsForUser(userId),
+      usage: { calls: UsageService.callsToday(userId), limit: LIMITS.callsPerDay },
       designSystems: DesignSystemService.list(),
       skills: SkillService.list(),
     }
+  },
+
+  favorite(data: { id: string; favorite: boolean }) {
+    Project.setFavorite(data.id, data.favorite)
   },
 
   show(id: string) {
@@ -25,7 +32,10 @@ export const ProjectController = {
     return {
       project,
       // Each screen carries where it stands in its own version timeline, for the ‹ v3 › on the frame.
-      screens: Screen.forProject(id).map((s) => ({ ...s, version: ScreenVersion.position(s) })),
+      screens: (() => {
+        const ratings = Feedback.ratings(id)
+        return Screen.forProject(id).map((s) => ({ ...s, version: ScreenVersion.position(s), rating: ratings.get(s.id) ?? null }))
+      })(),
       messages: Message.forProject(id),
       // For the design-system frame on the canvas (lib/ds-sample.ts).
       tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
@@ -34,10 +44,10 @@ export const ProjectController = {
     }
   },
 
-  store(data: { device: string; designSystem: string }) {
+  store(data: { device: string; designSystem: string; userId?: string }) {
     DesignSystemService.assertExists(data.designSystem)
     const device = data.device === 'mobile' ? 'mobile' : 'desktop'
-    return Project.create({ id: crypto.randomUUID(), name: 'Untitled', designSystem: data.designSystem, device })
+    return Project.create({ id: crypto.randomUUID(), name: 'Untitled', designSystem: data.designSystem, device, userId: data.userId ?? null })
   },
 
   moveScreen(data: { id: string; x: number; y: number }) {

@@ -251,6 +251,47 @@ export type NormalizeOptions = {
   iconStroke?: number
   shell?: ShellParts
   navClearance?: number
+  /** kit/od-kit.css (KitService.css()); injected when the page uses an od- class. */
+  kitCss?: string
+}
+
+const KIT_ONLY = /^\s*\.od-[a-z0-9_-]+(\s*(:{1,2}[a-z-]+(\([^)]*\))?|\[[^\]]+\]))*\s*$/i
+
+/** Walks a stylesheet (into @media / @supports blocks) and drops rules that only restyle kit classes. */
+function dropKitRules(css: string): string {
+  let out = ''
+  let i = 0
+  while (i < css.length) {
+    const brace = css.indexOf('{', i)
+    if (brace === -1) return out + css.slice(i)
+    let depth = 1
+    let j = brace + 1
+    while (j < css.length && depth > 0) depth += css[j] === '{' ? 1 : css[j] === '}' ? -1 : 0, j++
+    const selector = css.slice(i, brace)
+    const block = css.slice(brace + 1, j - 1)
+    if (selector.trim().startsWith('@')) out += `${selector}{${dropKitRules(block)}}`
+    else if (!selector.split(',').every((sel) => KIT_ONLY.test(sel.replace(/\/\*[\s\S]*?\*\//g, '')))) out += css.slice(i, j)
+    else out += selector.match(/^\s*/)![0] // keep the whitespace before a dropped rule
+    i = j
+  }
+  return out
+}
+
+/**
+ * The shared component sheet goes in first, right after <head>, so the page's own styles can
+ * still override a kit class. A page with no od- class gets nothing: no dead bytes. Idempotent —
+ * a sheet from an earlier pass is replaced, so the stored screen always has the current kit.
+ */
+export function normalizeKit(html: string, css: string): string {
+  let out = html.replace(/<style data-od-kit>[\s\S]*?<\/style>/gi, '')
+  // The kit owns its classes: a page rule whose selectors are all plain kit classes (".od-btn",
+  // ".od-row__lead, .od-kv:hover") is the model restyling the kit, which makes screens drift apart —
+  // it is dropped. Contextual rules (".promo .od-btn", ".od-card.promo") stay: that is composition.
+  out = out.replace(/(<style(?![^>]*data-od)[^>]*>)([\s\S]*?)(<\/style>)/gi, (_, open: string, body: string, close: string) => open + dropKitRules(body) + close)
+  if (!/class="[^"]*(?<![\w-])od-[a-z]/.test(out)) return out
+  const sheet = `<style data-od-kit>${css.replace(/<\//g, '<\\/')}</style>`
+  if (/<head\b[^>]*>/i.test(out)) return out.replace(/<head\b[^>]*>/i, (m) => `${m}${sheet}`)
+  return sheet + out
 }
 
 export function normalizeScreen(html: string, opts: NormalizeOptions): string {
@@ -260,6 +301,7 @@ export function normalizeScreen(html: string, opts: NormalizeOptions): string {
   if (opts.shell) out = normalizeShell(out, opts.shell)
   if (opts.iconStroke) out = normalizeIcons(out, opts.iconStroke)
   if (opts.navClearance && opts.shell?.nav) out = applyNavClearance(out, opts.navClearance)
+  if (opts.kitCss) out = normalizeKit(out, opts.kitCss)
   return out
 }
 

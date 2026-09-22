@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical } from 'lucide-react'
+import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, TriangleAlert } from 'lucide-react'
+import type { AuditFinding } from '@/lib/render-audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,7 +14,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { cn } from '@/lib/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+
+const AUDIT_LABEL: Record<AuditFinding['rule'], string> = {
+  overflow: 'Runs off the screen',
+  'clipped-text': 'Text is cut off',
+  'small-target': 'Tap target under 44px',
+  'low-contrast': 'Text too faint',
+  overlap: 'Text overlaps',
+}
 
 /** The only place a frame can be dragged from (Canvas looks for data-canvas-handle). */
 export function FrameHandle() {
@@ -41,6 +51,13 @@ export function FrameToolbar(props: FrameActions & {
   /** Where the screen stands in its versions; the arrows show once there is more than one. */
   version: { position: number; total: number }
   onStepVersion: (dir: -1 | 1) => Promise<unknown>
+  /** 👍/👎 on this screen (FB-01); pressing the current one clears it. */
+  rating: 'up' | 'down' | null
+  onRate: (value: 'up' | 'down' | null) => Promise<unknown>
+  /** Render-audit findings for this screen (EYE-01); the chip lists them. */
+  audit?: AuditFinding[]
+  /** One edit that fixes the findings that point at an element (EYE-02). */
+  onFixAudit?: () => void
   // Rename and delete-confirm are controlled — the right-click context menu's items start the
   // same states, so there's one edit box and one confirm dialog regardless of entry point.
   editing: boolean
@@ -54,7 +71,7 @@ export function FrameToolbar(props: FrameActions & {
   onDelete: () => Promise<void>
 }) {
   const [draft, setDraft] = useState(props.name)
-  const [busy, setBusy] = useState<'rename' | 'duplicate' | 'delete' | 'version' | null>(null)
+  const [busy, setBusy] = useState<'rename' | 'duplicate' | 'delete' | 'version' | 'rate' | null>(null)
 
   // Re-seed the draft each time editing starts (also covers the context menu's "Rename" entry point).
   useEffect(() => {
@@ -124,7 +141,51 @@ export function FrameToolbar(props: FrameActions & {
           </Button>
         </span>
       )}
-      <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100">
+      {props.audit && props.audit.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" className="ml-1 flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-xs text-amber-600 hover:bg-muted dark:text-amber-400" title="Problems found in the rendered screen">
+              <TriangleAlert className="size-3.5" />
+              {props.audit.length}
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-80">
+            {props.onFixAudit && props.audit.some((f) => f.id) && (
+              <>
+                <DropdownMenuItem onSelect={props.onFixAudit} className="font-medium">
+                  <Check /> Fix {props.audit.filter((f) => f.id).length === 1 ? 'it' : `these ${props.audit.filter((f) => f.id).length}`}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {props.audit.slice(0, 12).map((f, i) => (
+              <DropdownMenuItem key={i} className="flex-col items-start gap-0" onSelect={(e) => e.preventDefault()}>
+                <span className="text-xs font-medium">{AUDIT_LABEL[f.rule]}</span>
+                <span className="w-full truncate text-xs text-muted-foreground">{f.detail}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+      <div className={cn('ml-auto flex items-center gap-0.5 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100', props.rating ? 'opacity-100' : 'opacity-0')}>
+        {(['up', 'down'] as const).map((v) => {
+          const Icon = v === 'up' ? ThumbsUp : ThumbsDown
+          const on = props.rating === v
+          return (
+            <Button
+              key={v}
+              size="icon"
+              variant="ghost"
+              className={cn('size-6 shrink-0', on ? 'text-primary' : '', props.rating && !on && 'hidden group-hover:inline-flex')}
+              title={v === 'up' ? 'Good design' : 'Not good'}
+              aria-label={v === 'up' ? 'Good design' : 'Not good'}
+              aria-pressed={on}
+              onClick={() => guard('rate', () => props.onRate(on ? null : v))}
+            >
+              <Icon className={cn('size-3.5', on && 'fill-current')} />
+            </Button>
+          )
+        })}
         <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Rename" onClick={props.onStartRename}>
           <Pencil className="size-3.5" />
         </Button>

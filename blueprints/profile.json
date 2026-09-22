@@ -41,5 +41,6 @@
       "id": "c",
       "layout": "Cover: a short coloured cover band with the avatar overlapping its bottom edge, then stats and a grid of the user's items."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><div style=\"display:flex;flex-direction:column;align-items:center;gap:8px\"><span class=\"od-avatar od-avatar--lg\"><img data-od-avatar=\"[person]\" alt=\"\"></span><h1 class=\"od-hero__title\">[name]</h1><p class=\"od-hero__sub\">[handle]</p><button class=\"od-btn od-btn--secondary od-btn--sm\">[edit]</button></div><div class=\"od-grid\"><div class=\"od-stat\"><span class=\"od-stat__value\">[n]</span><span class=\"od-stat__label\">[stat]</span></div></div><div class=\"od-list\"><a class=\"od-row od-row--chevron\"><span class=\"od-row__lead\"><i data-lucide=\"[icon]\"></i></span><span class=\"od-row__body\"><span class=\"od-row__title\">[setting]</span></span><span class=\"od-row__trail\"></span></a></div></div>"
 }

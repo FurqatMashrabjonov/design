@@ -1,118 +1,49 @@
-import { useState, useMemo } from 'react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { getHome, createProject } from '../server/fns'
-import { PromptBox } from '../PromptBox'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { useEffect, useRef } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { getHome, createProject, getSession } from '../server/fns'
+import { Landing, PENDING_PROMPT, BRAND } from '../Landing'
+import { Dashboard } from '../Dashboard'
 
 export const Route = createFileRoute('/')({
-  loader: () => getHome(),
-  component: Home,
+  // A guest gets the landing page, a signed-in user the dashboard, on the same URL.
+  beforeLoad: async () => {
+    const { user } = await getSession()
+    return { user }
+  },
+  loader: ({ context }) => (context.user ? getHome() : null),
+  head: () => ({
+    meta: [
+      { title: `${BRAND} — design a whole mobile app from one prompt` },
+      { name: 'description', content: 'Describe an app and get every screen in one design language: shared data, one navigation, real photos. Click through it, edit any element, export a prototype.' },
+    ],
+    links: [{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap' }],
+  }),
+  component: Index,
 })
 
+function Index() {
+  return Route.useLoaderData() ? <Home /> : <Landing />
+}
+
 function Home() {
-  const { projects, designSystems } = Route.useLoaderData()
+  const data = Route.useLoaderData()!
+  const { user } = Route.useRouteContext()
   const navigate = useNavigate()
-  const [device, setDevice] = useState('desktop')
-  const [designSystem, setDesignSystem] = useState('minimal')
 
-  const groupedDesignSystems = useMemo(() => {
-    const map = new Map<string, typeof designSystems>()
-    for (const d of designSystems) {
-      const cat = d.category || 'General'
-      if (!map.has(cat)) map.set(cat, [])
-      map.get(cat)!.push(d)
-    }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
-  }, [designSystems])
+  // A prompt typed on the landing page before signing in starts its project as soon as we are back.
+  const started = useRef(false)
+  useEffect(() => {
+    let prompt: string | null = null
+    try {
+      prompt = sessionStorage.getItem(PENDING_PROMPT)
+      sessionStorage.removeItem(PENDING_PROMPT)
+    } catch {}
+    if (!prompt || started.current) return
+    started.current = true
+    createProject({ data: { device: 'mobile', designSystem: 'minimal' } }).then(({ id }) =>
+      navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }),
+    )
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <main className="mx-auto max-w-3xl px-4 py-16">
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight">What do you want to design?</h1>
-      <p className="mb-8 text-muted-foreground">Describe an app. A planner scopes 3–5 screens and designs all of them.</p>
-
-      <PromptBox
-        placeholder="A fintech app to track balance, transactions, and spending by category"
-        extra={
-          <>
-            <Select value={device} onValueChange={setDevice}>
-              <SelectTrigger size="sm" aria-label="Device" className="w-auto">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desktop">Desktop</SelectItem>
-                <SelectItem value="mobile">Mobile</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={designSystem} onValueChange={setDesignSystem}>
-              <SelectTrigger size="sm" aria-label="Design system" className="w-auto max-w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                {groupedDesignSystems.map(([category, items]) => (
-                  <SelectGroup key={category}>
-                    <SelectLabel className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      {category}
-                    </SelectLabel>
-                    {items.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        }
-        onSubmit={async (prompt) => {
-          const { id } = await createProject({ data: { device, designSystem } })
-          navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
-        }}
-      />
-
-      {projects.length > 0 && (
-        <section className="mt-12">
-          <h2 className="mb-3 text-sm font-medium text-muted-foreground">Projects</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            {projects.map((p) => (
-              <Link key={p.id} to="/p/$projectId" params={{ projectId: p.id }}>
-                <Card className="gap-2 overflow-hidden py-0 transition-colors hover:border-primary/50">
-                  {/* ponytail: no real screenshot — that needs server-side rendering (puppeteer or similar). Device-shaped placeholder for now. */}
-                  <div className="flex h-28 items-center justify-center bg-muted/40">
-                    <div
-                      className="rounded-md border-2 bg-background"
-                      style={
-                        p.device === 'mobile' ? { width: 34, height: 60, borderRadius: 8 } : { width: 72, height: 46 }
-                      }
-                    />
-                  </div>
-                  <CardContent className="pb-3">
-                    <p className="truncate text-sm font-medium">{p.name}</p>
-                    <div className="mt-1 flex gap-1">
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {p.device}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {p.designSystem}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-    </main>
-  )
+  return <Dashboard projects={data.projects} designSystems={data.designSystems} usage={data.usage} user={user ?? undefined} />
 }

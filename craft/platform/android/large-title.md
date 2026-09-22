@@ -1,0 +1,1 @@
+**Large title.** Root screens open with a 34px bold left-aligned title (the tab's name or a greeting), optionally a small date or subtitle above it in muted caps. It scrolls away; nothing else competes with it. Pushed screens use a small inline title instead, so the depth of navigation is visible at a glance.

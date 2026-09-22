@@ -224,4 +224,40 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.ok(!/#[0-9a-f]{3,6}/i.test(html.replace(root, '').replace(/#fff\b/, '')), 'no colour is hardcoded outside the tokens (so the theme restyles everything)')
 }
 
+// --- lib/charts.ts (KIT-03) ---
+{
+  const { renderCharts } = await import('./charts.ts')
+  const bar = renderCharts('<main><div data-od-chart="bar" data-values="2,4,8" data-labels="A,B,C" data-highlight="2"></div></main>')
+  assert.ok(bar.includes('data-od-chart-rendered') && (bar.match(/<rect /g) ?? []).length === 3, 'one bar per value')
+  assert.ok(bar.includes('height="100"') && bar.includes('height="50"') && bar.includes('height="25"'), 'bar heights follow the values (8 is the top)')
+  assert.ok(/<rect [^>]*height="100"[^>]*fill="var\(--accent\)"/.test(bar) && bar.includes('transparent 72%'), 'the highlighted bar is full accent, the rest are tinted')
+  assert.ok(bar.includes('>C</span>') && bar.includes('height:160px'), 'labels under the chart, default height')
+  assert.equal(renderCharts(bar), bar, 'idempotent')
+  const line = renderCharts('<div data-od-chart="area" data-values="10,20,15" style="height:90px"></div>')
+  assert.ok(line.includes('M0 92 L50 8 L100 50') && line.includes('Z" fill=') && line.includes('height:90px'), 'line runs min→max across the box, area filled, the model\'s height kept')
+  const ring = renderCharts('<div data-od-chart="ring" data-values="7.2" data-max="10" data-unit="k" data-labels="steps"></div>')
+  assert.ok(ring.includes('stroke-dasharray="72 28"') && ring.includes('7.2k') && ring.includes('steps'), 'ring shows value / max')
+  const donut = renderCharts('<div data-od-chart="donut" data-values="50,30,20" data-labels="Food,Rent,Fun &amp; &lt;b&gt;games"></div>')
+  assert.ok(donut.includes('>50%<') && donut.includes('Fun &amp; &lt;b&gt;games<'), 'donut legend with shares, labels decoded once and escaped once')
+  const heat = renderCharts('<div data-od-chart="heatmap" data-values="0,1,2,4,0,3,4,1" data-columns="4"></div>')
+  assert.ok(heat.includes('repeat(4,1fr)') && (heat.match(/aspect-ratio:1/g) ?? []).length === 8 && heat.includes('background:var(--border)'), 'heatmap: one cell per day, empty days neutral')
+  assert.ok(!heat.includes('height:0px'), 'a heatmap sizes itself')
+  for (const bad of ['<div data-od-chart="pie3d" data-values="1,2"></div>', '<div data-od-chart="bar" data-values="5"></div>', '<div data-od-chart="bar" data-values="1,2"><span>x</span></div>'])
+    assert.equal(renderCharts(bad), bad, `left as written: ${bad}`)
+  assert.ok(!/<img/i.test(renderCharts('<div data-od-chart="bar" data-values="1,2" data-labels="&lt;img src=x onerror=alert(1)&gt;,b"></div>')), 'an encoded tag in a label stays text')
+}
+
+// --- lib/render-audit.ts (EYE-01): findings from a sandboxed page are validated ---
+{
+  const { parseAudit, AUDIT_SOURCE } = await import('./render-audit.ts')
+  assert.deepEqual(parseAudit([{ rule: 'low-contrast', id: 'price-2', detail: '$4 2.1:1' }, { rule: 'evil', id: 'x' }, { rule: 'overlap', id: '<script>', detail: 7 }, null, 'x']), [
+    { rule: 'low-contrast', id: 'price-2', detail: '$4 2.1:1' },
+    { rule: 'overlap', id: null, detail: '' },
+  ])
+  assert.deepEqual(parseAudit('nope'), [])
+  assert.equal(parseAudit(Array.from({ length: 99 }, () => ({ rule: 'overflow', id: 'a', detail: '' }))).length, 40, 'capped')
+  assert.ok(AUDIT_SOURCE.includes('MIN_TARGET = 44') && AUDIT_SOURCE.includes('TEXT = 4.5'), 'the audit uses the HIG numbers')
+  assert.doesNotThrow(() => new Function(AUDIT_SOURCE), 'the audit source is valid JavaScript')
+}
+
 console.log('ok')

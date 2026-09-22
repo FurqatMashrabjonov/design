@@ -13,10 +13,14 @@ import m0011 from './migrations/0011_add_screen_spec_and_error.ts'
 import m0012 from './migrations/0012_create_messages_table.ts'
 import m0013 from './migrations/0013_add_screen_version_cursor.ts'
 import m0014 from './migrations/0014_add_screen_deleted_at.ts'
+import m0015 from './migrations/0015_create_feedback_table.ts'
+import m0016 from './migrations/0016_create_auth_tables.ts'
+import m0017 from './migrations/0017_create_llm_calls_table.ts'
+import m0018 from './migrations/0018_add_favorite_to_projects.ts'
 
 export type Migration = { name: string; up: (db: Database) => void }
 
-const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011, m0012, m0013, m0014]
+const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011, m0012, m0013, m0014, m0015, m0016, m0017, m0018]
 
 // Runs once at boot. Each migration runs at most once ever, tracked in _migrations —
 // unlike the old db.ts, later ones don't re-scan the whole table on every start.

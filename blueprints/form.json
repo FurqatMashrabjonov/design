@@ -44,5 +44,6 @@
       "id": "c",
       "layout": "Stepped: a progress indicator at the top showing step 1 of 3, only this step's fields below, Continue at the bottom."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><h1 class=\"od-hero__title\">[what is created]</h1><section class=\"od-section\"><h2 class=\"od-section__title\">[group]</h2><label class=\"od-field\"><span class=\"od-field__label\">[label]</span><input class=\"od-input\" placeholder=\"[example]\"><span class=\"od-field__help\">[help]</span></label><div class=\"od-list\"><div class=\"od-row\"><span class=\"od-row__body\"><span class=\"od-row__title\">[option]</span></span><input type=\"checkbox\" class=\"od-switch\" role=\"switch\"></div></div></section></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[verb]</button></div>"
 }

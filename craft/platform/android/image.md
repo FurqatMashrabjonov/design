@@ -1,0 +1,1 @@
+**Image.** Photos fill their box with object-fit: cover at a fixed aspect ratio (4:3 cards, 16:9 heroes, 1:1 grids); never let a photo set its own height. Rounded like the container that holds it. Text over a photo needs a dark gradient under it. A missing photo is a tinted block, not a broken image.

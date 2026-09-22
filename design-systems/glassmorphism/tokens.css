@@ -62,4 +62,11 @@
   --container-gutter-desktop: 36px;
   --container-gutter-tablet: 24px;
   --container-gutter-phone: 16px;
+
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-bg: color-mix(in oklab, var(--surface), transparent 35%);
+  --od-card-border: 1px solid color-mix(in oklab, white, transparent 70%);
+  --od-card-shadow: 0 8px 32px rgba(0,0,0,.18);
+  --od-blur: blur(18px) saturate(140%);
+  --od-control-border: 1px solid color-mix(in oklab, white, transparent 72%);
 }

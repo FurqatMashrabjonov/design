@@ -1,0 +1,1 @@
+**Player controls.** Transport row centred: previous, a large play/pause (60–72px), next; secondary controls (shuffle, repeat, queue) smaller around it. A scrubber above with elapsed and remaining time in tabular figures. Every control is at least 44px to tap, even when it looks small.

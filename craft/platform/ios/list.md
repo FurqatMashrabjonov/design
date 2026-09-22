@@ -1,0 +1,1 @@
+**List.** Rows 44px minimum (single line) or 60–72px (title + subtitle). Leading element 28–40px, aligned to the same left edge on every row. Separators start at the text, not the screen edge. A chevron means the row pushes a screen; a value on the right means a setting. Inset grouped lists (rounded container, 16px from the edges) for settings; plain lists for content.

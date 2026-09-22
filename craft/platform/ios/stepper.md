@@ -1,0 +1,1 @@
+**Stepper.** − value + in a compact pill, 32–36px targets, the value in tabular figures between them. Use it for small counts (quantity, guests); a text field for larger numbers. The minus is disabled at the minimum instead of going below it.

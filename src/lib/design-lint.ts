@@ -1,5 +1,6 @@
 import { extractRootBlock } from './screen-normalizer.ts'
 import { HIG, declaredFontSizes } from './hig-rules.ts'
+import { renderCharts } from './charts.ts'
 
 /**
  * Deterministic checks for the craft rules that are mechanically checkable.
@@ -207,6 +208,18 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
     })
   }
 
+  // A kit sketch's [bracket] placeholder that reached the screen (KIT-04).
+  const visible = body.replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, '')
+  const brackets = [...visible.matchAll(/(?:>|="|\s)\[([a-z][a-z0-9 ·/…×'-]{1,30})\](?=[<"\s])/gi)].map((m) => `[${m[1]}]`)
+  if (brackets.length > 0) {
+    findings.push({
+      rule: 'kit-placeholder',
+      severity: 'error',
+      message: 'A [placeholder] from the kit sketch was left in the screen.',
+      samples: uniq(brackets),
+    })
+  }
+
   // font-size: 0 hides text on purpose; anything else below the minimum is unreadable on a phone.
   const tiny = declaredFontSizes(scannable).filter((px) => px > 0 && px < HIG.minFontPx)
   if (tiny.length > 0) {
@@ -249,6 +262,9 @@ export function autofixScreen(html: string): string {
   const rootEnd = (() => { const b = extractRootBlock(out); return b ? out.indexOf(b) + b.length : 0 })()
   out = out.slice(0, rootEnd) + out.slice(rootEnd).replace(/(font-size\s*:\s*)(\d+(?:\.\d+)?)px/gi, (m, pre: string, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `${pre}${HIG.minFontPx}px` : m))
   out = out.replace(/\btext-\[(\d+(?:\.\d+)?)px\]/g, (m, n: string) => (Number(n) > 0 && Number(n) < HIG.minFontPx ? `text-[${HIG.minFontPx}px]` : m))
+
+  // Chart slots are drawn from their data (lib/charts.ts, KIT-03).
+  out = renderCharts(out)
 
   // An icon-only button gets a 44×44 invisible hit area centred on it, whatever its drawn size.
   // :where() keeps the position rule at zero specificity, so a button the screen positions itself

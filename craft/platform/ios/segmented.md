@@ -1,0 +1,1 @@
+**Segmented.** 2–4 short labels (one word each), equal widths, 32–36px tall, in a pill track. It switches views of the same content in place — never navigates. Put it under the title, above the content it filters. The selected segment is a raised white (or surface) chip, not an accent fill.

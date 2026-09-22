@@ -8,6 +8,20 @@ import { join } from 'node:path'
 // because the model happened to remember.
 
 const DIR = join(process.cwd(), 'blueprints')
+// Platform component cards (HIG-01): craft/platform/<ios|android>/<component>.md, our wording of
+// the platform guidelines. A screen's brief carries only the cards its archetype uses (HIG-02).
+// ponytail: always iOS until a project can choose its platform (HIG-04).
+const CARDS = join(process.cwd(), 'craft', 'platform')
+const MAX_CARDS = 4
+const cardCache = new Map<string, string>()
+function card(platform: string, name: string): string {
+  const key = `${platform}/${name}`
+  if (!cardCache.has(key)) {
+    const path = join(CARDS, platform, `${name}.md`)
+    cardCache.set(key, /^[a-z-]+$/.test(name) && existsSync(path) ? readFileSync(path, 'utf8').trim() : '')
+  }
+  return cardCache.get(key)!
+}
 
 export type Blueprint = {
   id: string
@@ -19,6 +33,8 @@ export type Blueprint = {
   hig: string[]
   /** 2–3 structurally different layouts for the same sections (VAR-02). */
   variants?: { id: string; layout: string }[]
+  /** The pattern sketched with od-kit classes (KIT-04); [brackets] stand for this app's content. */
+  kit?: string
 }
 
 // FNV-1a: a stable pick from a string, the same on every run and machine.
@@ -50,6 +66,12 @@ export const BlueprintService = {
     return vs.length ? vs[hash(`${seed.trim().toLowerCase()}|${id}`) % vs.length] : null
   },
 
+  /** The platform cards for an archetype's components, most important first, at most four. */
+  platformNotes(id: string, platform = 'ios'): string {
+    const cards = (BlueprintService.find(id)?.hig ?? []).map((h) => card(platform, h)).filter(Boolean).slice(0, MAX_CARDS)
+    return cards.length ? `Platform notes (${platform === 'ios' ? 'iOS' : 'Android'}) for this screen's components:\n${cards.join('\n')}` : ''
+  },
+
   /** The pattern as brief text — a few lines, so it fits next to the plan's own sections. */
   brief(id: string, seed?: string): string {
     const b = BlueprintService.find(id)
@@ -60,6 +82,10 @@ export const BlueprintService = {
       `It must show: ${b.sections.required.join('; ')}.`,
       `Primary action placement: ${b.primaryAction.note}`,
       `Avoid: ${b.avoid.join('; ')}.`,
-    ].join('\n')
+      BlueprintService.platformNotes(id),
+      b.kit && `Kit sketch of this pattern — structure only; follow the layout above where it differs, and replace every [bracket] with this app's real content (never output a bracket):\n${b.kit}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
   },
 }

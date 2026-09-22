@@ -41,5 +41,6 @@
       "id": "c",
       "layout": "Field then visual browse: search field, then large image tiles for categories in a two-column grid."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><div class=\"od-search\"><i data-lucide=\"search\"></i><input placeholder=\"[search]\" autofocus></div><section class=\"od-section\"><h2 class=\"od-section__title\">[recent]</h2><div class=\"od-carousel\"><button class=\"od-chip\">[query]</button></div></section><section class=\"od-section\"><h2 class=\"od-section__title\">[browse]</h2><div class=\"od-grid\"><a class=\"od-card od-card--media\"><div class=\"od-media od-media--square\"><img data-od-img=\"[category]\" alt=\"\"></div><div class=\"od-card__body\"><p class=\"od-card__title\">[category]</p></div></a></div></section></div>"
 }

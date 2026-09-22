@@ -42,5 +42,6 @@
       "id": "c",
       "layout": "Headline first, then three stacked benefit rows with icons, continue button."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\" style=\"min-height:100%;justify-content:center\"><div class=\"od-media od-media--square\" style=\"border-radius:var(--radius-lg)\"><img data-od-img=\"[illustration of the benefit]\" alt=\"\"></div><h1 class=\"od-hero__title\">[benefit headline]</h1><p class=\"od-hero__sub\">[one sentence]</p></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[continue]</button></div>"
 }

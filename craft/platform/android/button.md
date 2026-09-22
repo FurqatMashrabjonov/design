@@ -1,0 +1,1 @@
+**Button.** Filled button (40px, full radius) for the one primary action; tonal or outlined for secondary; text buttons for low emphasis. A floating action button (56px, 16px radius) bottom-right when creating is the screen's main job. Labels are verbs in sentence case.

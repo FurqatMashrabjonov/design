@@ -1,0 +1,1 @@
+**Progress.** A bar (4–8px, rounded) for a known amount, a ring for a goal with the value in the middle. Always show the number too ("6 of 8", "72%"). Accent fill on a quiet track; never animate it in a static mock.

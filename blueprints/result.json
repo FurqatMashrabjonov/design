@@ -41,5 +41,6 @@
       "id": "c",
       "layout": "Illustration: a large illustration filling the top half, headline and one line, then two summary facts side by side."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\" style=\"align-items:center;text-align:center\"><div class=\"od-empty__icon\"><i data-lucide=\"check\"></i></div><h1 class=\"od-hero__title\">[outcome]</h1><p class=\"od-hero__sub\">[what happens next]</p><div class=\"od-card\" style=\"width:100%;text-align:left\"><div class=\"od-kv\"><span>[fact]</span><span>[value]</span></div></div></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[next step]</button></div>"
 }

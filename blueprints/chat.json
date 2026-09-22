@@ -42,5 +42,6 @@
       "id": "c",
       "layout": "Bubbles with context card: a pinned card at the top about the item being discussed, then bubbles, composer pinned."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\" style=\"gap:8px\">[message bubbles — the screen draws these itself]</div><div class=\"od-bottom-bar\"><button class=\"od-icon-btn\" aria-label=\"Attach\"><i data-lucide=\"plus\"></i></button><div class=\"od-search\" style=\"flex:1\"><input placeholder=\"[message]\"></div><button class=\"od-icon-btn\" aria-label=\"Send\"><i data-lucide=\"send\"></i></button></div>"
 }

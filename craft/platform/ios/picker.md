@@ -1,0 +1,1 @@
+**Picker.** Choosing one of few options: a list of rows with a checkmark on the selected one, or a menu. Choosing a value from a range: a wheel or a segmented control for 2–4 choices. Show the current value in the row that opens it.

@@ -12,6 +12,8 @@ export const Route = createRootRoute({
       { title: 'Design' },
     ],
     links: [{ rel: 'stylesheet', href: css }],
+    // DSH-09: the saved theme is applied before the first paint, so a dark page never flashes white.
+    scripts: [{ children: "try{if(localStorage.getItem('od:theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}" }],
   }),
   component: () => (
     <RootDocument>
@@ -22,7 +24,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

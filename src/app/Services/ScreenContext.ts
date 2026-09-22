@@ -51,12 +51,13 @@ export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home') }
 }
 
-export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string; data?: string }): string {
+export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string; data?: string; art?: string }): string {
   return [
     `App: ${p.app}`,
     `Other screens in this app: ${p.screenNames.join(', ')}`,
     p.content ? `\n${p.content}` : '',
     p.data ? `\n${p.data}` : '',
+    p.art ? `\n${p.art}` : '',
     '',
     `# ${p.contract}`,
     p.digest

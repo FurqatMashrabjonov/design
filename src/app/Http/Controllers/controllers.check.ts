@@ -271,4 +271,149 @@ assert.throws(() => ProjectController.rename({ id: 'nope', name: 'x' }))
 ProjectController.rename({ id: 'p9', name: 'x'.repeat(200) })
 assert.equal(Project.find('p9')!.name.length, 80, 'capped')
 
+// FB-01: ratings and regenerate signals, traced to the pattern that drew the screen
+{
+  const { FeedbackController, patternOf } = await import('./FeedbackController.ts')
+  const { Feedback } = await import('../../Models/Feedback.ts')
+  assert.deepEqual(patternOf('Sections…\nScreen pattern (detail, layout b): Photo hero…'), { archetype: 'detail', variant: 'b' })
+  assert.deepEqual(patternOf('Screen pattern (feed): …'), { archetype: 'feed', variant: null })
+  assert.deepEqual(patternOf(null), { archetype: null, variant: null })
+  Screen.create({ id: 's-fb', projectId: 'p9', name: 'Rated', prompt: 'x', html: '<html><body>x</body></html>', x: 0, y: 0, spec: 'Screen pattern (list, layout c): …' })
+  FeedbackController.rate({ projectId: 'p9', screenId: 's-fb', value: 'up' })
+  FeedbackController.rate({ projectId: 'p9', screenId: 's-fb', value: 'down' })
+  assert.equal(Feedback.ratings('p9').get('s-fb'), 'down', 'the latest rating wins')
+  assert.deepEqual(Feedback.forProject('p9').map((f) => [f.value, f.designSystem, f.archetype, f.variant]), [['down', 'minimal', 'list', 'c']], 'one rating per screen, with what drew it')
+  FeedbackController.rate({ projectId: 'p9', screenId: 's-fb', value: null })
+  assert.equal(Feedback.ratings('p9').has('s-fb'), false, 'null clears it')
+  assert.throws(() => FeedbackController.rate({ projectId: 'p9', screenId: 's-fb', value: 'love' }), /up, down or null/)
+  assert.throws(() => FeedbackController.rate({ projectId: 'p1', screenId: 's-fb', value: 'up' }), 'a screen is rated only inside its own project')
+  assert.equal(ProjectController.show('p9').screens.find((s) => s.id === 's-fb')!.rating, null)
+  // regenerating a drawn screen is recorded; retrying a failed one is not
+  reply = () => sse(page('Rated again'))
+  await post(GenerateController, { projectId: 'p9', regenerateScreenId: 's-fb' })
+  assert.deepEqual(Feedback.forProject('p9').map((f) => f.value), ['regenerate'])
+}
+
+// FB-02: each change as a before/after pair with its request, derived from the conversation
+{
+  const { EditPairService } = await import('../../Services/EditPairService.ts')
+  const pairs = EditPairService.forProject('p3')
+  assert.ok(pairs.length >= 3, `p3's edits come back as pairs (${pairs.length})`)
+  for (const p of pairs) assert.ok(p.before && p.after && p.before !== p.after && p.request, `${p.kind} pair is complete`)
+  const hand = pairs.find((p) => p.kind === 'direct')!
+  assert.match(hand.request, /Changed text|Deleted|Moved|Duplicated|Removed|Replaced/, 'a hand edit carries its own description as the request')
+  assert.ok(pairs.some((p) => p.undone), 'a change that was undone is kept and marked')
+  const byAsk = pairs.find((p) => p.kind === 'edit')
+  assert.ok(byAsk && byAsk.request.length > 3 && byAsk.designSystem === 'minimal', 'a model edit carries the person\'s words and the design system')
+  assert.deepEqual(EditPairService.forProject('nope'), [])
+}
+
+// EYE-02: the render audit's findings become one edit-by-parts call on the elements at fault
+{
+  const base = '<!doctype html><html><head><style>.t{color:#ddd}</style></head><body><main><h1>Title</h1><p class="t">Faint</p><button class="b">Go</button></main></body></html>'
+  Screen.create({ id: 's-fix', projectId: 'p9', name: 'Fixable', prompt: 'x', html: base, x: 0, y: 0 })
+  const ids = annotateElements(base)
+  const pId = ids.match(/<p class="t" data-od-id="([^"]+)"/)![1]
+  sent = []
+  reply = () => sse(`<affects>${pId}</affects><edit target="${pId}"><p class="t" data-od-id="${pId}" style="color:var(--fg)">Faint</p></edit>`)
+  await post(GenerateController, { projectId: 'p9', editScreenId: 's-fix', prompt: '', fixFindings: [{ rule: 'low-contrast', id: pId, detail: 'Faint 1.4:1' }, { rule: 'overlap', id: null, detail: 'no element' }, { rule: 'evil', id: 'x' }] })
+  assert.equal(sent.length, 1, 'one call for all findings')
+  assert.ok(sent[0].user.includes(`data-od-id="${pId}" (Faint 1.4:1): text is too faint`) && !sent[0].user.includes('no element'), 'the instruction names the element and how to fix it; untargetable findings are left out')
+  assert.ok(Screen.find('s-fix')!.html.includes('style="color:var(--fg)">Faint'), 'the element was fixed by parts')
+  assert.equal(ScreenVersion.count('s-fix'), 1, 'one version for the whole fix')
+  const talk = Message.forProject('p9').slice(-2)
+  assert.deepEqual(talk.map((m) => [m.role, m.kind]), [['user', 'edit'], ['agent', 'edit']])
+  assert.equal(talk[0].text, 'Fix 1 problem found in the rendered screen', 'the chat says what was asked in plain words')
+  const bad = await GenerateController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p9', editScreenId: 's-fix', fixFindings: [{ rule: 'overlap', id: null }] }) }))
+  assert.equal(bad.status, 400, 'nothing with an element to fix is refused before any call')
+}
+
+// B1: ownership, orphan adoption, account deletion cascades
+{
+  const { db } = await import('../../../database/connection.ts')
+  const { user } = await import('../../../database/schema.ts')
+  const { AccountController } = await import('./AccountController.ts')
+  const now = new Date()
+  db.insert(user).values([{ id: 'u1', name: 'A', email: 'a@x.uz', createdAt: now, updatedAt: now }, { id: 'u2', name: 'B', email: 'b@x.uz', createdAt: now, updatedAt: now }]).run()
+  Project.create({ id: 'own-1', name: 'Mine', designSystem: 'minimal', device: 'mobile', userId: 'u1' })
+  Project.create({ id: 'orphan-1', name: 'Old', designSystem: 'minimal', device: 'mobile' })
+  assert.ok(Project.findOwned('own-1', 'u1') && !Project.findOwned('own-1', 'u2'), 'only the owner finds a project')
+  assert.deepEqual(Project.forUser('u2').map((p) => p.id), [], 'nobody else lists it')
+  Project.adoptOrphans('u2')
+  assert.equal(Project.find('orphan-1')!.userId, 'u2', 'projects from before accounts go to the first person who signs in')
+  assert.equal(Project.find('own-1')!.userId, 'u1', 'owned projects are not adopted')
+  Screen.create({ id: 's-own', projectId: 'own-1', name: 'S', prompt: 'p', html: '<html></html>', x: 0, y: 0 })
+  AccountController.destroy('u1')
+  assert.ok(!Project.find('own-1') && !Screen.find('s-own'), 'deleting the account deletes its projects and screens')
+  assert.ok(Project.find('orphan-1'), "and nobody else's")
+}
+
+// DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
+{
+  const { UsageService } = await import('../../Services/UsageService.ts')
+  const { swatchOf } = await import('../../Services/DesignSystemService.ts')
+  Project.create({ id: 'card-a', name: 'A', designSystem: 'minimal', device: 'mobile', userId: 'u2' })
+  Screen.create({ id: 'ca-1', projectId: 'card-a', name: 'First', prompt: 'p', html: '<html>1</html>', x: 0, y: 0 })
+  Screen.create({ id: 'ca-2', projectId: 'card-a', name: 'Failed', prompt: 'p', html: '', x: 0, y: 0 })
+  Screen.create({ id: 'ca-3', projectId: 'card-a', name: 'Gone', prompt: 'p', html: '<html>3</html>', x: 0, y: 0 })
+  Screen.delete('ca-3')
+  Message.add({ projectId: 'orphan-1', role: 'user', kind: 'plan', text: 'later change' })
+  const cards = Project.cardsForUser('u2')
+  const a = cards.find((c) => c.id === 'card-a')!
+  assert.equal(a.screenCount, 1, 'failed and deleted screens are not counted')
+  assert.equal(a.coverId, 'ca-1', 'the cover is the first screen that shows something')
+  assert.ok(cards.every((c) => Project.find(c.id)!.userId === 'u2'), 'only this user’s projects')
+  assert.ok(Project.cardsForUser('nobody').length === 0)
+  Project.setFavorite('card-a', true)
+  assert.equal(Project.cardsForUser('u2').find((c) => c.id === 'card-a')!.favorite, true, 'a star is saved')
+  assert.equal(typeof UsageService.callsToday('u2'), 'number')
+  assert.deepEqual(swatchOf('/* --accent: #fff (brand) */\n:root { --bg: #fafafa; --fg: rgb(1, 2, 3); --accent: #10a37f; --font-display: "Inter", sans-serif; }'), { bg: '#fafafa', fg: 'rgb(1, 2, 3)', accent: '#10a37f', font: 'Inter' }, 'comments do not win over the declaration')
+  assert.deepEqual(swatchOf('--bg: var(--x); --font-display: url(evil)'), { bg: null, fg: null, accent: null, font: null }, 'only literal values reach a style attribute')
+}
+{
+  const { str, idOf, num, oneOf, obj } = await import('../../../server/validate.ts')
+  assert.throws(() => idOf('../x'), /Invalid id/)
+  assert.throws(() => str('x'.repeat(11), 10), /Invalid text/)
+  assert.throws(() => num(Number.NaN), /Invalid number/)
+  assert.throws(() => oneOf('love', ['up', 'down']), /Invalid value/)
+  assert.throws(() => obj(null), /Invalid request/)
+  assert.equal(idOf('0mucc31f3-0001-896f'), '0mucc31f3-0001-896f', 'message ids pass')
+}
+
+// B2: every model call is logged with its user and project; limits read the log
+{
+  const { UsageService, LIMITS } = await import('../../Services/UsageService.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { llmCalls } = await import('../../../database/schema.ts')
+  reply = () => new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: page('Logged') } }] })}\n\ndata: ${JSON.stringify({ choices: [], usage: { prompt_tokens: 1000, prompt_cache_hit_tokens: 400, completion_tokens: 2000 } })}\n\ndata: [DONE]\n`, { status: 200 })
+  Project.create({ id: 'p-usage', name: 'U', designSystem: 'minimal', device: 'mobile' })
+  const out = await UsageService.run({ userId: 'user-9', projectId: 'p-usage' }, () => post(GenerateController, { projectId: 'p-usage', prompt: 'a settings screen' }))
+  assert.ok(!out.includes('GEN_ERROR'))
+  const rows = db.select().from(llmCalls).all().filter((r) => r.userId === 'user-9')
+  assert.equal(rows.length, 1, 'one row per model call, attributed to the request\'s user')
+  assert.equal(rows[0].projectId, 'p-usage')
+  assert.deepEqual([rows[0].promptTokens, rows[0].cachedTokens, rows[0].completionTokens, rows[0].ok], [1000, 400, 2000, true])
+  assert.ok(Math.abs(rows[0].costUsd - (600 * 0.27 + 400 * 0.07 + 2000 * 1.1) / 1e6) < 1e-9, 'cost from the price table')
+  reply = () => new Response('down', { status: 500 })
+  await UsageService.run({ userId: 'user-9' }, () => post(GenerateController, { projectId: 'p-usage', prompt: 'again' }))
+  const failed = db.select().from(llmCalls).all().filter((r) => r.userId === 'user-9' && !r.ok)
+  assert.ok(failed.length === 1 && /DeepSeek 500/.test(failed[0].error ?? ''), 'a failed call is logged with its error')
+
+  assert.equal(UsageService.refusal('user-9'), null, 'under the limits')
+  UsageService.begin('user-9')
+  assert.equal(UsageService.refusal('user-9')?.status, 429, 'one generation at a time')
+  UsageService.end('user-9')
+  const limit = LIMITS.callsPerDay
+  LIMITS.callsPerDay = 2
+  assert.match(UsageService.refusal('user-9')?.message ?? '', /today’s generation limit/, 'the daily call limit')
+  LIMITS.callsPerDay = limit
+  const budget = LIMITS.dailyBudgetUsd
+  LIMITS.dailyBudgetUsd = 0.001
+  assert.equal(UsageService.refusal('someone-else')?.status, 503, 'the service-wide daily budget pauses everyone')
+  LIMITS.dailyBudgetUsd = budget
+  process.env.GENERATION_PAUSED = '1'
+  assert.equal(UsageService.refusal('someone-else')?.status, 503, 'the stop switch')
+  delete process.env.GENERATION_PAUSED
+}
+
 console.log('ok')

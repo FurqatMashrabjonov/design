@@ -1,0 +1,1 @@
+**Sheet.** A bottom sheet slides over the screen with a 32×4px drag handle and 16–24px top radius; half height for quick choices, full for tasks. It has its own title and one primary action at the bottom. The screen behind dims.

@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Link2, Moon, Pencil, Sun } from 'lucide-react'
 import { toast } from 'sonner'
-import { getProject } from '../server/fns'
+import { getProject, getSession } from '../server/fns'
 import { frameSize } from '../canvas'
 import { orderScreens, screenByName, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
 import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
 
 export const Route = createFileRoute('/preview/$projectId')({
+  beforeLoad: async ({ location }) => {
+    const { user } = await getSession()
+    if (!user) throw redirect({ to: '/login', search: { next: location.href } })
+    return { user }
+  },
   validateSearch: (s: Record<string, unknown>): { s?: string } => (typeof s.s === 'string' ? { s: s.s } : {}),
   loader: ({ params }) => getProject({ data: params.projectId }),
   head: () => ({ meta: [{ title: 'Preview' }] }),

@@ -43,11 +43,7 @@ const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math
 const round = (n: number, d = 3) => Number(n.toFixed(d))
 
 // USD per million tokens. ponytail: constants, overridable by env; move to config when OBS-01 logs real cost.
-const PRICE = {
-  cached: Number(process.env.EVAL_PRICE_IN_CACHED ?? 0.07),
-  input: Number(process.env.EVAL_PRICE_IN ?? 0.27),
-  output: Number(process.env.EVAL_PRICE_OUT ?? 1.1),
-}
+import { PRICE } from '../src/app/Services/LlmService.ts'
 
 export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors: number, usage?: Usage, plans: PlanInput[] = []) {
   const byRule: Record<string, number> = {}
@@ -110,6 +106,11 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       avatarFaces: screens.reduce((n, s) => n + (s.html.match(/<img\b[^>]*data-od-avatar-resolved/g)?.length ?? 0), 0),
       avatarInitials: screens.reduce((n, s) => n + (s.html.match(/<span\b[^>]*data-od-avatar-resolved/g)?.length ?? 0), 0),
       screensWithPhoto: share(screens.filter((s) => /data-od-img-resolved/.test(s.html)).length),
+    },
+    // KIT-03: charts drawn by code from a data-od-chart slot, versus charts the model drew itself.
+    charts: {
+      slots: screens.reduce((n, s) => n + (s.html.match(/data-od-chart-rendered/g)?.length ?? 0), 0),
+      handDrawnScreens: screens.filter((s) => handDrawnChart(s.html)).length,
     },
     time: { screenP50Ms: median(screens.map((s) => s.ms)), briefP50Ms: median(briefMs) },
     usage: usage && {
@@ -195,5 +196,17 @@ export function pinnedBottom(html: string): boolean {
   for (const block of own.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) for (const rule of block[1].matchAll(/\{([^{}]*)\}/g)) if (pinned(rule[1])) return true
   for (const m of own.matchAll(/\sstyle="([^"]*)"/gi)) if (pinned(m[1])) return true
   return /class="[^"]*\b(fixed|sticky)\b[^"]*\bbottom-\d/.test(own) || /class="[^"]*\bbottom-\d[^"]*\b(fixed|sticky)\b/.test(own)
+}
+
+/** A chart the model drew: an <svg> that is not an icon, logo or code-drawn chart and draws data (a polyline, 3+ rects, a long path), or a tower of divs with percentage heights. */
+export function handDrawnChart(html: string): boolean {
+  const own = html.replace(/<[a-z]+\b[^>]*data-od-chart-rendered[\s\S]*?<\/(div|figure)>/gi, '')
+  for (const m of own.matchAll(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/gi)) {
+    if (/data-od-(icon|logo)|data-lucide|lucide/i.test(m[1])) continue
+    const body = m[2]
+    if (/<polyline\b/i.test(body) || (body.match(/<rect\b/gi)?.length ?? 0) >= 3 || /<path\b[^>]*\bd="[^"]{80,}"/i.test(body)) return true
+  }
+  // Div towers: three or more inline percentage heights on bar/chart-classed elements.
+  return (own.match(/class="[^"]*(bar|chart|column)[^"]*"[^>]*style="[^"]*height\s*:\s*\d{1,3}(\.\d+)?%/gi)?.length ?? 0) >= 3
 }
 

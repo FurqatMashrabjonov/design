@@ -10,6 +10,17 @@ export interface DesignSystemEntry {
   category: string
   description: string
   hasTokens: boolean
+  /** DSH-07: what the picker card shows — literal colours and the display font, or null if unset. */
+  swatch: { bg: string | null; fg: string | null; accent: string | null; font: string | null }
+}
+
+/** The picker's swatch from tokens.css: only literal colours and a plain family name pass. */
+export function swatchOf(css: string): DesignSystemEntry['swatch'] {
+  // tokens.css also mentions tokens in its comments; the first value of the right shape wins.
+  const values = (name: string) => [...css.matchAll(new RegExp(`--${name}:\\s*([^;\\n]+)`, 'g'))].map((m) => m[1]!.trim())
+  const color = (name: string) => values(name).find((v) => /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%]+\))$/i.test(v)) ?? null
+  const family = values('font-display').map((v) => v.split(',')[0]!.replace(/["']/g, '').trim()).find((f) => /^[\w\s-]{1,40}$/.test(f))
+  return { bg: color('bg'), fg: color('fg'), accent: color('accent'), font: family ?? null }
 }
 
 function tryReadJson(path: string): Record<string, unknown> | null {
@@ -55,7 +66,8 @@ export const DesignSystemService = {
         const description =
           (manifest?.description as string) || ''
 
-        return { id: d.name, name, category, description, hasTokens }
+        const swatch = swatchOf(hasTokens ? readFileSync(join(dir, 'tokens.css'), 'utf8') : '')
+        return { id: d.name, name, category, description, hasTokens, swatch }
       })
       .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
   },

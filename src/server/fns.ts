@@ -1,121 +1,116 @@
 // TanStack server functions — the thin route-to-controller binding layer (routes/web.php's role).
+// Every function here checks who is asking and that they own what they name (B1, OWN-02), and
+// validates its input at the boundary (SEC-02): what reaches a controller is well-typed and theirs.
 import { createServerFn } from '@tanstack/react-start'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
+import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
+import { AccountController } from '@/app/Http/Controllers/AccountController'
+import { requireProject, requireScreen, requireUser, userFrom } from './auth'
+import { getRequest } from '@tanstack/react-start/server'
+import { signInMethods } from '@/app/Services/AuthService'
+import { str, num, obj, oneOf, idOf } from './validate'
 
-export const getHome = createServerFn({ method: 'GET' }).handler(() => ProjectController.index())
+// --- account ---
+
+/** The signed-in user (or null) and how one can sign in — for the login page and the account menu. */
+export const getSession = createServerFn({ method: 'GET' }).handler(async () => ({ user: await userFrom(getRequest()), methods: signInMethods }))
+
+export const deleteAccount = createServerFn({ method: 'POST' }).handler(async () => AccountController.destroy((await requireUser()).id))
+
+// --- projects ---
+
+export const getHome = createServerFn({ method: 'GET' }).handler(async () => ProjectController.index((await requireUser()).id))
 
 export const getProject = createServerFn({ method: 'GET' })
-  .validator((id: string) => id)
-  .handler(({ data }) => ProjectController.show(data))
+  .validator((id: unknown) => idOf(id))
+  .handler(async ({ data }) => ProjectController.show((await requireProject(data)).project.id))
 
 export const createProject = createServerFn({ method: 'POST' })
-  .validator((d: { device: string; designSystem: string }) => d)
-  .handler(({ data }) => ProjectController.store(data))
-
-export const moveScreen = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; x: number; y: number }) => d)
-  .handler(({ data }) => ProjectController.moveScreen(data))
-
-export const saveScreenHeight = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; height: number }) => d)
-  .handler(({ data }) => ProjectController.saveScreenHeight(data))
-
-export const themeFromChat = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; prompt: string }) => d)
-  .handler(({ data }) => ProjectController.themeFromChat(data))
-
-export const saveTheme = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; theme: unknown }) => d)
-  .handler(({ data }) => ProjectController.saveTheme(data))
-
-export const stepVersion = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; screenId: string; dir: number }) => d)
-  .handler(({ data }) => HistoryController.stepVersion(data))
-
-export const revertMessage = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; messageId: string }) => d)
-  .handler(({ data }) => HistoryController.revertMessage(data))
-
-export const getElementInfo = createServerFn({ method: 'GET' })
-  .validator((d: { projectId: string; screenId: string; elementId: string }) => d)
-  .handler(({ data }) => ElementController.info(data))
-
-export const editElementText = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; screenId: string; elementId: string; text: string }) => d)
-  .handler(({ data }) => ElementController.editText(data))
-
-export const elementAction = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; screenId: string; elementId: string; action: ElementAction }) => d)
-  .handler(({ data }) => ElementController.act(data))
-
-export const replaceElementPhoto = createServerFn({ method: 'POST' })
-  .validator((d: { projectId: string; screenId: string; elementId: string; query: string }) => d)
-  .handler(({ data }) => ElementController.replacePhoto(data))
+  .validator((d: unknown) => {
+    const o = obj(d)
+    return { device: oneOf(o.device, ['mobile', 'desktop'] as const), designSystem: str(o.designSystem, 60) }
+  })
+  .handler(async ({ data }) => ProjectController.store({ ...data, userId: (await requireUser()).id }))
 
 export const renameProject = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; name: string }) => d)
-  .handler(({ data }) => ProjectController.rename(data))
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), name: str(obj(d).name, 200) }))
+  .handler(async ({ data }) => (await requireProject(data.id), ProjectController.rename(data)))
 
 export const deleteProject = createServerFn({ method: 'POST' })
-  .validator((id: string) => id)
-  .handler(({ data }) => ProjectController.destroy(data))
+  .validator((id: unknown) => idOf(id))
+  .handler(async ({ data }) => (await requireProject(data), ProjectController.destroy(data)))
+
+export const favoriteProject = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), favorite: obj(d).favorite === true }))
+  .handler(async ({ data }) => (await requireProject(data.id), ProjectController.favorite(data)))
+
+export const themeFromChat = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), prompt: str(obj(d).prompt, 500) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ProjectController.themeFromChat(data)))
+
+export const saveTheme = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), theme: obj(d).theme }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ProjectController.saveTheme(data)))
+
+export const revertMessage = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), messageId: idOf(obj(d).messageId) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), HistoryController.revertMessage(data)))
+
+// --- screens ---
+
+export const moveScreen = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), x: num(obj(d).x), y: num(obj(d).y) }))
+  .handler(async ({ data }) => (await requireScreen(data.id), ProjectController.moveScreen(data)))
+
+export const saveScreenHeight = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), height: num(obj(d).height) }))
+  .handler(async ({ data }) => (await requireScreen(data.id), ProjectController.saveScreenHeight(data)))
+
+const screenRef = (d: unknown) => ({ id: idOf(obj(d).id), projectId: idOf(obj(d).projectId) })
 
 export const renameScreen = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; projectId: string; name: string }) => d)
-  .handler(({ data }) => ScreenController.rename(data))
+  .validator((d: unknown) => ({ ...screenRef(d), name: str(obj(d).name, 200) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ScreenController.rename(data)))
 
 export const deleteScreen = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; projectId: string }) => d)
-  .handler(({ data }) => ScreenController.destroy(data))
+  .validator(screenRef)
+  .handler(async ({ data }) => (await requireProject(data.projectId), ScreenController.destroy(data)))
 
 export const duplicateScreen = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; projectId: string }) => d)
-  .handler(({ data }) => ScreenController.duplicate(data))
+  .validator(screenRef)
+  .handler(async ({ data }) => (await requireProject(data.projectId), ScreenController.duplicate(data)))
 
 export const restoreScreen = createServerFn({ method: 'POST' })
-  .validator((d: { id: string; projectId: string }) => d)
-  .handler(({ data }) => ScreenController.restore(data))
+  .validator(screenRef)
+  .handler(async ({ data }) => (await requireProject(data.projectId), ScreenController.restore(data)))
 
-export const runCritique = createServerFn({ method: 'POST' })
-  .validator((d: { screenId: string; projectId: string }) => d)
-  .handler(async ({ data }) => {
-    const { Project } = await import('@/app/Models/Project')
-    const { Screen } = await import('@/app/Models/Screen')
-    const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
-    const { critiqueScreen } = await import('@/app/Services/CritiqueService')
+export const stepVersion = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), dir: num(obj(d).dir) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), HistoryController.stepVersion(data)))
 
-    const project = Project.find(data.projectId)
-    if (!project) throw new Error('Project not found')
-    const screen = Screen.findInProject(data.screenId, data.projectId)
-    if (!screen) throw new Error('Screen not found')
+export const rateScreen = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), value: obj(d).value === null ? null : oneOf(obj(d).value, ['up', 'down'] as const) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), FeedbackController.rate(data)))
 
-    const dsMd = DesignSystemService.readDesignMd(project.designSystem)
-    const tokens = DesignSystemService.readTokensCss(project.designSystem)
-    const dsContext = `${dsMd}\n\n${tokens ? 'Tokens:\n' + tokens : ''}`
+// --- elements ---
 
-    return critiqueScreen(screen.html, dsContext)
-  })
+const elementRef = (d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), elementId: idOf(obj(d).elementId) })
 
-export const applyCritiqueFix = createServerFn({ method: 'POST' })
-  .validator((d: { screenId: string; projectId: string; revisedHtml: string }) => d)
-  .handler(async ({ data }) => {
-    const { Screen } = await import('@/app/Models/Screen')
-    const { ScreenVersion } = await import('@/app/Models/ScreenVersion')
-    const { annotateHtml } = await import('@/lib/element-annotator')
+export const getElementInfo = createServerFn({ method: 'GET' })
+  .validator(elementRef)
+  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.info(data)))
 
-    const screen = Screen.findInProject(data.screenId, data.projectId)
-    if (!screen) throw new Error('Screen not found')
+export const editElementText = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ ...elementRef(d), text: str(obj(d).text, 2000) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.editText(data)))
 
-    ScreenVersion.captureFrom(screen)
-    const annotated = annotateHtml(data.revisedHtml)
-    Screen.updateContent(screen.id, {
-      name: screen.name,
-      prompt: `${screen.prompt} (Critique revised)`,
-      html: annotated,
-    })
-    return { ok: true }
-  })
+export const elementAction = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ ...elementRef(d), action: oneOf(obj(d).action, ['delete', 'duplicate', 'up', 'down'] as const) as ElementAction }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.act(data)))
 
+export const replaceElementPhoto = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ ...elementRef(d), query: str(obj(d).query, 120) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.replacePhoto(data)))

@@ -7,7 +7,11 @@
  *
  * This file pre-compiles the values described in `DESIGN.md` into
  * the schema shared with every OD design system. Agents generating a
- * Stripe-flavored artifact should paste the `:root { … }` block
+ * Stripe-flavored artifact should paste the `:root { … 
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-border: 0;
+  --od-card-shadow: 0 2px 5px rgba(50,50,93,.1), 0 1px 2px rgba(0,0,0,.08);
+}` block
  * verbatim into the first `<style>` of the artifact, then reference
  * every value through `var(--name)` — never re-author the hex
  * inline. The fixture in `components.html` is the round-trip proof

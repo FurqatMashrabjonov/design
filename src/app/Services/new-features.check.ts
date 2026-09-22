@@ -216,6 +216,9 @@ assert.ok(!fixed.includes('#6366f1'), 'Indigo is rewritten to the accent token')
 assert.ok(fixed.includes('font-family: var(--font-body)'), 'Literal font stack is tokenised')
 assert.ok(fixed.includes("--accent:#2952cc"), 'The canonical token block is left intact')
 assert.ok(lintScreen(autofixScreen(fixed)).every((f) => f.rule !== 'ai-indigo-accent'), 'Autofix is idempotent')
+// KIT-04: a [placeholder] from a kit sketch must never reach a screen
+assert.deepEqual(lintScreen('<html><body><p class="od-card__title">[name]</p><img data-od-img="[subject]" alt=""></body></html>').find((f) => f.rule === 'kit-placeholder')?.samples, ['[name]', '[subject]'])
+assert.ok(!lintScreen('<html><head><style>[data-od-tab]{x:1}</style></head><body><p>Step [1] of 3</p><script>const a = [x]</script></body></html>').some((f) => f.rule === 'kit-placeholder'), 'CSS attribute selectors, numbers in brackets and script arrays are not placeholders')
 // HIG-03 / EYE-03: platform minimums, checked and fixed in code
 const small = `<html><head><style>:root{--text-xs:10px}.cap{font-size:9px}.hide{font-size:0px}.ok{font-size:12px}</style></head><body><span style="font-size: 8.5px">a</span><b class="text-[10px]">b</b><button class="x"><i data-lucide="x"></i></button><button>Save</button></body></html>`
 const tiny = lintScreen(small).find((f) => f.rule === 'tiny-text')
@@ -231,6 +234,37 @@ assert.equal(autofixScreen(big), big, 'the whole autofix is idempotent')
 assert.ok(!autofixScreen('<html><head></head><body><p>no buttons</p></body></html>').includes('data-od-hit-area'), 'no rule when there is no button')
 const badged = autofixScreen('<html><head><style>.bell::after{content:"";width:8px;height:8px}</style></head><body><button class="bell"><i data-lucide="bell"></i></button></body></html>')
 assert.ok(badged.includes('button:not(.bell):has('), 'a button whose class already has an ::after (a badge) keeps it')
+
+// KIT-01: the shared component sheet — tokens only, every component sampled, injected only when used
+{
+  const { readFileSync } = await import('node:fs')
+  const { KitService } = await import('./KitService.ts')
+  const { KIT_SAMPLES } = await import('../../../kit/samples.ts')
+  const { normalizeKit } = await import('../../lib/screen-normalizer.ts')
+  const raw = readFileSync('kit/od-kit.css', 'utf8')
+  const css = KitService.css()
+  assert.ok(!css.includes('/*'), 'comments are stripped before injection')
+  const hexes = [...css.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((m) => m[0].toLowerCase())
+  assert.ok(hexes.every((h) => h === '#fff'), `only white (text on danger, switch knob) may be literal: ${[...new Set(hexes)].join(' ')}`)
+  const defined = new Set([...raw.matchAll(/\.(od-[a-z0-9_-]+)/g)].map((m) => m[1]))
+  const used = new Set(KIT_SAMPLES.flatMap((x) => [...x.html.matchAll(/class="([^"]+)"/g)].flatMap((m) => m[1].split(/\s+/))).filter((c) => c.startsWith('od-')))
+  for (const c of used) assert.ok(defined.has(c), `sample uses ${c}, which the kit does not define`)
+  const blocks = [...defined].map((c) => c.split('__')[0].split('--')[0])
+  for (const b of new Set(blocks)) assert.ok([...used].some((u) => u.startsWith(b)), `kit block ${b} has no sample in the gallery`)
+  assert.ok(new Set(blocks).size >= 30, `about thirty components (${new Set(blocks).size})`)
+
+  const page = '<html><head><title>x</title><style>.card{}</style></head><body><div class="od-card">x</div></body></html>'
+  const once = normalizeKit(page, css)
+  assert.ok(once.indexOf('data-od-kit') < once.indexOf('.card{}'), 'the kit comes before the page styles, so the page can override it')
+  assert.equal(normalizeKit(once, css), once, 'idempotent')
+  assert.equal(normalizeKit('<html><head></head><body><div class="card">x</div></body></html>', css).includes('data-od-kit'), false, 'no od- class, no sheet')
+  assert.equal(normalizeKit('<html><head></head><body><div class="food-card">x</div></body></html>', css).includes('data-od-kit'), false, '"food-card" is not an od- class')
+  assert.ok(!normalizeKit(once.replace('class="od-card"', 'class="card"'), css).includes('data-od-kit'), 'a sheet is removed once nothing uses it')
+  const restyled = normalizeKit('<html><head><style>.od-btn{background:red}.od-row__lead, .od-kv:hover{x:1}.promo .od-btn{padding:0}.od-card.promo{margin:0}.mine{color:blue}@media (min-width:1px){.od-chip{x:2}}</style></head><body><div class="od-card promo">x</div></body></html>', css)
+  const own = restyled.replace(/<style data-od-kit>[\s\S]*?<\/style>/, '')
+  assert.ok(!own.includes('background:red') && !own.includes('x:1') && !own.includes('x:2'), 'page rules that restyle kit classes are dropped (also inside @media)')
+  assert.ok(own.includes('.promo .od-btn{padding:0}') && own.includes('.od-card.promo{margin:0}') && own.includes('.mine{color:blue}'), 'composition and the page\'s own classes stay')
+}
 
 console.log('Testing Prototype Navigation...')
 // Mirrors navigateToTab / navigateBack in routes/p.$projectId.tsx: every tab the shell

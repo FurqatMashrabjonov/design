@@ -42,5 +42,6 @@
       "id": "c",
       "layout": "Ranked: headline number with change, then the breakdown as horizontal bars ranked largest first, chart smaller below."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><div class=\"od-segmented\"><button class=\"is-active\">[week]</button><button>[month]</button></div><div class=\"od-card\"><div class=\"od-stat\"><span class=\"od-stat__label\">[metric]</span><span class=\"od-stat__value\">[value]</span><span class=\"od-stat__delta od-stat__delta--up\">[change]</span></div><div data-od-chart=\"bar\" data-values=\"[values]\" data-labels=\"[labels]\"></div></div><section class=\"od-section\"><h2 class=\"od-section__title\">[breakdown]</h2><div class=\"od-list\">[od-row × 4 with od-row__trail values]</div></section></div>"
 }

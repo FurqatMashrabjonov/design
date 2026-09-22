@@ -40,5 +40,6 @@
       "id": "c",
       "layout": "Account card first: a large account card with avatar and plan, then grouped rows below."
     }
-  ]
+  ],
+  "kit": "<div class=\"od-page\"><section class=\"od-section\"><h2 class=\"od-section__title\">[group]</h2><div class=\"od-list\"><div class=\"od-row\"><span class=\"od-row__lead\"><i data-lucide=\"bell\"></i></span><span class=\"od-row__body\"><span class=\"od-row__title\">[setting]</span><span class=\"od-row__sub\">[explanation]</span></span><input type=\"checkbox\" class=\"od-switch\" role=\"switch\" checked></div><a class=\"od-row od-row--chevron\"><span class=\"od-row__body\"><span class=\"od-row__title\">[setting]</span></span><span class=\"od-row__trail\">[value]</span></a></div></section></div>"
 }

@@ -1,0 +1,1 @@
+**Map.** Maps are full-bleed under floating controls: a search/filter pill on top, a recenter button, and a bottom sheet with the results. Pins are small, accent-coloured, with the selected one enlarged and labelled. Keep the map's own labels readable: no heavy overlays on the whole map.

@@ -5,6 +5,7 @@ import { themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
 import { parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
 import { annotateElements } from '@/lib/element-ops'
 import { parseRect, safeElementId, withEditBridge, type BridgeRect } from '@/lib/edit-bridge'
+import { AUDIT_BRIDGE, parseAudit, type AuditFinding } from '@/lib/render-audit'
 
 // Renders at native device width; the height grows to fit the screen (see lib/frame-height.ts).
 // The canvas's own transform handles zoom.
@@ -35,6 +36,8 @@ export function ScreenFrame(props: {
   onEscape?: () => void
   /** Cmd+Z (redo: Shift+Cmd+Z) pressed inside the frame. */
   onUndo?: (redo: boolean) => void
+  /** What the render audit found once the screen settled (lib/render-audit.ts, EYE-01). */
+  onAudit?: (findings: AuditFinding[]) => void
   /** Floating panel shown under the selected element. */
   panel?: ReactNode
   /** Start editing the selected element's text in place (a panel button); bump `key` to repeat. */
@@ -58,7 +61,7 @@ export function ScreenFrame(props: {
     // The same annotation the server applies before an element edit, so both see the same ids.
     const base = editable ? annotateElements(rawHtml) : rawHtml
     const themed = withLiveTheme(base, themeRef.current)
-    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)) : themed
+    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${AUDIT_BRIDGE}</body>`) : themed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawHtml, editable, props.frameId, f.height])
 
@@ -107,6 +110,8 @@ export function ScreenFrame(props: {
         p.onEscape?.()
       } else if (d?.type === 'od:undo') {
         p.onUndo?.(d.redo === true)
+      } else if (d?.type === 'od:audit') {
+        p.onAudit?.(parseAudit(d.findings))
       } else if (d?.type === 'od:wheel') {
         forwardWheel(iframeRef.current, d)
       } else {

@@ -62,4 +62,9 @@
   --container-gutter-desktop: 36px;
   --container-gutter-tablet: 24px;
   --container-gutter-phone: 16px;
+
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-border: 0;
+  --od-card-shadow: 0 1px 3px rgba(0,0,0,.2), 0 1px 1px rgba(0,0,0,.14);
+  --od-btn-weight: 500;
 }

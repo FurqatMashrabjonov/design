@@ -7,7 +7,13 @@
  * emotional weight, with massive uppercase Nike Futura ND display
  * typography that punches through hero imagery like a typographic
  * shockwave. This file is the *machine-readable* form of the values
- * described in `DESIGN.md`. Agents paste the `:root { … }` block
+ * described in `DESIGN.md`. Agents paste the `:root { … 
+  /* Kit personality (KIT-02): how od-kit components carry this system. */
+  --od-card-border: 0;
+  --od-card-shadow: none;
+  --od-btn-weight: 700;
+  --od-row-min: 60px;
+}` block
  * verbatim into the first `<style>` of every artifact, then reference
  * everything via var(--name) from then on.
  *

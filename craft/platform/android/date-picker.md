@@ -1,0 +1,1 @@
+**Date picker.** A week strip (7 day chips with weekday + date, today marked, selection filled) or a month grid with dots on busy days. Times listed below the selected day as rows or slot chips. Past days are muted and unavailable days are struck or hidden, never just greyed with no reason.
