@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Minus, Plus, RotateCcw, Maximize } from 'lucide-react'
+import { Minus, Plus, RotateCcw, Maximize, MousePointer2, Hand, Keyboard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { framesIn, type Rect } from '@/canvas'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,17 +18,29 @@ const ZOOM_PRESETS = [25, 50, 75, 100, 150, 200]
 
 type Drag =
   | { mode: 'pan'; startX: number; startY: number; startTx: number; startTy: number }
-  | { mode: 'frame'; id: string; startX: number; startY: number; startFx: number; startFy: number; fromX: number; fromY: number }
+  // Dragging one handle moves every selected frame together; each remembers where it started.
+  | { mode: 'frame'; startX: number; startY: number; starts: Record<string, FrameStart> }
+  | { mode: 'marquee'; startX: number; startY: number; additive: boolean }
+
+type FrameStart = { startFx: number; startFy: number; fromX: number; fromY: number }
 
 export function Canvas(props: {
   frames: CanvasFrame[]
-  onMove: (id: string, x: number, y: number) => void
+  /** Frames dropped after a drag — several when a selection was moved together. */
+  onMove: (moves: { id: string; x: number; y: number }[]) => void
   renderFrame: (id: string) => ReactNode
+  /** A plain click on empty canvas (the select tool). */
   onBackgroundClick?: () => void
+  /** A rubber-band selection finished; additive when Shift was held. */
+  onMarquee?: (ids: string[], additive: boolean) => void
+  /** The selected frames; the last one is primary (⇧1 zooms to it, a handle drag moves them all). */
+  selectedIds?: string[]
   /** Change this to bring every frame back into view (a generation finished, a screen was added). */
   fitKey?: string | number
   /** Bring one frame to the centre of the view (a screen chip or the screens list was clicked). */
   focus?: { id: string; key: number }
+  /** Opens the shortcuts sheet (the `?` key does the same). */
+  onShortcuts?: () => void
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
@@ -34,6 +48,44 @@ export function Canvas(props: {
   // remembers the props it was dragged from and stops applying once they change (the save landed,
   // or an undo moved the frame back), so props win again without a flicker.
   const [positions, setPositions] = useState<Record<string, { x: number; y: number; fromX: number; fromY: number }>>({})
+  // Select (V) or hand (H). With the hand, frames take no pointer at all: pressing anywhere pans and
+  // nothing is selected or moved. Holding Space is the hand for as long as it is held.
+  const [tool, setTool] = useState<'select' | 'hand'>('select')
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const hand = tool === 'hand' || spaceHeld
+  // Keyboard: tools and zoom. Re-attached every render so the zoom keys see the current frames and view.
+  useEffect(() => {
+    const typing = (e: KeyboardEvent) => e.target instanceof Element && e.target.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]')
+    function down(e: KeyboardEvent) {
+      if (typing(e) || e.altKey) return
+      const cmd = e.metaKey || e.ctrlKey
+      if (cmd && e.key === '0') {
+        e.preventDefault()
+        fit()
+      } else if (cmd && e.key === '1') {
+        e.preventDefault()
+        zoomCentered(1)
+      } else if (cmd) return
+      else if (e.shiftKey && e.code === 'Digit1') focusOn(props.selectedIds?.at(-1))
+      else if (e.code === 'Space') {
+        e.preventDefault() // the page must not scroll
+        setSpaceHeld(true)
+      } else if (e.key === 'v' || e.key === 'V') setTool('select')
+      else if (e.key === 'h' || e.key === 'H') setTool('hand')
+    }
+    function up(e: KeyboardEvent) {
+      if (e.code === 'Space') setSpaceHeld(false)
+    }
+    const release = () => setSpaceHeld(false) // a Cmd+Tab mid-press never leaves the hand stuck on
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    window.addEventListener('blur', release)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', release)
+    }
+  })
   const drag = useRef<Drag | null>(null)
 
   const pos = useCallback(
@@ -108,9 +160,9 @@ export function Canvas(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extent])
 
-  useEffect(() => {
+  function focusOn(id: string | null | undefined) {
     const el = viewportRef.current
-    const f = props.focus && props.frames.find((x) => x.id === props.focus!.id)
+    const f = id ? props.frames.find((x) => x.id === id) : undefined
     if (!el || !f) return
     const rect = el.getBoundingClientRect()
     const p = pos(f)
@@ -118,6 +170,9 @@ export function Canvas(props: {
     const scale = Math.min(1, Math.max(0.35, Math.min((rect.width * 0.9) / f.width, (rect.height * 0.86) / f.height)))
     userMoved.current = true
     setView({ scale, x: rect.width / 2 - (p.x + f.width / 2) * scale, y: Math.max(24, rect.height / 2 - (p.y + f.height / 2) * scale) })
+  }
+  useEffect(() => {
+    focusOn(props.focus?.id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.focus?.key])
 
@@ -153,19 +208,42 @@ export function Canvas(props: {
     return () => el.removeEventListener('wheel', handler)
   }, [])
 
+  // Empty canvas: the hand pans; the select tool draws a rubber band (a plain click just deselects).
+  const [marquee, setMarquee] = useState<Rect | null>(null)
   function onBackgroundPointerDown(e: React.PointerEvent) {
     if (e.button !== 0) return
-    props.onBackgroundClick?.()
-    drag.current = { mode: 'pan', startX: e.clientX, startY: e.clientY, startTx: view.x, startTy: view.y }
+    drag.current = hand
+      ? { mode: 'pan', startX: e.clientX, startY: e.clientY, startTx: view.x, startTy: view.y }
+      : { mode: 'marquee', startX: e.clientX, startY: e.clientY, additive: e.shiftKey }
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }
+  // Viewport pixels → world (frame) coordinates.
+  function toWorld(clientX: number, clientY: number) {
+    const r = viewportRef.current!.getBoundingClientRect()
+    return { x: (clientX - r.left - view.x) / view.scale, y: (clientY - r.top - view.y) / view.scale }
+  }
+  function marqueeRect(d: { startX: number; startY: number }, e: { clientX: number; clientY: number }): Rect {
+    const a = toWorld(d.startX, d.startY)
+    const b = toWorld(e.clientX, e.clientY)
+    return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) }
+  }
 
+  // A frame moves only by its handle (data-canvas-handle, the ⠿ in its toolbar). Pressing anywhere
+  // else on it selects it and nothing more — it used to drag from anywhere, so a click that moved a
+  // pixel or two moved the screen.
   function onFramePointerDown(id: string, f: CanvasFrame) {
     return (e: React.PointerEvent) => {
       if (e.button !== 0) return
       e.stopPropagation()
-      const p = pos(f)
-      drag.current = { mode: 'frame', id, startX: e.clientX, startY: e.clientY, startFx: p.x, startFy: p.y, fromX: f.x, fromY: f.y }
+      if (!(e.target instanceof Element && e.target.closest('[data-canvas-handle]'))) return
+      // The whole selection moves with a selected frame's handle; an unselected frame moves alone.
+      const group = props.selectedIds?.includes(id) ? props.frames.filter((x) => props.selectedIds!.includes(x.id)) : [f]
+      const starts: Record<string, FrameStart> = {}
+      for (const g of group) {
+        const p = pos(g)
+        starts[g.id] = { startFx: p.x, startFy: p.y, fromX: g.x, fromY: g.y }
+      }
+      drag.current = { mode: 'frame', startX: e.clientX, startY: e.clientY, starts }
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     }
   }
@@ -178,17 +256,29 @@ export function Canvas(props: {
     if (d.mode === 'pan') {
       userMoved.current = true
       setView((prev) => ({ ...prev, x: d.startTx + dx, y: d.startTy + dy }))
+    } else if (d.mode === 'marquee') {
+      if (Math.abs(dx) + Math.abs(dy) > 3) setMarquee(marqueeRect(d, e))
     } else {
-      setPositions((prev) => ({ ...prev, [d.id]: { x: d.startFx + dx / view.scale, y: d.startFy + dy / view.scale, fromX: d.fromX, fromY: d.fromY } }))
+      // Arranging frames is the person's layout too: the view must not re-fit under a drag.
+      userMoved.current = true
+      setPositions((prev) => {
+        const next = { ...prev }
+        for (const [id, s] of Object.entries(d.starts)) next[id] = { x: s.startFx + dx / view.scale, y: s.startFy + dy / view.scale, fromX: s.fromX, fromY: s.fromY }
+        return next
+      })
     }
   }
 
-  function onPointerUp() {
+  function onPointerUp(e: React.PointerEvent) {
     const d = drag.current
     drag.current = null
     if (d?.mode === 'frame') {
-      const p = positions[d.id]
-      if (p) props.onMove(d.id, p.x, p.y)
+      const moves = Object.keys(d.starts).map((id) => ({ id, ...positions[id] })).filter((m) => m.x !== undefined)
+      if (moves.length) props.onMove(moves.map((m) => ({ id: m.id, x: m.x, y: m.y })))
+    } else if (d?.mode === 'marquee') {
+      if (marquee) props.onMarquee?.(framesIn(marqueeRect(d, e), props.frames), d.additive)
+      else props.onBackgroundClick?.()
+      setMarquee(null)
     }
   }
 
@@ -207,13 +297,13 @@ export function Canvas(props: {
       <div
         ref={viewportRef}
         data-canvas-viewport
-        className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
+        className={cn('absolute inset-0 touch-none', hand ? 'cursor-grab active:cursor-grabbing' : 'cursor-default')}
         onPointerDown={onBackgroundPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       >
         <div
-          className="absolute left-0 top-0 origin-top-left"
+          className={cn('absolute left-0 top-0 origin-top-left', hand && 'pointer-events-none')}
           // --canvas-scale lets overlays (the element panel) stay readable at any zoom.
           style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, ['--canvas-scale' as string]: view.scale }}
         >
@@ -222,7 +312,7 @@ export function Canvas(props: {
             return (
               <div
                 key={f.id}
-                className="absolute cursor-grab active:cursor-grabbing"
+                className="absolute"
                 style={{ left: p.x, top: p.y }}
                 onPointerDown={onFramePointerDown(f.id, f)}
               >
@@ -230,11 +320,24 @@ export function Canvas(props: {
               </div>
             )
           })}
+          {marquee && (
+            <div
+              className="pointer-events-none absolute border border-primary bg-primary/10"
+              style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h, borderWidth: 1 / view.scale }}
+            />
+          )}
         </div>
       </div>
 
       <div className="absolute inset-x-0 bottom-5 flex justify-center">
         <div className="flex items-center gap-1 rounded-full border bg-background/95 p-1 shadow-md backdrop-blur">
+          <Button variant={hand ? 'ghost' : 'secondary'} size="icon" className="size-8 rounded-full" onClick={() => setTool('select')} title="Select (V)" aria-label="Select tool" aria-pressed={!hand}>
+            <MousePointer2 className="size-4" />
+          </Button>
+          <Button variant={hand ? 'secondary' : 'ghost'} size="icon" className="size-8 rounded-full" onClick={() => setTool('hand')} title="Hand (H, or hold Space)" aria-label="Hand tool" aria-pressed={hand}>
+            <Hand className="size-4" />
+          </Button>
+          <div className="mx-1 h-5 w-px bg-border" />
           <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(view.scale - 0.1)}>
             <Minus className="size-4" />
           </Button>
@@ -259,9 +362,14 @@ export function Canvas(props: {
           <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={reset} title="Reset view">
             <RotateCcw className="size-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => fit()} title="Fit to screen">
+          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => fit()} title="Fit to screen (⌘0)">
             <Maximize className="size-4" />
           </Button>
+          {props.onShortcuts && (
+            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={props.onShortcuts} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
+              <Keyboard className="size-4" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

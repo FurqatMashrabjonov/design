@@ -105,11 +105,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EDT-19 | To'liq ekran tahriri butun HTML'ni qayta yozmaydi | MVP | Tayyor | O'rta |
 | EDT-09 | Kadr ustida versiya strelkalari va asboblar | MVP | Tayyor | O'rta |
 | EDT-12 | Bekor qilish va qaytarish (undo/redo) | MVP | Tayyor | O'rta |
-| EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Rejada | Kichik |
-| EDT-27 | Kadr faqat sarlavhadagi tutqichdan sudraladi | MVP | Rejada | Kichik |
-| EDT-28 | Klaviatura yorliqlari | MVP | Rejada | Kichik |
+| EDT-11 | Canvas'da tanlash va qo'l asboblari | MVP | Tayyor | Kichik |
+| EDT-27 | Kadr faqat sarlavhadagi tutqichdan sudraladi | MVP | Tayyor | Kichik |
+| EDT-28 | Klaviatura yorliqlari | MVP | Tayyor | Kichik |
 | EDT-29 | Enter — yuborish, Shift+Enter — yangi qator | MVP | Tayyor | Kichik |
-| EDT-30 | Bir nechta ekranni tanlash | MVP | Rejada | O'rta |
+| EDT-30 | Bir nechta ekranni tanlash | MVP | Tayyor | O'rta |
 | EDT-31 | Chat chapga; tablar Chat / Theme; Jury va History UI'dan olinadi | MVP | Tayyor | O'rta |
 | EDT-10 | Yuqori panelda yo'l ko'rsatkich | MVP | Rejada | Kichik |
 | EDT-32 | Yuqori panel: Preview · Share · Export menyusi; o'chirish ⋯ ichida | MVP | Rejada | Kichik |

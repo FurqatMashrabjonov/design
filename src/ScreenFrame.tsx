@@ -17,6 +17,8 @@ export function ScreenFrame(props: {
   device: string
   hint?: string
   selected?: boolean
+  /** False when other screens are selected too: the frame shows the ring but does not take the pointer. */
+  solo?: boolean
   streaming?: boolean
   theme?: Theme
   label?: ReactNode
@@ -45,7 +47,7 @@ export function ScreenFrame(props: {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [rect, setRect] = useState<BridgeRect | null>(null)
   const editable = Boolean(props.frameId) && !props.streaming
-  const active = editable && Boolean(props.selected)
+  const active = editable && Boolean(props.selected) && props.solo !== false
 
   // The srcDoc carries the theme as it was when the HTML last changed. Later theme edits are
   // pushed into the running frame instead, so dragging a colour never reloads it.

@@ -17,3 +17,8 @@ export function nextFramePosition(existing: { x: number; y: number }[], device: 
   const rightmost = existing.reduce((a, b) => (b.x > a.x ? b : a))
   return { x: rightmost.x + width + FRAME_GAP, y: rightmost.y }
 }
+
+export type Rect = { x: number; y: number; w: number; h: number }
+/** The frames a rubber-band rectangle touches (all in canvas/world coordinates); a touch counts, containment is not required. */
+export const framesIn = (rect: Rect, frames: { id: string; x: number; y: number; width: number; height: number }[]) =>
+  frames.filter((f) => f.x < rect.x + rect.w && f.x + f.width > rect.x && f.y < rect.y + rect.h && f.y + f.height > rect.y).map((f) => f.id)

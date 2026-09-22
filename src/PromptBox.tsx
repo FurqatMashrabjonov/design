@@ -45,6 +45,7 @@ export function PromptBox(props: {
       className="rounded-xl border bg-card p-2.5 shadow-sm"
     >
       <Textarea
+        data-prompt-input
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
         ref={boxRef}

@@ -20,9 +20,10 @@ import { ScreensList } from '@/components/canvas/ScreensList'
 import { ElementPanel, type ElementInfo } from '@/components/canvas/ElementPanel'
 import { routeIntent } from '@/lib/intent'
 import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
-import { FrameToolbar } from '@/components/canvas/FrameToolbar'
+import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
+import { ShortcutsDialog } from '@/components/canvas/ShortcutsDialog'
 import { ThemePanel } from '@/components/canvas/ThemePanel'
 import { applyThemeOverride, parseTheme, type Theme } from '@/lib/theme-override'
 import { extractRootBlock, parseDeclarations } from '@/lib/screen-normalizer'
@@ -44,8 +45,11 @@ function ProjectPage() {
   const router = useRouter()
   const navigate = useNavigate()
   const [live, setLive] = useState('')
-  const [selected, setSelected] = useState<string | null>(null)
-  // Selection: a screen, then optionally one element inside it (reported by the frame's edit bridge).
+  // Selection: one or more screens (the last one is primary); with exactly one, optionally an element
+  // inside it (reported by the frame's edit bridge). Shift+click and the rubber band build the set.
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const selected = selectedIds.at(-1) ?? null
+  const multi = selectedIds.length > 1
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null)
   const [elementInfo, setElementInfo] = useState<ElementInfo | null>(null)
   const [editRequest, setEditRequest] = useState<{ elementId: string; key: number } | undefined>(undefined)
@@ -54,6 +58,7 @@ function ProjectPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [focus, setFocus] = useState<{ id: string; key: number } | undefined>(undefined)
   const [fill, setFill] = useState<{ text: string; key: number } | undefined>(undefined)
   // One request at a time; this is what Stop cancels. The server stops spending tokens when the stream closes.
@@ -61,8 +66,16 @@ function ProjectPage() {
   const [working, setWorking] = useState(false)
 
   function selectScreen(id: string | null) {
-    if (id !== selected) setSelectedElementId(null)
-    setSelected(id)
+    if (id !== selected || multi) setSelectedElementId(null)
+    setSelectedIds(id ? [id] : [])
+  }
+  function toggleScreen(id: string) {
+    setSelectedElementId(null)
+    setSelectedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]))
+  }
+  function selectMany(ids: string[], additive: boolean) {
+    setSelectedElementId(null)
+    setSelectedIds((prev) => (additive ? [...prev.filter((x) => !ids.includes(x)), ...ids] : ids))
   }
   function focusScreen(id: string) {
     selectScreen(id)
@@ -116,14 +129,40 @@ function ProjectPage() {
     await router.invalidate()
   }
 
+  // Keyboard on the canvas (zoom and tool keys live in Canvas.tsx; the `?` sheet lists them all).
+  // Nothing fires while typing in a field, a dialog or a menu.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const t = e.target
       if (t instanceof Element && t.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]')) return
+      const cmd = (e.metaKey || e.ctrlKey) && !e.altKey
+      const current = screens.find((s) => s.id === selected)
+      const chosen = screens.filter((s) => selectedIds.includes(s.id))
       if (e.key === 'Escape') escape()
-      else if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'z') {
+      else if (cmd && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         undo(e.shiftKey)
+      } else if (cmd && e.key.toLowerCase() === 'd' && chosen.length) {
+        e.preventDefault() // not the browser's bookmark
+        copyScreens(chosen.map((s) => s.id))
+      } else if (cmd) return
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && chosen.length && !selectedElementId && !working && !handBusy) {
+        e.preventDefault()
+        removeScreens(chosen.map((s) => s.id)).then(() => toast(chosen.length === 1 ? `Deleted “${chosen[0].name}”` : `Deleted ${chosen.length} screens`, { description: '⌘Z brings it back' }))
+      } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && screens.length > 0) {
+        // Left to right on the canvas, wrapping; with nothing selected → the first / last screen.
+        const order = [...screens].filter((s) => s.html).sort((a, z) => a.x - z.x || a.y - z.y)
+        if (order.length === 0) return
+        const i = order.findIndex((s) => s.id === selected)
+        const next = e.key === 'ArrowRight' ? order[i < 0 ? 0 : (i + 1) % order.length] : order[i < 0 ? order.length - 1 : (i - 1 + order.length) % order.length]
+        e.preventDefault()
+        focusScreen(next.id)
+      } else if (e.key === '/') {
+        e.preventDefault()
+        document.querySelector<HTMLTextAreaElement>('[data-prompt-input]')?.focus()
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setShortcutsOpen(true)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -132,17 +171,22 @@ function ProjectPage() {
 
   // Canvas actions, each recorded with its inverse.
   const screenRef = (id: string) => ({ data: { id, projectId: project.id } })
-  async function removeScreen(id: string) {
-    await deleteScreen(screenRef(id))
-    history.current.record(pairStep(() => restoreScreen(screenRef(id)), () => deleteScreen(screenRef(id))))
-    if (selected === id) selectScreen(null)
+  const all = <T,>(ids: string[], fn: (id: string) => Promise<T>) => Promise.all(ids.map(fn))
+  async function removeScreens(ids: string[]) {
+    await all(ids, (id) => deleteScreen(screenRef(id)))
+    history.current.record(pairStep(() => all(ids, (id) => restoreScreen(screenRef(id))), () => all(ids, (id) => deleteScreen(screenRef(id)))))
+    setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)))
+    if (ids.includes(selected ?? '')) setSelectedElementId(null)
     await router.invalidate()
   }
-  async function copyScreen(id: string) {
-    const copy = await duplicateScreen(screenRef(id))
-    history.current.record(pairStep(() => deleteScreen(screenRef(copy.id)), () => restoreScreen(screenRef(copy.id))))
+  const removeScreen = (id: string) => removeScreens([id])
+  async function copyScreens(ids: string[]) {
+    const copies: string[] = []
+    for (const id of ids) copies.push((await duplicateScreen(screenRef(id))).id) // one at a time, so each lands right of the last
+    history.current.record(pairStep(() => all(copies, (id) => deleteScreen(screenRef(id))), () => all(copies, (id) => restoreScreen(screenRef(id)))))
     await router.invalidate()
   }
+  const copyScreen = (id: string) => copyScreens([id])
   async function renameScreenTo(id: string, name: string) {
     const was = screens.find((s) => s.id === id)?.name ?? name
     const call = (n: string) => renameScreen({ data: { id, projectId: project.id, name: n } })
@@ -302,18 +346,18 @@ function ProjectPage() {
     URL.revokeObjectURL(url)
   }
 
-  // Every single-screen request goes through here: one at a time, cancellable, and the conversation
-  // (which the server writes) is reloaded afterwards whether it worked or not.
-  async function run(body: Parameters<typeof generate>[0]) {
+  // Every generation request goes through here — one, or one per selected screen — under a single
+  // Stop, and the conversation (which the server writes) is reloaded afterwards whether it worked or not.
+  async function run(request: Parameters<typeof generate>[0] | Parameters<typeof generate>[0][]) {
+    const bodies = Array.isArray(request) ? request : [request]
     const ctl = new AbortController()
     inFlight.current = ctl
     setWorking(true)
     try {
       // An edit streams only the parts that change, which is not a page: keep the screen in view instead.
-      await generate(body, body.editScreenId ? () => {} : setLive, ctl.signal)
-    } catch (e) {
-      const stopped = e instanceof DOMException && e.name === 'AbortError'
-      if (!stopped) toast.error(e instanceof Error ? e.message : String(e))
+      const results = await Promise.allSettled(bodies.map((body) => generate(body, body.editScreenId ? () => {} : setLive, ctl.signal)))
+      const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected' && !(r.reason instanceof DOMException && r.reason.name === 'AbortError'))
+      if (failed) toast.error(failed.reason instanceof Error ? failed.reason.message : String(failed.reason))
     } finally {
       inFlight.current = null
       setWorking(false)
@@ -390,7 +434,7 @@ function ProjectPage() {
                   ) : working ? (
                     <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
                       <Loader2 className="size-4 animate-spin" />
-                      {planning ? 'Planning the app…' : selectedScreen ? `Working on “${selectedScreen.name}”…` : 'Designing a new screen…'}
+                      {planning ? 'Planning the app…' : multi ? `Working on ${selectedIds.length} screens…` : selectedScreen ? `Working on “${selectedScreen.name}”…` : 'Designing a new screen…'}
                     </div>
                   ) : undefined
                 }
@@ -402,11 +446,16 @@ function ProjectPage() {
                 }
               />
               {selectedScreen && (
-                // What the next message will change: the screen, or one element of it.
+                // What the next message will change: the screens, or one element of one screen.
                 <div className="flex min-w-0 items-center gap-1 text-xs">
                   <span className="shrink-0 text-muted-foreground">Editing</span>
-                  <button type="button" onClick={() => focusScreen(selectedScreen.id)} className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-primary/60" title="Show on the canvas">
-                    {selectedScreen.name}
+                  <button
+                    type="button"
+                    onClick={() => focusScreen(selectedScreen.id)}
+                    className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-primary/60"
+                    title={multi ? screens.filter((s) => selectedIds.includes(s.id)).map((s) => s.name).join(', ') : 'Show on the canvas'}
+                  >
+                    {multi ? `${selectedIds.length} screens` : selectedScreen.name}
                   </button>
                   {selectedElementId && (
                     <>
@@ -439,9 +488,11 @@ function ProjectPage() {
                     ? 'Designing your screens…'
                     : selectedElementId
                       ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
-                      : selectedScreen
-                        ? 'Describe the change…'
-                        : 'Add another screen to this project…'
+                      : multi
+                        ? `Describe a change for all ${selectedIds.length} screens…`
+                        : selectedScreen
+                          ? 'Describe the change…'
+                          : 'Add another screen to this project…'
                 }
                 fill={fill}
                 onStop={() => inFlight.current?.abort()}
@@ -455,7 +506,9 @@ function ProjectPage() {
                       return
                     }
                   }
-                  await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined })
+                  // Several screens selected: the same instruction goes to each, as its own edit.
+                  if (multi) await run(selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id })))
+                  else await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined })
                 }}
               />
             </>
@@ -489,15 +542,23 @@ function ProjectPage() {
             frames={frames}
             fitKey={`${screens.length}:${planFrames.length}`}
             focus={focus}
+            selectedIds={selectedIds}
+            onMarquee={(ids, additive) => selectMany(ids.filter((id) => screenIds.has(id)), additive)}
+            onShortcuts={() => setShortcutsOpen(true)}
             onBackgroundClick={() => selectScreen(null)}
-            onMove={(id, x, y) => {
-              if (id.startsWith('plan-') || id === '__live__') return
-              const was = screens.find((s) => s.id === id)
-              if (!was || (was.x === x && was.y === y)) return
-              const move = (px: number, py: number) => moveScreen({ data: { id, x: px, y: py } })
-              history.current.record(pairStep(() => move(was.x, was.y), () => move(x, y)))
-              // Reload once saved, so the frame's position comes from the server (and an undo can move it back).
-              move(x, y).then(() => router.invalidate())
+            onMove={(moves) => {
+              const real = moves.flatMap((m) => {
+                const was = screens.find((s) => s.id === m.id)
+                return !was || (was.x === m.x && was.y === m.y) ? [] : [{ ...m, fromX: was.x, fromY: was.y }]
+              })
+              if (real.length === 0) return
+              const place = (to: 'from' | 'to') => all(real.map((m) => m.id), (id) => {
+                const m = real.find((r) => r.id === id)!
+                return moveScreen({ data: { id, x: to === 'to' ? m.x : m.fromX, y: to === 'to' ? m.y : m.fromY } })
+              })
+              history.current.record(pairStep(() => place('from'), () => place('to')))
+              // Reload once saved, so positions come from the server (and an undo can move them back).
+              place('to').then(() => router.invalidate())
             }}
             renderFrame={(id) => {
               if (id === '__live__')
@@ -542,7 +603,12 @@ function ProjectPage() {
                   {...frameActions(s)}
                   onDelete={() => setDeleteTargetId(s.id)}
                 >
-                  <div onClick={() => s.id !== selected && selectScreen(s.id)}>
+                  <div
+                    onClick={(e) => {
+                      if (e.shiftKey) toggleScreen(s.id)
+                      else if (multi || s.id !== selected) selectScreen(s.id)
+                    }}
+                  >
                     <ScreenFrame
                       html={s.html}
                       title={s.name}
@@ -552,7 +618,8 @@ function ProjectPage() {
                       frameId={s.id}
                       height={frameHeight(s)}
                       onHeight={reportHeight}
-                      selected={s.id === selected}
+                      selected={selectedIds.includes(s.id)}
+                      solo={!multi}
                       selectedElementId={s.id === selected ? selectedElementId : null}
                       onSelectElement={(elId) => {
                         if (s.id !== selected) return
@@ -620,6 +687,7 @@ function ProjectPage() {
       </div>
 
       <CodeDialog screen={codeScreen && { name: codeScreen.name, html: applyThemeOverride(codeScreen.html, theme) }} onOpenChange={(open) => !open && setCodeScreenId(null)} />
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   )
 }
@@ -628,7 +696,10 @@ function ProjectPage() {
 function FailedFrame(props: { name: string; error: string | null; width: number; height: number; onRetry: () => void; onDelete: () => void }) {
   return (
     <figure style={{ width: props.width }}>
-      <figcaption className="mb-2 truncate text-sm font-medium text-muted-foreground">{props.name}</figcaption>
+      <figcaption className="mb-2 flex h-7 items-center gap-1 truncate text-sm font-medium text-muted-foreground">
+        <FrameHandle />
+        {props.name}
+      </figcaption>
       <div
         className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/40 bg-background p-8 text-center"
         style={{ width: props.width, height: props.height }}

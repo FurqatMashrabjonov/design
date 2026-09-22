@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download } from 'lucide-react'
+import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,6 +15,15 @@ import {
 } from '@/components/ui/alert-dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
+/** The only place a frame can be dragged from (Canvas looks for data-canvas-handle). */
+export function FrameHandle() {
+  return (
+    <span data-canvas-handle className="-ml-1 flex size-6 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-foreground active:cursor-grabbing" title="Drag to move" aria-label="Drag to move">
+      <GripVertical className="size-3.5" />
+    </span>
+  )
+}
+
 /** The less-frequent actions on a frame; shared by the ⋯ menu here and the right-click menu. */
 export type FrameActions = {
   onRegenerate: () => void
@@ -23,9 +32,9 @@ export type FrameActions = {
   onDownload: () => void
 }
 
-// The name + action row above a real (saved) screen frame: ‹ v3 › walks the screen's versions, the
-// icons appear on hover. Stops pointer events from reaching the canvas so clicking an icon never
-// also starts a frame drag.
+// The name + action row above a real (saved) screen frame: ⠿ drags it, ‹ v3 › walks the screen's
+// versions, the icons appear on hover. Pointer events stop here (except from the handle) so clicking
+// an icon never reaches the canvas.
 export function FrameToolbar(props: FrameActions & {
   name: string
   hint?: string
@@ -99,7 +108,8 @@ export function FrameToolbar(props: FrameActions & {
 
   const v = props.version
   return (
-    <div className="mb-2 flex h-7 items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+    <div className="mb-2 flex h-7 items-center gap-1" onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}>
+      <FrameHandle />
       <span className="truncate text-sm font-medium text-muted-foreground" title={props.hint}>
         {props.name}
       </span>

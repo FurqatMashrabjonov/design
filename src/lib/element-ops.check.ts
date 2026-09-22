@@ -152,4 +152,17 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.deepEqual(reverted, ['m1', 'rev(m1)', 'rev(rev(m1))'])
 }
 
+// --- canvas.ts framesIn (EDT-30 rubber band) ---
+{
+  const { framesIn } = await import('../canvas.ts')
+  const frames = [
+    { id: 'a', x: 0, y: 0, width: 100, height: 200 },
+    { id: 'b', x: 150, y: 0, width: 100, height: 200 },
+    { id: 'c', x: 300, y: 300, width: 100, height: 200 },
+  ]
+  assert.deepEqual(framesIn({ x: 50, y: 50, w: 150, h: 50 }, frames), ['a', 'b'], 'touching is enough')
+  assert.deepEqual(framesIn({ x: 101, y: 0, w: 48, h: 10 }, frames), [], 'the gap between frames selects nothing')
+  assert.deepEqual(framesIn({ x: 0, y: 0, w: 400, h: 500 }, frames), ['a', 'b', 'c'])
+}
+
 console.log('ok')
