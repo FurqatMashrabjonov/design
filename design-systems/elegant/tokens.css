@@ -11,8 +11,8 @@
   --surface-warm: #f1e3cf;
   --fg: #201914;
   --fg-2: #4c4037;
-  --muted: #7a6d63;
-  --meta: #9b5b32;
+  --muted: #6f635a;
+  --meta: #945730;
   --border: #ded2c3;
   --border-soft: #eee4d7;
   --accent: #9b5b32;
@@ -68,4 +68,12 @@
   --od-card-border: 1px solid var(--border-soft, var(--border));
   --od-row-min: 60px;
   --od-btn-weight: 500;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #824e2c;
+  --od-success-text: #3f643b;
+  --od-warn-text: #7f5423;
+  --od-danger-text: #9e3535;
 }

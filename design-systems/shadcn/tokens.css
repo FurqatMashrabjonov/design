@@ -260,4 +260,12 @@
   --od-card-border: 1px solid var(--border);
   --od-row-min: 52px;
   --od-btn-weight: 500;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #000000;
+  --od-success-text: #147940;
+  --od-warn-text: #9d5a10;
+  --od-danger-text: #c42426;
 }

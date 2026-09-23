@@ -133,7 +133,7 @@
    * which keeps the blue exclusively where it appears in product:
    * inline text links and the focus-ring tint. */
   --accent: #0099ff;               /* Link Blue — only non-grayscale color, link-only */
-  --accent-on: #ffffff;            /* white label on the rare blue surface */
+  --accent-on: #111111;            /* ink label on the blue surface — white read 3.00:1 (EYE-05) */
   --accent-hover: color-mix(in oklab, var(--accent), black 8%);
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
 
@@ -264,4 +264,12 @@
   --container-gutter-desktop: 24px;
   --container-gutter-tablet: 16px;
   --container-gutter-phone: 12px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #0d6fb0;
+  --od-success-text: #1a7a3e;
+  --od-warn-text: #876b16;
+  --od-danger-text: #c22626;
 }

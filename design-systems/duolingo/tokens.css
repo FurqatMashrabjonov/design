@@ -44,7 +44,7 @@
    * Owl Green — the brand IS this green. Used liberally in 30%+ of the
    * surface for buttons, progress bars, success states, brand chrome. */
   --accent: #58cc02;
-  --accent-on: #ffffff;
+  --accent-on: #111111;
   --accent-hover: #89e219;   /* Owl Green Light — hover state, soft fills */
   --accent-active: #58a700;  /* Owl Green Deep — pressed state, the chunky shadow color */
 
@@ -137,6 +137,12 @@
   --od-card-shadow: 0 4px 0 var(--border);
   --od-control-border: 2px solid var(--border);
   --od-row-min: 64px;
-  --od-accent-text: color-mix(in oklab, var(--accent), black 45%);
-  --od-success-text: color-mix(in oklab, var(--success), black 40%);
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #477625;
+  --od-success-text: #477625;
+  --od-warn-text: #7e6c28;
+  --od-danger-text: #a94444;
 }

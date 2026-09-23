@@ -25,7 +25,7 @@
   --fg: #f7f8f8;
   --fg-2: #c4c7cb;
   --muted: #8a8f98;
-  --meta: #797d83;
+  --meta: #7e8288;
 
   /* Border — alpha hairlines */
   --border: rgba(255, 255, 255, 0.08);
@@ -110,4 +110,12 @@
   /* Kit personality (KIT-02): how od-kit components carry this system. */
   --od-card-shadow: none;
   --od-card-border: 1px solid var(--border);
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #7d86da;
+  --od-success-text: #4cb782;
+  --od-warn-text: #f2c94c;
+  --od-danger-text: #ec6161;
 }

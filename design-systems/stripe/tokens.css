@@ -97,7 +97,7 @@
    * an independent value. */
   --fg:    #061b31;          /* deep navy — headings, nav text, strong labels */
   --fg-2:  #273951;          /* dark slate — form labels, sub-headings */
-  --muted: #64748d;          /* slate — body, placeholders, captions */
+  --muted: #62728b;          /* slate — body, placeholders, captions */
   --meta:  var(--muted);     /* alias — Stripe has no separate metadata tier */
 
   /* ─── Border (1 tier — #Stripe 3) ───────────────────────────────
@@ -298,4 +298,12 @@
   --container-gutter-desktop: 32px;
   --container-gutter-tablet:  24px;
   --container-gutter-phone:   16px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #533afd;
+  --od-success-text: #0e7644;
+  --od-warn-text: #865d2a;
+  --od-danger-text: #bc2157;
 }

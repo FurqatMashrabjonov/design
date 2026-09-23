@@ -173,6 +173,28 @@ const errorCount = results.reduce((n, r) => n + r.errors.length, 0)
 const expectOf = Object.fromEntries((JSON.parse(readFileSync('eval/briefs.json', 'utf8')) as Brief[]).map((b) => [b.id, b.expect ?? []]))
 const planInputs = (rs: BriefResult[]) => rs.flatMap((r) => (r.plan ? [{ briefId: r.id, expect: expectOf[r.id] ?? [], ...r.plan }] : []))
 const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage, planInputs(results))
+
+// EYE-05: the render audit belongs in the run's own numbers. Until now it lived in a separate
+// script nobody ran, so the eval reported lint.cleanShare 0.65 on a run where only a quarter of the
+// screens were clean in a real browser — we were tuning a number that does not see overlap, a 43px
+// tap target or text that lost its contrast to an opacity. Headless Chrome, at phone size, on the
+// screens this run just drew. Set OD_SKIP_AUDIT=1 to skip it while iterating.
+if (!process.env.OD_SKIP_AUDIT) {
+  try {
+    const { auditHtml } = await import('./audit.ts')
+    const byRule: Record<string, number> = {}
+    let withFindings = 0
+    for (const s of screenInputs) {
+      const findings = auditHtml(s.html)
+      if (findings.length) withFindings++
+      for (const f of findings) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1
+    }
+    const n = screenInputs.length
+    ;(metrics as Record<string, unknown>).audit = { cleanShare: n ? Number(((n - withFindings) / n).toFixed(3)) : 0, byRule }
+  } catch (e) {
+    console.warn('[audit] skipped:', (e as Error).message)
+  }
+}
 writeFileSync(join(outDir, 'metrics.json'), JSON.stringify(metrics, null, 2))
 writeFileSync(join(outDir, 'run.json'), JSON.stringify({ provider: PROVIDER }))
 

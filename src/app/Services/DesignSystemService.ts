@@ -172,12 +172,20 @@ export const DesignSystemService = {
    * tokens.css carries long explanatory comments for humans; every byte of them would
    * otherwise be re-sent in each screen's system prompt.
    */
-  readTokensRoot(id: string): string {
+  /**
+   * @param forPrompt drop the --od-* tokens. They are read by kit/od-kit.css inside the page and
+   * are never written by the model, so spending the mobile system prompt's 24 000-character budget
+   * on them buys nothing — adding the four --od-*-text values pushed vercel to 24 010.
+   */
+  readTokensRoot(id: string, forPrompt = false): string {
     const raw = this.readTokensCss(id)
     if (!raw) return ''
     const block = extractRootBlock(raw)
     if (block === null) return ''
-    const decls = [...parseDeclarations(block)].map(([k, v]) => `  ${k}: ${v};`).join('\n')
+    const decls = [...parseDeclarations(block)]
+      .filter(([k]) => !(forPrompt && k.startsWith('--od-')))
+      .map(([k, v]) => `  ${k}: ${v};`)
+      .join('\n')
     return decls ? `:root {\n${decls}\n}` : ''
   },
 

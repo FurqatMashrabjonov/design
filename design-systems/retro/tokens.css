@@ -11,11 +11,11 @@
   --surface-warm: #ffdca8;
   --fg: #2a1810;
   --fg-2: #593625;
-  --muted: #8a6652;
-  --meta: #c3461d;
+  --muted: #7e5d4a;
+  --meta: #ae401b;
   --border: #d9aa7a;
   --border-soft: #efd0ab;
-  --accent: #d24b1f;
+  --accent: #ce4a1e;
   --accent-on: #ffffff;
   --accent-hover: color-mix(in oklab, var(--accent), black 8%);
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
@@ -69,4 +69,12 @@
   --od-control-border: 2px solid var(--fg);
   --od-btn-shadow: 3px 3px 0 var(--fg);
   --od-btn-weight: 700;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #9a3a1a;
+  --od-success-text: #366438;
+  --od-warn-text: #7e5522;
+  --od-danger-text: #9c3329;
 }

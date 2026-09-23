@@ -102,7 +102,7 @@
   --fg: #222222;
   --fg-2: #3f3f3f;
   --muted: #6a6a6a;
-  --meta: #767676;
+  --meta: #717171;
 
   /* ─── Border (2 levels) ─────────────────────────────────────────
    * Hairline Gray (#dddddd) is the workhorse — every card-to-card
@@ -122,7 +122,7 @@
    * Luxe Purple (#460479) are kept inline at their product-tier
    * surfaces, not promoted to shared accent slots. */
   --accent: #ff385c;
-  --accent-on: #ffffff;
+  --accent-on: #111111;
   --accent-hover: #e31c5f;       /* hand-picked, between Rausch and Deep Rausch */
   --accent-active: #e00b41;      /* Deep Rausch — DESIGN.md §2 pressed-state value */
 
@@ -265,4 +265,12 @@
   --container-gutter-desktop: 40px;
   --container-gutter-tablet: 24px;
   --container-gutter-phone: 16px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #b83149;
+  --od-success-text: #07750b;
+  --od-warn-text: #8d5a0c;
+  --od-danger-text: #b43316;
 }

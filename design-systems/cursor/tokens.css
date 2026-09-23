@@ -97,7 +97,7 @@
    * --accent-hover is reserved for the bg-darken case (when accent
    * IS the bg, e.g. accent-pill CTA). */
   --accent: #f54e00;
-  --accent-on: #ffffff;
+  --accent-on: #111111;
   --accent-hover: color-mix(in oklab, var(--accent), black 8%);
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
 
@@ -217,4 +217,12 @@
   --container-gutter-desktop: 24px;
   --container-gutter-tablet: 16px;
   --container-gutter-phone: 12px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #9a3c0d;
+  --od-success-text: #22664b;
+  --od-warn-text: #745e15;
+  --od-danger-text: #a32b47;
 }

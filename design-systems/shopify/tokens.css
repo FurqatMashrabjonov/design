@@ -22,7 +22,7 @@
  *   - --fg: #ffffff (white — the only text color on dark).
  *   - --fg-2: #ffffff (same; no secondary ink split on dark canvas).
  *   - --muted: #a1a1aa (muted zinc — secondary text, descriptions).
- *   - --meta: #77777f (shade-50 — timestamps, tertiary info).
+ *   - --meta: #7f7f87 (shade-50 — timestamps, tertiary info).
  *   - --border: #1e2c31 (dark card border); --border-soft: #3f3f46.
  *   - --accent: #36F4A4 (neon green — focus/accent only, not bg).
  *   - --accent-on: #000000 (black text on neon green).
@@ -43,7 +43,7 @@
   --fg:   #ffffff;                     /* white — only text color on dark */
   --fg-2: #ffffff;                     /* same; no secondary ink split */
   --muted: #a1a1aa;                    /* muted zinc — secondary text */
-  --meta:  #77777f;                    /* shade-50 — timestamps, tertiary */
+  --meta: #7f7f87;                    /* shade-50 — timestamps, tertiary */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      #1e2c31;             /* dark card border */
@@ -140,4 +140,12 @@
   --container-gutter-desktop: 64px;
   --container-gutter-tablet:  32px;
   --container-gutter-phone:   16px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #36f4a4;
+  --od-success-text: #36f4a4;
+  --od-warn-text: #eab308;
+  --od-danger-text: #e45656;
 }

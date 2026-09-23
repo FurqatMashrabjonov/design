@@ -5,6 +5,125 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-23
 
+### Qolgan past kontrastlarning sababi topildi — EYE-06
+
+EYE-05 audit'ni 0.25 dan 0.50 ga ko'targandi, 17 ta past kontrast esa aniqlanmay qolgandi. Har bir
+topilmaning **haqiqiy rangi va haqiqiy foni**ni brauzerdan o'qib chiqdim. Tasodifiy emas edi —
+to'rt sinf, hammasi kodda:
+
+**1. Brend rangi to'g'ridan-to'g'ri matn rangi sifatida.** Model `.delta--up { color: var(--success) }`
+yozadi va 3.30:1 chiqadi. Bizning arxitektura qoidamiz buni allaqachon taqiqlaydi
+("`--od-*-text` mixlaridan o'tadi, hech qachon xom `var(--accent)` emas") — lekin hech narsa
+majbur qilmasdi. Endi `autofixScreen` sahifaning o'z CSS'ida `color: var(--success)` ni
+`var(--od-success-text)` ga aylantiradi. `background`, `border-color`, `--accent-on` va kit'ning
+o'z yulduzchasi tegilmaydi.
+
+**2. `--surface-warm` hech qachon o'lchanmagan yuza edi.** 20 tizim uni aniqlaydi, `od-icon-btn`
+unga bo'yaladi, kontrast testimizda esa faqat `--bg` va `--surface` bor edi. Shu teshik ortida
+**16 ta siyoh/yuza jufti** AA dan past turgan. Test endi uchala yuzani ham tekshiradi.
+
+**3. Rangli chip ustidagi matn.** `od-kit.css` teglarni rol rangining 12–15% i bilan bo'yaydi, matn
+esa yalang yuzada emas, o'sha rangli fonda o'tiradi. `--surface` da o'tadigan chip o'z fonida
+4.39:1 edi. Endi `--od-*-text` **rangli fon ham hisobga olib** hisoblanadi (104 ta token qayta
+hisoblandi, 30 tizimda), test ham shu tintni alohida yuza sifatida tekshiradi.
+
+**4. Rasm ustidagi oq yorliq.** `.hero__tag { color:#fff; background: rgba(17,17,19,.42) }` —
+42% qoraytirish yorug' rasm ustida hech narsa yashirmaydi. `autofixStreen` endi yorug' matn
+ostidagi qora skrimning alfasini 0.75 ga ko'taradi (faqat qora skrim, faqat yorug' matn ostida).
+
+**Auditning o'zida ikkita xato topildi:**
+- **Yarim shaffof qatlamlar o'tkazib yuborilardi.** Alfa 230 dan past bo'lsa fon "hisoblanmas"
+  edi, shuning uchun skrimdagi oq yorliq skrim **ortidagi** sahifaga solishtirilardi — oq ustida
+  oq, 1.00:1. Aynan skrim uni o'qilarli qiladi. Endi qatlamlar orqadan oldinga qo'shib chiqiladi.
+- **SVG ichidagi elementlar "ekrandan chiqdi" deb belgilanardi.** `preserveAspectRatio="slice"`
+  bilan chizilgan xarita bolalari ataylab kadrdan kengroq; ularni CSS emas, viewBox kesadi.
+
+**Natija — o'sha 24 ekranda, generatsiyasiz, $0:**
+
+| | boshlanishida | EYE-05 dan keyin | EYE-06 dan keyin |
+|---|---|---|---|
+| audit cleanShare | 0.25 | 0.50 | **0.833** |
+| low-contrast | 22 | 17 | **1** |
+| small-target | 9 | 2 | **2** |
+| overflow | 1 | 1 | **0** |
+
+**Narxi:** `--od-*-text` tokenlari brend rangidan o'rtacha 16% to'yinganlik yo'qotadi (eng yomoni
+duolingo, 47%). Bu **faqat matnga** tegadi — tugma, fon, chegara, ikonka o'z rangida qoladi.
+
+**Qolgan 5 ta topilma, halol ro'yxat:**
+- 2 × `51×31` — bu `od-kit.css` ning iOS o'lchamidagi switch'i. `input` `::after` ola olmaydi, uni
+  kattalashtirish esa chizilgan boshqaruvni buzadi (bizning qoidamiz: tuzatish qutini o'stirmaydi).
+  To'g'ri yechim — switch'ni `<label>` qatoriga o'rash, lekin markup'ni model yozadi.
+- 2 × `clipped-text` — matn ellipsissiz kesilgan. Elementning haqiqiy kengligini bilish kerak,
+  ya'ni faqat render paytida.
+- 1 × oq matn to'g'ridan-to'g'ri rasm ustida, skrimsiz.
+
+Uchala sinf ham faqat chizilgan sahifada ko'rinadi — ya'ni endi ular **har eval runda raqam
+sifatida chiqadi** (`metrics.audit`), taxmin sifatida emas.
+
+Tegilgan fayllar: `src/lib/design-lint.ts`, `src/lib/render-audit.ts`,
+`src/app/Services/new-features.check.ts`, 30+ `design-systems/*/tokens.css`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; audit 24 ekranda to'rt marta qayta
+o'lchandi. Eslatma: bir nechta tokens.css izohi avvalgi almashtirishda noto'g'ri o'zgargandi —
+izohga tegmaydigan tuzatuvchi bilan qaytarildi va `cal`/`claude` dagi ikki izoh haqiqatga
+moslandi.
+
+
+### Ko'z ko'radigan nuqsonlar — EYE-05 (biz noto'g'ri raqamni optimallashtirgan ekanmiz)
+
+Savol: "nega shuncha o'zgarishdan keyin ham habit tracker dabdala chiqadi?" Javob quvurda emas,
+**o'lchovda** edi. `npm run eval` bizga `lint.cleanShare = 0.65` deydi — bu statik CSS tekshiruvi.
+Brauzerda, haqiqiy piksellarda ishlaydigan render audit hech qachon eval metrikasiga qo'shilmagan
+edi. Oxirgi runga qo'yganimda: **`cleanShare = 0.25`** — 24 ekrandan 18 tasida ko'z ko'radigan
+nuqson. Uch yil emas, uchta aniq kod teshigi:
+
+**1. Asosiy tugmaning yozuvi 12 tizimda o'qilmaydi.** Audit `3.52:1` ni olti marta ketma-ket
+qaytardi — bu `airbnb` ning oq yozuvi qizil tugmada. Kontrast testimiz `--fg`, `--muted`, `--meta`
+ni `--bg` va `--surface` ga solishtiradi; `--accent` ham yuza ekanini, `--accent-on` esa uning
+ustidagi yozuv ekanini hech kim tekshirmagan. Duolingo 2.09:1 bilan yuribdi. 10 tizimda qora yozuv
+4.5 dan yuqori o'tadi (brend rangi tegilmaydi), 2 chegaraviysida aksent 2% qoraytirildi.
+
+**2. `opacity` kontrastni jimgina o'ldiradi.** `.is-locked { opacity: .72 }` — token o'zi AA dan
+o'tadi, konteyner shaffof bo'lgach 4.29:1. Token testi buni ko'ra olmaydi, chunki tokenda hech
+narsa o'zgarmagan. Yangi lint qoidasi: `opacity-dimmed-text`.
+
+**3. 44px tap zonasi faqat `<button>` ga qo'yilardi.** Buzilgan elementlarning hammasi havola edi:
+`<a class="od-icon-btn" data-od-link="Stats">` 24px kenglikda, "See all" esa `43×44` — bir piksel
+yetmaydi. Endi `a[data-od-link]`, `[role=button]` va `label` ham oladi. Havola faqat
+`data-od-link` bilan kiradi: gap ichidagi havolaga 44px ustki qatlam qo'yish yon so'zlarni bosib
+qolardi. `input` (ya'ni `.od-switch`) `::after` ololmaydi, shuning uchun u tashqarida — uni
+majburlash chizilgan qutini kattalashtirardi, bu qoidamizga zid.
+
+**Bundan tashqari:** `--od-*-text` mixlari (brend rangi matn sifatida) `od-kit.css` da 33 tizim
+uchun bitta qat'iy 45% da yozilgan edi. O'lchadim: 125 rang-roldan 15 tasiga bu **kam**, qolgan
+110 tasiga **ko'p** — ya'ni brend rangi behuda yuviladi. Endi har tizim o'z o'lchangan qiymatini
+`tokens.css` da saqlaydi. `--border` ni matn rangi sifatida ishlatish ham lintga tushdi
+(bitta ekranda ajratuvchi nuqta 1.26:1 edi).
+
+**O'lchandi, generatsiyasiz.** 1 va 3 deterministik post-processing, shuning uchun o'sha 24 ta
+saqlangan ekranga qayta qo'llab o'lchadim — **$0, bitta LLM chaqiruvisiz**:
+
+| | avval | keyin |
+|---|---|---|
+| audit cleanShare | 0.25 | **0.50** |
+| small-target | 9 | **2** |
+| low-contrast | 22 | 17 |
+
+Qolgan 17 ta past kontrast **hali aniqlanmagan** — `--od-*-text` tuzatilgandan keyin ham
+o'zgarmadi, ya'ni sabab boshqa joyda (ehtimol rangli/aralash fonlar ustidagi matn, bu esa hech
+qayerda o'lchanmaydi). Buni keyingi qadam sifatida ochiq qoldiryapman.
+
+**Eng muhimi:** render audit endi `npm run eval` ning o'z metrikasida (`metrics.audit`).
+`OD_SKIP_AUDIT=1` bilan o'chiriladi. Shusiz biz yana ko'rinmaydigan narsani "yaxshilab" yurardik.
+
+Tegilgan fayllar: 12 ta `design-systems/*/tokens.css` (accent), 32 tasi (`--od-*-text`),
+`src/lib/design-lint.ts`, `src/app/Services/new-features.check.ts`,
+`src/app/Services/DesignSystemService.ts`, `src/app/Services/PromptComposer.ts`, `eval/run.ts`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; audit 24 ekranda qayta o'lchandi.
+Eslatma: yangi tokenlar `vercel` ning tizim promptini 24 010 ga chiqargandi — `--od-*` tokenlari
+endi promptga kirmaydi (modelda ular kerak emas, ular kit ichida o'qiladi), 23 778.
+
+
 ### KIT-05 sinovdan o'tmadi — modelga komponent qiymatlarini matn bilan berish sifatni pasaytiradi
 
 Farazim: uslub kartasi brendni so'z bilan ta'riflaydi, lekin tugmaning padding'i qancha ekanini hech

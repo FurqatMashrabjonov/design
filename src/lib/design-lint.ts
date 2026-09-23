@@ -254,6 +254,35 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
     })
   }
 
+  // EYE-05: --border is a hairline, not an ink. A separator dot painted with it measured 1.26:1 on
+  // five rows of one screen — text nobody can read. The same holds for --border-soft. A meta colour
+  // (--meta, --muted) is what a dim separator wants, and those are measured against every surface.
+  const borderInk = (page.match(/\{[^{}]*(?<!-)color\s*:\s*var\(--border(-soft)?\)[^{}]*\}/gi) ?? [])
+  if (borderInk.length > 0) {
+    findings.push({
+      rule: 'border-as-text',
+      severity: 'warn',
+      message: '--border is used as a text colour. It is a hairline token and is never measured for legibility — use --meta or --muted.',
+      samples: uniq(borderInk.map((r) => r.replace(/\s+/g, ' ').slice(0, 60))),
+    })
+  }
+
+  // EYE-05: opacity is the quiet way to fail contrast. Every text token clears 4.5:1 against the
+  // surfaces it sits on — that is enforced per design system — and then one rule like
+  // `.is-locked { opacity: .72 }` dims a whole block and takes its text under AA with it. The
+  // render audit measured 4.29:1 on exactly that rule. A token test cannot see this, because
+  // nothing about the token changed. Only text-bearing opacity below 0.8 counts: a decorative
+  // overlay or a fading image is not a legibility problem.
+  const dimmed = (page.match(/\{[^{}]*opacity\s*:\s*0?\.[0-7]\d*[^{}]*\}/gi) ?? []).filter((rule) => !/(background|backdrop|overlay|scrim|shadow|::(after|before))/i.test(rule))
+  if (dimmed.length > 0) {
+    findings.push({
+      rule: 'opacity-dimmed-text',
+      severity: 'warn',
+      message: 'A block is dimmed with opacity below 0.8. The text inside it loses contrast even though its token passes AA — use a muted colour token instead, which is measured.',
+      samples: uniq(dimmed.map((r) => r.replace(/\s+/g, ' ').slice(0, 60))),
+    })
+  }
+
   // Monospace belongs to code. A price or a date set in it reads as telemetry, not as product copy.
   const mono = [...page.matchAll(/font-family\s*:\s*([^;}"]*mono[^;}"]*)/gi)].map((m) => m[1]!.trim())
   if (mono.length > 0) {
@@ -318,17 +347,57 @@ export function autofixScreen(html: string): string {
   // :where() keeps the position rule at zero specificity, so a button the screen positions itself
   // (a fixed FAB) keeps its own position and the hit area still centres on it.
   // A button whose class the screen already decorates with ::after (a badge dot) is left alone.
-  if (!out.includes('data-od-hit-area') && /<button\b/i.test(out)) {
+  if (!out.includes('data-od-hit-area') && /<button\b|data-od-link=/i.test(out)) {
     const t = HIG.minTargetPx
     const decorated = [...new Set([...out.matchAll(/\.([\w-]+)[^{},]*?::?(?:after|before)/g)].map((m) => m[1]))]
     // Every button, not only the icon-only ones: a short text button ("See all", a segment) misses
     // the target just as easily. The area is a pseudo-element, so a button inside a fixed-height
     // track keeps its drawn size — growing the box instead is what made a segmented control bulge
     // out of its own rail.
-    const btn = `button${decorated.map((c) => `:not(.${c})`).join('')}`
-    const css = `<style data-od-hit-area>:where(${btn}){position:relative}${btn}::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,${t}px);height:max(100%,${t}px);transform:translate(-50%,-50%)}</style>`
+    //
+    // EYE-05: a tap is not always a <button>. Every small-target finding in the last run was an
+    // anchor — `<a class="od-icon-btn" data-od-link="Stats">` squeezed to 24px wide, "See all" one
+    // pixel short at 43px — because this selector only ever named `button`. Anchors are included
+    // only when they carry data-od-link, the marker the model puts on a tap that opens a screen: a
+    // link inside a sentence must not grow a 44px overlay over the words beside it. A replaced
+    // element (input, and so .od-switch) cannot host ::after and is left out; see the note below.
+    const targets = ['button', 'a[data-od-link]', '[role="button"]', 'label']
+    const not = decorated.map((c) => `:not(.${c})`).join('')
+    const sel = targets.map((x) => `${x}${not}`).join(',')
+    const css = `<style data-od-hit-area>:where(${sel}){position:relative}:is(${sel})::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,${t}px);height:max(100%,${t}px);transform:translate(-50%,-50%)}</style>`
     out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, `${css}</head>`) : css + out
   }
+
+  // EYE-06: a brand colour used as text goes through its measured --od-*-text token. This is an
+  // architecture rule we had written down and never enforced, so the model kept writing
+  // `.delta--up { color: var(--success) }` and shipping 3.30:1. The -text tokens are each mixed
+  // toward --fg by exactly as much as AA needs on that system's surfaces, so the swap is the one
+  // right answer and needs no judgement — the same reason the craft sheet below lives in code.
+  // --border is a hairline and is never measured as an ink; a separator dot painted with it read
+  // 1.26:1. Only the page's own stylesheets are rewritten: od-kit.css already uses these tokens,
+  // and its one raw `color: var(--warn)` is a filled star, where the colour is the point.
+  out = out.replace(/(<style(?![^>]*\bdata-od)[^>]*>)([\s\S]*?)(<\/style>)/gi, (_m, open: string, css: string, close: string) => {
+    const fixed = css
+      // `color: var(--success)`, and the lightened mixes the model reaches for on a tinted chip
+      // (`color-mix(in oklab, var(--danger), white 25%)` measured 1.12:1 on its own tint).
+      .replace(/(?<![-\w])color\s*:\s*(?:var\(\s*--(accent|success|warn|danger)\s*\)|color-mix\([^;{}]*?var\(\s*--(accent|success|warn|danger)\s*\)[^;{}]*?\))/gi,
+        (whole: string, a?: string, b?: string) => `color: var(--od-${(a ?? b ?? '').toLowerCase()}-text)`)
+      .replace(/(?<![-\w])color\s*:\s*var\(\s*--border(?:-soft)?\s*\)/gi, 'color: var(--meta)')
+    return open + fixed + close
+  })
+
+  // EYE-06: a white label on a scrim over a photo. `.hero__tag { color:#fff; background:
+  // rgba(17,17,19,.42) }` measured 1.00:1 — the photo behind it happened to be bright, and a 42%
+  // scrim hides nothing. The alpha is the only unknown here and there is one right answer: dark
+  // enough that white clears AA whatever the photo does, which is 0.75. Only a dark scrim under
+  // light text is touched; a tint, a highlight, or any scrim already at 0.75 is left alone.
+  out = out.replace(/(<style(?![^>]*\bdata-od)[^>]*>)([\s\S]*?)(<\/style>)/gi, (_m, open: string, css: string, close: string) =>
+    open + css.replace(/\{[^{}]*\}/g, (rule) => {
+      const light = /(?<![-\w])color\s*:\s*(#fff(f{3})?\b|white\b|rgba?\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d)/i.test(rule)
+      if (!light) return rule
+      return rule.replace(/background(-color)?\s*:\s*rgba\(\s*(\d{1,2}|1\d\d)\s*,\s*(\d{1,2}|1\d\d)\s*,\s*(\d{1,2}|1\d\d)\s*,\s*(0?\.[0-6]\d*)\s*\)/gi,
+        (_w, dash = '', r: string, g: string, b: string) => `background${dash}: rgba(${r}, ${g}, ${b}, .75)`)
+    }) + close)
 
   // CRAFT-01: the craft rules with exactly one right answer, applied in code rather than asked for
   // in the prompt (ui-skills.com playbook + jakubkrehel/better-ui). Everything here is a

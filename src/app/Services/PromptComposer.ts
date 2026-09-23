@@ -42,7 +42,7 @@ export function composeSystemPrompt(designSystem: string, device: string, skill?
   // desktop still reads the full brand document.
   const isMobile = device === 'mobile'
   const designMd = isMobile ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
-  const tokensCss = DesignSystemService.readTokensRoot(designSystem)
+  const tokensCss = DesignSystemService.readTokensRoot(designSystem, true)
   let designSection = `# Design system\n\n${designMd}`
   if (tokensCss) {
     designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag verbatim — do not rename, drop, or re-value any property:\n\n\`\`\`css\n${tokensCss}\n\`\`\`\n\nThis block is the complete token vocabulary. \`var(--x)\` is only valid for a property defined above.`
@@ -99,7 +99,7 @@ export function composeElementEditPrompt(
   instruction: string,
 ): string {
   const designMd = device === 'mobile' ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
-  const tokensCss = DesignSystemService.readTokensRoot(designSystem)
+  const tokensCss = DesignSystemService.readTokensRoot(designSystem, true)
 
   let systemPrompt = `You are an expert product designer. You will edit ONE specific element within an existing screen.
 

@@ -309,4 +309,12 @@
   --container-gutter-desktop: 48px;
   --container-gutter-tablet: 24px;
   --container-gutter-phone: 16px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #111111;
+  --od-success-text: #027041;
+  --od-warn-text: #8b5e08;
+  --od-danger-text: #c00206;
 }

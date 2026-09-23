@@ -31,15 +31,31 @@ var canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
 var ctx = canvas.getContext('2d', { willReadFrequently: true });
 function rgba(c) { ctx.clearRect(0, 0, 1, 1); ctx.fillStyle = '#000'; ctx.fillStyle = c; ctx.fillRect(0, 0, 1, 1); return ctx.getImageData(0, 0, 1, 1).data; }
 function lum(p) { function f(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); } return 0.2126 * f(p[0]) + 0.7152 * f(p[1]) + 0.0722 * f(p[2]); }
+// EYE-06: translucent layers are composited, not skipped. A white label on a scrim
+// (an rgba scrim at .75 alpha) used to be measured against the page behind it — white on white,
+// 1.00:1 — because only an alpha above 230 counted as "the background". A scrim is exactly what
+// makes such a label legible, so ignoring it inverted the verdict.
 function background(el) {
+  var layers = [];
   for (var e = el; e && e.nodeType === 1; e = e.parentElement) {
     var cs = getComputedStyle(e);
     if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // a photo or gradient behind: cannot judge
     if (e.tagName === 'IMG' || e.tagName === 'VIDEO') return null;
     var c = rgba(cs.backgroundColor);
-    if (c[3] > 230) return c;
+    if (c[3] > 230) return layers.length ? flatten(layers, c) : c;
+    if (c[3] > 8) layers.push(c);
   }
-  return rgba(getComputedStyle(document.body).backgroundColor);
+  var page = rgba(getComputedStyle(document.body).backgroundColor);
+  return layers.length ? flatten(layers, page) : page;
+}
+// Paint the collected layers back to front onto the first opaque one below them.
+function flatten(layers, base) {
+  var out = [base[0], base[1], base[2], 255];
+  for (var i = layers.length - 1; i >= 0; i--) {
+    var a = layers[i][3] / 255;
+    out = [out[0] + (layers[i][0] - out[0]) * a, out[1] + (layers[i][1] - out[1]) * a, out[2] + (layers[i][2] - out[2]) * a, 255];
+  }
+  return out;
 }
 function pinned(el) { for (var e = el; e && e.nodeType === 1; e = e.parentElement) { var p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return true; } return false; }
 function ownText(el) { for (var i = 0; i < el.childNodes.length; i++) { var n = el.childNodes[i]; if (n.nodeType === 3 && n.textContent.trim()) return true; } return false; }
@@ -59,7 +75,10 @@ for (var i = 0; i < all.length; i++) {
   }
   if (!visible(el)) continue;
   // 1. Pushed past the right edge (fixed chrome and horizontal scrollers are allowed to).
-  if (r.right > vw + 2 && cs.position !== 'fixed' && !(el.closest && el.closest('[style*="overflow-x"], .od-carousel')) && !inShell(el)) {
+  // Inside an <svg> the viewBox does the clipping, not CSS overflow: a map drawn with
+  // preserveAspectRatio="slice" has children wider than the frame on purpose, and
+  // getBoundingClientRect reports the drawn geometry, not what the viewer sees (EYE-06).
+  if (r.right > vw + 2 && cs.position !== 'fixed' && !(el.closest && el.closest('svg, [style*="overflow-x"], .od-carousel')) && !inShell(el)) {
     var p = el.parentElement, scroller = false;
     for (; p; p = p.parentElement) { var o = getComputedStyle(p).overflowX; if (o === 'auto' || o === 'scroll') { scroller = true; break; } }
     if (!scroller) add('overflow', el, label(el) + ' ends at ' + Math.round(r.right) + 'px of ' + vw);

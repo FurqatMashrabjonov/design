@@ -127,11 +127,48 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   for (const ink of ['fg', 'fg-2', 'muted', 'meta']) {
     const paint = tokenValue(ink)
     if (!paint) continue
-    for (const surfaceName of ['bg', 'surface']) {
+    // EYE-06: --surface-warm is a surface too. 20 systems define it, od-kit.css paints .od-icon-btn
+    // and the model's own chips with it, and it was never in this list — 16 ink/surface pairs sat
+    // under AA behind that gap (a status tag measured 4.29:1 in the browser).
+    for (const surfaceName of ['bg', 'surface', 'surface-warm']) {
       const surface = tokenValue(surfaceName)
       if (!surface) continue
       const r = contrastOf(paint, surface)
       assert.ok(r >= 4.5, `${id}: --${ink} on --${surfaceName} is ${r.toFixed(2)}:1 — a text token must clear AA (4.5:1)`)
+    }
+  }
+
+  // EYE-05: --accent is a surface too — it is what a filled primary button is painted with, and
+  // --accent-on is the label on it. The loop above only ever looked at --bg and --surface, so this
+  // pair went unchecked and 12 of the 33 systems shipped an unreadable primary button (duolingo at
+  // 2.09:1). The render audit reported the same number, 3.52:1, on six different screens in a row.
+  const accent = tokenValue('accent')
+  const accentOn = tokenValue('accent-on')
+  if (accent && accentOn) {
+    const r = contrastOf(accentOn, accent)
+    assert.ok(r >= 4.5, `${id}: --accent-on on --accent is ${r.toFixed(2)}:1 — the primary button's label must clear AA (4.5:1)`)
+  }
+
+  // EYE-05: a brand colour used as text goes through its --od-*-text mix, which od-kit.css binds for
+  // .od-tag, .od-stat__delta and the ghost button. That mix used to be one fixed 45% for all 33
+  // systems — too weak for 15 of the 125 colour roles (duolingo's green delta read 3.30:1) and a
+  // needless wash for the other 110. Each system now states the measured value; this holds it there.
+  // EYE-06: a tag is the commonest home for these — od-kit.css paints .od-tag and .od-row__lead
+  // with the role colour at 12-15% over the page, and the label sits on that tint, not on the bare
+  // surface. A chip whose text passed on --surface measured 4.39:1 on its own tint in the browser,
+  // so the tint is checked as a surface of its own.
+  const blend = (a: number[], b: number[], t: number) => a.map((x, i) => Math.round(x + (b[i]! - x) * t))
+  for (const role of ['accent', 'success', 'warn', 'danger']) {
+    const paint = tokenValue(`od-${role}-text`)
+    const base = tokenValue(role)
+    if (!paint || !base) continue
+    for (const surfaceName of ['bg', 'surface', 'surface-warm']) {
+      const surface = tokenValue(surfaceName)
+      if (!surface) continue
+      for (const [where, under] of [[`--${surfaceName}`, surface], [`a ${role} tint over --${surfaceName}`, blend(surface, base, 0.15)]] as const) {
+        const r = contrastOf(paint, under as number[])
+        assert.ok(r >= 4.5, `${id}: --od-${role}-text on ${where} is ${r.toFixed(2)}:1 — a brand colour used as text must clear AA (4.5:1)`)
+      }
     }
   }
 }

@@ -49,7 +49,7 @@
 
   /* ─── Accent ───────────────────────────────────────────────────── */
   --accent:        #10a37f;           /* OpenAI Teal — links, highlight, CTA */
-  --accent-on:     #ffffff;
+  --accent-on:     #0d0d0d;
   --accent-hover:  #0a7a5e;           /* teal deep — hover/pressed */
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
 
@@ -132,4 +132,12 @@
   --container-gutter-desktop: 48px;
   --container-gutter-tablet:  24px;
   --container-gutter-phone:   24px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #0f735b;
+  --od-success-text: #0f735b;
+  --od-warn-text: #8a6019;
+  --od-danger-text: #b43337;
 }

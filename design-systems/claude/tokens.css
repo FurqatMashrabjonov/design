@@ -32,7 +32,7 @@
   --fg: #141413;             /* Anthropic Near Black — warmest "black" in any major tech brand */
   --fg-2: #3d3d3a;           /* Dark Warm — dark text links, emphasized secondary text */
   --muted: #5e5d59;          /* Olive Gray — secondary body text */
-  --meta: #706f69;           /* Stone Gray — tertiary text, footnotes, metadata */
+  --meta: #676660;           /* Stone Gray — tertiary text, footnotes, metadata */
 
   /* ─── Border (2 levels) ──────────────────────────────────────────
    * Cream-tinted borders — the gentlest possible containment. */
@@ -43,7 +43,7 @@
    * Terracotta Brand — the only chromatic element on most screens.
    * Used for primary CTA buttons and highest-signal brand moments only. */
   --accent: #c96442;
-  --accent-on: #faf9f5;      /* Ivory — fg when terracotta is the bg */
+  --accent-on: #111111;      /* ink on terracotta — ivory read 3.70:1 (EYE-05) */
   --accent-hover: color-mix(in oklab, var(--accent), black 8%);
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
 
@@ -129,4 +129,12 @@
   --container-gutter-desktop: 24px;
   --container-gutter-tablet: 16px;
   --container-gutter-phone: 12px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #8b4932;
+  --od-success-text: #166a34;
+  --od-warn-text: #765d0e;
+  --od-danger-text: #a22f2f;
 }

@@ -55,7 +55,7 @@
    * move against the warm-neutral palette. DESIGN.md §7 forbids
    * decorative use: reserve for primary CTAs and AI/brand moments. */
   --accent: #ff5600;         /* Fin Orange */
-  --accent-on: #ffffff;
+  --accent-on: #111111;
   --accent-hover: color-mix(in oklab, var(--accent), black 8%);
   --accent-active: color-mix(in oklab, var(--accent), black 14%);
 
@@ -149,4 +149,12 @@
   --container-gutter-desktop: 24px;
   --container-gutter-tablet: 16px;
   --container-gutter-phone: 12px;
+
+  /* EYE-05: the same hue, mixed toward --fg by exactly as much as it takes to clear 4.5:1 on
+     both --bg and --surface. od-kit.css used one fixed 45% mix for all 33 systems, which was
+     too weak for 15 colour roles and needlessly washed out the other 110. Measured, not guessed. */
+  --od-accent-text: #b34005;
+  --od-success-text: #087a08;
+  --od-warn-text: #86680c;
+  --od-danger-text: #c01c1c;
 }
