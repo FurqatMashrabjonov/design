@@ -1,13 +1,13 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-23. Eng yangi ish: `generation-quality` branch. Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat.
+> Yozilgan: 2026-09-21, yangilangan 2026-09-24 (kech). Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: avval §2c, keyin §3.**
 
 ## 1. Yangi kompyuterda sozlash
 
 ```bash
 git clone https://github.com/FurqatMashrabjonov/design.git
 cd design
-git checkout generation-quality     # eng yangi ish shu yerda (canvas-planner orqada qolishi mumkin)
+git checkout canvas-planner         # eng yangi ish shu yerda (generation-quality eski)
 npm install
 cp .env.example .env                # keyin kalitlarni qo'lda yoz (pastda)
 npm run check && npx tsc --noEmit   # ikkalasi ham toza bo'lishi kerak
@@ -15,7 +15,8 @@ npm run dev                         # http://localhost:3000
 ```
 
 - **Node 24** kerak (testlar `.ts` fayllarni to'g'ridan-to'g'ri `node` bilan ishga tushiradi).
-- **`.env`** gitda yo'q (ataylab). Ikki kalit kerak: `DEEPSEEK_API_KEY` (platform.deepseek.com) va `PEXELS_API_KEY` (pexels.com/api, bepul). Eski kompyuterdagi `.env` ni xavfsiz yo'l bilan ko'chir — chatga, gitga, Notion'ga yozma.
+- **`.env`** gitda yo'q (ataylab). Kalitlar: `DEEPSEEK_API_KEY`, `PEXELS_API_KEY`, va kirish uchun `BETTER_AUTH_URL=http://localhost:3000`, `BETTER_AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (redirect: `http://localhost:3000/api/auth/callback/google`), `ADMIN_EMAILS`. Eski kompyuterdagi `.env` ni xavfsiz yo'l bilan ko'chir — chatga, gitga, Notion'ga yozma. Google consent ekranida ilova nomi hali "ieltsai.uz" (Cloud Console'da to'g'rilash kerak).
+- **Push**: `gh auth refresh -h github.com -s workflow` (workflow scope kerak, `.github/` bor), va macOS keychain eski tokenni qaytarsa: `git -c credential.helper= -c credential.helper='!gh auth git-credential' push origin canvas-planner`. **CI (INF-08) GitHub billing qulfi tufayli ishlamayapti** — Bloklangan.
 - **`data.db`** (sening loyihalaring) ham gitda yo'q — yangi kompyuterda bo'sh baza bilan boshlanadi. Eski loyihalar kerak bo'lsa `data.db` faylini qo'lda ko'chir (server o'chiq paytda).
 - **Push:** `gh auth login` qil, keyin `git -c credential.helper='!gh auth git-credential' push origin generation-quality`. Eski kompyuterda `gh` agent shell PATH'ida yo'q edi, shuning uchun to'liq yo'l ishlatilgan: `!/opt/homebrew/bin/gh auth git-credential`.
 - **Notion MCP** (Claude Code uchun): `claude mcp add --transport http notion https://mcp.notion.com/mcp`, keyin `/mcp` da login.
@@ -123,8 +124,24 @@ Ikkala ilovada ham takrorlandi (Streakly/notion va HabitLoop/retro):
 `od-kit.css` ning iOS o'lchamidagi switch'i (51×31) `small-target` beradi va bu **ma'lum cheklov**:
 `input` `::after` ola olmaydi, kattalashtirish esa chizilgan boshqaruvni buzadi.
 
+## 2c. 2026-09-24 sessiyasi: 2026 hunar qatlami, hakam, komponent varag'i — qayerda to'xtadik
+
+Bitta prompt bilan ishladik: **"make habit tracker"**, har qadamda Chrome'da skrinshot, foydalanuvchi
+ko'rib tasdiqladi ("zor bro menga yoqdi" — Nova). Nima qilindi (hammasi `docs/CHANGELOG.md` da, Notion'da Tayyor):
+
+- **GQ-10** planner palitrasi → kodda AA'ga ta'mirlanadi (`lib/palette.ts`, `lib/color.ts`), faqat `design_system_auto` loyihalarda.
+- **GQ-13 Nova** — 2026 flagman tizimi (Instrument Serif + Geist), iste'mol turlarida ruletka ×3.
+- **GQ-18…GQ-25** — iOS 26 shisha tab bar (21px, skrollda yig'iladi), bento, duotone ikonka, katta sarlavhali header, soft-3D sticker slotlari, telefon shkalasi 34/17/15/13/11, harakat tokenlari, Nova dark.
+- **GQ-08 hakam** — `eval/judge-project.ts`: kanvas loyihalarini `claude -p` vision bilan baholaydi, `--vs` juftlik, `--renormalize` (bugungi shell/kit saqlangan HTML ustiga). Topgan uchta nuqson tuzatildi: pill kontentni yopadi (clearance +40), sarlavha takrori (`dropDuplicateTitle`), ekran nomida ilova nomi (`screenTitle` — planner, saqlash, qo'shish yo'llarida).
+- **GQ-16 komponent varag'i** (oxirgi ish, Tayyor): `ComponentSheetService` — kit markup'i rejaning entity'lari bilan to'ldirilib har ekranga `# HOUSE STYLE` bo'lib kiradi. Anchor-first aylanish va CSS digest **olib tashlandi**, 6 ekran parallel (33 s). Natija: kit ishlatish 24 → 214 (Doodle) / 174 (Nova), o'z CSS 65 KB → 44 KB, hakam koherensiya 3 → 4, juftlikda oldingi yugurishni yutdi.
+
+Hakam ballari (1–5, Claude): Ritual/bento 3.33 · Nova 3-qadam 3.83 · yakuniy 3.00 (bugungi shell bilan 3.67) · GQ-16 Doodle 3.33 (koherensiya 4). **Ochiq:** ekranlar orasida *raqamlar* mos emas ("3 of 5 done" vs "5 of 6 remaining", "47 of 180" vs "34 check-ins") — entity'lar nomlarni beradi, jamlanma sonlarni emas (GQ-28, Keyin). Hero o'lchami yugurishdan yugurishga o'zgaradi; sticker sloti 0 marta (GQ-27); palitra yashilga moyil (GQ-26, bugungi Nova yugurishi amber berdi — bitta namuna); FAB (EYE-08); emoji ikonka o'rnida (model).
+
+Ish usuli eslatmalari: LLM'siz qayta-render harness (scratchpad'da edi, repoda yo'q — kerak bo'lsa `judge-project.ts --renormalize` shu ishni qiladi); brauzerda ikkita Chrome ulangan bo'lsa localhost'ga faqat bittasi yetadi; reja darvozasi `localStorage['od:plan-gate']` (bu sessiyada `off` edi; kalitni o'chirgandan keyin ham bosh sahifadan yuborilgan brief darvozasiz chizildi — tekshirish kerak); nazorat tajribasi uchun chizishdan oldin bazada `design_system='nova'` qo'yilardi.
+
 ## 3. Keyingi ish
 
+0. **Hozirgi navbat (Tartib bo'yicha)**: GQ-26 (palitra namunasi placeholder, ottenka xilma-xilligi) → GQ-27 (hero maydoni sticker tavsiya qilsin) → qolgan G qatorlari. Har biri "make habit tracker" bilan bir yugurish + `eval/judge-project.ts <id> --vs <id>,<oldingi>` (oldingi eng yaxshi: `6e8e4f08` Nova/GQ-16 — `eval/out/projects/` faqat shu kompyuterda, gitda yo'q). Yangi kompyuterda `data.db` bo'lmasa, birinchi yugurish bazaviy bo'ladi.
 1. **Generatsiya (G)**: UX-01 (`blueprints/`) va UX-02 (`app-patterns/`) tayyor. VAR-02, HIG-03, EYE-03, KIT-03 (`lib/charts.ts`) ham tayyor. KIT-01 (`kit/od-kit.css`, hali modelga aytilmagan) ham tayyor. Keyingisi: KIT-02 (tizim shaxsiyati tokenlarda), KIT-04 (modelga "avval to'plamdan ol" + oltin namunalar — kit shu bilan ishga tushadi), EYE-01/02, HIG-01/02, VAR-01/03, FB-01/02. Ochiq savol foydalanuvchiga: 5 tizimda `--muted`, 10 tizimda asosiy tugma kontrasti brend tokenlarida <4.5. Eval Claude obunasida ham yuradi (`LLM_PROVIDER=claude-cli npm run eval …`, bitta brief ~8–10 daqiqa); natijalar faqat Claude run'lari bilan solishtiriladi, ishga tushirishdan oldin asosiy o'zgarishlar DeepSeek'da qayta tekshiriladi. Har o'zgarish eval bilan; bazaviy o'lchov uchun oldingi commit'ni `git worktree` da xuddi shu `--only` brieflar bilan yurgizish (node_modules va .env symlink), natijani `eval/out` ga ko'chirib solishtirish. Muharrir rejasi tugagan. Deploy (AUTH, limitlar, Postgres, hosting) generatsiyadan keyin. M4 to'liq tayyor (EDT-27, 11, 28, 30). Foydalanuvchi qarori (2026-09-22): avval muharrir qatorlari tugaydi, keyin generatsiya (G) qatorlari, deploy undan keyin. M3 tayyor: `‹ v3 ›` (`screens.version_id`), Cmd+Z/Shift+Cmd+Z (`lib/undo-stack.ts`, soft delete `screens.deleted_at`, redo = revert'ning revert'i).
    Qaror (foydalanuvchi, 2026-09-22): Postgres'ga (Supabase yoki Neon) o'tish **keyin**, INF-02 qatorida — hozir SQLite qoladi.
 2. Keyin M5 (yo'l ko'rsatkich, Preview · Share · Export menyusi, zip eksport, dizayn tizimi namunasi), so'ng generatsiyaning qolgani.

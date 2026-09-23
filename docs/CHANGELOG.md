@@ -5,6 +5,34 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Komponent varag'i kirish sifatida: uy uslubi CSS emas, markup — GQ-16
+
+Diagnoz avval: uka ekranlar anchor ekranning **birinchi 1200 belgi CSS'ini** olardi — `* {box-sizing}`,
+`body`, `.today-page`, `.greeting-name` — karta, qator, tugma hech qachon shu chegaraga yetmasdi.
+Oxirgi Nova yugurishida (0ba67d83) 6 ekrandan 4 tasi kit klassini 0 marta ishlatib, har biri
+12–32 KB o'z CSS'ini yozgan edi. Model klass ro'yxatiga emas, **namunaga** ergashadi.
+
+Yangi: `ComponentSheetService.componentSheet(entities)` — kit markup'i (bo'lim sarlavhasi, ikki
+ro'yxat qatori rejaning o'z item'lari bilan, bento karta + sparkline, tugmalar, chip/qidiruv/switch)
+~2.3k belgi, `SHEET_BUDGET` 2600 (KIT-05: ko'p material sifatni tushiradi). `screenBrief` uni
+`# HOUSE STYLE — this app's components` ostida `html` blok qilib beradi ("paste, change only the
+words"). PlanController: **anchor-first aylanish va `extractStyleDigest` olib tashlandi**, 6 ekran
+parallel (`mapLimit 3`), 33 s. GenerateController (qo'shish/qayta chizish) xuddi shu varaqni
+saqlangan reja entity'laridan quradi. `data-od-link` varaqda yo'q (placeholder ko'chirilardi).
+
+Natija ("make habit tracker", ikki yugurish):
+- kit ishlatish **24 → 214** (Doodle 0b7a5d98) / **174** (Nova 6e8e4f08 "Stride", amber palitra); har ekranda ≥5;
+- o'z CSS 65 KB → 44 KB;
+- hakam: Doodle 3.33, koherensiya **3 → 4**, juftlikda oldingi Nova'ni yutdi (slight); Nova "Stride"
+  **3.50** (hierarchy 3.5, spacing 3.83, polish 3.67, fidelity 4.17, koherensiya 4, app 4), juftlikda
+  oldingi Nova'ni **clear** yutdi — "one warm design system across all six screens".
+- Hakam topgan yangi nuqson: jamlanma raqamlar ekranlar orasida mos emas ("3 of 5 done" vs "5 of 6
+  remaining"; "47 of 180" vs "34 check-ins") → GQ-28 (Keyin). FAB hali qator ustida (EYE-08);
+  Habit Detail sarlavhasi umumiy ("Habit Detail", habit nomi emas); Settings'da sahifa sarlavhasi yo'q.
+
+- Fayllar: `src/app/Services/ComponentSheetService.ts` (yangi), `src/app/Services/ScreenContext.ts`, `src/app/Http/Controllers/PlanController.ts`, `src/app/Http/Controllers/GenerateController.ts`, `src/lib/screen-normalizer.ts` (digest o'chirildi), `src/app/Services/services.check.ts`, `src/app/Http/Controllers/controllers.check.ts`, `src/app/Services/new-features.check.ts`, `CLAUDE.md` (arxitektura qoidasi).
+- Tekshirildi: `npm run check` (varaq: entity nomlari, escape, byudjet, deterministik, bo'sh reja; brief `# HOUSE STYLE` + html blok; regenerate brief'ida `od-row__title">Pad Thai`) va `tsc` toza. Chrome: ikki haqiqiy generatsiya, bazadan kit sanovi, `eval/judge-project.ts … --vs` ikkalasi uchun.
+
 ### Vizual hakam kanvas loyihalarida, va u topgan uchta nuqson tuzatildi — GQ-08
 
 `eval/judge-project.ts`: eval yugurishi emas, `data.db`'dagi loyihalar (habit tracker iteratsiyalari)
@@ -26,7 +54,9 @@ Hakam topgan va kodda tuzatilgan:
   tashlanadi. `controllers.check` regenerate testi endi `<h1>Cart — GoBite</h1>` tushishini kutadi.
 - **Ekran nomida ilova nomi** ("Habit Detail — Streakly", "Streakly — Achievements", "Feast Home") —
   header uni 34px'da chizardi. `screenTitle(name, appName)` `parsePlan`'da nom, parent va
-  linksTo'ga birdek qo'llanadi (havola o'z ekranini topaverishi uchun).
+  linksTo'ga birdek qo'llanadi (havola o'z ekranini topaverishi uchun). Saqlangan ekran nomi ham
+  modelning `<title>`idan ("Streakly — Today") ilova nomisiz olinadi — PlanController'da va
+  qo'shilgan/qayta chizilgan ekranda (GenerateController; yangi loyiha sarlavhasi tegilmaydi).
 
 Hakam artefakti (bilib qo'yish): skrinshot faqat birinchi 844px — suzuvchi pill har doim
 qandaydir qator ustida turadi va hakam buni "yopadi" deb sanaydi; bar uslubi uchun bu jarima

@@ -5,7 +5,7 @@ import { KitService } from '@/app/Services/KitService'
 import { DesignSystemService, matchSystem, themeFromReference } from '@/app/Services/DesignSystemService'
 import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
-import { editPlan, planScreensWithRetry, type Plan, type PlannedScreen } from '@/app/Services/PlannerService'
+import { editPlan, planScreensWithRetry, screenTitle, type Plan, type PlannedScreen } from '@/app/Services/PlannerService'
 import { PendingPlans } from '@/app/Services/PendingPlans'
 import { readReference, referenceBlock, type ReferenceStyle } from '@/app/Services/ReferenceService'
 import { parseRefImages } from '@/lib/ref-images'
@@ -18,7 +18,8 @@ import { dataBlock, navStyleFor, screenBrief, screenSpec, shellContract, shellPa
 import { extractArtifact } from '@/artifact'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { annotateHtml } from '@/lib/element-annotator'
-import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
+import { normalizeScreen } from '@/lib/screen-normalizer'
+import { componentSheet } from '@/app/Services/ComponentSheetService'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
@@ -171,12 +172,14 @@ export const PlanController = {
           const content = contentBlock(contentSeed(project.id, localeOf(brief)))
           const data = dataBlock(plan.entities)
 
-          const buildUser = (s: PlannedScreen, digest: string) =>
+          // GQ-16: one component sheet, built in code from the kit and the plan's data, for every screen.
+          const sheet = componentSheet(plan.entities)
+          const buildUser = (s: PlannedScreen) =>
             screenBrief({
               app: `${plan.appName} — ${plan.summary}`,
               screenNames,
               contract: shellContract(s, plan.navigation, isMobile, bar),
-              digest,
+              sheet,
               content,
               data,
               art: [artBlock(artDirection(project.id, plan.appType)), referenceBlock(reference)].filter(Boolean).join('\n\n'),
@@ -184,7 +187,7 @@ export const PlanController = {
               description: screenSpec(s, plan.appName),
             })
 
-          const renderScreen = async (s: PlannedScreen, i: number, digest: string): Promise<string | null> => {
+          const renderScreen = async (s: PlannedScreen, i: number): Promise<string | null> => {
             if (abort.signal.aborted) return null // client left: don't start more paid work
             send({ type: 'screen_start', index: i, name: s.name })
             try {
@@ -194,7 +197,7 @@ export const PlanController = {
               // the preview, so photos appear while the screen is still being written. The lookup is
               // cached, so resolveImages below puts the same photo in the saved screen.
               const asked = new Set<string>()
-              for await (const d of streamCompletion(system, buildUser(s, digest), abort.signal, tally)) {
+              for await (const d of streamCompletion(system, buildUser(s), abort.signal, tally)) {
                 text += d
                 send({ type: 'screen_delta', index: i, text })
                 if (d.includes('>')) {
@@ -228,7 +231,8 @@ export const PlanController = {
               const screen = Screen.create({
                 id: screenIds[i]!,
                 projectId: project.id,
-                name: title || s.name,
+                // The model titles its page "Streakly — Today"; the app's name stays off the screen's.
+                name: screenTitle(title, plan.appName) || s.name,
                 prompt: s.description,
                 html: annotateHtml(withImages),
                 x: i * (fw + FRAME_GAP),
@@ -275,14 +279,9 @@ export const PlanController = {
             }
           }
 
-          // Anchor first, siblings after: one extra round-trip buys every later screen a
-          // concrete house style to copy instead of re-deriving one from the brief.
-          const anchorIndex = Math.max(0, plan.screens.findIndex((s) => s.screenType === 'root-tab'))
-          const anchorHtml = await renderScreen(plan.screens[anchorIndex], anchorIndex, '')
-          const digest = anchorHtml ? extractStyleDigest(anchorHtml) : ''
-
-          const rest = plan.screens.map((s, i) => ({ s, i })).filter(({ i }) => i !== anchorIndex)
-          await mapLimit(rest, 3, ({ s, i }) => renderScreen(s, i, digest))
+          // Every screen copies the same sheet, so none has to wait for an anchor to be drawn first
+          // (the anchor-first round trip used to hand siblings 1200 chars of its CSS — boilerplate).
+          await mapLimit(plan.screens.map((s, i) => ({ s, i })), 3, ({ s, i }) => renderScreen(s, i))
 
           const stopped = abort.signal.aborted
           drawnScreens.sort((a, z) => (planIndex.get(a.id) ?? 0) - (planIndex.get(z.id) ?? 0))

@@ -57,7 +57,7 @@ export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home'), title }
 }
 
-export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string; data?: string; art?: string }): string {
+export function screenBrief(p: { app: string; screenNames: string[]; contract: string; sheet: string; heading: string; description: string; content?: string; data?: string; art?: string }): string {
   return [
     `App: ${p.app}`,
     `Other screens in this app: ${p.screenNames.join(', ')}`,
@@ -66,8 +66,10 @@ export function screenBrief(p: { app: string; screenNames: string[]; contract: s
     p.art ? `\n${p.art}` : '',
     '',
     `# ${p.contract}`,
-    p.digest
-      ? `\n# HOUSE STYLE\nThe anchor screen of this app was already designed. Reuse these exact component styles — same radii, same spacing rhythm, same card treatment:\n\`\`\`css\n${p.digest}\n\`\`\``
+    // GQ-16: the same sheet goes to every screen of the app, so a card is built the same way on
+    // each of them — by copying markup, which a model does reliably, not by matching CSS.
+    p.sheet
+      ? `\n# HOUSE STYLE — this app's components\nEvery screen of this app is built from these snippets. Paste them and change only the words, icons and data; never restyle them (the kit styles them, and a CSS rule for an od- class is removed). Write CSS only for this screen's own hero composition.\n\`\`\`html\n${p.sheet}\n\`\`\``
       : '',
     `\n## ${p.heading}`,
     p.description,

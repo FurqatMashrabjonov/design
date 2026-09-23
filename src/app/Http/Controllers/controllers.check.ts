@@ -42,7 +42,8 @@ reply = () => sse(page('Cart — GoBite'))
 const out = await post(GenerateController, { projectId: 'p1', regenerateScreenId: 's-cart' })
 assert.ok(!out.includes('GEN_ERROR'), out)
 const brief = sent[0].user
-for (const part of ['App: GoBite — Food delivery', 'Order summary, then a Place order bar.', 'SHELL CONTRACT', 'Pad Thai — price: $12.99', 'Screen to design: Cart'])
+// GQ-16: the retry also gets the app's component sheet, with the app's own data in the rows.
+for (const part of ['App: GoBite — Food delivery', 'Order summary, then a Place order bar.', 'SHELL CONTRACT', 'Pad Thai — price: $12.99', '# HOUSE STYLE', 'od-row__title">Pad Thai', 'Screen to design: Cart'])
   assert.ok(brief.includes(part), `the retry is drawn from the stored spec with the app's context: "${part}"`)
 assert.ok(/Other screens in this app: Home\n/.test(brief), 'a screen is not listed as its own sibling')
 let cart = Screen.find('s-cart')!
@@ -89,7 +90,7 @@ assert.ok(rows[0].spec?.includes('1. Greeting'), 'drawn screens keep their spec 
 const talk = Message.forProject('p1').map((m) => ({ ...m, meta: parseMeta(m.meta) }))
 assert.deepEqual(talk.map((m) => `${m.role}:${m.kind}`), ['user:regenerate', 'agent:regenerate', 'user:regenerate', 'agent:regenerate', 'user:regenerate', 'agent:error'], 'a request that is rejected outright (404) leaves no trace')
 assert.equal(talk[0].text, 'Regenerate “Cart”')
-assert.equal(talk[1].text, 'Redrew “Cart — GoBite” from its plan.', 'the first draw of a failed screen has no previous design to mention')
+assert.equal(talk[1].text, 'Redrew “Cart” from its plan.', 'the first draw of a failed screen has no previous design to mention (and the model\'s "Cart — GoBite" title loses the app name)')
 assert.match(talk[3].text, /previous design is kept as v1/)
 assert.ok(talk[3].meta.screens?.[0].versionId, 'the agent message points at the snapshot taken before its change')
 assert.ok(talk[3].meta.log?.some((l) => /KB/.test(l)), 'and carries a log')
@@ -109,17 +110,17 @@ assert.equal(Message.forProject('p1').at(-1)!.kind, 'revert')
 reply = () => sse(page('Live Tracking — GoBite'))
 await post(GenerateController, { projectId: 'p1', prompt: 'add order tracking' })
 const added = Message.forProject('p1').at(-1)!
-assert.match(added.text, /^Added “Live Tracking — GoBite” under “Home”\.$/)
+assert.match(added.text, /^Added “Live Tracking” under “Home”\.$/)
 const addedId = parseMeta(added.meta).screens![0].id
 assert.ok(Screen.find(addedId))
 const removal = HistoryController.revertMessage({ projectId: 'p1', messageId: added.id })
 assert.ok(!Screen.forProject('p1').some((s) => s.id === addedId), 'the added screen is gone from the project')
 assert.ok(Screen.find(addedId)?.deletedAt, 'but its row is kept')
-assert.equal(Message.find(removal)!.text, 'Removed “Live Tracking — GoBite”.')
+assert.equal(Message.find(removal)!.text, 'Removed “Live Tracking”.')
 // redo = revert the revert
 const comeback = HistoryController.revertMessage({ projectId: 'p1', messageId: removal })
 assert.ok(Screen.forProject('p1').some((s) => s.id === addedId), 'reverting the removal brings the screen back')
-assert.equal(Message.find(comeback)!.text, 'Brought back “Live Tracking — GoBite”.')
+assert.equal(Message.find(comeback)!.text, 'Brought back “Live Tracking”.')
 assert.throws(() => HistoryController.revertMessage({ projectId: 'p1', messageId: removal }), /cannot be undone/, 'a revert is itself reverted once')
 HistoryController.revertMessage({ projectId: 'p1', messageId: comeback })
 assert.ok(!Screen.forProject('p1').some((s) => s.id === addedId), 'and removed again')
@@ -127,7 +128,7 @@ assert.ok(!Screen.forProject('p1').some((s) => s.id === addedId), 'and removed a
 const cartVersions = ScreenVersion.count('s-cart')
 const undoEdit = HistoryController.revertMessage({ projectId: 'p1', messageId: Message.forProject('p1').find((m) => m.kind === 'revert')!.id })
 assert.equal(ScreenVersion.count('s-cart'), cartVersions + 1, 'reverting the first revert is itself a recorded change')
-assert.match(Message.find(undoEdit)!.text, /^Applied that change again on “Cart — GoBite”\.$/)
+assert.match(Message.find(undoEdit)!.text, /^Applied that change again on “Cart”\.$/)
 
 // the plan run
 const planTalk = Message.forProject('p2')

@@ -17,9 +17,11 @@ import { annotateHtml } from '@/lib/element-annotator'
 import { extractElement, patchElement } from '@/lib/element-patcher'
 import { annotateElements, elementInfo } from '@/lib/element-ops'
 import { applyEdits, EDIT_MODE, parseAffects, parseEdits } from '@/lib/screen-patch'
-import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
+import { normalizeScreen } from '@/lib/screen-normalizer'
+import { componentSheet } from '@/app/Services/ComponentSheetService'
 import { navClearance, type NavStyle } from '@/app/Services/ShellService'
 import { dataBlock, navStyleFor, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
+import { screenTitle } from '@/app/Services/PlannerService'
 import { autofixScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
@@ -123,7 +125,7 @@ export const GenerateController = {
           art: [artBlock(artDirection(project.id, stored?.appType)), referenceBlock(stored?.reference ?? { composition: '', mood: [] })].filter(Boolean).join('\n\n'),
           screenNames: siblings.map((s) => s.name),
           contract: shellContract(slot, nav, project.device === 'mobile', addTo.bar),
-          digest: anchor ? extractStyleDigest(anchor.html) : '',
+          sheet: componentSheet(stored?.entities ?? []),
           // No brief is stored with a project, so the app's language is read off the screen it already has —
           // never off the chat message: people ask for an English app's next screen in their own language.
           content: contentBlock(contentSeed(project.id, localeOf(`${(anchor?.html ?? prompt).replace(/<(script|style|svg)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').slice(0, 4000)}`))),
@@ -226,7 +228,9 @@ export const GenerateController = {
             }
           } else {
             const extracted = extractArtifact(text)
-            title = extracted.title
+            // A new project takes the model's title whole (it names the project); a screen added to
+            // an app keeps the app's name off its own ("GoBite — Cart" → "Cart"), like the planned run.
+            title = isNew ? extracted.title : screenTitle(extracted.title, projectRef.name ?? '')
             if (editScreen && title === 'Untitled') title = editScreen.name
             const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title, addTo.bar)
             finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: navClearance(addTo?.bar ?? 'island') })), abort.signal, { name: projectRef.name ?? title }))

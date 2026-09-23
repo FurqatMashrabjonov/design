@@ -4,6 +4,7 @@ import { streamCompletion } from './LlmService.ts'
 import { DesignSystemService } from './DesignSystemService.ts'
 import { composeSystemPrompt } from './PromptComposer.ts'
 import { parsePlan, screenTitle, type PlannedScreen } from './PlannerService.ts'
+import { componentSheet, SHEET_BUDGET } from './ComponentSheetService.ts'
 import { mapLimit } from './Pool.ts'
 import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellService.ts'
 
@@ -173,8 +174,17 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.ok(shellPartsFor({ screenType: 'root-tab', activeTabId: 'stats' }, nav, true, 'Stats').nav?.includes('data-od-shell="bottom-nav"'))
   assert.deepEqual(shellPartsFor(detail, nav, false, 'x'), {}, 'desktop has no injected shell')
 
-  const brief = screenBrief({ app: 'SnapCal', screenNames: existing.map((s) => s.name), contract: shellContract(detail, nav, true), digest: '.card{border-radius:16px}', heading: 'Screen to add', description: 'water log' })
-  for (const part of ['App: SnapCal', 'SnapCal — Home, Meal detail, SnapCal — Profile', 'SHELL CONTRACT', '.card{border-radius:16px}', 'water log']) assert.ok(brief.includes(part), `brief carries "${part}"`)
+  const brief = screenBrief({ app: 'SnapCal', screenNames: existing.map((s) => s.name), contract: shellContract(detail, nav, true), sheet: '<div class="od-card">x</div>', heading: 'Screen to add', description: 'water log' })
+  for (const part of ['App: SnapCal', 'SnapCal — Home, Meal detail, SnapCal — Profile', 'SHELL CONTRACT', '# HOUSE STYLE', '```html\n<div class="od-card">x</div>\n```', 'water log']) assert.ok(brief.includes(part), `brief carries "${part}"`)
+
+  // GQ-16: the sheet is the kit filled with this app's data, small, and the same for every caller.
+  const entities = [{ kind: 'Habits', items: [{ name: 'Morning run', fields: { streak: '12 days', time: '7:00' } }, { name: 'Read <10> pages', fields: { streak: '4 days', time: '21:00' } }] }]
+  const sheet = componentSheet(entities)
+  assert.ok(sheet.length <= SHEET_BUDGET && sheet.length > 1200, `sheet is ${sheet.length} chars`)
+  for (const part of ['od-row__title">Morning run', 'od-row__trail">12 days', 'Read &lt;10&gt; pages', 'od-section__title">Habits', 'od-stat__label">streak', 'od-bento__wide', 'od-btn od-btn--block', 'od-chip', 'od-search', 'od-switch', 'data-lucide="']) assert.ok(sheet.includes(part), `sheet carries "${part}"`)
+  assert.equal(componentSheet(entities), sheet, 'deterministic')
+  assert.ok(!sheet.includes('undefined') && !sheet.includes('<style'), 'no holes, no CSS — the kit styles it')
+  assert.ok(componentSheet([]).includes('od-row__title">First item'), 'a plan without data still shows the build')
 
   assert.equal(parseNavigation(JSON.stringify(nav))?.tabs.length, 3)
   for (const junk of [null, '', '{', '{"tabs":[]}', '"x"']) assert.equal(parseNavigation(junk), null)

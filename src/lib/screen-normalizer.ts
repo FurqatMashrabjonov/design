@@ -250,28 +250,6 @@ export function applyNavClearance(html: string, px: number): string {
   return html.replace(/<body([^>]*)>/i, `<body$1>${style}`)
 }
 
-/**
- * The anchor screen's author CSS minus the canonical :root rule — a compact style signal
- * to hand sibling screens. Sending the anchor's whole HTML would multiply prompt cost by
- * the fan-out width for mostly redundant markup.
- */
-export function extractStyleDigest(html: string, maxChars = 1200): string {
-  const blocks: string[] = []
-  const re = /<style[^>]*>([\s\S]*?)<\/style>/gi
-  let m: RegExpExecArray | null
-  while ((m = re.exec(html)) !== null) blocks.push(m[1])
-  if (blocks.length === 0) return ''
-
-  let css = stripCssComments(blocks.join('\n'))
-  const span = findRootSpan(css)
-  if (span) {
-    const ruleStart = css.lastIndexOf(':root', span[0])
-    css = css.slice(0, ruleStart) + css.slice(span[1] + 1)
-  }
-  css = css.replace(/\s+/g, ' ').trim()
-  return css.length > maxChars ? `${css.slice(0, maxChars)} /* …truncated */` : css
-}
-
 export type NormalizeOptions = {
   tokensCss?: string
   fontUrls?: string[]

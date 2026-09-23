@@ -251,7 +251,7 @@ for (const tab of multiPlan.navigation.tabs) {
 assert.ok(buildDetailHeader('Meal Analysis', 'Home').includes('Back to Home'), 'Detail header labels its back target')
 
 console.log('Testing Screen Normalizer...')
-const { normalizeScreen, extractStyleDigest, extractRootBlock, parseDeclarations } = await import(
+const { normalizeScreen, extractRootBlock, parseDeclarations } = await import(
   '../../lib/screen-normalizer.ts'
 )
 const minimalTokens = DesignSystemService.readTokensRoot('minimal')
@@ -279,8 +279,6 @@ assert.ok(
   'Body clearance is forced so content cannot hide under the bar',
 )
 
-const digest = extractStyleDigest(normA)
-assert.ok(!digest.includes(':root'), 'Style digest excludes the canonical token block')
 
 console.log('Testing Font Pipeline...')
 for (const d of DesignSystemService.list()) {

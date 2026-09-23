@@ -77,7 +77,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-13 | 2026 flagman mobil tizimi: tinted neutrals, squircle, shisha pill tab bar, serif+grotesk, bento kit | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-10, GQ-15, THM-07 | Auto tanlov consumer ilovalarda flagmanni birinchi qo'yadi; bir xil prompt bilan bitta generatsiya |
 | GQ-10 | Palitrani model o'ylab topsin (planner qaytarsin, kod AA ga keltirsin) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Katta | GQ-09, DS-01 | A/B: model palitrasi vs kuratsiya qilingan tizim, bir xil brief |
 | GQ-15 | Blueprint'ga qahramon lahza: nima va qanchalik katta | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-10 | Asosiy raqam sahifaning eng katta elementi; hakam ierarxiya bahosi tushmaydi |
-| GQ-16 | Komponent varag'i kirish sifatida: HOUSE STYLE CSS o'rniga HTML parchalari | Generatsiya / Izchillik | MVP | Rejada | O'rta | GQ-10, THM-08 | Bir ilovada karta bir xil yig'iladi; hakam coherence o'sadi |
+| GQ-16 | Komponent varag'i kirish sifatida: HOUSE STYLE CSS o'rniga HTML parchalari | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-10, THM-08 | Bir ilovada karta bir xil yig'iladi; hakam coherence o'sadi |
 | GQ-17 | Planner'ga "bitta jasur harakat" maydoni | Generatsiya / Sifat | MVP | Rejada | Kichik | GQ-10 | Har ekran spec'ida ilovaning bitta jasur harakati; hakam polish o'sadi |
 | GEN-27 | Ekran "Untitled" bo'lib qoladi: <title> bo'sh bo'lganda nom rejadagi ekran nomidan olinsin | Generatsiya / Ishonchlilik | MVP | Rejada | Kichik |  | Rejalashtirilgan ekran hech qachon Untitled bo'lmaydi |
 | GQ-18 | iOS 26 tab bar qoidalari ShellService'ga: 21px inset, scroll'da yig'ilish, qidiruv oroli, shisha qirra | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-13 | Bar chetdan 21px ichkarida, scroll'da faol tabga yig'iladi, shisha faqat navigatsiya qatlamida |
@@ -90,6 +90,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-25 | Nova dark varianti va 'tungi/focus' brief'larda dark-first | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10, GQ-13 | To'q palitrada Nova hunari to'g'ri ishlaydi |
 | GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik | GQ-10 | 5 chaqiruvda kamida 3 xil ottenka oilasi |
 | GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | MVP | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
+| GQ-28 | Jamlanma raqamlar ekranlar orasida mos bo'lsin (streak, bugungi soni, jami) — APP DATA'ga | Generatsiya / Izchillik | Keyin | Rejada | Kichik | GQ-16 | Hakam bir yugurishda raqam ziddiyati topmaydi |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
