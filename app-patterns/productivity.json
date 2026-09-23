@@ -1,6 +1,6 @@
 {
   "id": "productivity",
-  "priority": 10,
+  "priority": 11,
   "match": [
     "todo",
     "to-do",
@@ -8,16 +8,13 @@
     "notes",
     "note",
     "project",
-    "habit",
     "planner",
     "calendar",
     "reminder",
     "vazifa",
     "eslatma",
-    "odat",
     "задач",
     "заметк",
-    "привычк",
     "планер"
   ],
   "loop": "Capture a thing, organise it, get it done.",
@@ -51,7 +48,7 @@
     "Today → Item → Edit",
     "Today → Create → Today"
   ],
-  "data": "Task or Note or Habit (title, due, done, tags), Project or List",
+  "data": "Task or Note (title, due, done, tags), Project or List",
   "pitfalls": [
     "Checkable rows with a done state",
     "Creating is fast: one field and a Save"

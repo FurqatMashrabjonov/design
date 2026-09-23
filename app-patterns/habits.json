@@ -1,0 +1,56 @@
+{
+  "id": "habits",
+  "priority": 10,
+  "match": [
+    "habit tracker",
+    "habit",
+    "habits",
+    "streak",
+    "check-in",
+    "daily routine",
+    "routine",
+    "odat",
+    "odatlar",
+    "kundalik odat",
+    "привычк",
+    "трекер привычек",
+    "рутин"
+  ],
+  "loop": "Check a habit off today, keep the streak alive, watch it grow.",
+  "screens": [
+    {
+      "name": "Today",
+      "archetype": "list"
+    },
+    {
+      "name": "Habit detail with its streak",
+      "archetype": "detail"
+    },
+    {
+      "name": "Create habit",
+      "archetype": "form"
+    },
+    {
+      "name": "Progress and streaks",
+      "archetype": "stats"
+    },
+    {
+      "name": "Achievements",
+      "archetype": "list"
+    },
+    {
+      "name": "Settings",
+      "archetype": "settings"
+    }
+  ],
+  "flows": [
+    "Today → Habit detail → Today",
+    "Today → Create habit → Today"
+  ],
+  "data": "Habit (name, icon, schedule, target, current streak, best streak), Check-in (habit, date, done)",
+  "pitfalls": [
+    "The streak is the emotional centre of this app: show it large, not as a number in a row",
+    "Checking a habit off is the one action the app exists for — make it the biggest, easiest target on the screen",
+    "A day missed is not a failure state: show the streak that survived, never a red warning"
+  ]
+}

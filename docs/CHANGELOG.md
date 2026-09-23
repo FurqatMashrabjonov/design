@@ -5,6 +5,58 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-23
 
+### Audit telefon kengligida o'lchamayotgan ekan, va shift jadvalda qulflangan ekan — EYE-07, GQ-09
+
+**Ikkita xato, ikkalasi ham meniki.**
+
+**1. Audit 390 emas, 500 pikselda o'lchagan.** Headless Chrome 500px'dan tor oyna ocholmaydi, shuning
+uchun `--window-size=390,844` jimgina 500'da chizgan. Bugungi barcha raqamlarim shu kenglikda edi.
+Ekran endi 500px'lik host ichidagi **390px iframe**'ga joylanadi, prob o'sha iframe ichida ishlaydi va
+host natijani chiqarib oladi. Qayta o'lchov: 24 ekranda `cleanShare` **0.833** — sarlavha raqam
+o'zgarmadi, lekin 500'da yashiringan bitta `overflow` chiqdi.
+
+Yo'l-yo'lakay: prob ishga tushmasa `[]` qaytarardi, ya'ni **butunlay toza ekran** deb ko'rsatardi.
+Bu o'lchovda eng xavfli xato turi. Endi prob javob bermasa `throw` bo'ladi, jim o'tmaydi.
+
+**2. Xarakterning shifti `BY_APP_TYPE` jadvalida qulflangan edi.** 12 ilova turi × 4 nomzod = 48 katak,
+ulardan **atigi 3 tasi** `high` rang energiyali. Ikki tur — `productivity` va `marketplace` — to'rttasi
+ham `low`. Va `"habit"` so'zi `productivity` da turardi.
+
+Ya'ni **bu mahsulot yaratadigan har bir habit tracker kulrang bo'lishi kafolatlangan** edi. Omadsizlik
+emas: `notion | linear-app | cal | shadcn`, to'rttasi ham eng quruq tizimlarimiz. Hech qanday urug',
+hech qanday so'z bu jadvaldan qochib chiqolmasdi.
+
+Qilingani:
+- `app-patterns/habits.json` — habit tracker o'z turi. Task manager Linear'ga o'xshashi kerak, habit
+  tracker esa yo'q; ikkalasini bir turga tiqish birini doim noto'g'ri qiladi. Patternning o'zi
+  streakni hissiy markaz deb yozadi va `Achievements` ekranini taklif qiladi.
+- `habits: ['duolingo', 'bento', 'doodle', 'retro']` — to'rttasi ham rangli.
+- `productivity`: `shadcn` → `bento`; `marketplace`: `minimal` → `bento`.
+- Test: **hech bir ilova turida hamma nomzod `low` bo'lolmaydi**, va habit briflari (en/uz/ru)
+  `habits` ga tushishi shart, task manager esa `productivity` da qolishi shart.
+
+**O'lchandi — bir xil prompt, "habit tracker app":**
+
+| | oldin (Streakly) | keyin (HabitLoop) |
+|---|---|---|
+| tizim | notion | **retro** |
+| fon / aksent | oq / ko'k | iliq krem / terrakota |
+| ekranlar | Habits, Stats | **Awards** qo'shildi, streak har qatorda |
+| audit cleanShare | 0.833 | 0.833 |
+
+Sifat raqami o'zgarmadi, xarakter o'zgardi — aynan shu kerak edi.
+
+**Ochiq qolgan, ikkala ilovada ham takrorlangan:** FAB progress kartasi ustiga tushib matnni yopadi;
+qidiruv lupasi maydondan tashqarida yolg'iz turadi; uzun habit nomi ellipsissiz kesiladi.
+
+Tegilgan fayllar: `eval/audit.ts`, `app-patterns/habits.json` (yangi),
+`app-patterns/productivity.json`, `app-patterns/media.json`,
+`src/app/Services/DesignSystemService.ts`, `src/app/Services/new-features.check.ts`,
+`src/app/Services/services.check.ts`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; brauzerda bir xil prompt bilan ikki ilova
+yaratildi va ikkalasi ham 390px'da audit qilindi.
+
+
 ### Qolgan past kontrastlarning sababi topildi — EYE-06
 
 EYE-05 audit'ni 0.25 dan 0.50 ga ko'targandi, 17 ta past kontrast esa aniqlanmay qolgandi. Har bir

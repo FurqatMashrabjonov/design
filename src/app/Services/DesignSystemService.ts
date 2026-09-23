@@ -68,14 +68,19 @@ const BY_APP_TYPE: Record<string, string[]> = {
   fintech: ['stripe', 'linear-app', 'midnight', 'dashboard'],
   'food-delivery': ['airbnb', 'shopify', 'bento', 'doodle'],
   commerce: ['shopify', 'airbnb', 'elegant', 'bento'],
-  marketplace: ['airbnb', 'shopify', 'minimal', 'intercom'],
+  marketplace: ['airbnb', 'shopify', 'bento', 'intercom'],
   booking: ['airbnb', 'apple', 'elegant', 'material'],
   travel: ['airbnb', 'elegant', 'bento', 'apple'],
   fitness: ['nike', 'midnight', 'bento', 'neon'],
   health: ['apple', 'claude', 'cal', 'material'],
   learning: ['duolingo', 'doodle', 'bento', 'retro'],
   media: ['spotify', 'midnight', 'neon', 'tesla'],
-  productivity: ['notion', 'linear-app', 'cal', 'shadcn'],
+  productivity: ['notion', 'linear-app', 'cal', 'bento'],
+  // A habit tracker is a streak app, not a task manager: its own type (app-patterns/habits.json)
+  // with its own candidates. It used to fall under productivity, where all four candidates are the
+  // greyest systems we have, so every habit tracker this product made was guaranteed to look like
+  // an internal tool — not by an unlucky seed, by the table.
+  habits: ['duolingo', 'bento', 'doodle', 'retro'],
   social: ['apple', 'bento', 'glassmorphism', 'intercom'],
 }
 

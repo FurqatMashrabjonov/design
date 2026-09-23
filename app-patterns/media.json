@@ -1,6 +1,6 @@
 {
   "id": "media",
-  "priority": 11,
+  "priority": 12,
   "match": [
     "music",
     "podcast",

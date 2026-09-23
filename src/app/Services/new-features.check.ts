@@ -433,6 +433,25 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.ok(reachable.size >= 20, `the automatic choice should reach most of the catalogue (got ${reachable.size})`)
 }
 
+// GQ-09: no app type may be all-restraint. Of the 48 candidate slots only three were a high-energy
+// system, and two types — productivity and marketplace — held four low-energy ones each, so a habit
+// tracker came back grey whatever the seed did. That is a ceiling set by a table, not by the model:
+// every type now offers at least one system that carries colour, and a habit tracker is its own
+// type rather than a task manager with a different word on it.
+{
+  const { AppPatternService } = await import('./AppPatternService.ts')
+  const types = (await import('node:fs')).readdirSync('app-patterns').filter((f) => f.endsWith('.json')).map((f) => f.replace('.json', ''))
+  for (const type of types) {
+    const picks = new Set<string>()
+    for (let i = 0; i < 40; i++) picks.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
+    const energies = [...picks].map((id) => DesignSystemService.readColorEnergy(id))
+    assert.ok(energies.some((e) => e !== 'low'), `${type}: every candidate is a low-energy system — this type can only ever come back grey`)
+  }
+  for (const brief of ['habit tracker app', 'odatlarni kuzatuvchi ilova', 'трекер привычек'])
+    assert.equal(AppPatternService.classify(brief)?.id, 'habits', `"${brief}" is a habit app`)
+  assert.equal(AppPatternService.classify('a todo and notes app')?.id, 'productivity', 'a task manager is still a task manager')
+}
+
 // LLM-02: reference pictures come from the browser, so what reaches the model is whatever survives
 // this filter. The limits are a budget decision too — an image is prompt tokens and never a cache hit.
 {

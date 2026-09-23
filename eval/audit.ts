@@ -12,12 +12,25 @@ const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Conte
 const run = process.argv[2]
 const tmp = mkdtempSync(join(tmpdir(), 'od-audit-'))
 
+// A phone is 390px wide, and headless Chrome will not open a window narrower than 500 — so a
+// --window-size of 390 silently laid the page out at 500 and the audit measured a width no user
+// has. The screen is framed in a 390px iframe inside a wider host, which gives it a real 390px
+// viewport; the probe runs inside the screen as before and the host copies its result out
+// (--allow-file-access-from-files makes the two same-origin).
+const PHONE_W = 390, PHONE_H = 844
 export function auditHtml(html: string): AuditFinding[] {
   const probe = `<script>window.addEventListener('load',function(){setTimeout(function(){var f=(function(){${AUDIT_SOURCE}})();var p=document.createElement('pre');p.id='od-audit';p.textContent=JSON.stringify(f);document.body.appendChild(p)},600)})</script>`
   const page = join(tmp, 'screen.html')
   writeFileSync(page, html.includes('</body>') ? html.replace('</body>', `${probe}</body>`) : html + probe)
-  const dom = execFileSync(CHROME, ['--headless=new', '--hide-scrollbars', '--window-size=390,844', '--virtual-time-budget=8000', '--dump-dom', pathToFileURL(page).href], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 60000 })
-  const json = dom.match(/<pre id="od-audit">([\s\S]*?)<\/pre>/)?.[1] ?? '[]'
+  const host = join(tmp, 'host.html')
+  writeFileSync(host, `<!doctype html><meta charset="utf-8"><style>html,body{margin:0}iframe{width:${PHONE_W}px;height:${PHONE_H}px;border:0;display:block}</style><iframe src="screen.html"></iframe><script>var t=0;(function poll(){t++;var d=document.querySelector('iframe').contentDocument,r=d&&d.getElementById('od-audit');if(r||t>120){var p=document.createElement('pre');p.id='od-audit-out';p.textContent=r?r.textContent:'';document.body.appendChild(p);return}setTimeout(poll,100)})()</script>`)
+  const dom = execFileSync(CHROME, ['--headless=new', '--hide-scrollbars', '--allow-file-access-from-files', `--window-size=${PHONE_W + 140},${PHONE_H}`, '--virtual-time-budget=20000', '--dump-dom', pathToFileURL(host).href], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 60000 })
+  // A probe that fails to run would report a perfectly clean screen. Nothing about this measurement
+  // may fail quietly: no element means the page never reached the probe, which is an error, not a pass.
+  const raw = dom.match(/<pre id="od-audit-out">([\s\S]*?)<\/pre>/)
+  if (!raw) throw new Error('audit: the probe never reported — the screen did not load')
+  const json = raw[1]!.trim()
+  if (!json) throw new Error('audit: the probe reported nothing — it did not finish inside the frame')
   return parseAudit(JSON.parse(json.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')))
 }
 

@@ -446,8 +446,8 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   const { AppPatternService } = await import('./AppPatternService.ts')
   const { ARCHETYPES } = await import('./PlannerService.ts')
   const all = AppPatternService.all()
-  assert.equal(all.length, 12)
-  assert.equal(new Set(all.map((p) => p.priority)).size, 12, 'priorities are unique, so ties are deterministic')
+  assert.equal(all.length, 13)
+  assert.equal(new Set(all.map((p) => p.priority)).size, 13, 'priorities are unique, so ties are deterministic')
   for (const p of all) {
     assert.ok(p.match.length >= 5 && p.loop.length > 10 && p.flows.length >= 1 && p.pitfalls.length >= 1, `${p.id}: complete`)
     assert.ok(p.screens.length >= 4 && p.screens.length <= 6, `${p.id}: 4–6 typical screens`)
