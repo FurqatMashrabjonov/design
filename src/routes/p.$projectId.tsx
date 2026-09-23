@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { Check, Loader2, CircleX, Circle, Sparkles, X } from 'lucide-react'
+import { CircleX, Sparkles, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
 import type { Plan } from '@/app/Services/PlannerService'
+import { PENDING_IMAGES } from '../Landing'
 import { extractArtifact } from '../artifact'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
 import { ScreenFrame, serializeScreen } from '../ScreenFrame'
-import { copyTreeToFigma } from '@/lib/figma-copy'
+import { copyTreesToFigma } from '@/lib/figma-copy'
 import { Canvas, type CanvasFrame } from '@/components/canvas/Canvas'
 import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
 import { ChatPanel } from '@/components/canvas/ChatPanel'
+import { ActivityCard, PlanApproval, type Activity, type ScreenStatus } from '@/components/canvas/ActivityCard'
+import { parseAffects } from '@/lib/screen-patch'
 import { suggestions } from '@/lib/suggestions'
 import { friendlyError } from '@/lib/agent-messages'
 import { ScreensList } from '@/components/canvas/ScreensList'
@@ -24,7 +27,6 @@ import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
 import { exportApp } from '@/lib/export-app'
 import { zip } from '@/lib/zip'
 import { designSystemSample } from '@/lib/ds-sample'
-import type { AuditFinding } from '@/lib/render-audit'
 import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
@@ -47,10 +49,9 @@ export const Route = createFileRoute('/p/$projectId')({
   component: ProjectPage,
 })
 
-type ScreenStatus = 'pending' | 'running' | 'done' | 'error'
-
-// Tall enough for the design-system sample at phone width (measured; see lib/ds-sample.ts).
-const DS_FRAME_HEIGHT_MOBILE = 1100
+// THM-09: the design-system sample is a wide card, so it is not mistaken for a screen. Measured
+// against the two-column layout in lib/ds-sample.ts.
+const DS_FRAME = { width: 900, height: 640 }
 
 function ProjectPage() {
   const { project, screens, messages, tokens, planRunning } = Route.useLoaderData()
@@ -72,13 +73,26 @@ function ProjectPage() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
-  // Render-audit findings per screen, reported by each frame once it has settled (EYE-01).
-  const [audits, setAudits] = useState<Record<string, AuditFinding[]>>({})
   const [focus, setFocus] = useState<{ id: string; key: number } | undefined>(undefined)
   const [fill, setFill] = useState<{ text: string; key: number } | undefined>(undefined)
   // One request at a time; this is what Stop cancels. The server stops spending tokens when the stream closes.
   const inFlight = useRef<AbortController | null>(null)
   const [working, setWorking] = useState(false)
+  // CHAT-02: when the current piece of work started, for the live card's clock.
+  const [workStarted, setWorkStarted] = useState(0)
+  // CHAT-02: the edit that is streaming — its target and the parts it has named so far.
+  const [editing, setEditing] = useState<{ target: string; text: string } | null>(null)
+  // CHAT-03: a message typed while something ran; it goes out when the run ends.
+  const [queued, setQueued] = useState<string | null>(null)
+  // CHAT-08: the plan is drawn up and waits for the person before anything is drawn.
+  const [awaiting, setAwaiting] = useState(false)
+  const gatePref = () => {
+    try {
+      return localStorage.getItem('od:plan-gate') !== 'off'
+    } catch {
+      return true
+    }
+  }
 
   function selectScreen(id: string | null) {
     if (id !== selected || multi) setSelectedElementId(null)
@@ -115,6 +129,15 @@ function ProjectPage() {
     if (selectedElementId) setSelectedElementId(null)
     else selectScreen(null)
   }
+  // CHAT-01: Esc anywhere on the page stops the run, as it does in every chat.
+  useEffect(() => {
+    if (!running) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') stopAll()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
 
   // Cmd+Z / Shift+Cmd+Z (lib/undo-stack.ts). Canvas actions record their own inverse below; changes
   // the conversation recorded are picked up from new agent messages, so hand edits, model edits and
@@ -230,6 +253,9 @@ function ProjectPage() {
   // every frame at once with no regeneration. State updates immediately; the save is debounced
   // so dragging a colour picker doesn't write on every tick.
   const [theme, setTheme] = useState<Theme>(() => parseTheme(project.theme))
+  // UI-04: what the Theme panel is pointing at right now. It is never saved; the frames render it
+  // instead of the saved theme while the pointer is on a swatch.
+  const [themePreview, setThemePreview] = useState<Theme | null>(null)
   const themeSaveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const themeSavePending = useRef(false)
   const themeBefore = useRef<Theme>(theme)
@@ -294,47 +320,85 @@ function ProjectPage() {
   const [planFramesSettled, setPlanFramesSettled] = useState(false)
   const started = useRef(false)
 
+  const onPlanEvent = (e: Parameters<Parameters<typeof generatePlan>[2]>[0], finish: (settle?: boolean) => void) => {
+    if (e.type === 'plan') {
+      setPlan(e)
+      setPlanIds(e.screenIds ?? [])
+      setStatus(Object.fromEntries(e.screens.map((_, i) => [i, 'pending' as ScreenStatus])))
+      setPlanPhotos({})
+    } else if (e.type === 'awaiting') {
+      setAwaiting(true)
+      finish(false)
+    } else if (e.type === 'screen_start') {
+      setStatus((p) => ({ ...p, [e.index]: 'running' }))
+    } else if (e.type === 'screen_delta') {
+      setPlanTexts((p) => ({ ...p, [e.index]: e.text }))
+    } else if (e.type === 'screen_image') {
+      setPlanPhotos((p) => ({ ...p, [e.index]: { ...p[e.index], [e.query]: e.url } }))
+    } else if (e.type === 'screen_done') {
+      setStatus((p) => ({ ...p, [e.index]: 'done' }))
+    } else if (e.type === 'screen_error') {
+      setStatus((p) => ({ ...p, [e.index]: 'error' }))
+      setPlanErrors((p) => ({ ...p, [e.index]: e.message }))
+    } else if (e.type === 'done' || e.type === 'error') {
+      finish() // an error is already a message in the conversation
+    }
+  }
+  function runPlan(request: Parameters<typeof generatePlan>[1]) {
+    setPlanning(true)
+    const ctl = new AbortController()
+    inFlight.current = ctl
+    setWorking(true)
+    setWorkStarted(Date.now())
+    let over = false
+    // `settle` is false when the run stops at the plan (CHAT-08): the plan frames stay on the
+    // canvas as the slots the approved screens will be drawn into.
+    const finish = (settle = true) => {
+      if (over) return
+      over = true
+      inFlight.current = null
+      setWorking(false)
+      setPlanning(false)
+      router.invalidate().then(() => settle && setPlanFramesSettled(true))
+    }
+    generatePlan(project.id, request, (e) => onPlanEvent(e, finish), ctl.signal).catch((err) => {
+      // Stop closes the stream: the screens drawn so far are saved, the rest are not started.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) toast.error(err instanceof Error ? err.message : String(err))
+      finish()
+    })
+  }
   useEffect(() => {
     if (started.current || screens.length > 0 || !search.brief) return
     started.current = true
     const brief = search.brief
     router.navigate({ to: '.', search: {}, replace: true }) // drop ?brief so a reload never re-triggers
-    setPlanning(true)
-    const ctl = new AbortController()
-    inFlight.current = ctl
-    setWorking(true)
-    const finish = () => {
-      inFlight.current = null
-      setWorking(false)
-      setPlanning(false)
-      router.invalidate().then(() => setPlanFramesSettled(true))
-    }
-    generatePlan(project.id, brief, (e) => {
-      if (e.type === 'plan') {
-        setPlan(e)
-        setPlanIds(e.screenIds ?? [])
-        setStatus(Object.fromEntries(e.screens.map((_, i) => [i, 'pending' as ScreenStatus])))
-      } else if (e.type === 'screen_start') {
-        setStatus((p) => ({ ...p, [e.index]: 'running' }))
-      } else if (e.type === 'screen_delta') {
-        setPlanTexts((p) => ({ ...p, [e.index]: e.text }))
-      } else if (e.type === 'screen_image') {
-        setPlanPhotos((p) => ({ ...p, [e.index]: { ...p[e.index], [e.query]: e.url } }))
-      } else if (e.type === 'screen_done') {
-        setStatus((p) => ({ ...p, [e.index]: 'done' }))
-      } else if (e.type === 'screen_error') {
-        setStatus((p) => ({ ...p, [e.index]: 'error' }))
-        setPlanErrors((p) => ({ ...p, [e.index]: e.message }))
-      } else if (e.type === 'done' || e.type === 'error') {
-        finish() // an error is already a message in the conversation
-      }
-    }, ctl.signal).catch((err) => {
-      // Stop closes the stream: the screens drawn so far are saved, the rest are not started.
-      if (!(err instanceof DOMException && err.name === 'AbortError')) toast.error(err instanceof Error ? err.message : String(err))
-      finish()
-    })
+    // IMG-01: reference pictures the composer handed over. Read once, then cleared, so a reload
+    // never pays to look at them again.
+    let images: string[] | undefined
+    try {
+      const raw = sessionStorage.getItem(PENDING_IMAGES)
+      sessionStorage.removeItem(PENDING_IMAGES)
+      const parsed = raw ? JSON.parse(raw) : null
+      if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) images = parsed.slice(0, 2)
+    } catch {}
+    runPlan({ brief, gate: gatePref(), images })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  // CHAT-08: the person approved the plan (with their edits) — now it is drawn.
+  function approvePlan(edits: { keep: number[]; names: Record<number, string> }, askNextTime: boolean) {
+    try {
+      localStorage.setItem('od:plan-gate', askNextTime ? 'on' : 'off')
+    } catch {}
+    setAwaiting(false)
+    setPlanFramesSettled(false)
+    runPlan({ approve: edits })
+  }
+  function discardPlan() {
+    setAwaiting(false)
+    setPlan(null)
+    setPlanIds([])
+    setPlanFramesSettled(true)
+  }
 
   const f = frameSize(project.device)
   const screenIds = useMemo(() => new Set(screens.map((sc) => sc.id)), [screens])
@@ -377,10 +441,10 @@ function ProjectPage() {
 
   // The design-system frame (THM-08) stands left of the screens; it is drawn from tokens, not stored.
   const dsSample = useMemo(() => designSystemSample(tokens.root, tokens.fonts, project.designSystem.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())), [tokens, project.designSystem])
-  const dsHeight = project.device === 'mobile' ? DS_FRAME_HEIGHT_MOBILE : f.height
+  const shownTheme = themePreview ?? theme
   const dsFrame: CanvasFrame | null =
     tokens.root && visibleScreens.length > 0
-      ? { id: '__ds__', x: Math.min(...visibleScreens.map((s) => s.x)) - f.width - FRAME_GAP, y: Math.min(...visibleScreens.map((s) => s.y)), width: f.width, height: dsHeight }
+      ? { id: '__ds__', x: Math.min(...visibleScreens.map((s) => s.x)) - DS_FRAME.width - FRAME_GAP, y: Math.min(...visibleScreens.map((s) => s.y)), ...DS_FRAME }
       : null
 
   // The order is kept stable on purpose: moving an iframe in the DOM reloads it. The design-system
@@ -429,18 +493,71 @@ function ProjectPage() {
     const ctl = new AbortController()
     inFlight.current = ctl
     setWorking(true)
+    setWorkStarted(Date.now())
+    const first = bodies[0]!
+    const targetName = first.editScreenId || first.regenerateScreenId ? (screens.find((sc) => sc.id === (first.editScreenId ?? first.regenerateScreenId))?.name ?? 'the screen') : null
+    if (targetName) setEditing({ target: bodies.length > 1 ? `${bodies.length} screens` : targetName, text: '' })
     try {
-      // An edit streams only the parts that change, which is not a page: keep the screen in view instead.
-      const results = await Promise.allSettled(bodies.map((body) => generate(body, body.editScreenId ? () => {} : setLive, ctl.signal)))
+      // An edit streams only the parts that change, which is not a page: keep the screen in view;
+      // the streamed text feeds the live card (which parts are being edited).
+      const results = await Promise.allSettled(bodies.map((body) => generate(body, body.editScreenId ? (t) => setEditing((e) => (e ? { ...e, text: t } : e)) : setLive, ctl.signal)))
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected' && !(r.reason instanceof DOMException && r.reason.name === 'AbortError'))
       if (failed) toast.error(failed.reason instanceof Error ? failed.reason.message : String(failed.reason))
     } finally {
       inFlight.current = null
       setWorking(false)
+      setEditing(null)
       await router.invalidate()
       setLive('')
     }
   }
+
+  // CHAT-01: one truth for "something is running", for the composer's Stop and the live card.
+  const running = working || planning || planRunning
+  function stopAll() {
+    if (planning || planRunning) stopPlan()
+    else inFlight.current?.abort()
+  }
+  // CHAT-03: the queued message goes out the moment the run ends.
+  useEffect(() => {
+    if (running || !queued) return
+    const text = queued
+    setQueued(null)
+    submitPrompt(text).catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, queued])
+  const lastPrompt = [...messages].reverse().find((m) => m.role === 'user')?.text
+
+  // The composer's submit, also used by retry, edit-and-resend and the queue.
+  async function submitPrompt(prompt: string, images?: string[]) {
+    // A picture means "look like this", which is never a token-only theme change.
+    if (!images?.length && routeIntent(prompt, { elementSelected: Boolean(selectedElementId) }).kind === 'theme') {
+      const result = await themeFromChat({ data: { projectId: project.id, prompt } })
+      if (result.applied) {
+        setTheme(result.theme)
+        await router.invalidate()
+        return
+      }
+    }
+    // Several screens selected: the same instruction goes to each, as its own edit.
+    if (multi) await run(selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id, images })))
+    else await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined, images })
+  }
+
+  // CHAT-02: what the live card shows, from the page's own state — never a model's words.
+  const activity: Activity | null = awaiting
+    ? null
+    : planning && !plan
+      ? { kind: 'planning', startedAt: workStarted }
+      : (planning || planRunning) && plan
+        ? { kind: 'drawing', startedAt: workStarted, plan, status, errors: planErrors, photos: Object.fromEntries(Object.entries(planPhotos).map(([i, m]) => [i, Object.keys(m).length])), onFocus: (i) => planIds[i] && focusScreen(planIds[i]!) }
+        : planRunning
+          ? { kind: 'waiting', startedAt: workStarted, text: 'Still designing this app — screens appear as they finish' }
+          : working && editing
+              ? { kind: 'editing', startedAt: workStarted, target: editing.target, parts: parseAffects(editing.text) }
+              : working
+                ? { kind: 'waiting', startedAt: workStarted, text: 'Designing a new screen' }
+                : null
 
   // Draws the screen again from what it was planned to be (its stored spec), in the same slot, with
   // the app's context. The current design becomes a version. Also how a failed screen is retried.
@@ -449,12 +566,25 @@ function ProjectPage() {
     await run({ prompt: '', projectId: project.id, regenerateScreenId: screen.id })
   }
 
-  // FIG-02: the screen as it is rendered, as Figma layers on the clipboard (paste with ⌘V).
-  async function copyToFigma(screenId: string) {
-    const id = toast.loading('Preparing layers for Figma…')
+  // FIG-02/FIG-06: screens as they are rendered, as Figma layers on the clipboard (paste with ⌘V).
+  // From a frame: that screen, or every selected screen when it is one of them. From the export
+  // menu: the whole app. Each screen arrives as its own group, placed as it sits on the canvas.
+  async function copyToFigma(screenId?: string) {
+    const drawn = screens.filter((s) => s.html)
+    const chosen =
+      screenId && !(selectedIds.length > 1 && selectedIds.includes(screenId))
+        ? drawn.filter((s) => s.id === screenId)
+        : selectedIds.length > 1
+          ? drawn.filter((s) => selectedIds.includes(s.id))
+          : drawn
+    if (chosen.length === 0) return toast.error('Nothing to copy yet')
+    const ordered = [...chosen].sort((a, z) => a.y - z.y || a.x - z.x)
+    const id = toast.loading(ordered.length === 1 ? 'Preparing layers for Figma…' : `Preparing ${ordered.length} screens for Figma…`)
     try {
-      const { bytes } = await copyTreeToFigma(await serializeScreen(screenId))
-      toast.success('Copied — paste into Figma with ⌘V', { id, description: `${Math.round(bytes / 1024)} KB of layers, photos included` })
+      const items = []
+      for (const s of ordered) items.push({ tree: await serializeScreen(s.id), x: s.x, y: s.y })
+      const { bytes } = await copyTreesToFigma(items, project.name)
+      toast.success('Copied — paste into Figma with ⌘V', { id, description: `${ordered.length} screen${ordered.length === 1 ? '' : 's'}, ${Math.round(bytes / 1024)} KB, photos included` })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e), { id })
     }
@@ -503,6 +633,7 @@ function ProjectPage() {
         screenName={selectedScreen?.html && !multi ? selectedScreen.name : null}
         onDownloadScreen={() => selectedScreen && downloadHtml(selectedScreen)}
         onCopyScreenHtml={() => selectedScreen && copyHtml(applyThemeOverride(selectedScreen.html, theme))}
+        onCopyFigma={() => copyToFigma()}
         onDownloadApp={downloadApp}
         onShare={sharePreview}
         hasScreens={screens.some((s) => s.html)}
@@ -523,35 +654,17 @@ function ProjectPage() {
               <ChatPanel
                 messages={messages}
                 screenIds={screenIds}
+                device={project.device}
                 onFocusScreen={focusScreen}
                 onRevert={async (messageId) => {
                   await revertMessage({ data: { projectId: project.id, messageId } })
                   await router.invalidate()
                 }}
-                running={
-                  planning && plan ? (
-                    <div className="space-y-2">
-                      <PlanCard plan={plan} status={status} errors={planErrors} />
-                      {/* The planned run has no prompt-box Stop (it started from the dashboard); this is its Stop. */}
-                      <button type="button" className="text-xs text-muted-foreground underline" onClick={stopPlan}>
-                        Stop generating
-                      </button>
-                    </div>
-                  ) : planRunning && !planning ? (
-                    <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      <span className="flex-1">Still designing this app — screens appear as they finish.</span>
-                      <button type="button" className="text-xs underline" onClick={stopPlan}>
-                        Stop
-                      </button>
-                    </div>
-                  ) : working ? (
-                    <div className="flex items-center gap-2 rounded-xl border bg-card p-3 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-                      {planning ? 'Planning the app…' : multi ? `Working on ${selectedIds.length} screens…` : selectedScreen ? `Working on “${selectedScreen.name}”…` : 'Designing a new screen…'}
-                    </div>
-                  ) : undefined
-                }
+                onEdit={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+                onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => toast.error(e instanceof Error ? e.message : String(e))))}
+                suggestions={!selectedScreen ? nextSteps : undefined}
+                onSuggest={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+                running={awaiting && plan ? <PlanApproval plan={plan} onDraw={approvePlan} onDiscard={discardPlan} askNextTime={gatePref()} /> : activity ? <ActivityCard activity={activity} /> : undefined}
                 empty={
                   <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
                     <Sparkles className="size-5" />
@@ -582,54 +695,34 @@ function ProjectPage() {
                   </button>
                 </div>
               )}
-              {!working && !selectedScreen && nextSteps.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {nextSteps.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      onClick={() => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
-              )}
               <PromptBox
                 placeholder={
-                  planning
-                    ? 'Designing your screens…'
-                    : selectedElementId
-                      ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
-                      : multi
-                        ? `Describe a change for all ${selectedIds.length} screens…`
-                        : selectedScreen
-                          ? 'Describe the change…'
-                          : 'Add another screen to this project…'
+                  awaiting
+                    ? 'Approve the plan above, or change it…'
+                    : planning
+                      ? 'Designing your screens…'
+                      : selectedElementId
+                        ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
+                        : multi
+                          ? `Describe a change for all ${selectedIds.length} screens…`
+                          : selectedScreen
+                            ? 'Describe the change…'
+                            : 'Add another screen to this project…'
                 }
                 fill={fill}
-                onStop={() => (planning || planRunning ? stopPlan() : inFlight.current?.abort())}
-                onSubmit={async (prompt) => {
-                  // "make it blue" is a theme change: instant, every screen, no generation.
-                  if (routeIntent(prompt, { elementSelected: Boolean(selectedElementId) }).kind === 'theme') {
-                    const result = await themeFromChat({ data: { projectId: project.id, prompt } })
-                    if (result.applied) {
-                      setTheme(result.theme)
-                      await router.invalidate()
-                      return
-                    }
-                  }
-                  // Several screens selected: the same instruction goes to each, as its own edit.
-                  if (multi) await run(selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id })))
-                  else await run({ prompt, projectId: project.id, editScreenId: selectedScreen?.id, editElementId: selectedElementId ?? undefined })
-                }}
+                attachments
+                running={running}
+                onStop={stopAll}
+                queued={queued}
+                onQueue={setQueued}
+                lastPrompt={lastPrompt}
+                onSubmit={submitPrompt}
               />
             </>
           }
           theme={
             <div className="space-y-6 text-sm">
-              <ThemePanel theme={theme} baseAccent={baseAccent} base={baseTokens} onChange={changeTheme} />
+              <ThemePanel theme={theme} baseAccent={baseAccent} base={baseTokens} onChange={changeTheme} onPreview={setThemePreview} />
               <div>
                 <div className="mb-1 text-muted-foreground">Device</div>
                 <Badge variant="secondary" className="capitalize">
@@ -675,9 +768,9 @@ function ProjectPage() {
               place('to').then(() => router.invalidate())
             }}
             renderFrame={(id) => {
-              if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={theme} height={dsHeight} />
+              if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={shownTheme} width={DS_FRAME.width} height={DS_FRAME.height} />
               if (id === '__live__')
-                return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={theme} streaming />
+                return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={shownTheme} streaming />
               const planAt = planIds.indexOf(id)
               if (id.startsWith('plan-') || (planAt !== -1 && !screenIds.has(id))) {
                 const i = planAt !== -1 ? planAt : Number(id.slice(5))
@@ -687,7 +780,7 @@ function ProjectPage() {
                   return (
                     <div>
                       <p className="mb-2 truncate text-sm font-medium text-muted-foreground">{s.name}</p>
-                      <Skeleton style={{ width: f.width, height: f.height }} className="rounded-xl" />
+                      <Skeleton style={{ width: f.width, height: f.height, borderRadius: 40 }} />
                     </div>
                   )
                 // The same wrapper shape as a saved frame, so React keeps this iframe when the saved
@@ -700,7 +793,7 @@ function ProjectPage() {
                         html={extractArtifact(planTexts[i] ?? '').html}
                         title={s.name}
                         device={project.device}
-                        theme={theme}
+                        theme={shownTheme}
                         streaming={st === 'running' || st === 'done'}
                         photos={planPhotos[i]}
                         frameId={planAt !== -1 ? id : undefined}
@@ -742,7 +835,7 @@ function ProjectPage() {
                       title={s.name}
                       hint={s.prompt}
                       device={project.device}
-                      theme={theme}
+                      theme={shownTheme}
                       frameId={s.id}
                       height={frameHeight(s)}
                       onHeight={reportHeight}
@@ -756,7 +849,6 @@ function ProjectPage() {
                       }}
                       onEscape={escape}
                       onUndo={(redo) => undo(redo)}
-                      onAudit={(findings) => setAudits((a) => ({ ...a, [s.id]: findings }))}
                       editRequest={s.id === selected ? editRequest : undefined}
                       onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
                       panel={
@@ -780,14 +872,10 @@ function ProjectPage() {
                         <FrameToolbar
                           name={s.name}
                           hint={s.prompt}
+                          selected={selectedIds.includes(s.id)}
                           {...frameActions(s)}
                           version={s.version}
                           rating={s.rating}
-                          audit={audits[s.id]}
-                          onFixAudit={() => {
-                            selectScreen(s.id)
-                            run({ prompt: '', projectId: project.id, editScreenId: s.id, fixFindings: audits[s.id] })
-                          }}
                           onRate={async (value) => {
                             await rateScreen({ data: { projectId: project.id, screenId: s.id, value } })
                             await router.invalidate()
@@ -840,8 +928,8 @@ function FailedFrame(props: { name: string; error: string | null; width: number;
         {props.name}
       </figcaption>
       <div
-        className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-destructive/40 bg-background p-8 text-center"
-        style={{ width: props.width, height: props.height }}
+        className="flex flex-col items-center justify-center gap-3 border border-dashed border-destructive/40 bg-background p-8 text-center"
+        style={{ width: props.width, height: props.height, borderRadius: 40 }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <CircleX className="size-8 text-destructive" />
@@ -858,42 +946,3 @@ function FailedFrame(props: { name: string; error: string | null; width: number;
   )
 }
 
-function PlanCard(props: { plan: Plan; status: Record<number, ScreenStatus>; errors: Record<number, string> }) {
-  const done = Object.values(props.status).filter((s) => s === 'done').length
-  const total = props.plan.screens.length
-  return (
-    <div className="space-y-3 rounded-xl border bg-card p-3.5 text-sm">
-      <div className="flex gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-        <p className="text-muted-foreground">{props.plan.summary}</p>
-      </div>
-      <ol className="space-y-1.5">
-        {props.plan.screens.map((s, i) => (
-          <li key={i} className="flex items-center gap-2">
-            <StatusIcon status={props.status[i]} />
-            <span className="truncate" title={props.errors[i]}>
-              {s.name}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <div className="flex flex-wrap gap-1">
-        {props.plan.tags.map((t) => (
-          <Badge key={t} variant="secondary" className="text-xs">
-            {t}
-          </Badge>
-        ))}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        {done === total ? `${total} screens generated` : `Designing… ${done}/${total} done`}
-      </p>
-    </div>
-  )
-}
-
-function StatusIcon({ status }: { status?: ScreenStatus }) {
-  if (status === 'done') return <Check className="size-3.5 shrink-0 text-primary" />
-  if (status === 'running') return <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
-  if (status === 'error') return <CircleX className="size-3.5 shrink-0 text-destructive" />
-  return <Circle className="size-3.5 shrink-0 text-muted-foreground/40" />
-}

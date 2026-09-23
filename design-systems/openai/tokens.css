@@ -41,7 +41,7 @@
   --fg:   #0d0d0d;                     /* ink black — primary text, brand mark */
   --fg-2: #1a1a1a;                     /* soft black — alternative headings */
   --muted: #6e6e6e;                    /* slate — secondary text, captions */
-  --meta:  #9b9b9b;                    /* ash — tertiary, placeholder */
+  --meta:  #707070;                    /* ash — tertiary, placeholder */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      #e5e5e5;             /* hairline — standard separator */

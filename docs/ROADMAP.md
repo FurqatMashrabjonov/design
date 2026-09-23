@@ -67,6 +67,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
 | KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Tayyor | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
 | KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Jarayonda | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
+| KIT-05 | Har tizim uchun komponent qiymatlari (COMPONENTS.md) brifga | Generatsiya / Dizayn tizimlari | Bekor | Tayyor | O'rta | KIT-01, KIT-04 | Sinovdan o'tmadi, qaytarildi: kit ishlatgan ekran 0.609 → 0.240, lint toza 0.652 → 0.480 |
+| KIT-06 | Qat'iy kit rejimi: model kontent + navigatsiya, ekranni kod yig'adi | Generatsiya / Izchillik | Keyin | Rejada | Katta | KIT-01, KIT-04 | Erkin yo'l bilan yonma-yon o'lchanadi: lint, tells, sameness va ko'z bilan |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
@@ -89,6 +91,44 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FIG-03 | Figma: plagin — Auto Layout, matn, rasmlar, butun ilova | Eksport / Integratsiyalar | Keyin | Rejada | Katta | FIG-01 | docs/FIGMA-EXPORT-PLAN.md |
 | FIG-04 | Figma: tokenlar → Variables va matn stillari | Eksport / Integratsiyalar | Keyin | Rejada | Kichik | FIG-03 | docs/FIGMA-EXPORT-PLAN.md |
 | FIG-05 | Figma: eksport qamrovi o'lchovi | Eksport / Integratsiyalar | MVP | Tayyor | Kichik | FIG-01 | docs/FIGMA-EXPORT-PLAN.md |
+| FIG-06 | Figma: tanlangan ekranlarni yoki butun ilovani nusxalash | Eksport / Integratsiyalar | MVP | Tayyor | O'rta | FIG-01, FIG-02 | docs/FIGMA-EXPORT-PLAN.md |
+| EYE-04 | Audit natijalari foydalanuvchiga ko'rsatilmasin (avtomatik tuzatish bekor qilindi) | Generatsiya / Sifat | Bekor | Rejada | O'rta | EYE-01, EYE-02 |  |
+| THM-09 | Dizayn tizimi namunasi kadri gorizontal bo'lsin | Tema / Tema | MVP | Tayyor | Kichik | THM-08 |  |
+| UI-01 | Studio palitrasi: iliq neytral ramp va brend rangi | Muharrir / Interfeys | MVP | Tayyor | O'rta | docs/UI-THEME-PLAN.md |  |
+| UI-02 | Kanvas kadrlaridan karta ramkasi olib tashlansin | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-01 |  |
+| UI-03 | Tanlov holati: o'lcham yorlig'i va element teg nomi | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-01 |  |
+| UI-04 | Tema paneli: yig'iladigan bo'limlar, tooltip, hover-preview | Muharrir / Tema | MVP | Tayyor | Kichik | UI-01 |  |
+| UI-05 | Dashboard va landing studio tokenlariga o'tsin | Muharrir / Bosh sahifa | MVP | Tayyor | Kichik | UI-01 |  |
+| UI-06 | Studio uchun Light / Dark / System tanlovi | Muharrir / Interfeys | MVP | Tayyor | Kichik | UI-01 |  |
+| NAV-01 | Pastki panel variantlari: suzuvchi orol (island), pill, kontrast | Generatsiya / Izchillik | MVP | Tayyor | O'rta | docs/NAV-AND-CRAFT-PLAN.md |  |
+| NAV-02 | Faol tab rang bilan emas, pill/doira/nuqta bilan belgilansin | Generatsiya / Izchillik | MVP | Tayyor | Kichik | NAV-01 |  |
+| NAV-03 | Panel ostidagi bo'sh joy variantdan hisoblansin | Generatsiya / Izchillik | MVP | Tayyor | Kichik | NAV-01 |  |
+| NAV-04 | Eval: navStyle taqsimoti va panel ostida qolgan matn | Generatsiya / Sifat | MVP | Tayyor | Kichik | NAV-01 |  |
+| CRAFT-01 | ui-skills qoidalari autofix'ga: tabular-nums, text-balance, press, focus, rasm outline | Generatsiya / Sifat | MVP | Tayyor | O'rta |  |  |
+| CRAFT-02 | craft/mobile.md ni kuchliroq qoidalarga almashtirish | Generatsiya / Sifat | MVP | Tayyor | O'rta |  |  |
+| CRAFT-03 | Eval: 'generik AI' belgilari hisoblagichlari | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |
+| MKT-06 | Saytda Design.md galereyasi va Playbook bo'limi | Marketing / Sayt | MVP | Tayyor | O'rta |  |  |
+| MKT-07 | ui-skills katalogiga o'z skill'imizni chiqarish | Marketing / Sayt | MVP | Jarayonda | O'rta |  | skill/ tayyor, nashr ruxsat kutmoqda |
+| CHAT-01 | Stop tugmasi yuborish tugmasining o'zida, har qanday ish paytida | Muharrir / Tahrirlash | MVP | Tayyor | Kichik |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-02 | Jonli faoliyat kartasi: agent hozir nima qilyapti (hodisalardan) | Muharrir / Tahrirlash | MVP | Tayyor | O'rta |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-03 | Ish paytida yozilgan xabar navbatga tushsin | Muharrir / Tahrirlash | MVP | Tayyor | Kichik |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-04 | Xabar amallari: edit & resend, copy, retry, xato kartasida Retry | Muharrir / Tahrirlash | MVP | Tayyor | O'rta |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-05 | Skroll odobi: pastga faqat pastda bo'lsa, aks holda 'New activity' pillasi | Muharrir / Tahrirlash | MVP | Tayyor | Kichik |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-06 | Natija kartasi: oldin/keyin eskizi, Undo tugma, takliflar xabar ostida | Muharrir / Tahrirlash | MVP | Tayyor | O'rta |  | docs/CHAT-UPGRADE-PLAN.md |
+| CHAT-08 | Rejani tasdiqlash darvozasi: chizishdan oldin ekranlarni tahrirlash | Muharrir / Tahrirlash | MVP | Tayyor | O'rta |  | docs/CHAT-UPGRADE-PLAN.md |
+| QLT-01 | Pastki panel shakli ilova xarakteridan tanlansin (orol majburiy emas) | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | 28 briefli eval (2026-09-23) |
+| QLT-02 | Har dizayn tizimining matn tokenlari WCAG AA dan o'tsin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta |  | 28 briefli eval (2026-09-23) |
+| QLT-03 | Halqa grafigi sahifaning markaz matni ustiga ikkinchisini yozmasin | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | 28 briefli eval (2026-09-23) |
+| QLT-04 | Teginish maydoni ko'rinadigan qutini kattalashtirmasin | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | 28 briefli eval (2026-09-23) |
+| QLT-05 | Rasm kelmaganda ustidagi matn o'qiladigan bo'lsin | Generatsiya / Kontent | MVP | Tayyor | Kichik |  | 28 briefli eval (2026-09-23) |
+| LLM-03 | Narx jadvali haqiqiy DeepSeek raqamlariga (peak/off-peak) | Generatsiya / LLM xarajati | MVP | Tayyor | Kichik |  | 28 briefli eval (2026-09-23) |
+| QLT-06 | 'Generik AI' qoidalari promptdan linterga ko'chsin | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | 28 briefli eval (2026-09-23) |
+| LLM-01 | Thinking chaqiruv joyiga qarab (A/B: plannerda ham o'chiq qoldi) | Generatsiya / LLM xarajati | MVP | Tayyor | Kichik |  | 4 briefli A/B, 2026-09-23 |
+| LLM-02 | DeepSeek rasm tushunishi: chatga rasm biriktirib 'shunga o'xshatib qil' | Generatsiya / Asosiy | MVP | Tayyor | O'rta |  | uchdan-uchga sinov 2026-09-23 |
+| DS-01 | Avtomatik dizayn tizimi nomzodlar ro'yxatidan tanlansin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik |  | docs/REFERENCE-AND-AUTO-STYLE-PLAN.md |
+| DS-02 | Uslub tanlovi boshlash qutisidan olinsin (Tema panelida qoladi) | Muharrir / Bosh sahifa | MVP | Tayyor | Kichik |  | docs/REFERENCE-AND-AUTO-STYLE-PLAN.md |
+| IMG-01 | Boshlash qutisiga rasm: rasmdan badiiy yo'nalish chiqarilsin | Generatsiya / Asosiy | MVP | Tayyor | O'rta |  | docs/REFERENCE-AND-AUTO-STYLE-PLAN.md |
+| IMG-02 | Havola rasm dizayn tizimini va temani ham belgilasin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta |  | IMG-01 ning tuzatilishi |
 | EYE-01 | Ko'prikda DOM auditi: overflow, kesilgan matn, nishon, kontrast, ustma-ust | Generatsiya / Render | MVP | Tayyor | O'rta | HIG-03 | Topilmalar data-od-id bilan qaytadi; kelgan ma'lumot tekshiriladi |
 | EYE-02 | Avto-tuzatish: aybdor elementga bitta nuqtali chaqiruv, ≤1 aylanish | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-01 | Audit o'tish foizi o'sadi; versiya tarixi ifloslanmaydi |
 | EYE-03 | LLM'siz tuzatishlar: nishon o'lchami, minimal shrift, nav bo'shlig'i | Generatsiya / Sifat | MVP | Tayyor | Kichik | HIG-03 | autofixScreen kengaygan, testlangan |

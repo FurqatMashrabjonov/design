@@ -45,11 +45,14 @@ ${fonts}
 <style>
 ${root.replace(/<\//g, '<\\/')}
 * { box-sizing: border-box; }
-body { margin: 0; padding: 24px 20px 32px; background: var(--bg); color: var(--fg); font-family: var(--font-body, system-ui, sans-serif); font-size: 14px; line-height: 1.45; }
-h2 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 24px 0 10px; }
-.name { font-family: var(--font-display, var(--font-body)); font-size: 22px; font-weight: 700; letter-spacing: var(--tracking-display, -0.01em); margin: 0; }
+body { margin: 0; padding: 28px 32px 32px; background: var(--bg); color: var(--fg); font-family: var(--font-body, system-ui, sans-serif); font-size: 14px; line-height: 1.45; }
+/* THM-09: a wide card, not a phone: two columns side by side under one header. */
+.cols { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0 40px; align-items: start; }
+h2 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 22px 0 10px; }
+.cols > section > h2:first-child { margin-top: 0; }
+.name { font-family: var(--font-display, var(--font-body)); font-size: 26px; font-weight: 700; letter-spacing: var(--tracking-display, -0.01em); margin: 0; }
 .sub { color: var(--muted); margin: 2px 0 0; font-size: 13px; }
-.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 14px; }
 .sw { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .chip { height: 44px; border-radius: var(--radius-md, 10px); border: 1px solid var(--border); }
 .sw b { font-size: 11px; font-weight: 600; }
@@ -72,14 +75,25 @@ h2 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: u
 </style>
 </head>
 <body>
+<header>
 <p class="name">${escapeHtml(name)}</p>
 <p class="sub">Design system · every screen uses these tokens</p>
+</header>
 
+<div class="cols">
+<section>
 <h2>Colour</h2>
 <div class="swatches">
 ${colors.map(([t, label]) => `  <div class="sw"><div class="chip" style="background:var(${t})"></div><b>${label}</b><code data-token="${t}"></code></div>`).join('\n')}
 </div>
 
+${radii.length ? `<h2>Radius</h2>
+<div class="radii">
+${radii.map((t) => `  <div><span style="border-radius:var(${t})"></span><code class="val" data-token="${t}"></code></div>`).join('\n')}
+</div>` : ''}
+</section>
+
+<section>
 <h2>Type</h2>
 <div class="type">
   <div><span class="display" style="font-size:var(--text-2xl, 32px);line-height:1.1">Aa Heading</span><span class="val" data-font="--font-display"></span></div>
@@ -87,11 +101,6 @@ ${colors.map(([t, label]) => `  <div class="sw"><div class="chip" style="backgro
   <div><span style="font-size:var(--text-base, 16px)">Body text reads like this.</span><span class="val" data-font="--font-body"></span></div>
   <div><span style="font-size:var(--text-sm, 14px);color:var(--muted)">Secondary · caption</span><span class="val">text-sm</span></div>
 </div>
-
-${radii.length ? `<h2>Radius</h2>
-<div class="radii">
-${radii.map((t) => `  <div><span style="border-radius:var(${t})"></span><code class="val" data-token="${t}"></code></div>`).join('\n')}
-</div>` : ''}
 
 <h2>Components</h2>
 <div class="row">
@@ -104,6 +113,8 @@ ${radii.map((t) => `  <div><span style="border-radius:var(${t})"></span><code cl
   <b>Card title</b>
   <p>Cards sit on the surface with the system's border, radius and shadow.</p>
   <div class="row"><span class="tag">Accent tag</span><span class="tag soft">Neutral</span></div>
+</div>
+</section>
 </div>
 
 <script>

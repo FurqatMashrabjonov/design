@@ -232,6 +232,51 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
     })
   }
 
+  // QLT-06: the traits that mark a page as generated. craft/mobile.md bans all three by name and
+  // the model still produced them on 28 apps (monospace labels on 62 screens, middle-dot meta on
+  // 46, tracked-out caps eyebrows on 46). A rule the prompt cannot hold is a rule for the linter.
+  // The injected shell is excluded: its own labels are ours and already canonical.
+  const page = scannable.replace(/<nav\b[^>]*data-od-shell[\s\S]*?<\/nav>/gi, '').replace(/<header\b[^>]*data-od-shell[\s\S]*?<\/header>/gi, '')
+
+  // An eyebrow is small, tracked-out caps used as a label above a heading — not an uppercase
+  // display headline, which 21 of the 33 design systems ask for by name.
+  const eyebrows = (page.match(/\{[^{}]*text-transform\s*:\s*uppercase[^{}]*\}/gi) ?? []).filter((rule) => {
+    const size = rule.match(/font-size\s*:\s*(\d+(?:\.\d+)?)px/i)
+    const px = size ? Number(size[1]) : /var\(--text-(xs|sm)\)/.test(rule) ? 12 : NaN
+    return px <= 12 && /letter-spacing\s*:\s*(0?\.\d+|[1-9])/.test(rule)
+  })
+  if (eyebrows.length > 0) {
+    findings.push({
+      rule: 'caps-eyebrow',
+      severity: 'warn',
+      message: 'Small tracked-out caps used as a label above a heading — the clearest mark of a generated page. Give the section a heading instead.',
+      samples: uniq(eyebrows.map((r) => r.replace(/\s+/g, ' ').slice(0, 60))),
+    })
+  }
+
+  // Monospace belongs to code. A price or a date set in it reads as telemetry, not as product copy.
+  const mono = [...page.matchAll(/font-family\s*:\s*([^;}"]*mono[^;}"]*)/gi)].map((m) => m[1]!.trim())
+  if (mono.length > 0) {
+    findings.push({
+      rule: 'mono-for-data',
+      severity: 'warn',
+      message: 'Monospace on data that is not code. Prices, dates and counts are set in the body face.',
+      samples: uniq(mono.map((f) => f.slice(0, 40))),
+    })
+  }
+
+  // "12 min · Easy · 4.8 · Vegan" on every card: four facts in a row is four facts nobody reads.
+  const shown = page.replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]*>/g, ' ')
+  const runs = (shown.match(/[^·\n]{1,40}·[^·\n]{1,40}·[^·\n]{1,40}·/g) ?? [])
+  if (runs.length > 0) {
+    findings.push({
+      rule: 'middle-dot-meta',
+      severity: 'warn',
+      message: 'Four or more facts glued with middle dots. Show the one or two that decide, in plain words.',
+      samples: uniq(runs.map((r) => r.replace(/\s+/g, ' ').trim().slice(-50))), // the tail is the run itself, not the sentence before it
+    })
+  }
+
   return findings
 }
 
@@ -276,9 +321,38 @@ export function autofixScreen(html: string): string {
   if (!out.includes('data-od-hit-area') && /<button\b/i.test(out)) {
     const t = HIG.minTargetPx
     const decorated = [...new Set([...out.matchAll(/\.([\w-]+)[^{},]*?::?(?:after|before)/g)].map((m) => m[1]))]
-    const btn = `button${decorated.map((c) => `:not(.${c})`).join('')}:has(> i[data-lucide]:only-child, > svg:only-child)`
+    // Every button, not only the icon-only ones: a short text button ("See all", a segment) misses
+    // the target just as easily. The area is a pseudo-element, so a button inside a fixed-height
+    // track keeps its drawn size — growing the box instead is what made a segmented control bulge
+    // out of its own rail.
+    const btn = `button${decorated.map((c) => `:not(.${c})`).join('')}`
     const css = `<style data-od-hit-area>:where(${btn}){position:relative}${btn}::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,${t}px);height:max(100%,${t}px);transform:translate(-50%,-50%)}</style>`
     out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, `${css}</head>`) : css + out
+  }
+
+  // CRAFT-01: the craft rules with exactly one right answer, applied in code rather than asked for
+  // in the prompt (ui-skills.com playbook + jakubkrehel/better-ui). Everything here is a
+  // zero-specificity :where() default or a pseudo-element, so a screen that styles the same thing
+  // itself always wins.
+  if (!out.includes('data-od-craft')) {
+    const css = [
+      // Numbers that sit in columns (prices, stats, times) must line up: proportional digits make
+      // a list of prices look ragged even when the markup is perfect.
+      ':where(table,tbody,td,th,time,output,data,.price,.stat,.amount,.total,.value,[data-od-chart]){font-variant-numeric:tabular-nums}',
+      // A heading that breaks one word onto the last line reads as a mistake; body copy gets the
+      // gentler rule, which only fixes orphans.
+      ':where(h1,h2,h3){text-wrap:balance}',
+      ':where(p,li,figcaption,blockquote){text-wrap:pretty}',
+      // A photo on a surface of nearly its own colour has no edge; 10% of the page's ink gives it
+      // one without a visible border.
+      ':where(img[data-od-img-resolved],img[data-od-avatar-resolved]){outline:1px solid color-mix(in oklab, var(--fg) 10%, transparent);outline-offset:-1px}',
+      // Keyboard focus must be visible — the linter cannot see a missing focus ring in a screenshot.
+      ':where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
+      // Press feedback: 0.96 reads as a press, 0.95 and below reads as a glitch.
+      '@media (prefers-reduced-motion:no-preference){:where(button,[role="button"],a[data-od-link]){transition:transform 120ms ease-out}:where(button,[role="button"],a[data-od-link]):active{transform:scale(.96)}}',
+    ].join('')
+    const tag = `<style data-od-craft>${css}</style>`
+    out = /<\/head>/i.test(out) ? out.replace(/<\/head>/i, `${tag}</head>`) : tag + out
   }
 
   return out

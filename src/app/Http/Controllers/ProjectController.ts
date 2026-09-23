@@ -50,10 +50,13 @@ export const ProjectController = {
 
   // 2026-09-22: the product designs phone apps only; desktop projects made before stay viewable.
   store(data: { designSystem: string; brief?: string; userId?: string }) {
-    // GQ-03: "auto" means the brief chooses (its named style, else its app type).
-    const designSystem = data.designSystem === AUTO ? DesignSystemService.autoFor(data.brief ?? '', AppPatternService.classify(data.brief ?? '')?.id) : data.designSystem
+    // GQ-03: "auto" means the brief chooses (its named style, else its app type). DS-01: the id is
+    // minted first so it can seed the pick — two people typing the same brief get different systems.
+    const id = crypto.randomUUID()
+    const designSystem =
+      data.designSystem === AUTO ? DesignSystemService.autoFor(data.brief ?? '', AppPatternService.classify(data.brief ?? '')?.id, id) : data.designSystem
     DesignSystemService.assertExists(designSystem)
-    return Project.create({ id: crypto.randomUUID(), name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null })
+    return Project.create({ id, name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null })
   },
 
   moveScreen(data: { id: string; x: number; y: number }) {

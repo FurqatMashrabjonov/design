@@ -28,6 +28,8 @@ export function ScreenFrame(props: {
   html: string
   title: string
   device: string
+  /** Frame width; defaults to the device's native width. */
+  width?: number
   hint?: string
   selected?: boolean
   /** False when other screens are selected too: the frame shows the ring but does not take the pointer. */
@@ -57,13 +59,17 @@ export function ScreenFrame(props: {
   /** Start editing the selected element's text in place (a panel button); bump `key` to repeat. */
   editRequest?: { elementId: string; key: number }
 }) {
-  const f = frameSize(props.device)
-  const height0 = Math.max(f.height, props.height ?? f.height)
+  const f0 = frameSize(props.device)
+  // THM-09: the design-system sample is drawn wider than a device; everything else is native width.
+  const f = { width: props.width ?? f0.width, height: f0.height }
+  // A device frame is never shorter than the device; a wide frame is exactly as tall as it asked.
+  const height0 = props.width ? (props.height ?? f.height) : Math.max(f.height, props.height ?? f.height)
   // While streaming, updates are posted into a frame opened once (LP-02); 300ms is what the eye
   // needs and what Tailwind's JIT keeps up with.
   const rawHtml = useThrottled(props.html, props.streaming ? 300 : 0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [rect, setRect] = useState<BridgeRect | null>(null)
+  const [hover, setHover] = useState<{ tag: string; rect: BridgeRect } | null>(null)
   const editable = Boolean(props.frameId) && !props.streaming
   const active = editable && Boolean(props.selected) && props.solo !== false
 
@@ -175,6 +181,12 @@ export function ScreenFrame(props: {
         const id = safeElementId(d.elementId)
         setRect(id ? parseRect(d.rect) : null)
         p.onSelectElement?.(id)
+      } else if (d?.type === 'od:hover_element') {
+        // UI-03: the tag name of the element under the pointer, drawn over the frame (the badge
+        // cannot live inside the screen without disturbing its layout).
+        const tag = typeof d.tag === 'string' && /^[a-z0-9-]{1,20}$/.test(d.tag) ? d.tag : null
+        const r = parseRect(d.rect)
+        setHover(tag && r ? { tag, rect: r } : null)
       } else if (d?.type === 'od:selected_rect') {
         if (safeElementId(d.elementId) === p.selectedElementId) setRect(parseRect(d.rect))
       } else if (d?.type === 'od:text_edit') {
@@ -223,11 +235,14 @@ export function ScreenFrame(props: {
       <div className="relative">
         <div
           className={cn(
-            'relative overflow-hidden rounded-xl border bg-white shadow-sm transition-all',
-            props.selected ? 'border-primary ring-2 ring-primary/30' : 'border-border',
+            // UI-02: no card around a design — only the paper shadow that lifts it off the canvas.
+            'relative overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,.06),0_12px_28px_-18px_rgba(0,0,0,.35)] transition-all',
+            props.selected && 'ring-2 ring-primary',
             props.streaming && 'od-stream-ring'
           )}
-          style={{ width: f.width, height }}
+          // The corners a phone actually has, so a screen reads as a device and not as a rectangle
+          // of HTML. A frame drawn wider than a device (the design-system card) keeps card corners.
+          style={{ width: f.width, height, borderRadius: props.width ? 16 : 40 }}
         >
           {!props.streaming && (
             <iframe
@@ -275,6 +290,29 @@ export function ScreenFrame(props: {
           >
             {props.panel}
           </div>
+        )}
+
+        {active && hover && (
+          // The wrapper is anchored to the element's top-left corner and unscales the canvas; the
+          // badge hangs above it, so it never covers the element whatever the zoom.
+          <span
+            className="pointer-events-none absolute z-20"
+            style={{ left: hover.rect.x, top: hover.rect.y, transformOrigin: 'top left', transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
+          >
+            <span className="absolute bottom-0.5 left-0 rounded-sm bg-primary px-1 py-px text-[10px] leading-tight font-medium whitespace-nowrap text-primary-foreground">
+              {hover.tag}
+            </span>
+          </span>
+        )}
+
+        {/* UI-03: what a selected frame measures, in canvas-independent pixels. */}
+        {props.selected && (
+          <span
+            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-primary-foreground"
+            style={{ top: height + 6, transformOrigin: 'top center', transform: 'translateX(-50%) scale(calc(1 / var(--canvas-scale, 1)))' }}
+          >
+            {f.width}×{Math.round(height)}
+          </span>
         )}
       </div>
     </figure>

@@ -39,7 +39,7 @@
   --fg:   #f7f8f8;                      /* near-white primary text */
   --fg-2: #d0d6e0;                      /* silver-gray body / secondary text */
   --muted: #8a8f98;                     /* tertiary — placeholders, metadata */
-  --meta:  #62666d;                     /* quaternary — timestamps, disabled */
+  --meta:  #7e8287;                     /* quaternary — timestamps, disabled */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      rgba(255, 255, 255, 0.08);   /* standard semi-transparent white */

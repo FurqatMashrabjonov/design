@@ -75,7 +75,7 @@ assert.equal(m.bugs.briefsWithoutDetail, 1)
 assert.equal(m.sameness.pairs, 4, 'only cross-brief pairs are compared')
 assert.equal(m.sameness.sameKindPairs, 1, 'profile vs profile across apps')
 assert.ok(m.sameness.sameKindMean > m.sameness.crossBriefMean)
-assert.equal(m.usage?.estCostUsd, 0.27)
+assert.equal(m.usage?.estCostUsd, 0.15, 'the run is costed at the off-peak base rate')
 assert.equal(computeMetrics([scr('x', 'stripe', 'root-tab', '<body><p>Pay with Stripe</p></body>')], [1], 0).bugs.brandLeakScreens, 0, 'a brand in ordinary copy is not a leak')
 assert.deepEqual(diffMetrics({ a: { b: 1, c: 2 } }, { a: { b: 1, c: 3 }, d: 4 }), ['a.c: 2 → 3', 'd: — → 4'])
 

@@ -81,12 +81,31 @@ function nodeSvg(node: ODNode, out: Writer): string {
   return `<g${name}${op}>${parts.join('')}</g>`
 }
 
+/** One screen as a named group: its background, then its layers. */
+function screenGroup(tree: ODTree, out: Writer, dx = 0, dy = 0): string {
+  const move = dx || dy ? ` transform="translate(${n(dx)} ${n(dy)})"` : ''
+  const bg = `<rect width="${n(tree.width)}" height="${n(tree.height)}" fill="${color(tree.background)}"/>`
+  return `<g data-name="${esc(tree.name)}"${move}>${bg}${nodeSvg(tree.root, out)}</g>`
+}
+
 /** The whole screen as one pasteable SVG. */
 export function odToSvg(tree: ODTree): string {
   const out = new Writer()
-  const body = nodeSvg(tree.root, out)
-  const bg = `<rect width="${n(tree.width)}" height="${n(tree.height)}" fill="${color(tree.background)}"/>`
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n(tree.width)}" height="${n(tree.height)}" viewBox="0 0 ${n(tree.width)} ${n(tree.height)}" data-name="${esc(tree.name)}"><defs>${out.defs.join('')}</defs>${bg}${body}</svg>`
+  const body = screenGroup(tree, out)
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n(tree.width)}" height="${n(tree.height)}" viewBox="0 0 ${n(tree.width)} ${n(tree.height)}" data-name="${esc(tree.name)}"><defs>${out.defs.join('')}</defs>${body}</svg>`
+}
+
+/** FIG-06: several screens in one paste, each its own group, laid out as they are on the canvas.
+ *  Figma makes a frame per group, so the app arrives as a board rather than a screen at a time. */
+export function odTreesToSvg(items: { tree: ODTree; x: number; y: number }[], name = 'App'): string {
+  if (items.length === 1) return odToSvg(items[0]!.tree)
+  const out = new Writer()
+  const minX = Math.min(...items.map((i) => i.x))
+  const minY = Math.min(...items.map((i) => i.y))
+  const width = Math.max(...items.map((i) => i.x - minX + i.tree.width))
+  const height = Math.max(...items.map((i) => i.y - minY + i.tree.height))
+  const body = items.map((i) => screenGroup(i.tree, out, i.x - minX, i.y - minY)).join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${n(width)}" height="${n(height)}" viewBox="0 0 ${n(width)} ${n(height)}" data-name="${esc(name)}"><defs>${out.defs.join('')}</defs>${body}</svg>`
 }
 
 /** Photos travel inside the SVG, so the paste does not depend on Figma fetching them. */

@@ -121,7 +121,7 @@
   --fg: #171a20;                  /* Carbon Dark — headings, nav, model names */
   --fg-2: #393c41;                /* Graphite — default body / paragraph color */
   --muted: #5c5e62;               /* Pewter — tertiary links (Learn, Order, Experience) */
-  --meta: #8e8e8e;                /* Silver Fog — placeholders, disabled states */
+  --meta: #6f6f6f;                /* Silver Fog — placeholders, disabled states */
 
   /* ─── Border (2 levels) ──────────────────────────────────────────
    * Tesla uses borders sparingly — containers are usually defined by

@@ -60,27 +60,45 @@ const STYLE_WORDS: [RegExp, string][] = [
   [/playful|gamif|for kids|children/i, 'duolingo'],
   [/\bminimal(ist)?\b|clean and simple/i, 'minimal'],
 ]
-const BY_APP_TYPE: Record<string, string> = {
-  fintech: 'stripe',
-  'food-delivery': 'airbnb',
-  commerce: 'shopify',
-  marketplace: 'airbnb',
-  booking: 'airbnb',
-  travel: 'airbnb',
-  fitness: 'nike',
-  health: 'apple',
-  learning: 'duolingo',
-  media: 'spotify',
-  productivity: 'notion',
-  social: 'apple',
+// DS-01: candidates, not a verdict. One system per app type meant every habit tracker came back in
+// Notion and every food app in Airbnb — two people typing the same thing got the same app, and 21 of
+// the 33 systems were never reachable without picking one by hand. The project id chooses among
+// these the way artDirection and navStyle choose, so one project is coherent and two differ.
+const BY_APP_TYPE: Record<string, string[]> = {
+  fintech: ['stripe', 'linear-app', 'midnight', 'dashboard'],
+  'food-delivery': ['airbnb', 'shopify', 'bento', 'doodle'],
+  commerce: ['shopify', 'airbnb', 'elegant', 'bento'],
+  marketplace: ['airbnb', 'shopify', 'minimal', 'intercom'],
+  booking: ['airbnb', 'apple', 'elegant', 'material'],
+  travel: ['airbnb', 'elegant', 'bento', 'apple'],
+  fitness: ['nike', 'midnight', 'bento', 'neon'],
+  health: ['apple', 'claude', 'cal', 'material'],
+  learning: ['duolingo', 'doodle', 'bento', 'retro'],
+  media: ['spotify', 'midnight', 'neon', 'tesla'],
+  productivity: ['notion', 'linear-app', 'cal', 'shadcn'],
+  social: ['apple', 'bento', 'glassmorphism', 'intercom'],
+}
+
+// FNV-1a, the same stable pick the blueprints and the bottom bar use.
+function hash(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
+  return h >>> 0
 }
 
 export const DesignSystemService = {
   /** The system for a brief when the person left the choice to us. */
-  autoFor(brief: string, appType?: string | null): string {
+  /**
+   * The system for a brief when the person left the choice to us. A style the brief names still
+   * wins outright; otherwise the app type offers a few that suit it and `seed` (the project id)
+   * picks one, so the same brief twice is not the same app twice.
+   */
+  autoFor(brief: string, appType?: string | null, seed?: string): string {
     const byStyle = STYLE_WORDS.find(([re]) => re.test(brief))?.[1]
-    const pick = byStyle ?? (appType ? BY_APP_TYPE[appType] : undefined) ?? 'minimal'
-    return DesignSystemService.exists(pick) ? pick : 'minimal'
+    if (byStyle && DesignSystemService.exists(byStyle)) return byStyle
+    const candidates = (appType ? BY_APP_TYPE[appType] : undefined)?.filter((id) => DesignSystemService.exists(id)) ?? []
+    if (candidates.length === 0) return 'minimal'
+    return candidates[hash(`${seed ?? brief}|system`) % candidates.length]!
   },
 
   list(): DesignSystemEntry[] {
@@ -185,4 +203,115 @@ export const DesignSystemService = {
   assertExists(id: string) {
     if (!this.exists(id)) throw new Error('Unknown design system')
   },
+}
+
+// --- IMG-02: matching a reference picture to the closest design system -------------------------
+// The picture decides the look, so it must decide the system too — before a screen is drawn. The
+// judgement (what colour, how round, how loud) is the model's; the choice is arithmetic here, so
+// the same picture always lands on the same system and every candidate is scored the same way.
+
+type Rgb = [number, number, number]
+
+function toRgb(hex: string | null | undefined): Rgb | null {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((hex ?? '').trim())
+  if (!m) return null
+  const h = m[1]!.length === 3 ? m[1]!.split('').map((c) => c + c).join('') : m[1]!
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb
+}
+
+const luminance = ([r, g, b]: Rgb) => {
+  const f = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+}
+
+/** Hue in degrees and how saturated it is (0–1) — a grey has no meaningful hue. */
+function hueChroma([r, g, b]: Rgb): { hue: number; chroma: number } {
+  const [max, min] = [Math.max(r, g, b), Math.min(r, g, b)]
+  const d = max - min
+  if (d === 0) return { hue: 0, chroma: 0 }
+  const h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return { hue: (h * 60 + 360) % 360, chroma: d / 255 }
+}
+
+/** 0 (identical) to 1 (opposite side of the wheel), with greys compared by how grey they are. */
+function accentDistance(a: Rgb, b: Rgb): number {
+  const x = hueChroma(a)
+  const y = hueChroma(b)
+  if (x.chroma < 0.12 || y.chroma < 0.12) return Math.abs(x.chroma - y.chroma) + 0.35
+  const apart = Math.abs(x.hue - y.hue)
+  return Math.min(apart, 360 - apart) / 180
+}
+
+/** Words a style card uses that a picture's mood can agree with. */
+const MOOD_WORDS: Record<string, RegExp> = {
+  playful: /playful|friendly|informal|fun|cheerful|whimsical|hand-drawn/i,
+  bold: /bold|loud|confident|brutal|heavy|striking|expressive/i,
+  calm: /calm|quiet|restrained|serene|understated|minimal/i,
+  elegant: /elegant|refined|premium|luxur|editorial/i,
+  technical: /technical|precise|utilitarian|developer|dense/i,
+  energetic: /energetic|vivid|vibrant|bright|electric|neon/i,
+  soft: /soft|warm|gentle|rounded|pastel/i,
+  dark: /dark|midnight|night|black/i,
+}
+
+/** What a style card says its display type does — the strongest signal after colour. */
+const TYPE_WORDS: Record<string, RegExp> = {
+  // Cards state weights as numbers ("weight 900", "weights 700–900"), so that is what is matched.
+  heavy: /weights? (?:7|8|9)00|–\s*900|extra ?bold|chunky|condensed|marker/i,
+  geometric: /grotesk|geometric|neutral sans|system sans/i,
+  quiet: /weights? [34]00\b|light weight|thin/i,
+  serif: /serif/i,
+}
+
+/** Only the card's "Type" section: elsewhere "black" is a colour, not a weight. */
+function typeSection(card: string): string {
+  const m = /^##\s*Type\b([\s\S]*?)(?=^##\s|\Z)/im.exec(card)
+  return m?.[1] ?? ''
+}
+
+export type ReferenceMatchInput = { accent?: string; background?: string; mood?: string[]; corners?: 'sharp' | 'soft' | 'round'; type?: 'heavy' | 'geometric' | 'quiet' | 'serif' }
+
+/**
+ * Which of our systems a picture is closest to. Colour carries the most weight — light against dark
+ * is the first thing an eye reads, then the accent's hue — and the mood words break ties between
+ * systems that are already close, which is what separates a playful pink from a corporate one.
+ */
+export function matchSystem(ref: ReferenceMatchInput): { id: string; score: number } | null {
+  const refAccent = toRgb(ref.accent)
+  const refBg = toRgb(ref.background)
+  if (!refAccent && !refBg) return null
+  const mood = (ref.mood ?? []).join(' ')
+  const wanted = Object.entries(MOOD_WORDS).filter(([word]) => new RegExp(word, 'i').test(mood)).map(([, re]) => re)
+
+  let best: { id: string; score: number } | null = null
+  for (const entry of DesignSystemService.list()) {
+    if (!entry.hasTokens) continue
+    const bg = toRgb(entry.swatch.bg)
+    const accent = toRgb(entry.swatch.accent)
+    let score = 0
+    // Light against dark: the loudest signal, and the one a person notices instantly.
+    if (refBg && bg) score += Math.abs(luminance(refBg) - luminance(bg)) * 2.0
+    // Then the accent's hue, weighted so that a real colour match cannot be argued away by words:
+    // a typical hue distance is 0.05–0.4 here, so the character bonuses below stay smaller than that.
+    if (refAccent && accent) score += accentDistance(refAccent, accent) * 2.0
+    // Mood and type: read from the card, and strong enough to separate two systems that share a
+    // hue — a playful pink and a corporate pink are the same colour and not the same app.
+    if (wanted.length || ref.type) {
+      const card = DesignSystemService.readStyleCard(entry.id)
+      if (wanted.length) score -= (wanted.filter((re) => re.test(card)).length / wanted.length) * 0.22
+      if (ref.type && TYPE_WORDS[ref.type]?.test(typeSection(card))) score -= 0.18
+    }
+    if (!best || score < best.score) best = { id: entry.id, score }
+  }
+  return best
+}
+
+/** The theme a picture asks for: its accent, and how round its corners are. */
+export function themeFromReference(ref: ReferenceMatchInput): { accent?: string; radius?: 'sharp' | 'soft' | 'round' } {
+  const out: { accent?: string; radius?: 'sharp' | 'soft' | 'round' } = {}
+  const accent = toRgb(ref.accent)
+  // A near-grey "accent" is the picture having no accent at all; forcing it would drain the system.
+  if (accent && hueChroma(accent).chroma >= 0.12) out.accent = ref.accent!.toLowerCase()
+  if (ref.corners) out.radius = ref.corners
+  return out
 }

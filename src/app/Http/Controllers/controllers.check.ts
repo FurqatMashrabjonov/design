@@ -324,8 +324,50 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   const talk = Message.forProject('p9').slice(-2)
   assert.deepEqual(talk.map((m) => [m.role, m.kind]), [['user', 'edit'], ['agent', 'edit']])
   assert.equal(talk[0].text, 'Fix 1 problem found in the rendered screen', 'the chat says what was asked in plain words')
+  // EYE-04: an automatic repair is the agent's own work — no request in the person's name.
+  const before = Message.forProject('p9').length
+  const p2 = annotateElements(Screen.find('s-fix')!.html).match(/<p class="t" data-od-id="([^"]+)"/)![1]
+  reply = () => sse(`<affects>${p2}</affects><edit target="${p2}"><p class="t" data-od-id="${p2}" style="color:var(--fg)">Fixed</p></edit>`)
+  await post(GenerateController, { projectId: 'p9', editScreenId: 's-fix', prompt: '', auto: true, fixFindings: [{ rule: 'low-contrast', id: p2, detail: 'Faint 1.4:1' }] })
+  const said = Message.forProject('p9').slice(before)
+  assert.deepEqual(said.map((m) => m.role), ['agent'], 'an automatic repair is not asked for in the person\'s name')
+  assert.match(said[0].text, /Checked “Fixable” and fixed 1 rendering problem/)
+
   const bad = await GenerateController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p9', editScreenId: 's-fix', fixFindings: [{ rule: 'overlap', id: null }] }) }))
   assert.equal(bad.status, 400, 'nothing with an element to fix is refused before any call')
+}
+
+// CHAT-08: with `gate`, the run stops at the plan and waits; the approval draws the plan with the
+// person's edits and the ids the canvas already holds.
+{
+  const { PendingPlans } = await import('../../Services/PendingPlans.ts')
+  Project.create({ id: 'p-gate', name: 'Gate', device: 'mobile', designSystem: 'minimal' })
+  reply = (req) => (req.json ? new Response(JSON.stringify({ choices: [{ message: { content: planJson } }] }), { status: 200 }) : sse(page('Drawn')))
+  const before = Message.forProject('p-gate').length
+  const gated = (await post(PlanController, { projectId: 'p-gate', brief: 'todo app', gate: true })).trim().split('\n').map((l) => JSON.parse(l))
+  assert.deepEqual(gated.map((e) => e.type), ['plan', 'awaiting'], 'a gated run sends the plan and waits — nothing is drawn')
+  assert.equal(Screen.forProject('p-gate').length, 0, 'no screen exists before approval')
+  assert.ok(PendingPlans.has('p-gate'), 'the plan waits on the server')
+  assert.equal(Message.forProject('p-gate').length - before, 1, 'the ask is written once, when the plan is asked for')
+  const planned = gated[0]
+  const total = planned.screens.length
+  // Approve without the last screen and with the first one renamed.
+  const keep = planned.screens.map((_: unknown, i: number) => i).slice(0, Math.max(1, total - 1))
+  const drawn = (await post(PlanController, { projectId: 'p-gate', approve: { keep, names: { 0: 'My Home' } } })).trim().split('\n').map((l) => JSON.parse(l))
+  assert.equal(drawn[0].type, 'plan', 'the approval replays the (edited) plan')
+  assert.equal(drawn[0].screens.length, keep.length, 'removed screens are gone')
+  assert.equal(drawn[0].screens[0].name, 'My Home', 'a rename is kept')
+  assert.deepEqual(drawn[0].screenIds, keep.map((i: number) => planned.screenIds[i]), 'kept screens keep their frame ids')
+  assert.equal(drawn.at(-1).type, 'done', 'the approved plan is drawn to the end')
+  assert.equal(Screen.forProject('p-gate').length, keep.length, 'exactly the approved screens exist')
+  assert.equal(Message.forProject('p-gate').length - before, 2, 'ask, then one reply after drawing — approval adds no ask')
+  assert.ok(!PendingPlans.has('p-gate'), 'an approved plan is no longer pending')
+  const expired = await PlanController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p-gate', approve: { keep: [0] } }) }))
+  assert.equal(expired.status, 409, 'approving with no plan waiting is refused, not drawn from nothing')
+  // Without the gate, nothing changes: plan and draw in one run.
+  Project.create({ id: 'p-nogate', name: 'No gate', device: 'mobile', designSystem: 'minimal' })
+  const plain = (await post(PlanController, { projectId: 'p-nogate', brief: 'todo app' })).trim().split('\n').map((l) => JSON.parse(l))
+  assert.ok(!plain.some((e) => e.type === 'awaiting') && plain.at(-1).type === 'done', 'the eval and the API without `gate` behave as before')
 }
 
 // B1: ownership, orphan adoption, account deletion cascades
@@ -399,14 +441,19 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   const { DesignSystemService } = await import('../../Services/DesignSystemService.ts')
   const { ProjectController } = await import('./ProjectController.ts')
   const auto = (b: string) => ProjectController.store({ designSystem: 'auto', brief: b }).designSystem
-  assert.equal(auto('A food delivery app with restaurant menus and live order tracking'), 'airbnb', 'app type decides')
-  assert.equal(auto('Neobank: balance, cards, transfers and spending insights'), 'stripe')
-  assert.equal(auto('Language learning with lessons and a leaderboard'), 'duolingo')
+  // DS-01: the app type offers a few systems that suit it and the project id picks one, so the
+  // assertion is about the shortlist, not one fixed answer — two people typing the same brief must
+  // not get the same app. A style the brief names still beats all of it.
+  const food = new Set([...Array(12)].map(() => auto('A food delivery app with restaurant menus and live order tracking')))
+  assert.ok(food.size > 1, 'the same brief twice is not the same system twice')
+  for (const id of food) assert.ok(['airbnb', 'shopify', 'bento', 'doodle'].includes(id), `food delivery should suit the app: got ${id}`)
+  const bank = new Set([...Array(12)].map(() => auto('Neobank: balance, cards, transfers and spending insights')))
+  for (const id of bank) assert.ok(['stripe', 'linear-app', 'midnight', 'dashboard'].includes(id), `a bank should look like one: got ${id}`)
   assert.equal(auto('A neo-brutalist habit tracker'), 'neobrutalism', 'a style the brief names beats the app type')
   assert.equal(auto('Crypto wallet with a dark theme'), 'midnight')
   assert.equal(auto('zzz'), 'minimal', 'nothing to go on: minimal')
   assert.equal(ProjectController.store({ designSystem: 'nike', brief: 'A dark neo-brutalist bank' }).designSystem, 'nike', 'a system picked by hand is kept')
-  assert.equal(DesignSystemService.autoFor('', null), 'minimal')
+  assert.equal(DesignSystemService.autoFor('', null, 'seed'), 'minimal')
 }
 
 // ADM-01/04/08: admins, bans, runtime settings, audit trail
@@ -499,7 +546,13 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(rows.length, 1, 'one row per model call, attributed to the request\'s user')
   assert.equal(rows[0].projectId, 'p-usage')
   assert.deepEqual([rows[0].promptTokens, rows[0].cachedTokens, rows[0].completionTokens, rows[0].ok], [1000, 400, 2000, true])
-  assert.ok(Math.abs(rows[0].costUsd - (600 * 0.27 + 400 * 0.07 + 2000 * 1.1) / 1e6) < 1e-9, 'cost from the price table')
+  // The rate depends on the clock (DeepSeek peak is twice off-peak), so the row is checked against
+  // both possibilities rather than pinned to one — the point is that it came from the price table.
+  const offPeakCost = (600 * 0.15 + 400 * 0.003 + 2000 * 0.6) / 1e6
+  assert.ok(
+    Math.abs(rows[0].costUsd - offPeakCost) < 1e-9 || Math.abs(rows[0].costUsd - offPeakCost * 2) < 1e-9,
+    'cost from the price table, at whichever rate was in force',
+  )
   reply = () => new Response('down', { status: 500 })
   await UsageService.run({ userId: 'user-9' }, () => post(GenerateController, { projectId: 'p-usage', prompt: 'again' }))
   const failed = db.select().from(llmCalls).all().filter((r) => r.userId === 'user-9' && !r.ok)

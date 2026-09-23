@@ -38,7 +38,7 @@
   --fg:   rgba(0, 0, 0, 0.95);           /* near-black — primary text */
   --fg-2: #31302e;                       /* warm dark — headings on surfaces */
   --muted: #615d59;                      /* warm gray 500 — secondary text */
-  --meta:  #a39e98;                      /* warm gray 300 — placeholder/captions */
+  --meta:  #74706c;                      /* warm gray 300 — placeholder/captions */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      rgba(0, 0, 0, 0.1);    /* whisper border — standard */

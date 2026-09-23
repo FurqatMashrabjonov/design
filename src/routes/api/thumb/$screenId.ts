@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { userFrom } from '@/server/auth'
 import { Screen } from '@/app/Models/Screen'
+import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Project } from '@/app/Models/Project'
 import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
 
@@ -16,7 +17,11 @@ export const Route = createFileRoute('/api/thumb/$screenId')({
         // The owner, or an admin (ADM-05) — the panel shows every project's cover the same way.
         const project = screen && !screen.deletedAt && screen.html ? (user!.admin ? Project.find(screen.projectId) : Project.findOwned(screen.projectId, user!.id)) : undefined
         if (!screen || !project) return new Response('Not found', { status: 404 })
-        return new Response(applyThemeOverride(screen.html, parseTheme(project.theme)), {
+        // CHAT-06: ?v=<versionId> is the screen as it was before a change — the "before" thumbnail.
+        const v = new URL(request.url).searchParams.get('v')
+        const version = v ? ScreenVersion.findInScreen(v, screen.id) : undefined
+        if (v && !version) return new Response('Not found', { status: 404 })
+        return new Response(applyThemeOverride(version?.html ?? screen.html, parseTheme(project.theme)), {
           headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, max-age=60', 'x-content-type-options': 'nosniff',
             // Opened on its own, the page still runs in an opaque origin: generated HTML never gets ours.
             'content-security-policy': 'sandbox allow-scripts',

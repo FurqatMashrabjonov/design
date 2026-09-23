@@ -31,8 +31,8 @@
    * Hare for tertiary. Each tier carries clear, child-readable contrast. */
   --fg: #3c3c3c;             /* Eel Black — primary text, headings, button labels */
   --fg-2: var(--fg);         /* alias — single primary text weight throughout */
-  --muted: #777777;          /* Wolf — secondary text, captions, dividers */
-  --meta: #afafaf;           /* Hare — tertiary metadata, placeholder, disabled */
+  --muted: #717171;          /* Wolf — secondary text, captions, dividers */
+  --meta: #717171;           /* Hare — tertiary metadata, placeholder, disabled */
 
   /* ─── Border ──────────────────────────────────────────────────────
    * Swan grey at thick 2–3px on most surfaces. Borders are visual,

@@ -62,6 +62,11 @@ export const Project = {
     return Project.find(data.id)!
   },
 
+  /** IMG-02: the reference picture decides the look, so it may replace the system chosen from text. */
+  saveDesignSystem(id: string, designSystem: string) {
+    db.update(projects).set({ designSystem }).where(eq(projects.id, id)).run()
+  },
+
   rename(id: string, name: string) {
     db.update(projects).set({ name }).where(eq(projects.id, id)).run()
   },

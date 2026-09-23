@@ -1,5 +1,6 @@
 import type { AppNavigation, Entity, PlannedScreen } from './PlannerService.ts'
-import { buildBottomNav, buildDetailHeader, HEADER_HEIGHT, NAV_CLEARANCE, NAV_HEIGHT } from './ShellService.ts'
+import type { ReferenceStyle } from './ReferenceService.ts'
+import { buildBottomNav, buildDetailHeader, HEADER_HEIGHT, NAV_HEIGHT, navClearance, navStyle, type NavStyle } from './ShellService.ts'
 import type { ShellParts } from '../../lib/screen-normalizer.ts'
 import { BlueprintService } from './BlueprintService.ts'
 
@@ -20,7 +21,12 @@ export type ExistingScreen = { name: string; screenType: string; activeTabId: st
 const tabLabels = (nav: AppNavigation) => nav.tabs.map((t) => t.label).join(', ')
 const activeLabel = (slot: ScreenSlot, nav: AppNavigation) => nav.tabs.find((t) => t.id === slot.activeTabId)?.label ?? slot.name ?? ''
 
-export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean): string {
+/** NAV-01: the bar this app builds — decided once, from its character and name, for every screen. */
+export function navStyleFor(appName: string, nav: AppNavigation, about: { appType?: string; designSystem?: string } = {}): NavStyle {
+  return navStyle(appName || 'app', { tabCount: nav.tabs.length, ...about })
+}
+
+export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean, style: NavStyle = 'island'): string {
   if (!isMobile) {
     return `SIDEBAR CONTRACT
 1. Render the shared sidebar with EXACTLY these items in this order: [${tabLabels(nav)}].
@@ -32,7 +38,7 @@ export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
 1. A shared ${NAV_HEIGHT}px bottom tab bar ([${tabLabels(nav)}]) is added to your page automatically AFTER you finish.
 2. Do NOT render a bottom nav, tab bar, or floating action button yourself — a second one will collide with it.
 3. This screen is the "${activeLabel(slot, nav)}" tab; the injected bar highlights it.
-4. End your page content with ${NAV_CLEARANCE}px of bottom padding so nothing hides behind the bar.`
+4. End your page content with ${navClearance(style)}px of bottom padding so nothing hides behind the bar.`
   }
   const title = slot.name ? `the title "${slot.name}"` : `this screen's title`
   return `SHELL CONTRACT — the shared chrome is injected for you
@@ -44,10 +50,10 @@ export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
 
 // Mobile shells are assembled in code so every screen gets byte-identical markup.
 // Desktop has no sidebar builder yet, so it stays on the prose contract.
-export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean, title: string): ShellParts {
+export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean, title: string, style: NavStyle = 'island'): ShellParts {
   if (!isMobile) return {}
   return slot.screenType === 'root-tab'
-    ? { nav: buildBottomNav(nav, slot.activeTabId) }
+    ? { nav: buildBottomNav(nav, slot.activeTabId, style) }
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home') }
 }
 
@@ -122,11 +128,17 @@ export function screenSpec(s: PlannedScreen, seed?: string): string {
 }
 
 /** What Project.plan holds; tolerant of nulls and of JSON written by an older version. */
-export function parseStoredPlan(json: string | null | undefined): { summary: string; appType: string; entities: Entity[] } | null {
+export function parseStoredPlan(json: string | null | undefined): { summary: string; appType: string; entities: Entity[]; reference: ReferenceStyle } | null {
   try {
     const p = JSON.parse(json ?? 'null')
     if (!p || typeof p !== 'object') return null
-    return { summary: typeof p.summary === 'string' ? p.summary : '', appType: typeof p.appType === 'string' ? p.appType : 'other', entities: Array.isArray(p.entities) ? p.entities : [] }
+    return {
+      summary: typeof p.summary === 'string' ? p.summary : '',
+      appType: typeof p.appType === 'string' ? p.appType : 'other',
+      entities: Array.isArray(p.entities) ? p.entities : [],
+      // IMG-01: the reference picture as it was read, so a screen added later is built the same way.
+      reference: p.reference && typeof p.reference === 'object' ? (p.reference as ReferenceStyle) : { composition: '', mood: [] },
+    }
   } catch {
     return null
   }

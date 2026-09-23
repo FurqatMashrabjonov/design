@@ -3,6 +3,9 @@
 import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
 import { BlueprintService } from '../src/app/Services/BlueprintService.ts'
+import type { NavStyle } from '../src/app/Services/ShellService.ts'
+
+const NAV_STYLES: NavStyle[] = ['island', 'pill', 'contrast', 'bar']
 
 export type ScreenInput = { briefId: string; designSystem: string; name: string; screenType: string; ms: number; html: string; added?: boolean }
 export type PlanInput = { briefId: string; expect: string[]; archetypes: string[]; requested: string[]; uncovered: string[]; tabs: number; entityItems: string[] }
@@ -41,6 +44,11 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
 
 const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : 0)
 const round = (n: number, d = 3) => Number(n.toFixed(d))
+const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
+// The markup, with every stylesheet dropped: a kit class is counted where it is used, never where
+// od-kit.css defines it. And the CSS the model wrote itself — the injected sheets all carry data-od-*.
+const body = (html: string) => html.replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+const ownStyle = (html: string) => [...html.matchAll(/<style(?![^>]*\bdata-od)[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n')
 
 // USD per million tokens. ponytail: constants, overridable by env; move to config when OBS-01 logs real cost.
 import { PRICE } from '../src/app/Services/LlmService.ts'
@@ -98,6 +106,30 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       rootTabShare: share(screens.filter((s) => s.screenType === 'root-tab').length),
       briefsWithoutDetail: briefIds.filter((id) => screens.filter((s) => s.briefId === id).every((s) => s.screenType === 'root-tab')).length,
     },
+    // NAV-04: which bottom bar each app got, and whether the page left room for it.
+    shell: {
+      navStyle: NAV_STYLES.reduce<Record<string, number>>((acc, style) => {
+        acc[style] = screens.filter((s) => s.html.includes(`data-od-nav="${style}"`)).length
+        return acc
+      }, {}),
+      // A floating bar covers the page's last rows unless the page ends with clearance.
+      navWithoutClearance: screens.filter((s) => /data-od-nav="(island|pill|contrast)"/.test(s.html) && !/padding-bottom:\s*1\d\dpx\s*!important/.test(s.html)).length,
+    },
+    // CRAFT-03: the traits that cluster in generic AI output (anthropics/frontend-design). Counted
+    // before anything is done about them — that is how every failure mode here starts.
+    tells: {
+      // An eyebrow is SMALL, TRACKED-OUT caps used as a label — not an uppercase display headline,
+      // which 21 of the 33 design systems ask for by name (Nike's whole identity is one). Counting
+      // the property alone scored those systems as defective; the pattern needs all three parts.
+      capsEyebrow: screens.reduce((n, s) => n + (s.html.match(/\{[^{}]*text-transform\s*:\s*uppercase[^{}]*\}/gi) ?? []).filter((rule) => {
+        const size = rule.match(/font-size\s*:\s*(\d+(?:\.\d+)?)px/i)
+        const px = size ? Number(size[1]) : /var\(--text-(xs|sm)\)/.test(rule) ? 12 : NaN
+        return px <= 12 && /letter-spacing\s*:\s*(0?\.\d+|[1-9])/.test(rule)
+      }).length, 0),
+      middleDotMeta: screens.filter((s) => (visibleText(s.html).match(/\s·\s/g)?.length ?? 0) >= 4).length,
+      monoLabels: screens.filter((s) => /font-family\s*:[^;]*mono/i.test(s.html)).length,
+      creamTerracotta: screens.filter((s) => /#f4f1ea/i.test(s.html) && /#d97757/i.test(s.html)).length,
+    },
     plan: plans.length ? planMetrics(plans, screens) : undefined,
     images: {
       filled: screens.reduce((n, s) => n + (s.html.match(/data-od-img-resolved/g)?.length ?? 0), 0),
@@ -106,6 +138,14 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       avatarFaces: screens.reduce((n, s) => n + (s.html.match(/<img\b[^>]*data-od-avatar-resolved/g)?.length ?? 0), 0),
       avatarInitials: screens.reduce((n, s) => n + (s.html.match(/<span\b[^>]*data-od-avatar-resolved/g)?.length ?? 0), 0),
       screensWithPhoto: share(screens.filter((s) => /data-od-img-resolved/.test(s.html)).length),
+    },
+    // KIT-05: the shared kit is offered to every screen as a sketch of its pattern and injected
+    // when used, so a screen that ignores it hand-writes styling the kit already carries. `ownRules`
+    // is what the model wrote itself — the injected sheets are stripped before counting.
+    kit: {
+      screensUsing: share(screens.filter((s) => /class="[^"]*\bod-[a-z-]+/.test(body(s.html))).length),
+      blocksMean: round(mean(screens.map((s) => new Set([...body(s.html).matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1]!.split(/\s+/)).filter((c) => c.startsWith('od-')).map((c) => c.split('__')[0]!)).size))),
+      ownRules: round(mean(screens.map((s) => ownStyle(s.html).split('{').length - 1))),
     },
     // KIT-03: charts drawn by code from a data-od-chart slot, versus charts the model drew itself.
     charts: {
@@ -119,6 +159,7 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
     },
     time: { screenP50Ms: median(screens.map((s) => s.ms)), briefP50Ms: median(briefMs) },
     usage: usage && {
+      // At DeepSeek's off-peak (base) rate — a run is a planning number, and peak is simply double.
       ...usage,
       estCostUsd: round(
         ((usage.promptTokens - usage.cachedTokens) * PRICE.input + usage.cachedTokens * PRICE.cached + usage.completionTokens * PRICE.output) / 1e6,

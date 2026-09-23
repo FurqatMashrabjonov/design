@@ -110,7 +110,7 @@
    * Mid Gray in the brand spec. */
   --fg: #242424;                   /* Charcoal — primary text, button bg, signature near-black */
   --fg-2: #111111;                 /* Midnight — deepest text, nav, high-contrast emphasis */
-  --muted: #898989;                /* Mid Gray — descriptions, secondary labels, muted content */
+  --muted: #767676;                /* Mid Gray — descriptions, secondary labels, muted content */
   --meta: var(--muted);            /* alias — Cal has only three grayscale tiers */
 
   /* ─── Border ──────────────────────────────────────────────────────

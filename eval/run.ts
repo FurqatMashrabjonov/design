@@ -74,7 +74,7 @@ async function runBrief(b: Brief): Promise<BriefResult> {
   const started = Date.now()
   const projectId = crypto.randomUUID()
   // "auto" briefs go through the same choice the product makes (GQ-03).
-  const designSystem = b.designSystem === 'auto' ? DesignSystemService.autoFor(b.brief, AppPatternService.classify(b.brief)?.id) : b.designSystem
+  const designSystem = b.designSystem === 'auto' ? DesignSystemService.autoFor(b.brief, AppPatternService.classify(b.brief)?.id, projectId) : b.designSystem
   b.designSystem = designSystem
   Project.create({ id: projectId, name: b.id, designSystem, device: 'mobile' })
 

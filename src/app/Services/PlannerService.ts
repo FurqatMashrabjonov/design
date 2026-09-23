@@ -178,7 +178,26 @@ export function parsePlan(raw: string): Plan {
 export const MAX_SCREENS = 6
 
 /** Slots, links and tabs made consistent with each other — after parsing, and again after trimming. */
-function settleScreens(drafted: PlannedScreen[], navigation: AppNavigation, appName: string): PlannedScreen[] {
+/**
+ * Applies the person's edits to a planned screen list (CHAT-08): screens they removed are gone,
+ * renames are kept, and the slots, links and tabs are made true again. Only names change and only
+ * planned screens survive, so an edited plan is still the planner's plan.
+ */
+export function editPlan(plan: Plan, edits: { keep?: number[]; names?: Record<number, string> }): Plan {
+  const keep = new Set(edits.keep ?? plan.screens.map((_, i) => i))
+  const clean = (v: unknown) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 60) : '')
+  const kept = plan.screens
+    .map((s, i) => ({ s, i }))
+    .filter(({ i }) => keep.has(i))
+    .map(({ s, i }) => ({ ...s, name: clean(edits.names?.[i]) || s.name }))
+  if (kept.length === 0) return plan
+  const navigation = { ...plan.navigation, tabs: plan.navigation.tabs.map((t) => ({ ...t })) }
+  const screens = settleScreens(kept, navigation, plan.appName)
+  const covered = new Set(screens.flatMap((s) => s.covers))
+  return { ...plan, navigation, screens, uncovered: plan.requested.filter((_, i) => !covered.has(i)) }
+}
+
+export function settleScreens(drafted: PlannedScreen[], navigation: AppNavigation, appName: string): PlannedScreen[] {
   const screens = assignScreenSlots(drafted, navigation)
   // A link only means something if it names another screen of this plan.
   for (const s of screens) {

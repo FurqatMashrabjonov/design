@@ -136,7 +136,7 @@
   --fg: #fafafa;                             /* Off White — primary text, headings */
   --fg-2: #b4b4b4;                           /* Light Gray — secondary body, links */
   --muted: #898989;                          /* Mid Gray — captions, footer, muted */
-  --meta: #4d4d4d;                           /* Dark Gray — tertiary metadata, disabled */
+  --meta: #848484;                           /* Dark Gray — tertiary metadata, disabled */
 
   /* ─── Border (2 levels) ──────────────────────────────────────────
    * Border-as-depth is THE depth system (DESIGN.md §6: "depth comes

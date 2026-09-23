@@ -11,9 +11,9 @@
 
 export const EDIT_BRIDGE = `
 <style id="__od_edit_bridge">
-  html[data-od-active] [data-od-hover] { outline: 1.5px solid #3b82f6 !important; outline-offset: 1px !important; }
-  html[data-od-active] [data-od-selected] { outline: 2px solid #2563eb !important; outline-offset: 2px !important; }
-  html[data-od-active] [data-od-editing] { outline: 2px solid #2563eb !important; outline-offset: 2px !important; cursor: text !important; }
+  html[data-od-active] [data-od-hover] { outline: 1.5px solid #14b892 !important; outline-offset: 1px !important; }
+  html[data-od-active] [data-od-selected] { outline: 2px solid #0d9d78 !important; outline-offset: 2px !important; }
+  html[data-od-active] [data-od-editing] { outline: 2px solid #0d9d78 !important; outline-offset: 2px !important; cursor: text !important; }
   html[data-od-active], html[data-od-active] * { cursor: default; }
 </style>
 <script id="__od_edit_bridge_js">
@@ -45,6 +45,7 @@ export const EDIT_BRIDGE = `
     if (hover) hover.removeAttribute('data-od-hover');
     hover = el;
     if (hover && hover.getAttribute('data-od-id') !== selectedId) hover.setAttribute('data-od-hover', '');
+    post({ type: 'od:hover_element', tag: hover ? hover.tagName.toLowerCase() : null, rect: hover ? rectOf(hover) : null });
   }
   function paintSelected() {
     var old = document.querySelectorAll('[data-od-selected]');

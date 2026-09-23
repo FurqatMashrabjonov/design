@@ -285,7 +285,7 @@ export function Canvas(props: {
   const dotSize = 22 * view.scale
   const bg = useMemo(
     () => ({
-      backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
+      backgroundImage: 'radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px)',
       backgroundSize: `${dotSize}px ${dotSize}px`,
       backgroundPosition: `${view.x}px ${view.y}px`,
     }),
@@ -293,7 +293,7 @@ export function Canvas(props: {
   )
 
   return (
-    <div className="relative size-full select-none overflow-hidden bg-muted/30" style={bg}>
+    <div className="relative size-full select-none overflow-hidden bg-canvas" style={bg}>
       <div
         ref={viewportRef}
         data-canvas-viewport

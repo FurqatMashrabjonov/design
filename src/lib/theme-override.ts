@@ -11,17 +11,18 @@
 export type Radius = 'sharp' | 'soft' | 'round'
 
 /** The colour tokens every design system defines (services.check enforces the schema), editable one by one. */
+// UI-04: `hint` says what a token paints, so the panel does not assume the reader knows the names.
 export const COLOR_TOKENS = [
-  { id: 'bg', label: 'Background' },
-  { id: 'surface', label: 'Card / surface' },
-  { id: 'surface-warm', label: 'Surface 2' },
-  { id: 'fg', label: 'Text' },
-  { id: 'fg-2', label: 'Secondary text' },
-  { id: 'muted', label: 'Muted text' },
-  { id: 'border', label: 'Border' },
-  { id: 'success', label: 'Success' },
-  { id: 'warn', label: 'Warning' },
-  { id: 'danger', label: 'Danger' },
+  { id: 'bg', label: 'Background', hint: 'The page behind everything.' },
+  { id: 'surface', label: 'Card / surface', hint: 'Cards, sheets and the bars that sit on the page.' },
+  { id: 'surface-warm', label: 'Surface 2', hint: 'The second surface: inputs, list rows, quiet panels.' },
+  { id: 'fg', label: 'Text', hint: 'Headings and body text.' },
+  { id: 'fg-2', label: 'Secondary text', hint: 'Supporting lines next to the main text.' },
+  { id: 'muted', label: 'Muted text', hint: 'Labels, captions and placeholders.' },
+  { id: 'border', label: 'Border', hint: 'Hairlines around cards, inputs and dividers.' },
+  { id: 'success', label: 'Success', hint: 'Done, paid, in stock.' },
+  { id: 'warn', label: 'Warning', hint: 'Pending, low balance, careful.' },
+  { id: 'danger', label: 'Danger', hint: 'Errors and destructive actions.' },
 ] as const
 export type ColorToken = (typeof COLOR_TOKENS)[number]['id']
 

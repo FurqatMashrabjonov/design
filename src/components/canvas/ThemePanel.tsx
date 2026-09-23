@@ -1,4 +1,4 @@
-import { RotateCcw } from 'lucide-react'
+import { ChevronRight, Info, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { COLOR_TOKENS, FONTS, isEmptyTheme, type ColorToken, type Theme } from '@/lib/theme-override'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,22 @@ const SWATCHES = ['#2952cc', '#e11d48', '#ea580c', '#16a34a', '#0d9488', '#7c3ae
 const selectClass =
   'h-9 w-full rounded-md border bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
 
+/** UI-04: a section that folds away, so the panel is a list of decisions and not a wall. */
+function Section(props: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <details open className="group border-t pt-3 first:border-t-0 first:pt-0">
+      <summary className="mb-2 flex cursor-pointer list-none items-center justify-between text-muted-foreground marker:content-['']">
+        <span className="flex items-center gap-1">
+          <ChevronRight className="size-3.5 transition-transform group-open:rotate-90" />
+          {props.title}
+        </span>
+        <span onClick={(e) => e.preventDefault()}>{props.action}</span>
+      </summary>
+      <div className="space-y-2 pb-1">{props.children}</div>
+    </details>
+  )
+}
+
 export function ThemePanel(props: {
   theme: Theme
   /** The design system's own accent, shown while no override is set. */
@@ -15,6 +31,8 @@ export function ThemePanel(props: {
   /** The design system's own token values (`--bg` → `#fff`), shown while a token is not overridden. */
   base: Map<string, string>
   onChange: (theme: Theme) => void
+  /** UI-04: show a theme on the canvas without saving it; null puts the saved one back. */
+  onPreview?: (theme: Theme | null) => void
 }) {
   const { theme } = props
   const set = (patch: Partial<Theme>) => {
@@ -46,8 +64,7 @@ export function ThemePanel(props: {
         <p className="mt-1 text-xs text-muted-foreground">Restyles every screen instantly — nothing is regenerated.</p>
       </div>
 
-      <section className="space-y-2">
-        <div className="text-muted-foreground">Accent</div>
+      <Section title="Accent">
         <div className="flex flex-wrap items-center gap-2">
           {SWATCHES.map((c) => (
             <button
@@ -55,6 +72,8 @@ export function ThemePanel(props: {
               type="button"
               aria-label={`Accent ${c}`}
               onClick={() => set({ accent: c })}
+              onPointerEnter={() => props.onPreview?.({ ...theme, accent: c })}
+              onPointerLeave={() => props.onPreview?.(null)}
               className={cn('size-7 rounded-full border transition-transform hover:scale-110', accent === c && 'ring-2 ring-ring ring-offset-2')}
               style={{ background: c }}
             />
@@ -71,17 +90,16 @@ export function ThemePanel(props: {
           </label>
         </div>
         <div className="font-mono text-xs text-muted-foreground">{accent}</div>
-      </section>
+      </Section>
 
-      <section className="space-y-2">
-        <div className="text-muted-foreground">Colours</div>
+      <Section title="Colours">
         <ul className="space-y-1">
-          {COLOR_TOKENS.map(({ id, label }) => {
+          {COLOR_TOKENS.map(({ id, label, hint }) => {
             const own = props.base.get(`--${id}`)
             const value = theme.colors?.[id]
             const shown = value ?? own ?? ''
             return (
-              <li key={id} className="flex items-center gap-2">
+              <li key={id} className="flex items-center gap-2" title={hint}>
                 <label className="relative size-6 shrink-0 cursor-pointer overflow-hidden rounded-md border" title={`${label} colour`}>
                   <input
                     type="color"
@@ -92,7 +110,11 @@ export function ThemePanel(props: {
                   />
                   <span className="block size-full" style={{ background: shown || 'transparent' }} />
                 </label>
-                <span className="min-w-0 flex-1 truncate">{label}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
+                  {label}
+                  <Info className="size-3 shrink-0 text-muted-foreground/70" aria-hidden />
+                  <span className="sr-only">{hint}</span>
+                </span>
                 <span className={cn('max-w-24 truncate font-mono text-xs', value ? 'text-foreground' : 'text-muted-foreground')} title={shown}>
                   {shown}
                 </span>
@@ -110,11 +132,11 @@ export function ThemePanel(props: {
             )
           })}
         </ul>
-      </section>
+      </Section>
 
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-muted-foreground">Corners</span>
+      <Section
+        title="Corners"
+        action={
           <button
             type="button"
             onClick={() => set({ radius: undefined, radiusPx: undefined })}
@@ -123,7 +145,8 @@ export function ThemePanel(props: {
           >
             Default
           </button>
-        </div>
+        }
+      >
         <div className="flex items-center gap-3">
           <input
             type="range"
@@ -153,17 +176,19 @@ export function ThemePanel(props: {
             </button>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <FontSelect label="Heading font" value={theme.headingFont} onChange={(v) => set({ headingFont: v })} />
-      <FontSelect label="Body font" value={theme.bodyFont} onChange={(v) => set({ bodyFont: v })} />
+      <Section title="Fonts">
+        <FontSelect label="Heading font" value={theme.headingFont} onChange={(v) => set({ headingFont: v })} />
+        <FontSelect label="Body font" value={theme.bodyFont} onChange={(v) => set({ bodyFont: v })} />
+      </Section>
     </div>
   )
 }
 
 function FontSelect(props: { label: string; value?: string; onChange: (id: string | undefined) => void }) {
   return (
-    <section className="space-y-2">
+    <div className="space-y-2">
       <label className="block text-muted-foreground">
         {props.label}
         <select className={cn(selectClass, 'mt-2 text-foreground')} value={props.value ?? ''} onChange={(e) => props.onChange(e.target.value || undefined)}>
@@ -184,6 +209,6 @@ function FontSelect(props: { label: string; value?: string; onChange: (id: strin
           </optgroup>
         </select>
       </label>
-    </section>
+    </div>
   )
 }

@@ -221,6 +221,7 @@ assert.equal(elementInfo(a1, 'button-1').textEditable, true)
   assert.ok(html.includes('border-radius:var(--radius-pill)') && !html.includes('border-radius:var(--radius-lg)'), 'radii likewise')
   assert.ok(html.includes('fonts.googleapis.com') && !html.includes('evil.example'), 'only Google Fonts stylesheets are linked')
   assert.ok(html.includes('Air&lt;bnb&gt;'), 'the name is escaped')
+  assert.ok(html.includes('class="cols"') && html.split('<section>').length === 3, 'THM-09: two columns, so the frame is wide and not mistaken for a screen')
   assert.ok(!/#[0-9a-f]{3,6}/i.test(html.replace(root, '').replace(/#fff\b/, '')), 'no colour is hardcoded outside the tokens (so the theme restyles everything)')
 }
 

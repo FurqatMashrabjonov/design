@@ -1,5 +1,7 @@
 import { artBlock, artDirection } from '@/lib/art-direction'
 import { fixInstruction, parseAudit } from '@/lib/render-audit'
+import { parseRefImages, refImageNote } from '@/lib/ref-images'
+import { referenceBlock } from '@/app/Services/ReferenceService'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen, type ScreenRow } from '@/app/Models/Screen'
@@ -16,8 +18,8 @@ import { extractElement, patchElement } from '@/lib/element-patcher'
 import { annotateElements, elementInfo } from '@/lib/element-ops'
 import { applyEdits, EDIT_MODE, parseAffects, parseEdits } from '@/lib/screen-patch'
 import { normalizeScreen, extractStyleDigest } from '@/lib/screen-normalizer'
-import { NAV_CLEARANCE } from '@/app/Services/ShellService'
-import { dataBlock, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
+import { navClearance, type NavStyle } from '@/app/Services/ShellService'
+import { dataBlock, navStyleFor, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
 import { autofixScreen } from '@/lib/design-lint'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
@@ -37,6 +39,9 @@ export const GenerateController = {
     if (fixes.length) prompt = fixInstruction(fixes)
     if (Array.isArray(body.fixFindings) && !prompt) return new Response('No problem with an element to fix', { status: 400 })
     if (!regenerateId && (!prompt || prompt.length > 4000)) return new Response('Prompt must be 1-4000 characters', { status: 400 })
+    // LLM-02: pictures the person attached to this request. Validated here because they come from
+    // the browser, and they ride this one request only — an image is prompt tokens every time.
+    const refImages = parseRefImages(body.images)
 
     let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation' | 'plan'>>) | undefined
     let isNew = false
@@ -69,7 +74,7 @@ export const GenerateController = {
 
     let systemPrompt: string
     let userMessage: string
-    let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot } | undefined
+    let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot; bar: NavStyle } | undefined
 
     // The browser addresses elements by the ids annotateElements gives the stored HTML; so does this.
     const editBase = editScreen?.html ? annotateElements(editScreen.html) : ''
@@ -107,15 +112,15 @@ export const GenerateController = {
           ? { name: redraw.name, screenType: redraw.screenType as ScreenSlot['screenType'], activeTabId: redraw.activeTabId ?? undefined, parentScreen: redraw.parentScreenName ?? undefined }
           : slotForAddedScreen(prompt, nav, siblings)
         const anchor = siblings.find((s) => s.screenType === 'root-tab') ?? siblings[0]
-        addTo = { nav, slot }
+        addTo = { nav, slot, bar: navStyleFor(project.name ?? 'Untitled', nav, { appType: parseStoredPlan(project.plan)?.appType, designSystem: project.designSystem }) }
         const stored = parseStoredPlan(project.plan)
         userMessage = screenBrief({
           app: stored?.summary ? `${project.name ?? 'Untitled'} — ${stored.summary}` : (project.name ?? 'Untitled'),
           data: dataBlock(stored?.entities ?? []),
           // The same direction the planned screens got: seeded by the project, not by the request.
-          art: artBlock(artDirection(project.id, stored?.appType)),
+          art: [artBlock(artDirection(project.id, stored?.appType)), referenceBlock(stored?.reference ?? { composition: '', mood: [] })].filter(Boolean).join('\n\n'),
           screenNames: siblings.map((s) => s.name),
-          contract: shellContract(slot, nav, project.device === 'mobile'),
+          contract: shellContract(slot, nav, project.device === 'mobile', addTo.bar),
           digest: anchor ? extractStyleDigest(anchor.html) : '',
           // No brief is stored with a project, so the app's language is read off the screen it already has —
           // never off the chat message: people ask for an English app's next screen in their own language.
@@ -133,9 +138,11 @@ export const GenerateController = {
     const startedAt = Date.now()
     const kind: MessageKind = redraw ? 'regenerate' : editScreen && editElementId ? 'element' : editScreen ? 'edit' : 'add'
     const fixCount = fixes.length ? fixInstruction(fixes).split('\n').length - 1 : 0
+    // EYE-04: the product checks its own work. An automatic repair is the agent's doing, so the
+    // conversation records it as such — no request in the user's name, and no list of defects.
     const ask = redraw ? `Regenerate “${redraw.name}”` : fixCount ? `Fix ${fixCount} problem${fixCount === 1 ? '' : 's'} found in the rendered screen` : String(body.prompt).trim()
     const target = redraw ?? editScreen
-    if (!isNew) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    if (!isNew && !(fixCount && body.auto === true)) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
     // Asking for a drawn screen again is a signal about it (FB-01); retrying a failed one is not.
     if (redraw?.html) FeedbackController.record(project.id, redraw.id, 'regenerate')
     const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
@@ -145,7 +152,8 @@ export const GenerateController = {
     // Cancelling the response stream (tab closed, navigation) aborts the upstream LLM call.
     const abort = new AbortController()
     const projectRef = project
-    const deltas = streamCompletion(systemPrompt, userMessage, abort.signal, (u) => Object.assign(usage, u))
+    const withRefs = refImages.length ? `${userMessage}\n\n${refImageNote(refImages.length)}` : userMessage
+    const deltas = streamCompletion(systemPrompt, withRefs, abort.signal, (u) => Object.assign(usage, u), refImages)
     let first: IteratorResult<string>
     try {
       first = await deltas.next()
@@ -217,8 +225,8 @@ export const GenerateController = {
             const extracted = extractArtifact(text)
             title = extracted.title
             if (editScreen && title === 'Untitled') title = editScreen.name
-            const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title)
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: NAV_CLEARANCE })), abort.signal, { name: projectRef.name ?? title }))
+            const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title, addTo.bar)
+            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: navClearance(addTo?.bar ?? 'island') })), abort.signal, { name: projectRef.name ?? title }))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 
@@ -269,7 +277,10 @@ export const GenerateController = {
             projectId: projectRef.id,
             role: 'agent',
             kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            text:
+              fixCount && body.auto === true
+                ? `Checked “${changed.name}” and fixed ${fixCount} rendering problem${fixCount === 1 ? '' : 's'} — now v${ScreenVersion.count(changed.id) + 1}.`
+                : changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
             meta: {
               screens: [changed],
               log: [...(patchNote?.log ?? []), `${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],

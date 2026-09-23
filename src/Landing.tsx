@@ -9,6 +9,8 @@ import { ArrowUp, Layers, MousePointerClick, Download, Palette, Undo2, BarChart3
 // ponytail: brand name is undecided (LND-01); change it here.
 export const BRAND = 'Design'
 export const PENDING_PROMPT = 'od:pending-prompt'
+/** IMG-01: reference pictures typed alongside that prompt, handed to the project page that starts the run. */
+export const PENDING_IMAGES = 'od:pending-images'
 
 const INK = '#0E0F12'
 const LIME = '#C6F24E'
@@ -47,7 +49,15 @@ export const shot = (set: string, i: number) => `/showcase/${set}-${i}.html`
 
 function HeroPrompt({ big = false }: { big?: boolean }) {
   const navigate = useNavigate()
-  const [text, setText] = useState('')
+  // A style page (MKT-06) can hand the landing a prompt on its way here; it stays in storage so it
+  // survives signing in, where index.tsx picks it up and starts the project.
+  const [text, setText] = useState(() => {
+    try {
+      return sessionStorage.getItem(PENDING_PROMPT) ?? ''
+    } catch {
+      return ''
+    }
+  })
   function go(prompt = text) {
     if (!prompt.trim()) return
     try { sessionStorage.setItem(PENDING_PROMPT, prompt.trim().slice(0, 2000)) } catch {}
@@ -57,7 +67,7 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
     <div className="w-full">
       <form
         onSubmit={(e) => { e.preventDefault(); go() }}
-        className="group rounded-2xl border border-black/10 bg-white p-2 text-left shadow-[0_1px_0_rgba(0,0,0,.04),0_20px_40px_-24px_rgba(14,15,18,.35)] transition focus-within:border-black/30"
+        className="group rounded-2xl border border-border bg-card p-2 text-left shadow-[0_1px_0_rgba(0,0,0,.04),0_20px_40px_-24px_rgba(14,15,18,.35)] transition focus-within:border-foreground/30"
       >
         <textarea
           value={text}
@@ -67,10 +77,10 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
           maxLength={2000}
           aria-label="Describe your app"
           placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
-          className="block w-full resize-none bg-transparent px-3 pt-2 text-[15px] leading-relaxed outline-none placeholder:text-black/35"
+          className="block w-full resize-none bg-transparent px-3 pt-2 text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground"
         />
         <div className="flex items-center justify-between gap-2 px-1 pt-1">
-          <span className="px-2 text-xs text-black/45">iPhone · 3–6 screens · real photos</span>
+          <span className="px-2 text-xs text-muted-foreground">iPhone · 3–6 screens · real photos</span>
           <button type="submit" className="inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40" style={{ background: INK }} disabled={!text.trim()}>
             Design it <ArrowUp className="size-4" />
           </button>
@@ -79,7 +89,7 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
       {big && (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {TRY.map((t) => (
-            <button key={t} type="button" onClick={() => setText(t)} className="rounded-full border border-black/10 bg-white/70 px-3 py-1.5 text-xs text-black/70 transition hover:border-black/30 hover:text-black">
+            <button key={t} type="button" onClick={() => setText(t)} className="rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-foreground/30 hover:text-foreground">
               {t}
             </button>
           ))}
@@ -90,7 +100,7 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
 }
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-black/45">{children}</p>
+  return <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">{children}</p>
 }
 
 function Em({ children }: { children: React.ReactNode }) {
@@ -106,9 +116,9 @@ export function Landing() {
   const [set, setSet] = useState(0)
   const active = SETS[set]
   return (
-    <div className="min-h-screen overflow-x-clip text-[#0E0F12]" style={{ background: '#FAFAF7' }}>
+    <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       {/* Nav */}
-      <header className="sticky top-0 z-30 border-b border-black/5 bg-[#FAFAF7]/80 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="grid size-7 place-items-center rounded-lg" style={{ background: INK }}>
@@ -116,13 +126,14 @@ export function Landing() {
             </span>
             {BRAND}
           </Link>
-          <nav className="hidden items-center gap-7 text-sm text-black/60 sm:flex">
-            <a href="#examples" className="hover:text-black">Examples</a>
-            <a href="#how" className="hover:text-black">How it works</a>
-            <a href="#faq" className="hover:text-black">FAQ</a>
+          <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
+            <a href="#examples" className="hover:text-foreground">Examples</a>
+            <Link to="/systems" className="hover:text-foreground">Design systems</Link>
+            <Link to="/playbook" className="hover:text-foreground">Playbook</Link>
+            <a href="#how" className="hover:text-foreground">How it works</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Link to="/login" className="hidden h-9 items-center px-3 text-sm text-black/70 hover:text-black sm:inline-flex">Sign in</Link>
+            <Link to="/login" className="hidden h-9 items-center px-3 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">Sign in</Link>
             <Link to="/login" className="inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold text-white" style={{ background: INK }}>Start free</Link>
           </div>
         </div>
@@ -132,13 +143,13 @@ export function Landing() {
       <section className="relative">
         <div className="pointer-events-none absolute inset-0 -z-0 opacity-[.5] [background-image:radial-gradient(rgba(14,15,18,.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:pt-24">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-black/60">
+          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Sparkles className="size-3.5" /> Free during beta · no card needed
           </span>
           <h1 className="text-[40px] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[64px]">
             One prompt. <br className="sm:hidden" />A <Em>whole app</Em>,<br />not a pile of screens.
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base text-black/60 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
             Describe it once. Get every screen in one design language — the same data, the same navigation, real photos — clickable, editable and ready to export.
           </p>
           <div className="mx-auto mt-8 max-w-2xl">
@@ -162,7 +173,7 @@ export function Landing() {
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>Why it looks like one app</Eyebrow>
           <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">Every screen <Em>agrees</Em> with the others.</h2>
-          <p className="mt-4 text-black/60">Other tools draw each screen on its own, so the tab bar moves, prices change and the style drifts. Here the app is planned first and consistency is enforced in code after generation.</p>
+          <p className="mt-4 text-muted-foreground">Other tools draw each screen on its own, so the tab bar moves, prices change and the style drifts. Here the app is planned first and consistency is enforced in code after generation.</p>
         </div>
         <div className="mt-4 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] sm:justify-center">
           {SETS[1].screens.map((i) => <Phone key={i} src={shot('bank-neo', i)} width={190} />)}
@@ -174,9 +185,9 @@ export function Landing() {
             ['Real photos', 'Every image slot is filled with a matching photo, never a grey box.'],
             ['One design system', '33 systems, each with its own type, colour and component personality.'],
           ].map(([t, d]) => (
-            <div key={t} className="rounded-2xl border border-black/10 bg-white p-5">
+            <div key={t} className="rounded-2xl border border-border bg-card p-5">
               <p className="font-semibold">{t}</p>
-              <p className="mt-1.5 text-sm text-black/60">{d}</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">{d}</p>
             </div>
           ))}
         </div>
@@ -227,10 +238,10 @@ export function Landing() {
             ['02', 'Get the whole app', 'A planner scopes the screens, the data and the navigation, then designs every screen in parallel.'],
             ['03', 'Click, edit, export', 'Tap through it as a prototype, change any element by clicking it, undo anything, download a zip.'],
           ].map(([n, t, d]) => (
-            <div key={n} className="rounded-3xl border border-black/10 bg-white p-7">
-              <span className="font-mono text-sm text-black/35">{n}</span>
+            <div key={n} className="rounded-3xl border border-border bg-card p-7">
+              <span className="font-mono text-sm text-muted-foreground">{n}</span>
               <p className="mt-6 text-xl font-semibold tracking-tight">{t}</p>
-              <p className="mt-2 text-black/60">{d}</p>
+              <p className="mt-2 text-muted-foreground">{d}</p>
             </div>
           ))}
         </div>
@@ -255,7 +266,7 @@ export function Landing() {
           <Eyebrow>FAQ</Eyebrow>
           <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Questions, answered.</h2>
         </div>
-        <div className="mt-10 divide-y divide-black/10 rounded-2xl border border-black/10 bg-white">
+        <div className="mt-10 divide-y divide-border rounded-2xl border border-border bg-card">
           {[
             ['What do I get from one prompt?', 'A planned app: 3–6 screens that share one navigation, one data model and one design system, each one clickable and editable.'],
             ['Is it free?', 'Yes, during the beta, with a daily generation limit. Paid plans come later; beta users will hear first.'],
@@ -267,9 +278,9 @@ export function Landing() {
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {q}
-                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-black/10 text-black/50 transition group-open:rotate-45">+</span>
+                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition group-open:rotate-45">+</span>
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-black/60">{a}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a}</p>
             </details>
           ))}
         </div>
@@ -287,14 +298,14 @@ export function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-black/5">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-black/50 sm:flex-row">
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
           <span>© {new Date().getFullYear()} {BRAND}</span>
           {/* ponytail: Terms / Privacy links land with LEG-01…04. */}
           <div className="flex gap-6">
-            <a href="#examples" className="hover:text-black">Examples</a>
-            <a href="#faq" className="hover:text-black">FAQ</a>
-            <Link to="/login" className="hover:text-black">Sign in</Link>
+            <a href="#examples" className="hover:text-foreground">Examples</a>
+            <a href="#faq" className="hover:text-foreground">FAQ</a>
+            <Link to="/login" className="hover:text-foreground">Sign in</Link>
           </div>
         </div>
       </footer>
@@ -304,12 +315,12 @@ export function Landing() {
 
 function Feature({ icon: Icon, title, text, className = '' }: { icon: typeof Layers; title: string; text: string; className?: string }) {
   return (
-    <div className={`group rounded-3xl border border-black/10 bg-white p-7 transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-28px_rgba(14,15,18,.4)] ${className}`}>
+    <div className={`group rounded-3xl border border-border bg-card p-7 transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-28px_rgba(14,15,18,.4)] ${className}`}>
       <span className="grid size-10 place-items-center rounded-xl" style={{ background: LIME }}>
         <Icon className="size-5" />
       </span>
       <p className="mt-6 text-lg font-semibold tracking-tight">{title}</p>
-      <p className="mt-1.5 text-black/60">{text}</p>
+      <p className="mt-1.5 text-muted-foreground">{text}</p>
     </div>
   )
 }

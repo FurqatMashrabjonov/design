@@ -85,7 +85,9 @@ export function applyImages(html: string, found: Map<string, ResolvedImage | nul
     const classes = attrValue(tag, 'class')
     if (!image) {
       const label = (attrValue(tag, 'alt') ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
-      const box = lockBox(style, 'linear-gradient(135deg,var(--surface),var(--border))')
+      // Text over a photo is light, with the photo dark enough to carry it. When no photo arrives the
+      // block takes its place, so it carries the same weight — a pale slab made white captions vanish.
+      const box = lockBox(style, 'linear-gradient(160deg,color-mix(in oklab,var(--fg) 62%,var(--surface)),color-mix(in oklab,var(--fg) 78%,var(--surface)))')
       return `<div role="img" aria-label="${label}" data-od-img-fallback${classes ? ` class="${classes}"` : ''} style="${box}"></div>`
     }
     let out = setAttr(dropAttr(tag, 'srcset'), 'src', image.url)

@@ -12,6 +12,11 @@ export async function generate(
     regenerateScreenId?: string
     /** Fix these render-audit findings on editScreenId in one edit (EYE-02); `prompt` is ignored. */
     fixFindings?: unknown[]
+    /** A repair the app asked for itself, not the person: no message is written in their name.
+     *  Nothing calls this automatically any more — the first generation is left as it comes. */
+    auto?: boolean
+    /** LLM-02: reference pictures for this one request, as data URLs ("make it look like this"). */
+    images?: string[]
     skill?: string
   },
   onText: (text: string) => void,

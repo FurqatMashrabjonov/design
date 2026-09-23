@@ -111,7 +111,7 @@
   --fg: #171717;                       /* Gray 900 — headings, primary text */
   --fg-2: #4d4d4d;                     /* Gray 600 — body description */
   --muted: #666666;                    /* Gray 500 — captions, tertiary text */
-  --meta: #808080;                     /* Gray 400 — placeholder, disabled */
+  --meta: #767676;                     /* Gray 400 — placeholder, disabled */
 
   /* ─── Border (2 levels) ──────────────────────────────────────────
    * Shadow-as-border is THE signature: `rgba(0, 0, 0, 0.08)` at 1px

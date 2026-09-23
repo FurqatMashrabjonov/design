@@ -114,18 +114,93 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   assert.ok(root.startsWith(':root {'), `${id} tokens must expose a :root block`)
   assert.ok(!root.includes('/*'), `${id} injected tokens must have comments stripped`)
   assert.ok(root.includes('--accent:'), `${id} must bind --accent`)
+
+  // Text tokens must be legible on the surfaces they sit on. --meta is the one that used to fail:
+  // 19 of 29 systems were under AA, and craft/mobile.md tells the model to use it for metadata, so
+  // every generated screen inherited the defect. Measured here so it cannot come back.
+  const hexOf = (v: string) => { const m = v.match(/#([0-9a-f]{3}|[0-9a-f]{6})\b/i); if (!m) return null
+    const h = m[1]!.length === 3 ? m[1]!.split('').map((c) => c + c).join('') : m[1]!
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) }
+  const lumOf = (c: number[]) => { const [r, g, b] = c.map((x) => { const s = x / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r! + 0.7152 * g! + 0.0722 * b! }
+  const contrastOf = (a: number[], b: number[]) => { const [x, y] = [lumOf(a), lumOf(b)].sort((p, q) => q - p); return (x! + 0.05) / (y! + 0.05) }
+  const tokenValue = (name: string) => { const m = root.match(new RegExp(`--${name}:\\s*([^;\\n]+)`)); return m ? hexOf(m[1]!) : null }
+  for (const ink of ['fg', 'fg-2', 'muted', 'meta']) {
+    const paint = tokenValue(ink)
+    if (!paint) continue
+    for (const surfaceName of ['bg', 'surface']) {
+      const surface = tokenValue(surfaceName)
+      if (!surface) continue
+      const r = contrastOf(paint, surface)
+      assert.ok(r >= 4.5, `${id}: --${ink} on --${surfaceName} is ${r.toFixed(2)}:1 — a text token must clear AA (4.5:1)`)
+    }
+  }
+}
+
+// LLM-03: the spend log and the daily budget guard are only as honest as this table. DeepSeek
+// bills peak at twice off-peak, so the clock is part of the price.
+{
+  const { PRICE, PRICE_PEAK, costOf, isPeak } = await import('./LlmService.ts')
+  assert.equal(PRICE.input, 0.15, 'off-peak input is the list rate')
+  assert.equal(PRICE.output, 0.6, 'off-peak output is the list rate')
+  assert.equal(PRICE.cached, 0.003, 'a cache hit is nearly free — which is why the prompt is built to be cacheable')
+  assert.equal(PRICE_PEAK.output, 1.2, 'peak is twice off-peak')
+  // Monday 02:00 UTC is peak; Monday 12:00 and Saturday 02:00 are not.
+  assert.equal(isPeak(new Date('2026-09-21T02:00:00Z')), true)
+  assert.equal(isPeak(new Date('2026-09-21T07:30:00Z')), true)
+  assert.equal(isPeak(new Date('2026-09-21T12:00:00Z')), false)
+  assert.equal(isPeak(new Date('2026-09-19T02:00:00Z')), false, 'weekends are off-peak')
+  const usage = { promptTokens: 100_000, cachedTokens: 60_000, completionTokens: 50_000 }
+  const off = costOf(usage, new Date('2026-09-21T12:00:00Z'))
+  const peak = costOf(usage, new Date('2026-09-21T02:00:00Z'))
+  assert.ok(Math.abs(off - (40_000 * 0.15 + 60_000 * 0.003 + 50_000 * 0.6) / 1e6) < 1e-9, 'off-peak cost is the arithmetic')
+  assert.ok(Math.abs(peak - off * 2) < 1e-9, 'the same call costs twice as much at peak')
 }
 
 console.log('Testing Navigation Shell Builder...')
-const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE } = await import('./ShellService.ts')
+const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE, navStyle, navClearance } = await import('./ShellService.ts')
 const navA = buildBottomNav(multiPlan.navigation, 'home')
 const navB = buildBottomNav(multiPlan.navigation, 'stats')
 assert.ok(navA.includes('data-od-shell="bottom-nav"'), 'Nav carries a shell marker')
-assert.equal(
-  navA.replace(/var\(--accent\)|var\(--meta\)/g, 'C').replace(/ aria-current="page"/g, ''),
-  navB.replace(/var\(--accent\)|var\(--meta\)/g, 'C').replace(/ aria-current="page"/g, ''),
-  'Two root-tab navs may differ ONLY in which tab is active',
-)
+// The active tab is a colour AND a shape (NAV-02), so both are erased before the two are compared.
+const sameShell = (html: string) =>
+  html
+    .replace(/var\(--accent\)|var\(--meta\)/g, 'C')
+    .replace(/ aria-current="page"/g, '')
+    .replace(/;background:color-mix\(in oklab, C 14%, transparent\);border-radius:9999px/g, '')
+    .replace(/<span style="width:4px[^>]*><\/span>/g, '')
+assert.equal(sameShell(navA), sameShell(navB), 'Two root-tab navs may differ ONLY in which tab is active')
+
+// NAV-01: the shape of the bar is decided in code, per app, and every screen of that app repeats it.
+{
+  const seeds = ['Verdant', 'SnapCal', 'GoBite', 'Momentum', 'Lumen', 'Ledger', 'Nimbus', 'Atlas']
+  const picked = seeds.map((s) => navStyle(s))
+  assert.deepEqual(picked, seeds.map((s) => navStyle(s)), 'the pick is stable for a name')
+  assert.ok(new Set(picked).size > 1, 'different apps land on different bars')
+  // The shape follows the app's character: a tool wears the edge-to-edge bar, a consumer app the
+  // island. Forcing one shape on every app was its own kind of sameness.
+  const utility = seeds.map((s) => navStyle(s, { designSystem: 'slack' }))
+  assert.ok(utility.includes('bar'), 'a utility system can wear the edge-to-edge bar')
+  assert.ok(!utility.includes('island'), 'a utility system does not wear the island')
+  const consumer = seeds.map((s) => navStyle(s, { designSystem: 'airbnb' }))
+  assert.ok(consumer.every((p) => p === 'island' || p === 'pill'), 'a consumer system floats')
+  assert.ok(new Set(consumer).size > 1, 'two consumer apps still differ')
+  assert.equal(navStyle('Ledger', { appType: 'fintech' }), navStyle('Ledger', { appType: 'fintech' }), 'the app type decides when the system says nothing')
+  assert.notEqual(navStyle('Ledger', { designSystem: 'airbnb' }), navStyle('Ledger', { designSystem: 'slack' }), 'character changes the answer')
+  assert.ok(navStyle('Crowded', { tabCount: 7, designSystem: 'airbnb' }) !== 'island', 'a crowded bar drops the labels rather than truncating them')
+  for (const style of ['island', 'pill', 'contrast', 'bar'] as const) {
+    const html = buildBottomNav(multiPlan.navigation, 'home', style)
+    assert.ok(html.includes(`data-od-nav="${style}"`), `${style}: the shape is marked`)
+    assert.ok(html.includes('position:fixed'), `${style}: the bar is pinned`)
+    assert.ok(!/bg-white|#fff\b/i.test(html), `${style}: no hardcoded light surface`)
+    assert.ok(!/class="/.test(html), `${style}: inline styles only`)
+    const labelled = style === 'island' || style === 'bar'
+    assert.equal(html.includes('>Home</span>'), labelled, `${style}: labels only where there is room`)
+    if (!labelled) assert.ok(html.includes('aria-label="Home"'), `${style}: an icon-only tab still says what it is`)
+    // NAV-03: a floating bar stands above the screen edge, so the page must leave more room.
+    assert.ok(navClearance(style) >= NAV_CLEARANCE, `${style}: clearance covers the bar`)
+  }
+  assert.ok(navClearance('island') > navClearance('bar'), 'a floating bar needs more clearance than an edge-to-edge one')
+}
 assert.ok(!navA.includes('bg-white'), 'Nav must not hardcode a light surface')
 // Tailwind is the model's choice, not ours — a screen written in plain CSS has no utility
 // classes, and a class-styled shell collapsed into an unpositioned block off the bottom.
@@ -233,7 +308,143 @@ assert.ok(big.includes('width:max(100%,44px)'), 'the hit area is at least 44px a
 assert.equal(autofixScreen(big), big, 'the whole autofix is idempotent')
 assert.ok(!autofixScreen('<html><head></head><body><p>no buttons</p></body></html>').includes('data-od-hit-area'), 'no rule when there is no button')
 const badged = autofixScreen('<html><head><style>.bell::after{content:"";width:8px;height:8px}</style></head><body><button class="bell"><i data-lucide="bell"></i></button></body></html>')
-assert.ok(badged.includes('button:not(.bell):has('), 'a button whose class already has an ::after (a badge) keeps it')
+assert.ok(badged.includes('button:not(.bell)'), 'a button whose class already has an ::after (a badge) keeps it')
+// The target is given by a pseudo-element, never by growing the button: a 44px min-height inside a
+// 44px segmented rail pushed the active pill out of its own track.
+assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box')
+{
+  const plain = autofixScreen('<html><head></head><body><button class="seg">All</button></body></html>')
+  assert.ok(plain.includes('data-od-hit-area') && plain.includes('width:max(100%,44px)'), 'a short text button gets the same invisible target as an icon button')
+}
+
+// A ring must not add a centre the page already draws — two labels in one circle is what the eye
+// catches first (found on a real generated screen: "8 lessons" over "of 12 / lessons done").
+{
+  const { renderCharts } = await import('../../lib/charts.ts')
+  const own = '<html><head><style>.hero__ring-center{position:absolute;inset:0;display:flex}</style></head><body><div class="hero__ring" data-od-chart="ring" data-values="8" data-max="12" data-labels="lessons"></div><div class="hero__ring-center"><span>of 12</span></div></body></html>'
+  const drawn = renderCharts(own)
+  assert.ok(drawn.includes('stroke-dasharray'), 'the arc is still drawn')
+  assert.ok(!drawn.includes('font-variant-numeric:tabular-nums'), 'but not a second centre label')
+  const alone = renderCharts('<html><body><div data-od-chart="ring" data-values="8" data-max="12" data-labels="lessons"></div></body></html>')
+  assert.ok(alone.includes('>8<') && alone.includes('lessons'), 'a ring with no centre of its own still shows its number')
+  // A ring sized by aspect-ratio used to grow wider than the column it was given and cover the text
+  // beside it, and a long centre label ran out of the circle. Both are bounded now.
+  assert.ok(alone.includes('max-width:100%'), 'the ring cannot grow past its own column')
+  assert.ok(alone.includes('overflow:hidden'), 'the centre is clipped to the circle')
+  const wordy = renderCharts('<html><body><div data-od-chart="ring" data-values="2" data-max="6" data-labels="habits completed today"></div></body></html>')
+  // The slot keeps its own attributes; what must not appear is the label drawn inside the circle.
+  assert.ok(!/<span style="font-size:11px[^>]*>habits completed today</.test(wordy), 'a label too long for a circle belongs beside it, not in it')
+  assert.ok(alone.includes('<span style="font-size:11px'), 'a short label still sits under the number')
+}
+
+// IMG-02: a reference picture decides the look. The model reads the picture; the choice of system
+// is arithmetic here, so the same picture always lands on the same system. Before this, the system
+// was chosen from the brief's words alone — and "same as in the image" has no words to go on, so a
+// pink, chunky, playful reference came back as calm blue minimalism.
+{
+  const { matchSystem, themeFromReference } = await import('./DesignSystemService.ts')
+  const { parseReferenceStyle, referenceBlock } = await import('./ReferenceService.ts')
+
+  const pink = { accent: '#ff5fa2', background: '#ffffff', mood: ['bold', 'playful', 'energetic'], corners: 'round' as const, type: 'heavy' as const }
+  const picked = matchSystem(pink)
+  assert.ok(picked && DesignSystemService.exists(picked.id), 'a picture lands on a real system')
+  assert.equal(matchSystem(pink)?.id, picked!.id, 'the same picture always lands on the same system')
+  // Light against dark is the loudest signal: a dark picture must not come back as a white system.
+  const darkPick = matchSystem({ accent: '#39ff88', background: '#0b0b10', mood: ['dark'], type: 'geometric' })!
+  const darkBg = DesignSystemService.list().find((e) => e.id === darkPick.id)!.swatch.bg ?? '#ffffff'
+  assert.ok(parseInt(darkBg.slice(1, 3), 16) < 90, `a dark reference must pick a dark system (got ${darkPick.id} on ${darkBg})`)
+  assert.equal(matchSystem({ mood: ['bold'] }), null, 'no colour in the picture, no opinion about the system')
+
+  // The theme carries the picture's own accent and corners, whatever system was matched.
+  assert.deepEqual(themeFromReference(pink), { accent: '#ff5fa2', radius: 'round' })
+  assert.deepEqual(themeFromReference({ accent: '#8a8a8a' }), {}, 'a grey is the picture having no accent — forcing it would drain the system')
+
+  // What comes back from the model is parsed defensively; it is a model's JSON, not ours.
+  const good = parseReferenceStyle('{"composition":"Rows stack under a title.","accent":"#FF5FA2","background":"#fff","corners":"round","type":"heavy","mood":["bold","playful"]}')
+  assert.equal(good.accent, '#ff5fa2', 'hex is normalised')
+  assert.equal(good.background, undefined, 'a three-digit hex is not the shape we asked for')
+  assert.equal(good.corners, 'round')
+  const junk = parseReferenceStyle('not json at all')
+  assert.deepEqual(junk, { composition: '', mood: [] }, 'an unreadable reply is simply no reference')
+  assert.equal(parseReferenceStyle('{"composition":"x","corners":"wobbly","type":"loud"}').corners, undefined, 'only the values we named')
+  assert.equal(referenceBlock({ composition: '', mood: [] }), '', 'nothing read, nothing injected')
+  assert.match(referenceBlock(good), /build the screens the way it is built/, 'the block says the picture is direction')
+}
+
+// DS-01: the automatic design system is a seeded pick from a few that suit the app type, not one
+// fixed answer. Before this, every habit tracker came back in Notion and 21 of the 33 systems were
+// unreachable without picking one by hand — and the picker is about to be taken off the composer.
+{
+  const brief = 'a habit tracker with streaks and reminders'
+  const picks = new Set<string>()
+  for (let i = 0; i < 40; i++) picks.add(DesignSystemService.autoFor(brief, 'productivity', `seed-${i}`))
+  assert.ok(picks.size > 1, 'the same brief twice is not the same app twice')
+  for (const id of picks) assert.ok(DesignSystemService.exists(id), `${id} must be a real system`)
+  assert.equal(
+    DesignSystemService.autoFor(brief, 'productivity', 'seed-7'),
+    DesignSystemService.autoFor(brief, 'productivity', 'seed-7'),
+    'the pick is stable for one project',
+  )
+  // A style the brief names still wins outright — that is the person speaking.
+  assert.equal(DesignSystemService.autoFor('a minimal habit tracker', 'productivity', 'seed-1'), 'minimal')
+  assert.equal(DesignSystemService.autoFor('a neon cyberpunk player', 'media', 'seed-1'), 'neon')
+  assert.equal(DesignSystemService.autoFor('', null, 'seed-1'), 'minimal', 'nothing to go on falls back')
+  // Reach: how much of the catalogue the product can now choose on its own.
+  const reachable = new Set<string>()
+  for (const type of ['fintech', 'food-delivery', 'commerce', 'marketplace', 'booking', 'travel', 'fitness', 'health', 'learning', 'media', 'productivity', 'social'])
+    for (let i = 0; i < 40; i++) reachable.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
+  assert.ok(reachable.size >= 20, `the automatic choice should reach most of the catalogue (got ${reachable.size})`)
+}
+
+// LLM-02: reference pictures come from the browser, so what reaches the model is whatever survives
+// this filter. The limits are a budget decision too — an image is prompt tokens and never a cache hit.
+{
+  const { parseRefImages, refImageNote, base64Bytes, MAX_REF_IMAGES } = await import('../../lib/ref-images.ts')
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+  assert.equal(parseRefImages([png]).length, 1, 'a png data URL passes')
+  assert.equal(parseRefImages([{ dataUrl: png }]).length, 1, 'either shape is accepted')
+  assert.equal(parseRefImages([png, png, png]).length, MAX_REF_IMAGES, 'at most two ride one request')
+  assert.deepEqual(parseRefImages('nope'), [], 'a non-array is not an attachment')
+  assert.deepEqual(parseRefImages(['https://example.com/x.png']), [], 'a remote URL is not fetched on the model\'s behalf')
+  assert.deepEqual(parseRefImages(['data:text/html;base64,PHNjcmlwdD4='], ), [], 'only image types')
+  assert.deepEqual(parseRefImages(['data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=']), [], 'no svg — it is a document, not a picture')
+  const huge = `data:image/png;base64,${'A'.repeat(2_000_000)}`
+  assert.deepEqual(parseRefImages([huge]), [], 'over the size limit is dropped, not sent')
+  assert.ok(Math.abs(base64Bytes('AAAA') - 3) < 1, 'size is read from the string, not by decoding it')
+  assert.equal(refImageNote(0), '', 'no picture, no note')
+  assert.match(refImageNote(1), /direction — not its literal content/, 'the note says what the picture is for')
+  assert.match(refImageNote(2), /^2 reference images/)
+}
+
+// QLT-06: the marks of a generated page. craft/mobile.md bans all three by name and the model
+// produced them anyway on 28 apps, so the linter measures them now.
+{
+  const generated = '<html><head><style>.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase}.meta{font-family:ui-monospace,monospace}</style></head><body><p class="eyebrow">FEATURED</p><h2>Pad Thai</h2><p class="meta">12 min · Easy · 4.8 · Vegan</p></body></html>'
+  const rules = lintScreen(generated).map((f) => f.rule)
+  for (const r of ['caps-eyebrow', 'mono-for-data', 'middle-dot-meta']) assert.ok(rules.includes(r), `lint must flag ${r} (got: ${rules.join(', ')})`)
+  // An uppercase display headline is a design system doing its job, not a tell: 21 of the 33 ask for one.
+  const nike = '<html><head><style>.h{font-size:32px;text-transform:uppercase;letter-spacing:.02em}</style></head><body><h1 class="h">RUN CLUB</h1><p>12 min · Easy</p></body></html>'
+  assert.deepEqual(lintScreen(nike).map((f) => f.rule), [], 'a display headline and two facts are not tells')
+  // The injected tab bar is ours and already canonical, and it is written in inline styles only
+  // (the shell rule), so it can never raise a CSS-rule finding. Its text must not raise one either.
+  const shellOnly = `<html><head></head><body>${buildBottomNav(multiPlan.navigation, 'home')}<p>Beef Burrito · 690 kcal · 31 g · 12 min</p></body></html>`
+  const shellRules = lintScreen(shellOnly).map((f) => f.rule)
+  assert.ok(!shellRules.includes('caps-eyebrow') && !shellRules.includes('mono-for-data'), 'the shell is not a tell')
+}
+
+// CRAFT-01: the craft rules that have one right answer live in code, as zero-specificity defaults.
+{
+  const craft = autofixScreen('<html><head><style>.a{x:1}</style></head><body><h1>Title</h1><p>Body</p></body></html>')
+  assert.equal((craft.match(/data-od-craft/g) ?? []).length, 1, 'one craft sheet')
+  assert.ok(craft.includes('font-variant-numeric:tabular-nums'), 'numbers line up in columns')
+  assert.ok(craft.includes(':where(h1,h2,h3){text-wrap:balance}') && craft.includes('text-wrap:pretty'), 'headings balance, body copy gets orphan control')
+  assert.ok(craft.includes(':focus-visible{outline:2px solid var(--accent)'), 'keyboard focus is visible')
+  assert.ok(craft.includes('scale(.96)') && craft.includes('prefers-reduced-motion:no-preference'), 'press feedback, and only when motion is welcome')
+  assert.ok(craft.includes('color-mix(in oklab, var(--fg) 10%, transparent)'), 'a resolved photo gets an edge')
+  assert.ok(/:where\(/.test(craft) && !craft.includes('!important'), 'craft defaults never outrank the page')
+  assert.equal(autofixScreen(craft), craft, 'the craft sheet is added once')
+  assert.ok(craft.indexOf('data-od-craft') < craft.indexOf('</head>'), 'the sheet lives in the head')
+}
 
 // KIT-01: the shared component sheet — tokens only, every component sampled, injected only when used
 {
@@ -576,5 +787,22 @@ console.log('Testing Frame Height...')
   assert.ok(/height=\{frameHeight\(s\)\}/.test(canvasRoute), 'the canvas lays frames out at their measured height')
 }
 
-console.log('All new features and App Coherence verified successfully! ✅')
+// --- UI-01/02/06: the studio's own palette ---
+{
+  const css = readFileSync('src/styles.css', 'utf8')
+  const root = css.slice(css.indexOf(':root {'), css.indexOf('@layer base {'))
+  assert.ok(!/oklch\(\s*[\d.]+\s+0\s+0\s*\)/.test(root), 'no chroma-zero grey: the neutrals are warm, which is what makes the chrome look designed')
+  for (const token of ['--background', '--foreground', '--card', '--muted', '--border', '--sidebar', '--canvas']) {
+    assert.ok(new RegExp(`${token}:`).test(root), `${token} is defined`)
+  }
+  assert.ok(!/--foreground:\s*#000000/.test(root) && !/--background:\s*#000000/.test(root), 'neither end of the ramp is pure black')
+  assert.equal((root.match(/--canvas:/g) ?? []).length, 2, 'the canvas has a light and a dark value')
+
+  const frame = readFileSync('src/ScreenFrame.tsx', 'utf8')
+  assert.ok(!/rounded-xl border bg-white/.test(frame), 'UI-02: a screen sits on the canvas, not inside a card')
+  const root2 = readFileSync('src/routes/__root.tsx', 'utf8')
+  assert.ok(root2.includes("localStorage.getItem('od:theme')") && root2.includes('add(\'dark\')'), 'UI-06: the saved mode is applied before the first paint')
+}
+
+console.log('All new features and App Coherence verified successfully! \u2705')
 

@@ -105,13 +105,41 @@ function donut(d: ReturnType<typeof parse>): string {
   return `<div style="display:flex;align-items:center;gap:16px;height:100%"><svg viewBox="0 0 42 42" style="height:100%;max-height:160px;aspect-ratio:1;flex:none" aria-hidden="true"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--border)" stroke-width="5"/>${segments}</svg>${legend}</div>`
 }
 
-function ring(d: ReturnType<typeof parse>): string {
+/**
+ * Class names the page's own CSS pins over their parent — a centre label it draws itself. A ring
+ * that adds its own then stacks two labels in one circle, which is what the eye sees first.
+ */
+function overlayClasses(html: string): string[] {
+  const out = new Set<string>()
+  for (const m of html.matchAll(/\.([\w-]+)[^{}]*\{([^}]*)\}/g)) {
+    const body = m[2]!
+    if (/position\s*:\s*absolute/i.test(body) && /inset\s*:\s*0|top\s*:\s*0[\s\S]*left\s*:\s*0/i.test(body)) out.add(m[1]!)
+  }
+  return [...out]
+}
+
+/** Is one of those overlays a neighbour of the slot at `at`? Looked for in the markup around it. */
+function hasOwnCentre(html: string, at: number, classes: string[]): boolean {
+  if (!classes.length) return false
+  const window = html.slice(Math.max(0, at - 600), at + 1400)
+  return classes.some((c) => new RegExp(`class="[^"]*\\b${c}\\b`).test(window))
+}
+
+function ring(d: ReturnType<typeof parse>, bare = false): string {
   const value = d.values[0] ?? 0
   const max = Number.isFinite(d.max) && d.max > 0 ? d.max : (d.values[1] ?? 100) || 100
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   const r = 15.9155
-  const label = d.labels[0] ? `<span style="font-size:11px;color:var(--muted)">${escapeHtml(d.labels[0])}</span>` : ''
-  return `<div style="position:relative;height:100%;aspect-ratio:1;max-height:180px;margin:0 auto"><svg viewBox="0 0 42 42" style="width:100%;height:100%;transform:rotate(-90deg)" aria-hidden="true"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--border)" stroke-width="3.5"/><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${num(pct)} ${num(100 - pct)}"/></svg><div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1"><strong style="font-size:clamp(14px,22%,32px);color:var(--fg);font-variant-numeric:tabular-nums">${num(value)}${escapeHtml(d.unit)}</strong>${label}</div></div>`
+  // A ring's centre holds a number and at most a word or two; anything longer belongs beside it.
+  const short = (d.labels[0] ?? '').trim()
+  const label = short && short.length <= 14 ? `<span style="font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(short)}</span>` : ''
+  // The page already draws a centre: only the arc is ours, or the two labels stack.
+  const centre = bare
+    ? ''
+    // The centre is bounded by the circle it sits in: a long label used to run out of the ring and
+    // across whatever was beside it. It stays inside and ellipses rather than spilling.
+    : `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0 18%;box-sizing:border-box;overflow:hidden;text-align:center"><strong style="font-size:clamp(14px,22%,32px);color:var(--fg);font-variant-numeric:tabular-nums">${num(value)}${escapeHtml(d.unit)}</strong>${label}</div>`
+  return `<div style="position:relative;height:100%;aspect-ratio:1;max-height:180px;max-width:100%;margin:0 auto"><svg viewBox="0 0 42 42" style="width:100%;height:100%;transform:rotate(-90deg)" aria-hidden="true"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--border)" stroke-width="3.5"/><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${num(pct)} ${num(100 - pct)}"/></svg>${centre}</div>`
 }
 
 function heatmap(d: ReturnType<typeof parse>, columns: number): string {
@@ -134,13 +162,14 @@ const DEFAULT_HEIGHT: Record<ChartType, number> = { bar: 160, line: 160, area: 1
  */
 export function renderCharts(html: string): string {
   if (!html.includes('data-od-chart=')) return html
-  return html.replace(SLOT, (whole, tag: string, attrs: string, type: string) => {
+  const overlays = html.includes('position:absolute') || html.includes('position: absolute') ? overlayClasses(html) : []
+  return html.replace(SLOT, (whole, tag: string, attrs: string, type: string, _inner: string, at: number) => {
     if (/data-od-chart-rendered/.test(attrs) || !(CHART_TYPES as readonly string[]).includes(type)) return whole
     const d = parse(attrs)
     const t = type as ChartType
     if (d.values.length < (t === 'ring' || t === 'donut' ? 1 : 2)) return whole
     const columns = Math.min(14, Math.max(3, Number(attr(attrs, 'data-columns')) || 7))
-    const inner = t === 'bar' ? bar(d) : t === 'line' ? line(d, false) : t === 'area' ? line(d, true) : t === 'sparkline' ? line(d, true, false) : t === 'donut' ? donut(d) : t === 'heatmap' ? heatmap(d, columns) : ring(d)
+    const inner = t === 'bar' ? bar(d) : t === 'line' ? line(d, false) : t === 'area' ? line(d, true) : t === 'sparkline' ? line(d, true, false) : t === 'donut' ? donut(d) : t === 'heatmap' ? heatmap(d, columns) : ring(d, hasOwnCentre(html, at, overlays))
     // The model may size the slot itself (a style height); otherwise the type's default height.
     const style = attr(attrs, 'style') ?? ''
     // A heatmap sizes itself from its cells.

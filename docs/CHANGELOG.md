@@ -3,6 +3,189 @@
 Newest first. One entry per completed change: what changed, files touched, how it was verified.
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
+## 2026-09-23
+
+### KIT-05 sinovdan o'tmadi — modelga komponent qiymatlarini matn bilan berish sifatni pasaytiradi
+
+Farazim: uslub kartasi brendni so'z bilan ta'riflaydi, lekin tugmaning padding'i qancha ekanini hech
+qachon aytmaydi, shuning uchun model o'zicha taxmin qiladi. Har dizayn tizimi uchun `COMPONENTS.md`
+(button/input/card/badge qiymatlari, o'sha tizimning tokenlarida) yozib, ekran brifiga arxetipga
+qarab qo'shdim; blueprint kit eskizining matnini ham "bu klasslar allaqachon uslublangan" deb
+o'zgartirdim.
+
+**Avval o'lchadim:** 159 ekrandan 57 tasi (36%) `od-` klasslarini ishlatgan, medianasi 0; qolganlari
+o'rtacha 57 ta o'z CSS qoidasini yozgan. Muammo haqiqiy. Shuning uchun `eval/metrics.ts` ga `kit`
+hisoblagichi qo'shildi (`screensUsing`, `blocksMean`, `ownRules`) — arxitektura qoidasi: har bir
+ma'lum nosozlikka avval hisoblagich.
+
+**Uchta run, bir xil 4 brief, bir xil provider (deepseek):**
+
+| | baseline | + karta | kartasiz, faqat yangi matn |
+|---|---|---|---|
+| kit ishlatgan ekran | **0.609** | 0.240 | 0.500 |
+| ekranga kit bloklari | **2.13** | 0.64 | 1.25 |
+| o'z CSS qoidalari | **57.5** | 62.7 | 61.1 |
+| lint toza | **0.652** | 0.480 | 0.542 |
+| caps-eyebrow tell | **4** | 8 | 4 |
+
+Karta modelni kitdan uzoqlashtirgan (61% → 24%) va o'z CSS'ini ko'proq yozishga undagan — chunki
+kartaning o'zi "o'z klass nomingizni yozing" deb aytadi. Ustiga ustak, `text-transform: uppercase` va
+`letter-spacing` qiymatlari kartada bor edi, ya'ni biz lint qiladigan "generatsiya izlari"ni modelga
+qo'lga tutqazdik: `caps-eyebrow` 4 → 8. Matnni qayta yozish ham yutmadi (0.609 → 0.500).
+
+**Xulosa:** promptga ko'proq CSS berish noto'g'ri richag. Bu bizning o'z arxitektura qoidamizni
+buzadi — "bitta to'g'ri javobi bor narsa kodda qo'llanadi, prompt so'zi bilan emas". Hammasi
+qaytarildi: `COMPONENTS.md` fayllari, `tools/extract-components.ts`, `readComponents`,
+`componentKinds`, brif sloti, testi va `NOTICE` o'zgarishi o'chirildi.
+
+**Qolgani:** `eval/metrics.ts` dagi `kit` hisoblagichi. O'lchov qoladi, chunki muammo qolyapti:
+ekranlarning ~40% i kitni umuman ishlatmaydi va hech narsa uni majbur qilmaydi.
+
+Tegilgan fayllar: `eval/metrics.ts`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; uchta 4-briefli eval
+(`eval/out/2026-09-23-10-07-think-off`, `…-12-37-kit05`, `…-kit05-nocard`), jami ~$0.30.
+
+
+### Havola rasm endi ko'rinishni ham belgilaydi — IMG-02 (IMG-01 ning tuzatilishi)
+Foydalanuvchi pushti, qalin harfli, o'ynoqi habit tracker skrinshotini berib "same as in the image" dedi va **tinch ko'k minimalizm** oldi. Uchta xato, uchalasi ham quvurda:
+
+1. **Dizayn tizimi rasm o'qilishidan oldin tanlanardi.** `createProject` tizimni faqat matndan tanlaydi; "make habit tracker app, same as in the image given" da uslub so'zi yo'q, shuning uchun `productivity` nomzodlaridan `cal` tushdi. Rasm keyinroq, reja runida o'qilardi — o'shanda kech edi.
+2. **Men rangni ataylab taqiqlagandim.** `describeReference` promptida "Never give hex values or colour names", `referenceBlock` da esa "Keep this app's own design tokens". Model rasmni to'g'ri o'qidi (*"bold, playful, and energetic"*), quvur esa unga rangni tashlab, Cal tokenlarini saqlashni aytdi.
+3. Halqa yonidagi matn ustiga chiqib ketardi.
+
+**Endi:**
+- `readReference` matn emas, **tuzilgan javob** qaytaradi: `accent`, `background`, `corners`, `type`, `mood`, va kompozitsiya matni. Model faqat o'qiydi.
+- `matchSystem` (DesignSystemService) rasmni 33 tizimning **har biriga solishtiradi**: fon yorug'ligi (×2.0), aksent ottenkasi (×2.0), uslub kartasidagi kayfiyat so'zlari (−0.22) va shrift xarakteri (−0.18, faqat kartaning "## Type" bo'limidan — aks holda rang tavsifidagi "near-black" noto'g'ri mos kelardi). Qaror kodda, arifmetika bilan — bir xil rasm doim bir xil tizimga tushadi.
+- `themeFromReference` rasmning aksentini va burchak radiusini tema override'iga qo'yadi. Kulrang "aksent" — bu aksent yo'qligi, majburlanmaydi.
+- Bularning hammasi **birorta ekran chizilishidan oldin** bo'ladi: tizim almashtiriladi (`Project.saveDesignSystem`), tema qo'yiladi, keyin planner ishlaydi.
+- **Halqa chegaralandi**: `max-width:100%` (ilgari `aspect-ratio` uni o'z ustunidan kengroq qilib, yonidagi matnni yopib qo'yardi) va markaz matni `overflow:hidden` bilan doira ichida qoladi; 14 belgidan uzun yorliq markazga umuman yozilmaydi.
+- **Natija** (foydalanuvchining aynan o'sha prompti va rasmi, haqiqiy DeepSeek): matndan `cal` → rasmdan **`neobrutalism`**, aksent `#f55fa8`, dumaloq burchaklar. 6 ekran 62 soniyada: qalin katta harfli sarlavhalar, pushti tugmalar, o'ynoqi shakllar.
+- Fayllar: `app/Services/{ReferenceService,DesignSystemService,PendingPlans,ScreenContext}.ts`, `app/Models/Project.ts`, `app/Http/Controllers/{Plan,Generate}Controller.ts`, `lib/charts.ts`, `app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: rasm haqiqiy tizimga tushadi va doim bir xiliga, to'q rasm to'q tizimga, rangsiz rasm fikr bildirmaydi, kulrang aksent majburlanmaydi, model JSON'i himoyalangan holda o'qiladi, halqa o'z ustunidan chiqmaydi, uzun yorliq markazga yozilmaydi), `tsc` toza, uchdan-uchga sinov skrinshotlar bilan.
+
+### Uslub tanlovi qutidan olindi, avtomatik tanlov kengaydi, boshlash qutisiga havola rasm — DS-01, DS-02, IMG-01
+Reja: `docs/REFERENCE-AND-AUTO-STYLE-PLAN.md`.
+
+- **DS-01** `BY_APP_TYPE` endi bitta tizim emas, **3–4 nomzod**, va loyiha id'sidan urug'lanib bittasi tanlanadi (`artDirection` va `navStyle` bilan bir xil FNV-1a). Sabab o'lchangan: har "habit tracker" **doim `notion`**, har "food delivery" **doim `airbnb`** olardi, va 33 tizimdan **21 tasi avtomatik tanlovda hech qachon chiqmasdi**. Endi ilova turlaridan **24 tasi** yetib boradi, uslub so'zlari bilan 26 ga chiqadi. Briefda uslub aytilsa (`STYLE_WORDS`) — u baribir ustun.
+- **DS-02** `SystemPicker` boshlash qutisidan olib tashlandi; tanlov **yo'qolmadi** — Tema panelida qoladi, ya'ni odam natijani ko'rgach almashtiradi (Sleek va Stitch yo'li: avval natija, keyin sozlash). Ideya kartalari o'z tizimini olib kelishda davom etadi — ular natija namunasi, bosilganda o'sha natija qaytishi kerak.
+- **IMG-01** boshlash qutisiga qisqich qo'shildi va **rasm bir marta o'qiladi**: `ReferenceService.describeReference` bitta vision chaqiruvida rasmni qisqa yozma yo'nalishga aylantiradi (tartib, bo'shliq ritmi, tipografika pog'onalari, shakllar, kayfiyat — brend nomi, matn va rang **olinmaydi**), matn `projects.plan` ga saqlanadi va `referenceBlock` orqali **har ekran briefiga** boradi. Rasmning o'zi saqlanmaydi va qayta yuborilmaydi.
+  - Nega shunday: rasm har chaqiruvda prompt tokeni sifatida to'lanadi va **hech qachon kesh hiti bo'lmaydi**; 7+ chaqiruvli runda uni har ekranga qo'shish qimmat, va parallel chaqiruvlar uni bir xil tushunadi degan umid — aynan bu kodbaza rad etadigan yondashuv. Narxi: ilovaga bitta qo'shimcha chaqiruv (2.6s, ~$0.0002).
+  - Rasm dashboarddan loyiha sahifasiga sessiya xotirasi orqali o'tadi (`PENDING_IMAGES`), bir marta o'qiladi va tozalanadi — reload qayta to'lamaydi. Tasdiqlash darvozasi (CHAT-08) yozma yo'nalishni saqlaydi, ya'ni tasdiq rasmni qayta o'qimaydi. Chatdan keyin qo'shilgan ekran ham o'sha yo'nalishni oladi.
+- **Uchdan-uchga sinov** (haqiqiy DeepSeek, "Step counter app, 3 ta ekran" + halqa skrinshoti): yozma yo'nalish 2.6 soniyada chiqdi, 3 ekrandan **2 tasi** katta markaziy halqa bilan boshlanadi, halqa ichida uch pog'onali matn — tavsif aytgan tuzilish. Havoladagi yashil rang ham, "lessons" matni ham o'tmadi: ilova o'z ko'k aksenti va o'z qadam ma'lumoti bilan chiqdi.
+- Fayllar: `app/Services/{DesignSystemService,ReferenceService,PendingPlans,ScreenContext}.ts`, `app/Http/Controllers/{Project,Plan,Generate}Controller.ts`, `generatePlan.ts`, `Dashboard.tsx`, `Landing.tsx`, `routes/p.$projectId.tsx`, `eval/run.ts`, `app/Services/new-features.check.ts`, `app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: bir xil brief ikki xil tizim beradi, tanlov bitta loyiha uchun barqaror, uslub so'zi ustun, katalogning katta qismi yetib boradi; nomzodlar ilova turiga mos), `tsc` toza, DeepSeek'da uchdan-uchga sinov skrinshot bilan. **Dashboard UI'si brauzerda tekshirilmadi** — Chrome kengaytmasi javob bermadi.
+
+### Rasm tushunish: chatga skrinshot biriktirib "shunga o'xshatib qil" — LLM-02
+- `deepseek-flash` rasmni o'zi o'qiydi, shuning uchun provayder almashtirilmadi. Jonli tasdiq: sen yuborgan halqa skrinshotini modelga berdim va u nuqsonni o'zi aytdi — *"the '8' is vertically squashed and overlapping, while the 'lessons done' text spills outside the ring"*.
+- **Oqim:** quti ostidagi qisqich (yoki qutiga to'g'ridan-to'g'ri **paste**) → eskizlar ko'rinadi → xabar bilan birga ketadi. Rasm **o'sha bitta so'rovga** tegishli: rasm prompt tokeni sifatida hisoblanadi va **hech qachon kesh hiti bo'lmaydi**, shuning uchun uni butun reja runiga emas, faqat o'zi so'ralgan chaqiruvga bog'ladim.
+- **Chegaralar** (`lib/ref-images.ts`, yangi): eng ko'pi 2 ta rasm, har biri ≤1 MB, faqat `png/jpeg/webp` data URL. Uzoq URL olinmaydi (server model nomidan tarmoqqa chiqmaydi), `svg` rad etiladi — u hujjat, rasm emas. Mos kelmagani xatolik emas, jimgina tashlanadi.
+- **Ramka:** `refImageNote` modelga rasm nima uchun ekanini aytadi — "layout, spacing, type scale va kayfiyatni yo'nalish sifatida ol, lekin ilovaning o'z ma'lumoti, matni va tokenlarini saqla". Bu shart edi: usiz model rasmni nusxalaydigan kontent deb biladi.
+- **Uchdan-uchga sinov** (haqiqiy DeepSeek, PlantCare ilovasining "Reminders" ekrani): model halqani qo'shdi, lekin **o'z ilovasining ma'lumotini** ishlatdi ("2 of 6 tasks done today", havoladagi "8 of 12 lessons" emas), **o'z aksent rangini** oldi (ko'k, havoladagi yashil emas) va havoladagi nuqsonni takrorlamadi. 5.2 soniya, 43 KB skrinshot = 348 prompt tokeni.
+- Lokal provayder (`claude-cli`) rasmni ko'ra olmaydi, shuning uchun unga rasm biriktirilgani matn bilan aytiladi.
+- Fayllar: `lib/ref-images.ts` (yangi), `app/Services/LlmService.ts`, `app/Http/Controllers/GenerateController.ts`, `generate.ts`, `PromptBox.tsx`, `routes/p.$projectId.tsx`, `app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: ikkala shakl qabul qilinadi, ikkitadan ortiq ketmaydi, uzoq URL va svg rad etiladi, hajm chegarasi, ramka matni), `tsc` toza, DeepSeek'da uchdan-uchga sinov skrinshot bilan.
+
+### Narx jadvali haqiqiy DeepSeek raqamlariga, thinking chaqiruv joyiga qarab, 'generik AI' qoidalari linterga — LLM-03, LLM-01, QLT-06
+
+- **LLM-03** `PRICE` endi `deepseek-flash` ning haqiqiy narxi: off-peak $0.15 kirish / $0.003 kesh / $0.60 chiqish, peak ikki barobar (`PRICE_PEAK`), va `isPeak()` soatga qaraydi (01:00–04:00 va 06:00–10:00 UTC, dushanba–juma). Eskisi $0.27/$1.10 edi — off-peak xarajatni **1.9×** oshirib ko'rsatardi, ya'ni kunlik byudjet qo'riqchisi ham, evaldagi baho ham noto'g'ri edi. `costOf` endi vaqtni oladi; eval bahosi off-peak asosiy stavkada beriladi.
+- **LLM-01** thinking moduldagi doimiy emas, chaqiruv joyining qarori: ekran chizishda doim o'chiq, plannerda `LLM_PLAN_THINKING=1` bilan yoqiladi — **A/B dan keyin standart holda o'chiq qoldirildi**. 4 briefli A/B (DeepSeek, 2026-09-23): thinking yoqiq bo'lganda **ikkita brief umuman ekran chizmadi**. Sabab kodda takrorlandi: reasoning tokenlari JSON bilan bir xil chiqish byudjetidan yeydi, planner `max_tokens: 4000` ga urilib yarim JSON qaytardi (`Unexpected end of JSON input`). Endi thinking yoqiq bo'lsa chegara 12 000 ga ko'tariladi, ya'ni bayroq plannerni jimgina buzmaydi. Tuzatilgandan keyin bir xil briefda o'lchandi: **o'chiq — 6 ekran, 8.8s, 2 283 token; yoqiq — 5 ekran, 43.6s, 10 658 token.** Besh barobar chiqish, besh barobar kutish, rejasi kichikroq. Sabab o'lchangan: reasoning tokenlari **chiqish** sifatida hisoblanadi, chiqish esa ilovaning qimmat yarmi (~47k token); bitta rejada yoqiq 8 924 token / 89s, o'chiq 2 075 / 17s. Haqiqiy API'da ham tasdiqlandi: bir xil trivial so'rovda 10 → 43 chiqish tokeni.
+- **QLT-06** linterga uchta yangi qoida: `caps-eyebrow` (kichik + tracked-out + uppercase — ya'ni sarlavha ustidagi yorliq, dizayn tizimi so'ragan katta uppercase sarlavha emas), `mono-for-data`, `middle-dot-meta` (to'rt va undan ortiq fakt o'rta nuqta bilan). Sabab: 28 briefli evalda bular `craft/mobile.md` da nomma-nom taqiqlangan bo'lsa ham 62 / 46 / 46 ekranda chiqdi. In'ektsiya qilingan shell qoidalardan chiqarilgan.
+- Fayllar: `app/Services/LlmService.ts`, `lib/design-lint.ts`, `eval/metrics.ts`, `eval/eval.check.ts`, `app/Services/new-features.check.ts`, `app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: narx jadvali va peak soati, bir xil chaqiruv peakda ikki barobar, uchta yangi lint qoidasi, Nike uslubidagi uppercase sarlavha va in'ektsiya qilingan panel **belgilanmaydi**), `tsc` toza. DeepSeek API'da ikkala thinking rejimi jonli sinaldi (200 OK).
+
+### Evaldan chiqqan beshta tuzatish — panel xarakteri, kontrast, halqa, teginish maydoni, rasm fallback'i
+28 briefli Sonnet eval (187 ekran, `eval/out/2026-09-23-08-04-sonnet28`) va foydalanuvchi topgan ikki nuqsonning sababini qidirish natijasi. Hammasi kodda, promptga tegilmadi.
+
+- **Panel shakli endi ilovaning xarakteridan** (`ShellService.navStyle`): `NAV_SETS` (utility / consumer / playful / bold) + dizayn tizimi va ilova turi bo'yicha jadval. `bar` rotatsiyaga qaytdi. Sabab: 28 ilovadan 15 tasi (54%) orol bo'lib chiqqandi va chetdan chetga panel umuman chiqmasdi — men Sleek'ning 5 ta skrinshotiga qarab "orol" ni qonun qilib qo'ygan edim. Chat, bank, notes kabi ilovalarda to'liq kenglikdagi panel to'g'ri yechim. Noto'g'ri test ("bar rotatsiyada yo'q") xarakter testiga almashtirildi.
+- **Matn tokenlari AA dan o'tadi**: 23 ta `tokens.css` da `--meta` (va bir nechta `--muted`, `--fg-2`) ottenkasi saqlangan holda 4.5:1 ga ko'tarildi. Sabab: `--meta` 19 tizimda 2.05–3.5:1 edi, `craft/mobile.md` esa modelga aynan shu tokenni "metadata uchun" deb buyuradi, shuning uchun 187 ekranning 74 %ida past kontrast bor edi (median 3.0). `new-features.check.ts` endi har tizimning `--fg`, `--fg-2`, `--muted`, `--meta` tokenini `--bg` va `--surface` ga qarshi o'lchaydi.
+- **Halqa ikkinchi markaz yozmaydi** (`lib/charts.ts`): sahifaning o'zi `position:absolute; inset:0` bilan markaz chizgan bo'lsa (CSS klasslaridan aniqlanadi), faqat yoy chiziladi. Sabab: foydalanuvchi ekranida "8 lessons" bizning markazimiz, "of 12 / lessons done" sahifaniki — ikkalasi ustma-ust tushgandi. Yo'l-yo'lakay `renderCharts` dagi xato tuzatildi: `SLOT` regexida to'rt guruh bor, offset argumenti noto'g'ri o'qilayotgan edi.
+- **Teginish maydoni ko'rinadigan qutini kattalashtirmaydi** (`autofixScreen`): 44px `::after` endi ikonkali tugmalardan tashqari **barcha** tugmalarga beriladi. Sabab: audit "small-target" degach model `style="min-height:44px"` yozgandi, 44px trek ichidagi tugma 8px bo'rtib chiqqandi — foydalanuvchi yuborgan segmented skrinshoti aynan shu.
+- **Rasm kelmasa, ustidagi matn o'qiladi** (`lib/image-slots.ts`): fallback bloki endi `--fg` ning 62–78 % aralashmasi — rasm o'rnini bosadigan to'q sirt. Sabab: och blokda oq sarlavha 1.00:1 bo'lib yo'qolardi.
+
+- Fayllar: `app/Services/{ShellService,ScreenContext}.ts`, `app/Http/Controllers/{Plan,Generate}Controller.ts`, `lib/{charts,design-lint,image-slots}.ts`, `design-systems/*/tokens.css` (23), `app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: xarakter bo'yicha panel tanlovi, har tizimning matn tokenlari AA, halqa ikkinchi markaz yozmasligi, matnli tugmaga ko'rinmas target, `min-height` yozilmasligi), `tsc` toza. **Brauzer**: foydalanuvchi yuborgan ikki ekran ta'mirlangan quvurdan qayta o'tkazilib, oldin/keyin yonma-yon render qilindi — halqadagi ustma-ust matn va trekdan bo'rtib chiqqan pill ikkalasi ham yo'qoldi.
+
+### Generatsiyadan keyingi avtomatik tuzatish olib tashlandi (EYE-04 orqaga qaytarildi)
+- Sabab: har ekran uchun qo'shimcha model chaqiruvi va kutish vaqti, foydasi esa isbotlanmagan. Birinchi generatsiya qanday chiqsa shunday qoladi.
+- Olib tashlandi: `routes/p.$projectId.tsx` dagi avtomatik tuzatish effekti, `audits` va `checking` holatlari, modul darajasidagi `autoFixed` qo'riqchisi, kadrdan keladigan `onAudit` ulanishi va `ActivityCard` dagi "Checking the screens" qadami.
+- Qoldi: serverdagi `fixFindings` + `auto: true` yo'li (chaqiruvchisi yo'q, lekin mexanizm va testlari joyida), `lib/render-audit.ts` va `eval/audit.ts` — sifatni **o'lchash** uchun kerak, tuzatish uchun emas.
+- Fayllar: `routes/p.$projectId.tsx`, `components/canvas/ActivityCard.tsx`, `generate.ts`, `CLAUDE.md`.
+- Tekshirildi: `npm run check` exit 0, `tsc` toza.
+
+### Chat agent darajasiga ko'tarildi — CHAT-01…06, CHAT-08 (tahlil: `docs/CHAT-UPGRADE-PLAN.md`)
+- **CHAT-01** Stop endi yuborish tugmasining o'zida, har qanday ish paytida: `running = working || planning || planRunning || checking` route'da bitta manba, `PromptBox` unga qaraydi (o'zining promise'iga emas — dashboard'dan boshlangan reja shu qutidan o'tmagan edi). `Esc` ham to'xtatadi (qutida ham, sahifada ham). Kartalar ichidagi underline "Stop" linklari yo'qoldi. Yuborilgan matn darhol tozalanadi, xatoda qaytadi.
+- **CHAT-02** `components/canvas/ActivityCard.tsx` (yangi): spinner o'rniga qadamlar — "Planning the app · 8s", "Planned ✓ / Drawing 3 screens · 18s" har ekran holati va topilgan rasmlar soni bilan (qator bosilsa kanvas o'sha kadrga boradi), tahrirda "Working on “X” · Editing 2 parts: …" (`<affects>` dan, `parseAffects`), "Checking the screens". Manba faqat hodisalar va sahifa holati — model tokeni emas; tugagach o'sha faktlar agent xabarining "Agent log"ida.
+- **CHAT-03** Ish paytida yozilgan xabar "Queued" bo'lib qutining tepasida turadi (✕ bilan), ish tugashi bilan avtomatik yuboriladi (`queued` + effekt). Server baribir bittasini qabul qiladi.
+- **CHAT-04** Foydalanuvchi xabari ustida Edit & resend (matn qutiga qaytadi) va Copy; agent xabarida "Ask again" (oldingi so'rovni qayta yuboradi) va Copy; xato kartasida "Try again" tugmasi; bo'sh qutida `↑` oxirgi so'rovni qaytaradi.
+- **CHAT-05** Skroll faqat o'quvchi pastda bo'lsa yopishadi; yuqorida bo'lsa "↓ N new / New activity" pillasi.
+- **CHAT-06** O'zgargan ekran uchun agent xabarida **Before → After** eskizlari (`/api/thumb/$screenId?v=<versionId>` — snapshot'dagi HTML, o'sha egalik tekshiruvi bilan); Undo/Redo link emas, tugma; takliflar chiplari qutining tepasidan oxirgi agent xabarining ostiga ko'chdi.
+- **CHAT-08** Rejani tasdiqlash darvozasi: `generatePlan` so'rovi `{ brief, gate }` yoki `{ approve: { keep, names } }`. `PlanController` `gate` bilan rejani yuborib `awaiting` bilan to'xtaydi, reja `PendingPlans` da (xotirada, 30 daqiqa) kutadi; tasdiqda `editPlan` (PlannerService) — olib tashlangan ekranlar ketadi, nomlar qoladi, slotlar/tablar `settleScreens` bilan qayta to'g'rilanadi — va kanvas ushlab turgan kadr id'lari bilan chiziladi. So'rov xabari bir marta yoziladi (rejada), javob chizilgach. Reja yo'q bo'lsa 409. Gate'siz (eval, eski API) hech narsa o'zgarmaydi. Kartada nomni o'zgartirish, ✕ bilan olib tashlash, "Draw N screens", Discard, "Don't ask next time" (`od:plan-gate`).
+- CHAT-07 (qisqa briefga savol chiplari) `Keyin`da qoldi — sinovdan keyin.
+- Fayllar: `PromptBox.tsx`, `components/canvas/{ChatPanel,ActivityCard}.tsx`, `routes/p.$projectId.tsx`, `routes/api/thumb/$screenId.ts`, `generatePlan.ts`, `app/Http/Controllers/PlanController.ts`, `app/Services/{PendingPlans,PlannerService}.ts`, `app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` exit 0 (yangi testlar: gate'da `plan` + `awaiting` va hech qanday ekran yo'q, so'rov xabari bir marta; tasdiqda olib tashlangan ekran yo'q, nom saqlangan, kadr id'lari o'sha, `done`gacha chiziladi, kutayotgan reja yo'q bo'lsa 409; gate'siz eski xatti-harakat), `tsc` toza. **Brauzer** (:3100, Haiku): dashboard'dan "Plant care app…" → "Planning the app · 8s" va Stop yuborish tugmasida → tasdiqlash kartasi (PlantCare, 4 ekran) → "Profile" olib tashlandi, 1-ekran "My Plants" deb nomlandi → "Draw 3 screens" → "Planned ✓ / Drawing 3 screens" har ekran holati bilan → ish paytida yozilgan "Add a reminders screen" Queued bo'lib turdi va reja tugagach o'zi ketdi → xabar ustida Edit/Copy, "Checked “My Plants”…" xabarida Before → After, Undo tugma, takliflar ostida → tahrirda "Working on “Watering Schedule” · Editing 2 parts: todaytimeline, upcomingtimeline".
+
+### Lokal provayderda "planning" qotib qolishi — thinking o'chirildi
+- Sabab: `claude -p` Haiku bilan ham uzun o'ylash bloki yozardi. O'lchandi: bitta reja uchun 8 924 chiqish tokeni va **89 soniya** — foydalanuvchi buni qotib qolgan deb o'ylaydi. Model siyosatimizda thinking o'chiq (DeepSeek'da ham), lekin CLI yo'lida bu majburlanmagan edi.
+- Endi `claudeCli` bola jarayoniga `MAX_THINKING_TOKENS=0` beradi (muhitdagi qiymat bo'lsa u yutadi). O'lchov: 8 924 → 2 075 token, 89s → **17s** (bir xil brief, "make habit tracker app").
+- Fayllar: `app/Services/LlmService.ts`.
+- Tekshirildi: planner uch marta ishga tushirildi (89s thinking bilan, 32s `MAX_THINKING_TOKENS=0` bilan qo'lda, 17s kod ichida), `npm run check` exit 0, `tsc` toza.
+
+### Kadrlar telefon burchagini oldi
+- Sabab: UI-02 dan keyin ekranlar to'g'ri burchakli to'rtburchak bo'lib qoldi — HTML parchasiga o'xshardi, qurilmaga emas.
+- Endi qurilma kengligidagi kadr 40px burchak oladi (haqiqiy telefonnikiga yaqin), keng kadr (dizayn tizimi namunasi) 16px karta burchagida qoladi. Chizilmagan ekran o'rni va "chizilmadi" holati ham xuddi shu burchakni oladi, shuning uchun joy egallab turgan narsa kadrdan farq qilmaydi. Suzuvchi panel chetdan 12px ichkarida bo'lgani uchun burchakka kesilmaydi.
+- Fayllar: `ScreenFrame.tsx`, `routes/p.$projectId.tsx`.
+- Tekshirildi: `npm run check` exit 0, `tsc` toza, brauzerda (Verdant, 7 ekran) — burchaklar bukildi, ichki kontent kesilmadi.
+
+### Lokal `claude-cli` provayderi standart holda Haiku 4.5 da ishlaydi
+- Sabab: Sonnet bilan bitta ekran juda sekin chizilardi, lokal sinov esa o'zgarish tushgan-tushmaganini ko'rish uchun kerak, sifat uchun emas.
+- Endi `claudeCli` doim `--model` beradi: `CLAUDE_CLI_MODEL` bo'lmasa `claude-haiku-4-5-20251001`. Kattaroq model kerak bo'lsa o'sha o'zgaruvchi bilan almashtiriladi. DeepSeek yo'liga ta'sir qilmaydi.
+- Fayllar: `app/Services/LlmService.ts`, `CLAUDE.md`.
+- Tekshirildi: `tsc` toza, `npm run check` exit 0.
+
+### Pastki panel orol bo'ldi, ui-skills qoidalari kodga tushdi, ommaviy sahifalar — NAV-01…04, CRAFT-01…03, MKT-06/07 (tahlil: `docs/NAV-AND-CRAFT-PLAN.md`)
+- Sabab: Sleek generatsiyalarida pastki panel doim suzuvchi orol, bizda esa `left:0;right:0;border-top` — iOS 12 ko'rinishi har ilovada. Panel har ekranda ko'rinadi, shuning uchun ilovaning "yili" shundan o'qiladi.
+- **NAV-01** `ShellService`: `buildBottomNav` endi to'rt shakl chiqaradi — `island` (chetdan 12px, radius 28px, soya + `--fg` ning 8% hairline'i, yorliqli), `pill` (tor, markazda, yarim shaffof + blur, yorliqsiz), `contrast` (`--fg` bilan to'ldirilgan pill, `--bg` ikonkalar — to'q tizimda o'zi teskari bo'ladi), `bar` (eski). `navStyle(seed, tabCount)` FNV-1a bilan ilova nomidan tanlaydi (6+ tab bo'lsa yorliqsiz shakllar), model tanlamaydi; `PlanController` va `GenerateController` bir xil urug'ni ishlatadi (loyiha nomi = ilova nomi), shuning uchun keyin qo'shilgan ekran ham o'sha panelni quradi.
+- **NAV-02**: faol tab endi shakl — yorliqli shakllarda ikonka+yorliq ortida `color-mix(--accent 14%)` pill, yorliqsizlarida ostida 4px nuqta; yorliqsiz tabda `aria-label` majburiy. Markazdagi harakat tugmasi `contrast` da `--bg` fonini oladi, aks holda fonga singib ketardi.
+- **NAV-03** `navClearance(style)`: orol uchun 112px, eski bar uchun 88px; son promptga (`shellContract`) va normalizatorga bir manbadan boradi.
+- **NAV-04** `eval/metrics.ts`: `shell.navStyle` (variantlar taqsimoti) va `shell.navWithoutClearance`.
+- **CRAFT-01** `autofixScreen` ga bitta `data-od-craft` varag'i: raqamlarga `tabular-nums`, `h1..h3` ga `text-wrap:balance`, matnga `pretty`, rasm slotlariga `--fg` ning 10% outline'i, `:focus-visible` halqasi, bosilganda `scale(.96)` (faqat `prefers-reduced-motion: no-preference` ichida). Hammasi nol xususiyatli `:where()`, `!important` yo'q — sahifa o'zi belgilagan bo'lsa, sahifa yutadi.
+- **CRAFT-02** `craft/mobile.md`: yangi "tells" bo'limi (CAPS eyebrow, o'rta nuqtali meta qatorlar, monospace yorliqlar, bir xil kartalar tarmog'i, dekorativ raqamlash), 1–2 shrift oilasi, 4–6 rang, bitta uyushgan kirish animatsiyasi (~100ms). Budjet saqlanishi uchun 11 ta zaifroq qoida qisqartirildi/olib tashlandi (kodga o'tgan `tabular-nums` qatori ham) — mobil system prompt 24 000 belgidan past.
+- **CRAFT-03** `eval/metrics.ts` `tells`: `capsEyebrow`, `middleDotMeta`, `monoLabels`, `creamTerracotta`.
+- **MKT-06** ommaviy sahifalar: `/systems` (33 tizim, tokenlardan chizilgan swatch), `/systems/$id` (uslub kartasi + o'sha tizimning jonli palitrasi, "Design an app in this style" tugmasi prompt bilan), `/playbook` (`src/content/playbook.ts` — har qoida: qoida, sababi va **qayerda majburlanishi**). Landing navigatsiyasiga ikkalasi qo'shildi.
+- **MKT-07** `skill/mobile-app-screens/`: SKILL.md + `references/{shell,checklist}.md` — ui-skills katalogiga chiqarish uchun tayyor, lekin **nashr qilinmadi** (tashqi harakat, ruxsat kerak).
+- Fayllar: `app/Services/{ShellService,ScreenContext}.ts`, `app/Http/Controllers/{Plan,Generate}Controller.ts`, `lib/design-lint.ts`, `craft/mobile.md`, `eval/metrics.ts`, `server/fns.ts`, `routes/{systems.index,systems.$id,playbook}.tsx` (yangi), `content/playbook.ts` (yangi), `Landing.tsx`, `app/Services/new-features.check.ts`, `skill/**` (yangi).
+- Tekshirildi: `npm run check` (exit 0; yangi testlar: variantlar barqaror va turli ilovalarga turlicha tushadi, har shaklda `position:fixed`, qattiq oq yo'q, class yo'q, yorliqsizda `aria-label`, clearance eski bardan katta; craft varag'i bir marta qo'shiladi, `!important` yo'q, idempotent), `tsc` toza. **Brauzer**: to'rt shakl haqiqiy "Verdant — Shop" ekranida yonma-yon render qilindi (skrinshot) — orolning hairline'i to'q ekranda ko'rinadi, `contrast` oq pill bo'lib teskari bo'ladi, `pill` da nuqta ko'rinadi; `/systems`, `/systems/neobrutalism` (uslub kartasi + jonli palitra) va `/playbook` ochildi.
+
+### Studio o'z palitrasi va kanvas ko'rinishi — UI-01…06 (tahlil: `docs/UI-THEME-PLAN.md`)
+- Sabab: chrome shadcn standartida edi — xromasi nol kulranglar, deyarli qora "primary", 10px burchak. Sleek o'lchandi: ularda bitta **iliq** ramp (light va dark shundan olinadi) va rang faqat 3–4 boshqaruvda.
+- **UI-01** `styles.css`: iliq (qum) ramp `#fdfcf8 … #100e0c`, matn `#34302c` (sof qora emas), dark fon `#100e0c` (sof qora emas), brend rangi `#0d9d78` (dark'da `#14b892`), `--radius: 1rem`, yangi `--canvas` / `--canvas-dot`. Sof kulrang qolmagani test bilan qo'riqlanadi.
+- **UI-02** `ScreenFrame`: ekran endi kartada emas — ramka, burchak va `shadow-sm` o'rniga faqat "qog'oz" soyasi; kanvas foni `--canvas`, nuqtalar `--canvas-dot`.
+- **UI-03**: tanlangan kadr ostida `390×1746` o'lcham yorlig'i; element ustida uning teg nomi (`od:hover_element` bridge xabari, teg va rect tekshiriladi); kadr asboblari tanlanganda doimiy ko'rinadi, hover'da miltillamaydi. Element ajratish rangi ham brend rangiga o'tdi.
+- **UI-04** `ThemePanel`: Accent · Colours · Corners · Fonts bo'limlari yig'iladi (`<details>`), har rangda nima ekanini aytadigan izoh (`COLOR_TOKENS.hint`), accent namunasiga sichqoncha tekkanda kanvas darhol o'sha rangni ko'rsatadi va chiqqanda qaytadi — **saqlanmaydi** (`onPreview`, `themePreview`, hech qanday yozuv yo'q).
+- **UI-05**: landing va dashboard qattiq yozilgan `black/…`, `bg-white`, `#FAFAF7` o'rniga tokenlarni ishlatadi; prompt qutisi `rounded-2xl`. Telefon maketi va qorong'i showcase bo'limi o'z ranglarida qoldi (ular atayin).
+- **UI-06** `components/ThemeToggle.tsx` (yangi): bitta tugma — bosilsa light va dark orasida almashadi, menyu yo'q (birinchi versiyada Light/Dark/System menyusi edi, foydalanuvchi tanlovni ortiqcha deb topdi). Dashboard va studio tepa panelida bir xil; `__root.tsx` skripti saqlangan holatni birinchi chizishdan oldin qo'llaydi, shuning uchun oq miltillash yo'q.
+- Fayllar: `styles.css`, `ScreenFrame.tsx`, `lib/edit-bridge.ts`, `lib/theme-override.ts`, `components/ThemeToggle.tsx` (yangi), `components/canvas/{Canvas,ThemePanel,FrameToolbar,TopBar}.tsx`, `routes/p.$projectId.tsx`, `routes/__root.tsx`, `Landing.tsx`, `Dashboard.tsx`, `PromptBox.tsx`, `app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` (exit 0, yangi test: rampda `oklch(x 0 0)` yo'q, `--canvas` ikki qiymatda, kadr kartadan chiqqan, root skripti `prefers-color-scheme`ni biladi), `tsc` toza. **Brauzer** (:3100): kanvas iliq va nuqtali, kadrlar ramkasiz, tanlovda `390×1746` yorlig'i va teg nomi (`p`) chiqdi; tema panelida bo'limlar yig'ildi, qizil namunaga hover — hamma ekran qizil bo'ldi, chiqqanda yashilga qaytdi (saqlanmadi); dashboard light va dark ikkalasida, Light/Dark/System menyusi ishladi; landing SSR javobida `black/…` va `#FAFAF7` qolmadi.
+
+### Dizayn tizimi namunasi endi keng kadr, telefon shaklida emas (THM-09)
+- Sabab: namuna 390×1100 (telefon kengligi) chizilardi, kanvasda oddiy ekranga o'xshab ketardi.
+- Endi: kadr 900×640 (`DS_FRAME`), ichidagi tartib ikki ustun — chapda Colour va Radius, o'ngda Type va Components (`lib/ds-sample.ts` dagi `.cols`). `ScreenFrame` ixtiyoriy `width` oladi (standart — qurilma kengligi); keng kadr o'z balandligida qoladi, qurilma balandligiga cho'zilmaydi.
+- Fayllar: `lib/ds-sample.ts`, `ScreenFrame.tsx`, `routes/p.$projectId.tsx`, `lib/element-ops.check.ts`.
+- Tekshirildi: `npm run check` (exit 0, yangi tasdiq: ikki ustun), `tsc` toza. O'lchov: 900px kengligida kontent balandligi 587px (apple, midnight, brutalist — uchchalasida bir xil), gorizontal toshish yo'q, kadr 640px. **Brauzer** (:3100, Shopify tizimi): kadr ekranlardan aniq ajralib turadi, hech narsa kesilmaydi; Theme panelida accent o'zgartirilganda namuna darhol qayta bo'yaldi va hex qiymati (#db2777) ham yangilandi.
+
+### Audit natijalari foydalanuvchiga ko'rsatilmaydi — o'zimiz tekshirib tuzatamiz (EYE-04)
+- Sabab: kadr ustidagi "N ta muammo · Fix these N" chipi foydalanuvchiga nuqsonlar ro'yxatini ko'rsatardi — bu uning ishi emas. Ekran tayyor bo'lishi kerak, tekshiruv bizniki.
+- Endi: chip, uning menyusi va `AUDIT_LABEL` interfeysdan olib tashlandi. Ekran render bo'lib joylashgandan keyin kanvas o'zi tuzatadi (`p.$projectId.tsx` effekti), har ekran uchun bir marta — qo'riqchi (`autoFixed`) komponentdan tashqarida, chunki React'ning development qayta-mount'i aks holda tuzatishni takrorlardi (Shop v2 va v3 bo'lib qolgandi). Oqimda faqat "Checking the screens…" qatori ko'rinadi.
+- Suhbatda endi faqat agent gapiradi: `auto: true` so'rovda foydalanuvchi nomidan "Fix N problems…" xabarini yozmaydi, agent xabari esa "Checked “X” and fixed N rendering problems — now vN." Tuzatib bo'lmagani ekranda emas, log'da qoladi.
+- Fayllar: `components/canvas/FrameToolbar.tsx`, `routes/p.$projectId.tsx`, `app/Http/Controllers/GenerateController.ts`, `generate.ts`, `app/Http/Controllers/controllers.check.ts`, `CLAUDE.md`.
+- Tekshirildi: `npm run check` (exit 0) — yangi test: avtomatik tuzatishda bitta agent xabari qo'shiladi, foydalanuvchi nomidan hech narsa yozilmaydi; `tsc` toza. **Brauzer** (:3100, Verdant loyihasi): chip yo'q; bir ekranga ataylab past kontrastli qator qo'yildi — sahifa ochilgach o'zi tuzatildi (v2 → v3, bitta versiya, `#ededed` yo'qoldi), suhbatda faqat "Checked “Verdant Search Screen” and fixed 1 rendering problem — now v3."
+
+### Figma'ga nusxalash bitta ekran bilan cheklanmaydi — FIG-06
+- Sabab: `copyToFigma` bitta `screenId` olardi, shuning uchun bir nechta ekran tanlangan bo'lsa ham faqat bittasi ketardi.
+- Endi: kadr menyusidan — o'sha ekran, agar u tanlanganlar ichida bo'lsa hammasi; eksport menyusida "Copy all screens to Figma" — butun ilova. Har ekran alohida nomlangan guruh (Figma'da alohida frame), kanvasdagi joyida (`odTreesToSvg`, chap-yuqoriga normallashtiriladi, id'lar ekranlar bo'ylab takrorlanmaydi).
+- Fayllar: `lib/figma-svg.ts`, `lib/figma-copy.ts`, `lib/figma-svg.check.ts` (yangi), `routes/p.$projectId.tsx`, `components/canvas/TopBar.tsx`, `package.json`.
+- Tekshirildi: `npm run check` (exit 0), `tsc` toza. Testlar: doska kengligi va balandligi, ekran boshiga bitta guruh, ikkinchisining joyi, bitta ekran bo'lsa oddiy SVG, id'lar noyob, rasm har URL uchun bir marta va chizilgan o'lchamda olinadi. **Brauzer** (:3100): eksport menyusidan butun ilova — 6 ekran, 428 guruh, 35 rasm, 1.3 MB; ikki ekran tanlab kadr menyusidan — 2 ekran, 1.0 MB. To'rt ekranli doska render qilib ko'rildi (skrinshot).
+
 ## 2026-09-22
 
 ### "Copy to Figma" — FIG-01, FIG-02, FIG-05 (reja: `docs/FIGMA-EXPORT-PLAN.md`)

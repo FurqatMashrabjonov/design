@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, FolderArchive, ClipboardCopy } from 'lucide-react'
+import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, FolderArchive, ClipboardCopy, PenTool } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AccountMenu } from '@/components/AccountMenu'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
@@ -26,6 +27,8 @@ export function TopBar(props: {
   screenName: string | null
   onDownloadScreen: () => void
   onCopyScreenHtml: () => void
+  /** FIG-06: every screen (or the selected ones) as Figma layers. */
+  onCopyFigma: () => void
   onDownloadApp: () => void
   onShare: () => void
   onDeleteProject: () => Promise<void>
@@ -77,6 +80,7 @@ export function TopBar(props: {
         {props.designSystem}
       </Badge>
       <div className="ml-auto flex items-center gap-2">
+        <ThemeToggle className="size-8" />
         <Button variant="outline" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
           <Play className="size-4" />
           Preview
@@ -96,6 +100,9 @@ export function TopBar(props: {
           <DropdownMenuContent align="end" className="w-60">
             <DropdownMenuItem onSelect={props.onDownloadApp}>
               <FolderArchive /> Whole app (.zip)
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={props.onCopyFigma}>
+              <PenTool /> Copy all screens to Figma
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{props.screenName ?? 'Select a screen for these'}</DropdownMenuLabel>

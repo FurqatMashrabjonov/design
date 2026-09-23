@@ -22,7 +22,7 @@
  *   - --fg: #ffffff (white — the only text color on dark).
  *   - --fg-2: #ffffff (same; no secondary ink split on dark canvas).
  *   - --muted: #a1a1aa (muted zinc — secondary text, descriptions).
- *   - --meta: #71717a (shade-50 — timestamps, tertiary info).
+ *   - --meta: #77777f (shade-50 — timestamps, tertiary info).
  *   - --border: #1e2c31 (dark card border); --border-soft: #3f3f46.
  *   - --accent: #36F4A4 (neon green — focus/accent only, not bg).
  *   - --accent-on: #000000 (black text on neon green).
@@ -43,7 +43,7 @@
   --fg:   #ffffff;                     /* white — only text color on dark */
   --fg-2: #ffffff;                     /* same; no secondary ink split */
   --muted: #a1a1aa;                    /* muted zinc — secondary text */
-  --meta:  #71717a;                    /* shade-50 — timestamps, tertiary */
+  --meta:  #77777f;                    /* shade-50 — timestamps, tertiary */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      #1e2c31;             /* dark card border */

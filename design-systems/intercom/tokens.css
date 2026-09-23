@@ -39,8 +39,8 @@
    * through size and tracking, not through tonal text variation. */
   --fg: #111111;             /* Off Black — primary text, dark buttons */
   --fg-2: var(--fg);         /* alias — single heading color throughout */
-  --muted: #7b7b78;          /* Black 50 — warm muted text */
-  --meta: #9c9fa5;           /* Content Tertiary — captions, metadata */
+  --muted: #727270;          /* Black 50 — warm muted text */
+  --meta: #707277;           /* Content Tertiary — captions, metadata */
 
   /* ─── Border ──────────────────────────────────────────────────────
    * Oat is THE Intercom border — warm-tinted, never cool gray. The

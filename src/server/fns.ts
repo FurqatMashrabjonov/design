@@ -2,6 +2,7 @@
 // Every function here checks who is asking and that they own what they name (B1, OWN-02), and
 // validates its input at the boundary (SEC-02): what reaches a controller is well-typed and theirs.
 import { createServerFn } from '@tanstack/react-start'
+import { notFound } from '@tanstack/react-router'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
@@ -114,3 +115,30 @@ export const elementAction = createServerFn({ method: 'POST' })
 export const replaceElementPhoto = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ ...elementRef(d), query: str(obj(d).query, 120) }))
   .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.replacePhoto(data)))
+
+// --- public pages (MKT-06) ---
+// The design systems and their style cards are public: they are the product's argument, and every
+// page links back into it. Read-only and unauthenticated on purpose — no project or user is touched.
+
+export const getSystems = createServerFn({ method: 'GET' }).handler(async () => {
+  const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
+  return DesignSystemService.list().filter((s) => s.hasTokens)
+})
+
+export const getSystem = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => ({ id: idOf(d) }))
+  .handler(async ({ data }) => {
+    const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
+    if (!DesignSystemService.exists(data.id)) throw notFound()
+    const { designSystemSample } = await import('@/lib/ds-sample')
+    const entry = DesignSystemService.list().find((s) => s.id === data.id)
+    const name = entry?.name ?? data.id
+    return {
+      id: data.id,
+      name,
+      category: entry?.category ?? 'General',
+      description: entry?.description ?? '',
+      card: DesignSystemService.readStyleCard(data.id),
+      sample: designSystemSample(DesignSystemService.readTokensRoot(data.id), DesignSystemService.readFontUrls(data.id), name),
+    }
+  })

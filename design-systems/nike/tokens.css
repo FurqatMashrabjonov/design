@@ -125,7 +125,7 @@
   --fg: #111111;             /* Nike Black — primary text, headings, nav links */
   --fg-2: var(--fg);         /* alias — no intermediate between primary and muted */
   --muted: #707072;          /* Secondary Text (grey-500) — descriptive copy */
-  --meta: #9e9ea0;           /* Disabled Text (grey-400) — tertiary / metadata */
+  --meta: #707072;           /* Disabled Text (grey-400) — tertiary / metadata */
 
   /* ─── Border (2 levels) ──────────────────────────────────────────
    * Nike's border palette is restrained: --border (#CACACB, grey-300)

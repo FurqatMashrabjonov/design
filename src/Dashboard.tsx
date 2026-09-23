@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { Check, ChevronDown, Grid2x2, Home, LayoutList, Moon, MoreHorizontal, Pencil, Search, Sparkles, Star, Sun, Trash2 } from 'lucide-react'
+import { Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Sparkles, Star, Trash2 } from 'lucide-react'
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
-import { BRAND, Phone, SETS, shot } from './Landing'
+import { BRAND, PENDING_IMAGES, Phone, SETS, shot } from './Landing'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { frameSize } from './canvas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -22,7 +23,6 @@ type User = { name: string; email: string }
 
 const LIME = '#C6F24E'
 const VIEW_KEY = 'od:projects-view'
-export const THEME_KEY = 'od:theme'
 
 /** The project's first screen, loaded only when the card scrolls into view. */
 export function Thumb({ screenId, device, width }: { screenId: string; device: string; width: number }) {
@@ -36,7 +36,7 @@ export function Thumb({ screenId, device, width }: { screenId: string; device: s
       tabIndex={-1}
       loading="lazy"
       sandbox="allow-scripts"
-      className="pointer-events-none origin-top-left border-0 bg-white"
+      className="pointer-events-none origin-top-left border-0 bg-card"
       style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}
     />
   )
@@ -67,76 +67,12 @@ function write(key: string, value: string) {
 export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size?: number }) {
   return (
     <span className="inline-flex shrink-0 overflow-hidden rounded-full ring-1 ring-black/10" style={{ width: size, height: size }} aria-hidden>
-      <span className="h-full w-1/2" style={{ background: s?.bg ?? '#fff' }} />
+      <span className="h-full w-1/2" style={{ background: s?.bg ?? 'var(--card)' }} />
       <span className="h-full w-1/2" style={{ background: s?.accent ?? '#888' }} />
     </span>
   )
 }
 
-/** DSH-07: pick a system by how it looks — its colours and display type — not by name alone. */
-function SystemPicker({ systems, value, onChange }: { systems: System[]; value: string; onChange: (id: string) => void }) {
-  const current = systems.find((s) => s.id === value)
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" className="inline-flex h-8 items-center gap-2 rounded-lg border bg-background px-2.5 text-sm hover:bg-muted" aria-label="Design system">
-          {current ? <Swatch s={current.swatch} /> : <Sparkles className="size-3.5" />}
-          <span className="max-w-[140px] truncate">{current?.name ?? 'Auto'}</span>
-          <ChevronDown className="size-3.5 opacity-50" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-[420px] w-[min(92vw,560px)] overflow-y-auto p-2">
-        {/* One grid, already ordered by category: most categories hold one or two systems. */}
-        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-          {/* GQ-03: the default — the brief picks a system that suits the app. */}
-          <DropdownMenuItem onSelect={() => onChange('auto')} className="flex-col items-stretch gap-0 overflow-hidden rounded-lg border p-0 focus:ring-2 focus:ring-ring">
-            <div className="flex h-14 items-center justify-center gap-2 bg-gradient-to-br from-amber-100 via-rose-100 to-sky-100 text-sm font-semibold text-neutral-800">
-              <Sparkles className="size-4" /> Auto
-            </div>
-            <div className="flex items-center justify-between gap-1 px-2.5 py-1.5">
-              <span className="min-w-0">
-                <span className="block truncate text-xs">Auto</span>
-                <span className="block truncate text-[10px] text-muted-foreground">Chosen from your brief</span>
-              </span>
-              {value === 'auto' && <Check className="size-3.5 shrink-0" />}
-            </div>
-          </DropdownMenuItem>
-          {systems.map((s) => (
-            <DropdownMenuItem key={s.id} onSelect={() => onChange(s.id)} className="flex-col items-stretch gap-0 overflow-hidden rounded-lg border p-0 focus:ring-2 focus:ring-ring">
-              <div className="flex h-14 items-center justify-between px-3" style={{ background: s.swatch.bg ?? undefined, color: s.swatch.fg ?? undefined }}>
-                <span className="text-xl font-semibold" style={{ fontFamily: s.swatch.font ? `"${s.swatch.font}", system-ui` : undefined }}>Aa</span>
-                <span className="h-5 w-8 rounded-full" style={{ background: s.swatch.accent ?? undefined }} />
-              </div>
-              <div className="flex items-center justify-between gap-1 px-2.5 py-1.5">
-                <span className="min-w-0">
-                  <span className="block truncate text-xs">{s.name}</span>
-                  <span className="block truncate text-[10px] text-muted-foreground">{s.category}</span>
-                </span>
-                {s.id === value && <Check className="size-3.5 shrink-0" />}
-              </div>
-            </DropdownMenuItem>
-          ))}
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function ThemeToggle() {
-  const [dark, setDark] = useState(false)
-  useEffect(() => setDark(document.documentElement.classList.contains('dark')), [])
-  function toggle() {
-    const next = !dark
-    document.documentElement.classList.toggle('dark', next)
-    write(THEME_KEY, next ? 'dark' : 'light')
-    setDark(next)
-  }
-  return (
-    <button type="button" onClick={toggle} className="grid size-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
-      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-    </button>
-  )
-}
 
 /** DSH-12: today's calls against the limit, so the limit is never a surprise. */
 function Usage({ calls, limit }: { calls: number; limit: number }) {
@@ -175,6 +111,8 @@ function ProjectMenu({ card, onRename, onDelete }: { card: Card; onRename: () =>
 export function Dashboard({ projects, designSystems, usage, user }: { projects: Card[]; designSystems: System[]; usage: { calls: number; limit: number }; user: User | undefined }) {
   const navigate = useNavigate()
   const router = useRouter()
+  // DS-02: nobody picks a style up front any more. This stays only so an idea card lands on the
+  // system it is showing off — a card is a picture of an output, so clicking it should reproduce it.
   const [designSystem, setDesignSystem] = useState('auto')
   const [fill, setFill] = useState<{ text: string; key: number }>()
   const [tab, setTab] = useState<'all' | 'favorites'>('all')
@@ -280,15 +218,20 @@ export function Dashboard({ projects, designSystems, usage, user }: { projects: 
             <p className="text-sm text-muted-foreground">{greeting()}{first ? `, ${first}` : ''}</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">What should we design today?</h1>
             <div className="mt-6 text-left">
+              {/* DS-02: no style to choose before there is anything to look at. The brief decides
+                  (a style it names wins; otherwise the app type offers a few and the project picks
+                  one), and the Theme panel can change it once the screens are on the canvas. */}
               <PromptBox
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
                 fill={fill}
-                extra={
-                  <>
-                    <SystemPicker systems={designSystems} value={designSystem} onChange={setDesignSystem} />
-                  </>
-                }
-                onSubmit={async (prompt) => {
+                attachments
+                onSubmit={async (prompt, images) => {
+                  // The pictures travel in session storage, not the URL: the project page starts the
+                  // run and reads them there, exactly once.
+                  try {
+                    if (images?.length) sessionStorage.setItem(PENDING_IMAGES, JSON.stringify(images))
+                    else sessionStorage.removeItem(PENDING_IMAGES)
+                  } catch {}
                   const { id } = await createProject({ data: { designSystem, brief: prompt } })
                   navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
                 }}

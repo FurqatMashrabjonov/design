@@ -44,7 +44,7 @@
   --fg:    #f9f9f9;                     /* near-white primary text */
   --fg-2:  #cecece;                     /* light gray secondary body */
   --muted: #9c9c9d;                     /* medium gray tertiary / nav links */
-  --meta:  #6a6b6c;                     /* dim gray placeholders / metadata */
+  --meta:  #7c7d7e;                     /* dim gray placeholders / metadata */
 
   /* ─── Border ───────────────────────────────────────────────────── */
   --border:      rgba(255, 255, 255, 0.06);   /* card containment — barely visible */
