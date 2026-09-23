@@ -7,8 +7,8 @@ import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet
 const briefs: { id: string; brief: string; designSystem: string; kind?: string; lang?: string; appType: string; expect: string[] }[] =
   JSON.parse(readFileSync('eval/briefs.json', 'utf8'))
 // 25 original briefs, plus 3 (GQ-06) that count their screens / pick "auto" (GQ-03).
-assert.equal(briefs.length, 28)
-assert.equal(new Set(briefs.map((b) => b.id)).size, 28, 'brief ids are unique')
+assert.equal(briefs.length, 36 /* 28 + 8 Dribbble-level briefs (GQ-08) */)
+assert.equal(new Set(briefs.map((b) => b.id)).size, 36, 'brief ids are unique')
 assert.equal(briefs.filter((b) => b.kind === 'vague').length, 5)
 assert.equal(briefs.filter((b) => b.lang).length, 3)
 assert.ok(new Set(briefs.map((b) => b.appType)).size >= 10, 'at least 10 app types')

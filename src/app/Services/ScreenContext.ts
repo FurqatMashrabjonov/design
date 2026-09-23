@@ -54,7 +54,7 @@ export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
   if (!isMobile) return {}
   return slot.screenType === 'root-tab'
     ? { nav: buildBottomNav(nav, slot.activeTabId, style) }
-    : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home') }
+    : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home'), title }
 }
 
 export function screenBrief(p: { app: string; screenNames: string[]; contract: string; digest: string; heading: string; description: string; content?: string; data?: string; art?: string }): string {

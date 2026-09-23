@@ -350,5 +350,101 @@
       "detail",
       "stats"
     ]
+  },
+  {
+    "id": "dribbble-sleep",
+    "appType": "health",
+    "designSystem": "auto",
+    "brief": "A calm sleep and wind-down app: tonight's bedtime ring with a big hours-slept number, a gentle sleep sound library with soft gradients, a weekly sleep chart, and a morning check-in. Warm dark palette, generous space, one serif headline per screen.",
+    "expect": [
+      "dashboard",
+      "list",
+      "stats",
+      "form"
+    ]
+  },
+  {
+    "id": "dribbble-coffee",
+    "appType": "food",
+    "designSystem": "auto",
+    "brief": "Specialty coffee ordering for one roaster: a hero drink with a full-bleed photo, a menu of drinks with size and milk options, a cart with a clear total, and an order tracking screen with a friendly progress. Cream and espresso tones, editorial type.",
+    "expect": [
+      "feed",
+      "detail",
+      "checkout",
+      "result"
+    ]
+  },
+  {
+    "id": "dribbble-wallet",
+    "appType": "fintech",
+    "designSystem": "auto",
+    "brief": "A minimalist personal wallet: balance as the hero figure, a bento of spending tiles, a transaction list grouped by day, a card detail with a soft-3D card, and a send-money flow. Ink black and one electric accent, tabular numerals everywhere.",
+    "expect": [
+      "dashboard",
+      "list",
+      "detail",
+      "form"
+    ]
+  },
+  {
+    "id": "dribbble-plants",
+    "appType": "productivity",
+    "designSystem": "auto",
+    "brief": "Plant care companion: a garden overview with photo tiles, a plant detail with watering schedule and light needs, a reminder list, and a diary with photos. Botanical greens on warm cream, hand-made feel without being childish.",
+    "expect": [
+      "dashboard",
+      "detail",
+      "list",
+      "feed"
+    ]
+  },
+  {
+    "id": "dribbble-run",
+    "appType": "fitness",
+    "designSystem": "auto",
+    "brief": "A running club app: today's run as a hero with distance in huge type and a route map, a weekly training plan, a run detail with pace splits, and a club leaderboard. Bold, energetic, high contrast, dark surfaces with a neon accent.",
+    "expect": [
+      "dashboard",
+      "list",
+      "detail",
+      "stats"
+    ]
+  },
+  {
+    "id": "dribbble-reader",
+    "appType": "media",
+    "designSystem": "auto",
+    "brief": "A long-form reading app: a home feed with editorial covers, an article view with beautiful typography and a reading progress ring, a saved list, and a profile with reading stats. Paper white, one serif display face, quiet chrome.",
+    "expect": [
+      "feed",
+      "detail",
+      "list",
+      "profile"
+    ]
+  },
+  {
+    "id": "dribbble-travel",
+    "appType": "travel",
+    "designSystem": "auto",
+    "brief": "A weekend trip planner: a trip cover with a full-width photo and countdown, an itinerary timeline by day, a place detail with map and photos, and a packing checklist. Sun-bleached palette, big photos, soft glass over imagery.",
+    "expect": [
+      "dashboard",
+      "list",
+      "detail",
+      "form"
+    ]
+  },
+  {
+    "id": "dribbble-focus",
+    "appType": "productivity",
+    "designSystem": "auto",
+    "brief": "A focus timer for deep work: a full-screen session timer with a huge number and a thick ring, a session history with a heatmap, a task list for the session, and settings for sounds. Dark, focused, one vivid accent, no clutter.",
+    "expect": [
+      "dashboard",
+      "stats",
+      "list",
+      "settings"
+    ]
   }
 ]

@@ -11,6 +11,8 @@ import { patchElement } from './element-patcher.ts'
 export type ShellParts = {
   nav?: string
   header?: string
+  /** The screen title the header shows; a page heading repeating it is removed (GQ-19). */
+  title?: string
 }
 
 export function stripCssComments(css: string): string {
@@ -126,9 +128,34 @@ export function normalizeShell(html: string, shell: ShellParts): string {
       replaceMatchingTag(out, 'header', isPinnedTop, shell.header) ??
       injectAfterBodyStart(out, shell.header)
     out = stackRowBody(out)
+    if (shell.title) out = dropDuplicateTitle(out, shell.title)
   }
 
   return out
+}
+
+/**
+ * GQ-19 follow-up: the injected header now carries the screen title at 34px, so a page that also
+ * opens with an <h1> of the same words shows it twice — the judge marked "Create Habit / Create
+ * habit" and "Achievements / Achievements" on the first run. The first heading in the body that
+ * matches the title (case, spacing and the app-name suffix ignored) is removed; a different heading
+ * — a habit's name, a greeting — stays.
+ */
+export function dropDuplicateTitle(html: string, title: string): string {
+  const norm = (t: string) => t.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().toLowerCase()
+  const wanted = norm(title)
+  const bare = wanted.replace(/\s+[—–-]\s+.*$/, '') // "Habit Detail — Streakly" also matches "Habit Detail"
+  const re = /<(h1|h2)\b[^>]*>([\s\S]*?)<\/\1>/i
+  // Search after the injected header, whose own <h1> is the title by design.
+  const headerAt = html.search(/<header\b[^>]*data-od-shell="detail-header"/i)
+  const headerEnd = headerAt >= 0 ? html.indexOf('</header>', headerAt) : -1
+  const from = headerEnd >= 0 ? headerEnd + '</header>'.length : Math.max(0, html.search(/<body[^>]*>/i))
+  const m = re.exec(html.slice(from))
+  if (!m) return html
+  const text = norm(m[2]!)
+  if (text !== wanted && text !== bare && text.replace(/\s+[—–-]\s+.*$/, '') !== bare) return html
+  const at = from + m.index
+  return html.slice(0, at) + html.slice(at + m[0].length)
 }
 
 /**

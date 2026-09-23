@@ -107,7 +107,9 @@ export function navStyle(seed: string, opts: { tabCount?: number; appType?: stri
 
 /** NAV-03: how much room the page must leave under the bar. A floating bar sits above the edge. */
 export function navClearance(style: NavStyle): number {
-  return style === 'bar' ? NAV_CLEARANCE : NAV_CLEARANCE + 24
+  // A floating bar (GQ-18) sits 21px up and is up to 64px tall, plus air: the judge saw a pill
+  // covering list content on nearly every screen when this was +24.
+  return style === 'bar' ? NAV_CLEARANCE : NAV_CLEARANCE + 40
 }
 
 export function iconSvg(name: string, size = 22): string {

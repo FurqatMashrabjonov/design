@@ -150,20 +150,23 @@ export function parsePlan(raw: string): Plan {
   const list = (v: unknown, max: number, each: number) => (Array.isArray(v) ? v.map((x) => text(x, each)).filter(Boolean).slice(0, max) : [])
 
   const requested = list(plan.requested, 6, 120)
+  const appName = text(plan.appName, 60)
+  // Names, parents and links all pass through the same cleaner so a link still finds its screen.
+  const title = (v: unknown) => screenTitle(text(v, 60), appName)
   const drafted: PlannedScreen[] = plan.screens.slice(0, MAX_SCREENS).map((s: Record<string, unknown>, idx: number) => {
-    const name = text(s?.name, 60) || `Screen ${idx + 1}`
+    const name = title(s?.name) || `Screen ${idx + 1}`
     const screenType = s?.screenType === 'detail-view' || s?.screenType === 'modal-flow' ? s.screenType : 'root-tab'
     return {
       name,
       description: text(s?.description, 500),
       screenType,
       activeTabId: s?.activeTabId ? String(s.activeTabId) : undefined,
-      parentScreen: s?.parentScreen ? String(s.parentScreen) : undefined,
+      parentScreen: title(s?.parentScreen) || undefined,
       archetype: (ARCHETYPES as readonly string[]).includes(String(s?.archetype)) ? (s.archetype as Archetype) : inferArchetype(name, screenType),
       userGoal: text(s?.userGoal, 160),
       primaryAction: text(s?.primaryAction, 80),
       sections: list(s?.sections, 7, 120),
-      linksTo: list(s?.linksTo, 6, 60),
+      linksTo: list(s?.linksTo, 6, 60).map((l) => title(l)).filter(Boolean),
       covers: Array.isArray(s?.covers) ? [...new Set(s.covers.filter((n): n is number => Number.isInteger(n) && n >= 0 && n < requested.length))] : [],
     }
   })
@@ -188,6 +191,26 @@ export function parsePlan(raw: string): Plan {
 }
 
 export const MAX_SCREENS = 6
+
+/**
+ * A screen's name without the app's name in it. The planner writes "Habit Detail — Streakly" and
+ * "Streakly — Achievements", and the injected header then drew that whole string at 34px over the
+ * habit's own name — the judge flagged it on both runs. The app's name belongs to the app, not to
+ * the screen. "Today — Streakly habit tracker" also loses its tail: the tail starts with the app.
+ */
+export function screenTitle(name: string, appName: string): string {
+  const clean = name.replace(/\s+/g, ' ').trim()
+  if (!appName) return clean
+  const app = appName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const sep = '\\s*[—–:|/-]\\s*'
+  const out = clean
+    .replace(new RegExp(`^${app}${sep}`, 'i'), '')
+    .replace(new RegExp(`${sep}${app}\\b.*$`, 'i'), '')
+    .replace(new RegExp(`\\s*\\(${app}\\)\\s*`, 'i'), ' ')
+    .replace(new RegExp(`^${app}\\s+(?=\\S)`, 'i'), '')
+    .trim()
+  return out || clean
+}
 
 /** Slots, links and tabs made consistent with each other — after parsing, and again after trimming. */
 /**

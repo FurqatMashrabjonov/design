@@ -49,7 +49,8 @@ export function parseJudgement<T>(text: string): T | null {
   }
 }
 
-function ask(system: string, prompt: string, cwd: string): Promise<string> {
+/** One question to the local Claude Code login; the reply text. Shared with judge-project.ts. */
+export function ask(system: string, prompt: string, cwd: string): Promise<string> {
   const args = ['-p', '--output-format', 'json', '--tools', 'Read', '--allowedTools', 'Read', '--system-prompt', system, '--setting-sources', '', '--strict-mcp-config', '--no-session-persistence', '--disable-slash-commands']
   if (process.env.JUDGE_MODEL) args.push('--model', process.env.JUDGE_MODEL)
   return new Promise((ok, fail) => {

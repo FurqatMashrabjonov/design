@@ -5,6 +5,36 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Vizual hakam kanvas loyihalarida, va u topgan uchta nuqson tuzatildi — GQ-08
+
+`eval/judge-project.ts`: eval yugurishi emas, `data.db`'dagi loyihalar (habit tracker iteratsiyalari)
+skrinshot qilinib (`--virtual-time-budget`, animatsiya muzlatilgan — birinchi yugurishda hakam
+"near-zero opacity grid" deb kirish animatsiyasining o'rtasini ko'rgan edi) rubrika bo'yicha
+baholanadi; `--vs a,b` tasodifiy tartibda juftlik; `--renormalize` saqlangan HTML ustiga bugungi
+shell/kit/tokenlarni qo'yib baholaydi (qayta generatsiyasiz "oldin/keyin"). `eval/briefs.json`
++8 `dribbble-*` brief (36). `eval/judge.ts` `ask` eksport qilindi.
+
+Natijalar (Claude hakam, 1–5). Saqlangan HTML: baseline Ritual/bento 3.33 (koherensiya 3), Nova
+3-qadam 3.83 (4, eng yaxshi), yakuniy 3.00 (3). Bugungi shell bilan (`-rn`): Nova 3.67 (4),
+yakuniy 3.67 (4) — yakuniy +0.67. Juftlik baseline vs yakuniy-rn: baseline "clear" yutdi — sabab:
+emoji + chiziqli ikonka aralash, sarlavha takrori, kesilgan matn, suzuvchi pill kontent ustida.
+
+Hakam topgan va kodda tuzatilgan:
+- **Pill/island kontentni yopadi** — `navClearance`: suzuvchi bar uchun 88+40px.
+- **Sarlavha ikki marta** — `dropDuplicateTitle` (normalizer): kiritilgan header'dan keyingi birinchi
+  h1/h2 sarlavha bilan bir xil bo'lsa (regisr, bo'shliq, "— App" qo'shimchasi e'tiborsiz) olib
+  tashlanadi. `controllers.check` regenerate testi endi `<h1>Cart — GoBite</h1>` tushishini kutadi.
+- **Ekran nomida ilova nomi** ("Habit Detail — Streakly", "Streakly — Achievements", "Feast Home") —
+  header uni 34px'da chizardi. `screenTitle(name, appName)` `parsePlan`'da nom, parent va
+  linksTo'ga birdek qo'llanadi (havola o'z ekranini topaverishi uchun).
+
+Hakam artefakti (bilib qo'yish): skrinshot faqat birinchi 844px — suzuvchi pill har doim
+qandaydir qator ustida turadi va hakam buni "yopadi" deb sanaydi; bar uslubi uchun bu jarima
+doimiy. Ochiq qolgan: emoji ikonka o'rnida (model), FAB (EYE-08), kesilgan yorliqlar.
+
+- Fayllar: `eval/judge-project.ts` (yangi), `eval/judge.ts`, `eval/briefs.json`, `eval/eval.check.ts`, `src/app/Services/ShellService.ts`, `src/lib/screen-normalizer.ts`, `src/app/Services/ScreenContext.ts`, `src/app/Services/PlannerService.ts`, `src/app/Services/new-features.check.ts`, `src/app/Services/services.check.ts`, `src/app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` (Judge Regressions: clearance, sarlavha takrori; parsePlan nomlari — 5 holat, havola/parent hal bo'ladi; trimToBrief "Feast Home"→"Home") va `tsc` toza. Hakam ikki marta yugurdi (saqlangan, `-rn`); hisobotlar `eval/out/projects/<id>[-rn]/judge.json`.
+
 ### 2026 to'plami yakuniy generatsiyada — GQ-18…GQ-25 birga, "make habit tracker"
 
 Sakkiz qadam (bar, bento, ikonka, sarlavha, sticker, shkala, harakat, dark) har biri LLM'siz

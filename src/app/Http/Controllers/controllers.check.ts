@@ -46,7 +46,9 @@ for (const part of ['App: GoBite — Food delivery', 'Order summary, then a Plac
   assert.ok(brief.includes(part), `the retry is drawn from the stored spec with the app's context: "${part}"`)
 assert.ok(/Other screens in this app: Home\n/.test(brief), 'a screen is not listed as its own sibling')
 let cart = Screen.find('s-cart')!
-assert.ok(cart.html.includes('<h1>Cart — GoBite</h1>') && cart.error === null, 'the slot is filled and the failure note cleared')
+assert.ok(cart.html.includes('Cart — GoBite') && cart.error === null, 'the slot is filled and the failure note cleared')
+// GQ-19 follow-up: the injected header already shows "Cart" at 34px, so the page's own <h1> repeating it is dropped.
+assert.ok(!cart.html.includes('<h1>Cart — GoBite</h1>') && cart.html.includes('data-od-shell="detail-header"'), 'a page heading that repeats the injected title is removed')
 assert.ok(cart.html.includes('data-od-back="Home"'), 'it got the detail header of its own slot')
 assert.equal(cart.prompt, 'cart', 'regenerating never overwrites what the screen was asked to be')
 assert.equal(ScreenVersion.forScreen('s-cart').length, 0, 'a failed screen has no design worth keeping as a version')

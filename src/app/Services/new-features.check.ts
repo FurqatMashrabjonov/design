@@ -860,6 +860,24 @@ console.log('Testing Frame Height...')
   assert.ok(root2.includes("localStorage.getItem('od:theme')") && root2.includes('add(\'dark\')'), 'UI-06: the saved mode is applied before the first paint')
 }
 
+console.log('Testing Judge Regressions (GQ-18/19 follow-ups)...')
+{
+  // The judge saw a floating pill cover list content: a floating bar now leaves 128px, not 112.
+  const { navClearance: clearance } = await import('./ShellService.ts')
+  assert.ok(clearance('pill') >= 128 && clearance('island') >= 128, `floating bars leave room for themselves: ${clearance('pill')}`)
+  assert.equal(clearance('bar'), 88, 'the edge-to-edge bar is unchanged')
+  // The injected large title made a page <h1> of the same words a duplicate: it is dropped.
+  const { dropDuplicateTitle: drop } = await import('../../lib/screen-normalizer.ts')
+  const page = (h: string) => `<!doctype html><html><head><title>x</title></head><body><header data-od-shell="detail-header"><h1>Create Habit</h1></header>${h}<p>form</p></body></html>`
+  assert.ok(!drop(page('<h1 class="t">Create habit</h1>'), 'Create Habit').includes('<h1 class="t">'), 'a heading repeating the title is removed (case-insensitive)')
+  assert.ok(!drop(page('<h2>Habit Detail</h2>'), 'Habit Detail — Streakly').includes('<h2>Habit Detail</h2>'), 'the app-name suffix is ignored')
+  assert.ok(drop(page('<h1>Morning meditation</h1>'), 'Habit Detail — Streakly').includes('<h1>Morning meditation</h1>'), 'a different heading stays')
+  assert.ok(drop(page('<h1>Create Habit</h1>'), 'Create Habit').includes('<header data-od-shell="detail-header"><h1>Create Habit</h1></header>'), 'the header\'s own title is not the one removed')
+  const { shellPartsFor: parts } = await import('./ScreenContext.ts')
+  const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'a', label: 'A', icon: 'home' }, { id: 'b', label: 'B', icon: 'user' }] }
+  assert.equal(parts({ screenType: 'detail-view', parentScreen: 'Home' }, nav, true, 'Create Habit').title, 'Create Habit', 'the normaliser is told the title the header shows')
+}
+
 console.log('Testing Motion Tokens (GQ-24)...')
 {
   const kit = readFileSync('kit/od-kit.css', 'utf8')

@@ -97,7 +97,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-05 | Root ekran va tab nomi mosligi parsePlan'da | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-06 | Brief sanagan ekranlar chegara bo'ladi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-07 | Sahifa yopilsa ham generatsiya serverda davom etadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
-| GQ-08 | Eval'da vizual hakam (skrinshot + rubrika + pairwise) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-08 | Eval'da vizual hakam (skrinshot + rubrika + pairwise) | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-14 | Vizual tanqid sikli (1 marta, vision model) | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-11 | Anchor ekran kuchliroq modelda | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-12 | Desktop prompt yo'li va web skill'larni tozalash | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |

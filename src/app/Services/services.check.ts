@@ -3,7 +3,7 @@ import { extractArtifact } from '../../artifact.ts'
 import { streamCompletion } from './LlmService.ts'
 import { DesignSystemService } from './DesignSystemService.ts'
 import { composeSystemPrompt } from './PromptComposer.ts'
-import { parsePlan, type PlannedScreen } from './PlannerService.ts'
+import { parsePlan, screenTitle, type PlannedScreen } from './PlannerService.ts'
 import { mapLimit } from './Pool.ts'
 import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellService.ts'
 
@@ -66,6 +66,27 @@ assert.throws(() => parsePlan(JSON.stringify({ appName: 'X', screens: [] })), /n
 assert.throws(() => parsePlan('not json'))
 const many = parsePlan(JSON.stringify({ screens: Array.from({ length: 9 }, (_, i) => ({ name: `S${i}` })) }))
 assert.equal(many.screens.length, 6, 'capped at 6 screens')
+
+// GQ-08 judge finding: the app's name is not part of a screen's name — the header drew it at 34px.
+const named = parsePlan(
+  JSON.stringify({
+    appName: 'Streakly',
+    screens: [
+      { name: 'Today — Streakly habit tracker', screenType: 'root-tab', activeTabId: 'today', linksTo: ['Habit Detail — Streakly'] },
+      { name: 'Habit Detail — Streakly', screenType: 'detail-view', parentScreen: 'Today — Streakly habit tracker' },
+      { name: 'Streakly — Achievements', screenType: 'detail-view', parentScreen: 'Today' },
+      { name: 'Streakly Progress — Bento Stats', screenType: 'root-tab', activeTabId: 'progress' },
+      { name: 'Streakly', screenType: 'root-tab', activeTabId: 'home' },
+    ],
+    navigation: { type: 'bottom-tabs', tabs: [{ id: 'today', label: 'Today' }, { id: 'progress', label: 'Progress' }, { id: 'home', label: 'Home' }] },
+  }),
+)
+assert.deepEqual(named.screens.map((s) => s.name), ['Today', 'Habit Detail', 'Achievements', 'Progress — Bento Stats', 'Streakly'])
+assert.deepEqual(named.screens[0]!.linksTo, ['Habit Detail'], 'a link written with the app name still finds its screen')
+assert.equal(named.screens[1]!.parentScreen, 'Today', 'a parent written with the app name still resolves')
+assert.equal(screenTitle('Cart', 'GoBite'), 'Cart')
+assert.equal(screenTitle('Cart (GoBite)', 'GoBite'), 'Cart')
+assert.equal(screenTitle('Settings', ''), 'Settings')
 
 // planner palette (GQ-10): carried through when it is usable, dropped whole when it is not.
 const screens = [{ name: 'Home', description: 'Today view' }]
@@ -578,7 +599,7 @@ console.log('ok')
     ],
   }))
   const two = trimToBrief(plan, 'A food delivery UI presented on two smartphone screens: home and cart')
-  assert.deepEqual(two.screens.map((s) => s.name), ['Feast Home', 'Cart'], 'the two screens the brief asked for')
+  assert.deepEqual(two.screens.map((s) => s.name), ['Home', 'Cart'], 'the two screens the brief asked for ("Feast Home" loses the app name)')
   assert.deepEqual(two.navigation.tabs.map((t) => t.label), ['Home', 'Cart'], 'tabs nobody opens are gone; the cart tab is named for the cart')
   assert.deepEqual(two.screens[0].linksTo, ['Cart'], 'links to dropped screens are dropped')
   assert.deepEqual(two.uncovered, [])
