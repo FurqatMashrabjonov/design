@@ -860,5 +860,156 @@ console.log('Testing Frame Height...')
   assert.ok(root2.includes("localStorage.getItem('od:theme')") && root2.includes('add(\'dark\')'), 'UI-06: the saved mode is applied before the first paint')
 }
 
+console.log('Testing Motion Tokens (GQ-24)...')
+{
+  const kit = readFileSync('kit/od-kit.css', 'utf8')
+  const block = kit.slice(kit.indexOf('GQ-24: motion as a token'))
+  assert.ok(block.includes('@media (prefers-reduced-motion: no-preference)'), 'every motion rule sits behind the reduced-motion preference')
+  assert.ok(block.includes('.od-btn:active, .od-icon-btn:active, .od-chip:active, .od-segmented > button:active, .od-stepper > button:active { transform: scale(.96); }'), 'press feedback is a small scale')
+  assert.ok(block.includes('var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1))'), 'the spring curve is a token with a default, so every system gets the feel')
+  assert.ok(block.includes('.od-switch::after { transition: transform var(--motion-base, 220ms)'), 'the switch knob glides')
+  const nova = DesignSystemService.readTokensRoot('nova')
+  assert.ok(nova.includes('--ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1)') && nova.includes('--motion-press: 120ms'), 'nova states its spring and press timing')
+  const { buildBottomNav: bar } = await import('./ShellService.ts')
+  const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'me', label: 'Me', icon: 'user' }] }
+  const pill = bar(nav, 'home', 'pill')
+  assert.ok(pill.includes('@keyframes od-pop') && pill.indexOf('od-pop') > pill.indexOf('prefers-reduced-motion: no-preference'), 'the active tab pops in with the spring, only when motion is welcome')
+  // Still one entrance sequence per screen (craft §8): the kit adds none, only state transitions.
+  assert.ok(!/@keyframes\s+od-(fade|slide|enter)/.test(kit), 'the kit adds no entrance animation of its own')
+}
+
+console.log('Testing Phone Type Scale (GQ-23)...')
+{
+  const craft = readFileSync('craft/mobile.md', 'utf8')
+  assert.ok(craft.includes('body 17px (min 15), secondary 15px, captions 13px, tab labels 11px'), 'the craft file states the phone scale in numbers')
+  const nova = DesignSystemService.readTokensRoot('nova')
+  for (const t of ['--text-base: 17px', '--text-sm: 15px', '--text-xs: 13px', '--text-4xl: 88px', '--od-display-weight: 400', '--od-heading-weight: 600', '--od-heading-font: var(--font-body)']) {
+    assert.ok(nova.includes(t), `nova: ${t}`)
+  }
+  const kit = readFileSync('kit/od-kit.css', 'utf8')
+  // A one-weight serif must not be faux-bolded: the kit takes the display weight from the system.
+  for (const sel of ['.od-stat__value', '.od-price', '.od-hero__title']) {
+    const rule = kit.match(new RegExp(`^${sel.replace('.', '\\.')} \\{[^\\n]*\\}`, 'm'))![0]
+    assert.ok(rule.includes('font-weight: var(--od-display-weight, 700)'), `${sel} weight comes from the system`)
+  }
+  assert.ok(kit.match(/^\.od-section__title \{[^\n]*\}/m)![0].includes('font-family: var(--od-heading-font, var(--font-display))'), 'a system can put section headings in its body face')
+  assert.ok(kit.match(/^\.od-section__title \{[^\n]*\}/m)![0].includes('font-weight: var(--od-heading-weight, 650)'), 'heading weight comes from the system')
+  // Other systems are untouched: the defaults reproduce the old values.
+  assert.ok(!DesignSystemService.readTokensRoot('bento').includes('--od-display-weight'), 'a catalogue system without the token keeps the 700 default')
+}
+
+console.log('Testing Stickers (GQ-21)...')
+{
+  const { renderStickers, stickerSvg, STICKER_NAMES } = await import('../../lib/stickers.ts')
+  const { lintScreen: lint, autofixScreen: fix } = await import('../../lib/design-lint.ts')
+  assert.equal(STICKER_NAMES.length, 12, 'twelve glyphs')
+  for (const name of STICKER_NAMES) {
+    const svg = stickerSvg(name)
+    assert.ok(svg.includes('linearGradient') && svg.includes('feDropShadow'), `${name}: gradient and shadow make it clay`)
+    assert.ok(svg.includes('var(--accent)'), `${name}: coloured from the tokens, not a literal`)
+    assert.ok(!/https?:\/\//.test(svg), `${name}: no external reference`)
+  }
+  assert.ok(stickerSvg('trophy', 'warn').includes('var(--warn)'), 'a tone picks the matching status token')
+  assert.ok(stickerSvg('no-such-glyph').includes(stickerSvg('sparkle').match(/<path d="([^"]+)" fill="#fff"\/>/)![1]), 'an unknown name draws the sparkle, never nothing')
+  const page = '<!doctype html><html><body><div data-od-sticker="fire"></div><span data-od-sticker="trophy" data-tone="success" style="width:96px"></span></body></html>'
+  const once = renderStickers(page)
+  assert.equal((once.match(/data-od-sticker-rendered/g) ?? []).length, 4, 'both slots are drawn (marker on the slot and on its svg)')
+  assert.ok(once.includes('width:96px;height:96px'), 'the slot\'s style width sets the sticker size')
+  assert.ok(once.includes('var(--success)'), 'data-tone reaches the drawing')
+  assert.equal(renderStickers(once), once, 'idempotent: a drawn sticker is left alone')
+  assert.ok(fix(page).includes('data-od-sticker-rendered'), 'autofix draws stickers, next to charts and maps')
+  assert.ok(!lint(fix(page)).some((f) => f.rule === 'hand-drawn-icon'), 'a drawn sticker is not reported as a hand-drawn icon')
+  assert.ok(readFileSync('src/app/Services/PromptComposer.ts', 'utf8').includes('data-od-sticker="fire"'), 'the model is told the slot exists')
+}
+
+console.log('Testing Large-Title Header (GQ-19)...')
+{
+  const { buildDetailHeader: header } = await import('./ShellService.ts')
+  const h = header('Morning meditation', 'Today')
+  assert.ok(h.includes('font:400 34px/1.1 var(--font-display, inherit)'), 'the large title is 34px in the display face')
+  assert.ok(/data-od-title="small"[^>]*font-size:17px/.test(h), 'the small title is 17px')
+  assert.ok(/data-od-title="small"[^>]*opacity:0/.test(h), 'the small title starts hidden')
+  assert.ok(h.includes('backdrop-filter:blur('), 'the header is glass')
+  assert.ok(!h.includes('border-bottom'), 'no hairline under the header')
+  assert.equal((h.match(/<script /g) ?? []).length, 1, 'one collapse script, inside the header')
+  assert.ok(h.includes('prefers-reduced-motion'), 'no motion for people who asked for none')
+  assert.ok(h.includes('data-od-back="Today"') && h.includes('data-od-shell="detail-header"') && h.includes('data-od-id="screen-header"'), 'the markers the bridge and the normaliser rely on are unchanged')
+  assert.ok(!/class="/.test(h), 'inline styles only')
+  assert.ok(h.includes('position:sticky;top:0'), 'still pinned, so the normaliser recognises it as the header')
+}
+
+console.log('Testing Icon Treatment (GQ-20)...')
+{
+  const { buildBottomNav: bar, iconSvg } = await import('./ShellService.ts')
+  assert.ok(iconSvg('home').includes('stroke-width:var(--icon-stroke, 2)'), 'shell glyphs take their stroke from the design system')
+  const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'me', label: 'Me', icon: 'user' }, { id: 'more', label: 'More', icon: 'grid' }] }
+  const pill = bar(nav, 'home', 'pill')
+  assert.ok(pill.includes('[aria-current=page] svg{fill:color-mix(in oklab, currentColor var(--od-icon-duotone, 14%), transparent)}'), 'the active tab glyph is duotone')
+  assert.ok(pill.includes('@keyframes od-draw') && pill.includes('prefers-reduced-motion: no-preference'), 'the active glyph draws itself in, only when motion is welcome')
+  assert.equal((pill.match(/<style /g) ?? []).length, 1, 'one style block, inside the nav')
+  assert.ok(!bar(nav, 'home', 'bar').includes('od-draw'), 'the edge-to-edge bar stays plain')
+  const kit = readFileSync('kit/od-kit.css', 'utf8')
+  assert.ok(/\.od-row__lead svg, \.od-icon-btn svg, \.od-empty__icon svg \{ fill: color-mix\(in oklab, currentColor var\(--od-icon-duotone, 14%\), transparent\); \}/.test(kit), 'lead icons in the kit are duotone by default')
+  assert.ok(kit.includes('.od-empty__icon { width: 56px; height: 56px; border-radius: var(--od-icon-radius, 50%)'), 'the empty-state icon container follows the same tokens as the icon button')
+}
+
+console.log('Testing Identical Card Stack (GQ-22)...')
+{
+  const { lintScreen: lint } = await import('../../lib/design-lint.ts')
+  const page = (body: string) => `<!doctype html><html><head><title>T</title></head><body>${body}</body></html>`
+  const card = (n: number, cls = 'od-card') => Array.from({ length: n }, (_, i) => `<div class="${cls}"><p>Item ${i}</p></div>`).join('')
+  const hit = (html: string) => lint(html).find((f) => f.rule === 'identical-card-stack')
+  assert.ok(hit(page(`<main>${card(4)}</main>`)), 'four identical cards in a row is the finding')
+  assert.ok(!hit(page(`<main>${card(3)}</main>`)), 'three is a section, not a stack')
+  assert.ok(!hit(page(`<main>${card(2)}<h2>Later</h2>${card(2)}</main>`)), 'a heading between them breaks the run')
+  assert.ok(!hit(page(`<main><div class="od-bento">${card(1, 'od-card od-bento__wide')}${card(4)}</div></main>`)), 'uniform squares inside a bento are the point, not the problem')
+  assert.ok(!hit(page(`<main>${card(2)}${card(2, 'od-card od-card--media')}</main>`)), 'cards of different kinds are not identical')
+  assert.ok(hit(page(`<main><section><div class="wrap">${card(5)}</div></section></main>`))!.samples[0].includes('×5'), 'the sample says how many, wherever they nest')
+  // The rule reads markup only — a <style> block that happens to mention od-card four times is not a stack.
+  assert.ok(!hit(page(`<style>.od-card{} .od-card{} .od-card{} .od-card{}</style><main>${card(1)}</main>`)), 'CSS is not counted')
+}
+
+console.log('Testing iOS 26 Bar (GQ-18)...')
+{
+  const { buildBottomNav: bar } = await import('./ShellService.ts')
+  const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'home', label: 'Home', icon: 'home' }, { id: 'search', label: 'Search', icon: 'search' }, { id: 'me', label: 'Me', icon: 'user' }] }
+  for (const style of ['island', 'pill'] as const) {
+    const html = bar(nav, 'home', style)
+    assert.ok(html.includes('bottom:21px'), `${style}: the floating bar sits 21px in from the bottom, as the iOS 26 capsule does`)
+    assert.ok(html.includes('inset 0 1px 0 rgba(255,255,255,.45)'), `${style}: glass is blur plus a light along the top edge`)
+    assert.ok(html.includes('backdrop-filter:blur('), `${style}: the bar is translucent`)
+    assert.equal((html.match(/<script /g) ?? []).length, 1, `${style}: exactly one collapse script, inside the nav`)
+    assert.ok(html.includes('prefers-reduced-motion'), `${style}: no motion for people who asked for none`)
+    assert.ok(/data-od-search="1"[^>]*style="position:absolute;right:-70px/.test(html), `${style}: Search is its own island to the right`)
+    assert.ok(html.includes('data-od-tab="search"'), `${style}: the search island is still the search tab`)
+  }
+  assert.ok(bar(nav, 'home', 'island').includes('left:21px;right:21px'), 'the island keeps 21px side insets')
+  for (const style of ['bar', 'contrast'] as const) {
+    const html = bar(nav, 'home', style)
+    assert.ok(!html.includes('<script'), `${style}: an edge-to-edge or filled bar does not minimise`)
+    assert.ok(!html.includes('data-od-search='), `${style}: search stays a normal tab`)
+  }
+  // (That two root-tab bars differ only in the active tab is already asserted by the Navigation Shell Builder block above.)
+
+}
+
+console.log('Testing Palette Wiring (GQ-10)...')
+{
+  // A system the person chose by hand is a choice and keeps its colours; only an automatic pick
+  // may be recoloured. And every path that reads tokens must read the project's, not the catalogue's,
+  // or a screen added later would come back in the old colours.
+  const planCtl = readFileSync('src/app/Http/Controllers/PlanController.ts', 'utf8')
+  assert.ok(/project\.designSystemAuto && plan\.palette/.test(planCtl), 'the palette is applied only when the system was chosen automatically')
+  assert.ok(planCtl.includes('Project.savePalette('), 'the built palette is saved so later screens share it')
+  const store = readFileSync('src/app/Http/Controllers/ProjectController.ts', 'utf8')
+  assert.ok(/designSystemAuto: data\.designSystem === AUTO/.test(store), 'creating a project records whether the system was automatic')
+  for (const file of ['src/app/Http/Controllers/PlanController.ts', 'src/app/Http/Controllers/GenerateController.ts', 'src/app/Http/Controllers/ProjectController.ts']) {
+    const text = readFileSync(file, 'utf8')
+    assert.ok(!/DesignSystemService\.readTokensRoot\(/.test(text), `${file} must read tokens through readTokensRootFor, never the bare catalogue root`)
+  }
+  const composer = readFileSync('src/app/Services/PromptComposer.ts', 'utf8')
+  assert.ok(/opts\.tokensRoot \?\?/.test(composer), 'the drawing prompt shows the model the palette it will actually get')
+}
+
 console.log('All new features and App Coherence verified successfully! \u2705')
 

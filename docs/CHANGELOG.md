@@ -3,6 +3,347 @@
 Newest first. One entry per completed change: what changed, files touched, how it was verified.
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
+## 2026-09-24
+
+### 2026 to'plami yakuniy generatsiyada — GQ-18…GQ-25 birga, "make habit tracker"
+
+Sakkiz qadam (bar, bento, ikonka, sarlavha, sticker, shkala, harakat, dark) har biri LLM'siz
+qayta-render bilan alohida ko'rilgan edi; bu haqiqiy generatsiya ularni birga sinadi
+(0ba67d83, Nova majburlangan — ruletka Doodle bergan edi, palitra planner'dan: yashil
+`#2e7d32`, "calm, natural, encouraging").
+
+Ishlagan: suzuvchi shisha pill bar 21px yuqorida, duotone faol tab; serif hero'lar (Detail 12,
+Progress 18, Achievements 14); katta sarlavhali detail; Settings jim; Progress `stats/d` bento
+variantini oldi (model "Bento Stats" deb nomladi).
+
+Ishlamagan yoki kuzatilgan — halol:
+- **Today hero kichik** (halqa ichida ~28px, avvalgi Nova generatsiyasida 88 edi). Spec'da HERO
+  satri bor; model bo'ysunmadi. Ehtimollik — GQ-08 hakam bilan o'lchanadi, prompt bilan emas.
+- **Sticker sloti 6 ekranda 0 marta.** Prompt'da paragraf bor, lekin blueprint hero'lar stickerni
+  aytmaydi; modelning o'zi ishlatmaydi. Yechim kirishda: hero maydoniga "sticker: fire" kabi
+  tavsiya (Keyin qatori).
+- **Kit klasslari yana deyarli yo'q** (od-row 5, qolgani 0) — kit'dagi harakat/duotone/bento
+  qoidalari bu ekranlarga yetmayapti. GQ-16 (komponent varag'i) zarur.
+- **Palitra to'rt generatsiyada yashil oilasi** (moss, moss, yashil, yashil) — prompt namunasi
+  va "earthy" so'zi langar; namunani placeholder qilish va ottenka xilma-xilligi (Keyin qatori).
+- O'lchov: `font-size: Npx` sanovi tokenlarni ko'rmaydi — hakam kerak.
+
+- Tekshirildi: `npm run check` va `tsc` toza (har qadamda). Chrome: kanvas va Today skrinshotlari yuborildi; bazadan har ekranning arxetip/varianti, hero, sticker, bento, kit sanovi.
+
+### Nova to'q rejimda: yorug' qirra bilan chuqurlik, planner'ga "dark" ishorasi — GQ-25
+
+To'q sahifada to'q soya ko'rinmaydi. `paletteDeclarations` palitra to'q bo'lsa (`bg` L<0.5)
+`--elev-ring`, `--elev-raised`, `--od-card-shadow`, `--od-btn-shadow` ni yorug' qirra + chuqur
+soya variantiga almashtiradi; yorug' palitrada tizimning o'z chuqurlik tokenlari tegilmaydi.
+Nova `STYLE.md` to'q palitrani ta'riflaydi; planner prompti brief "dark, night, sleep, focus,
+cinema" desa to'q fon va yorqin accent tanlashni aytadi.
+
+- Fayllar: `src/lib/palette.ts`, `src/lib/palette.check.ts`, `design-systems/nova/STYLE.md`, `src/app/Services/PlannerService.ts`.
+- Tekshirildi: `npm run check` (to'q palitrada tokenlar, yorug'da yo'q, Nova root orqali ikkala holat, STYLE va planner matni) va `tsc` toza. Chrome'da Nova + to'q palitra namunasi (lime/#0c0d0b): kartalar yorug' qirra bilan, AA nuqson 0.
+
+### Harakat token sifatida: prujinali bosish, sirpanuvchi switch, faol tab "pop" — GQ-24
+
+Material 3 Expressive'dan olingan fikr: harakat va shakl dizayn tokeni, bezak emas. Kit'ga
+`prefers-reduced-motion: no-preference` ostida bitta blok: tugma, chip, ikonka tugmasi, segment,
+stepper bosilganda `scale(.96)` (qator `.985`) — `--motion-press` (120ms) va `--ease-spring`
+(ozgina overshoot) bilan; holat ranglari `--motion-fast` bilan kesishadi; switch dumalog'i
+`--motion-base` prujinasi bilan sirpanadi; progress kengligi yumshoq. Standart qiymatlar
+tokenlarga ichki — har tizim bir xil hisni oladi, Nova o'zinikini aytadi. Suzuvchi barda faol
+tab belgisi ochilganda prujina bilan "pop" qiladi. Kit hech qanday kirish animatsiyasi
+qo'shmaydi — craft §8 dagi "bitta kirish ketma-ketligi" qoidasi buzilmaydi.
+
+Kuzatuv: Nova generatsiyasi kit klasslarini deyarli ishlatmagan (`od-btn` 0, `od-switch` 0,
+`od-row` 0, faqat `od-segmented`) — model o'z CSS'ini yozgan. Bu GQ-16 (komponent varag'i
+kirish sifatida) qanchalik zarurligini ko'rsatadi; Notion'da GQ-16 izohiga yozildi.
+
+- Fayllar: `kit/od-kit.css`, `design-systems/nova/tokens.css`, `src/app/Services/ShellService.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (reduced-motion bloki, scale qoidasi, prujina tokeni standart bilan, switch, Nova tokenlari, nav pop, kirish animatsiyasi yo'q) va `tsc` toza. Chrome'da sintetik kit sahifasida hisoblangan `transition`: tugma/chip/segment `transform 0.12s cubic-bezier(0.34, 1.3, 0.64, 1)`, ranglar 0.14s, switch dumalog'i `transform 0.22s` prujina.
+
+### Telefon shrift shkalasi va display og'irligi tokenlarda — GQ-23
+
+iOS 26 shkalasi raqamlarda: tana 17 (kamida 15), ikkilamchi 15, izoh 13, tab yorlig'i 11, ekran
+sarlavhasi 34, hero 64–96. `craft/mobile.md` §2 shuni aytadi (avval "15–17, 13–14" veb shkalasi
+edi); Nova tokenlari 17/15/13 ga o'tdi. Yo'l-yo'lakay haqiqiy nuqson topildi: kit `.od-stat__value`,
+`.od-price`, `.od-hero__title` ni `font-weight: 700` bilan chizardi — Instrument Serif'ning
+bitta og'irligi bor, brauzer uni **soxta qalin** qilardi. Endi og'irlik `--od-display-weight`
+(standart 700 — katalog tizimlari o'zgarmaydi; Nova 400), bo'lim sarlavhasi `--od-heading-weight`
+va `--od-heading-font` (Nova: tana shrifti, 600) orqali; `font-optical-sizing: auto`.
+
+Byudjet yana: craft bulleti 50 belgi uzayib vercel promptini 24 004 ga chiqardi — jumla qisqardi
+(23 977). Bu chegara endi har o'zgarishda sinaladi.
+
+- Fayllar: `craft/mobile.md`, `design-systems/nova/tokens.css`, `kit/od-kit.css`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (craft shkalasi, Nova tokenlari, uch kit qoidasida og'irlik tokeni, sarlavha shrifti/og'irligi tokeni, katalog tizimi tegilmagan) va `tsc` toza. Chrome'da Progress qayta-render: "Progress" va "31" serif o'z og'irligida, tana 17px.
+
+### Stickerlar kodda: 12 ta soft-3D SVG glif, token rangida — GQ-21
+
+2026 ekranida 2020 dagi emoji o'rnida soft-3D glif turadi — streak kartasida olov, achievement'da
+kubok, bo'sh holatda barg. Raster generatsiya qila olmaymiz, emoji esa ko'ruvchi platformasida
+chiziladi (va lint taqiqlaydi). Shuning uchun slot: model `<div data-od-sticker="fire">` yozadi,
+`lib/stickers.ts` uni SVG bilan chizadi — ton rangida gradientli yumaloq plitka, ichki yorug'lik,
+o'sha tonda yumshoq soya, oq glif. 12 nom, 4 ton (`data-tone`), o'lcham slot kengligidan,
+noma'lum nom → sparkle (hech qachon bo'sh emas), idempotent. Grafik va xarita kabi `autofixScreen`
+ichida chiziladi; `hand-drawn-icon` linti chizilgan stickerni istisno qiladi (aks holda o'zimiz
+chizgan SVG "qo'lda chizilgan" deb qaytardi). Prompt'ga slot paragrafi qo'shildi.
+
+**Byudjet jangi.** Paragraf 24 000 belgilik mobil prompt byudjetini to'rt tizimda (vercel,
+supabase, cursor, raycast — uslub kartalari eng uzun) 100–285 belgiga oshirib yubordi. Uch
+aylanishda paragraf 700 → 388 belgiga tushdi va umumiy shartnomadagi ortiqcha so'zlar
+qisqardi (grafik namunasi, xarita, ikonka, shrift jumlalari — ma'no o'zgarmagan). Eng uzun
+prompt endi 23 954. Bu byudjet haqiqatan chegarada turganini ko'rsatadi — keyingi prompt
+qo'shimchasi avval nimanidir olib tashlashi kerak.
+
+- Fayllar: `src/lib/stickers.ts` (yangi), `src/lib/design-lint.ts`, `src/app/Services/PromptComposer.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (12 glif, gradient+soya, token rangi, tashqi havola yo'q, ton, fallback, o'lcham, idempotentlik, autofix chizadi, lint istisnosi, prompt'da slot bor) va `tsc` toza. Chrome'da demo: 12×4 sticker Nova tokenlarida, joyida — streak kartasi va bo'sh holat. Saqlangan ekranlarda slot yo'q (model hali bilmasdi), shuning uchun haqiqiy ishlatilishi keyingi generatsiyada ko'rinadi.
+
+### Detail sarlavhasi: katta serif title, scroll'da yig'iladi, chiziq o'rniga shisha qirra — GQ-19
+
+iOS 26 nav bar ikki qatorli: tepada orqaga tugma va (avval ko'rinmas) kichik sarlavha, pastda
+katta sarlavha; scroll'da katta qator yig'iladi, kichigi markazda paydo bo'ladi; chegara chizig'i
+o'rniga blur va yumshoq qirra. `buildDetailHeader` endi aynan shu: 34px `var(--font-display)`
+(Nova'da serif) katta sarlavha, 17px kichik sarlavha `opacity:0` dan boshlanadi, sarlavha
+shisha (`backdrop-filter`), `border-bottom` yo'q; `<header>` ichida yig'ilish skripti — 28px dan
+keyin katta qator `max-height:0`, kichik sarlavha ko'rinadi, `box-shadow` bilan 1px yumshoq
+chiziq paydo bo'ladi; `prefers-reduced-motion` da o'tishlarsiz. Markerlar (`data-od-id`,
+`data-od-shell`, `data-od-back`, `position:sticky;top:0`) o'zgarmagan — prototip ko'prigi va
+normalizatorning header tanishi buzilmaydi.
+
+- Fayllar: `src/app/Services/ShellService.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (34px display, 17px kichik, boshida yashirin, shisha, hairline yo'q, bitta skript, reduced-motion, markerlar, faqat inline uslub, sticky) va `tsc` toza. Chrome'da Habit Detail qayta-render: ochilganda serif katta sarlavha; 5 tik pastga surilgach katta qator yo'qoldi, kichik sarlavha markazda, yumshoq qirra. Birinchi skrinshot o'tish o'rtasida tushdi — bir soniyadan keyingi yakuniy holat to'g'ri.
+
+### Ikonka muomalasi: stroke tizimdan, duotone CSS bilan, faol tabda chizish — GQ-20
+
+Kutubxona almashtirilmadi — 2026 ko'rinishining 80% i *muomala*: `iconSvg` endi stroke'ni
+`--icon-stroke` dan oladi (lucide `createIcons` allaqachon shunday qilardi, shell gliflari 2px
+da qotib qolgan edi); kit'da `.od-row__lead svg`, `.od-icon-btn svg`, `.od-empty__icon svg` ga
+`fill: color-mix(currentColor var(--od-icon-duotone, 14%))` — Phosphor duotone ko'rinishi,
+tizim `0%` bilan o'chira oladi; bo'sh holat ikonka konteyneri ham `--od-icon-*` tokenlarini
+o'qiydi (kulrang doira Nova'da squircle bo'ladi). Suzuvchi bar ichida `<style>` bloki: faol tab
+glifi duotone va sahifa ochilganda `stroke-dashoffset` bilan o'zini chizib keladi (SF Symbols 7
+"draw"), `prefers-reduced-motion` da harakatsiz. Selektorlar `[aria-current=page]` ko'rinishida
+— mavjud test faol tabni `aria-current="page"` sonidan topadi va uslub bloki tabga o'xshab
+qolmasligi kerak (birinchi urinishda aynan shu yiqildi).
+
+- Fayllar: `src/app/Services/ShellService.ts`, `kit/od-kit.css`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (stroke tokeni, duotone selektori, keyframes + reduced-motion, bitta uslub bloki, `bar` tegilmagan, kit qoidalari) va `tsc` toza. Nova ekranlari qayta-render: faol tab glifi yengil to'ldirish bilan, qator ikonkalari tinted squircle'da.
+
+### Bento qoidalari: blueprint varianti va `identical-card-stack` linti — GQ-22
+
+Bento 2026 ning asosiy layout naqshi: ierarxiya o'lcham orqali, joylashuv orqali emas — bitta keng
+qahramon plitka, keyin har biri bitta ish qiladigan kvadratlar, 12–16px bo'shliq, ≤5 plitka.
+`dashboard`, `stats`, `profile` blueprint'lariga `d` (bento) varianti qo'shildi; variantlar 2–4
+bo'ldi (test moslandi). Modelga "bir xil kartalar to'plami" taqiqi allaqachon `mobile.md` §11
+da bor edi — lekin hech narsa uni ushlamasdi. Endi lint: to'rt yoki undan ko'p **ketma-ket, bir
+xil klassli** `od-card` aka-uka (orasida boshqa element bo'lmasa) — `identical-card-stack`
+topilmasi, nechta ekani bilan. `od-bento` ichidagi bir xil kvadratlar istisno — u yerda bu
+maqsad. DOM'siz: teglar bo'yicha yurib, har ochiq element o'z bolalaridagi ketma-ketlikni
+sanaydi; `<style>`/`<script>` avval olib tashlanadi, shuning uchun CSS'dagi `.od-card` sanalmaydi.
+
+Saqlangan uchta habit tracker (Nova, Retro, Doodle) da topilma yo'q — model bu ilovalarda ro'yxat
+va qatorlarni ishlatgan; qoida qo'riqchi bo'lib qoladi. Bento varianti generatsiyaga ta'sir
+qiladi, shuning uchun GQ-20 bilan birga bitta haqiqiy generatsiyada ko'riladi.
+
+- Fayllar: `src/lib/design-lint.ts`, `blueprints/{dashboard,stats,profile}.json`, `src/app/Services/services.check.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` (4 ta = topilma, 3 ta yo'q, sarlavha uzadi, bento istisno, har xil klass emas, ichma-ich joylashganda ham sanaydi, CSS sanalmaydi) va `tsc` toza.
+
+### iOS 26 tab bar: 21px inset, shisha qirra, scroll'da yig'ilish, qidiruv oroli — GQ-18
+
+Tadqiqot: iOS 26 da bar chetga yopishgan emas — chetlardan 21pt ichkarida suzuvchi kapsula, shisha
+materialda; pastga scroll'da faqat faol tabga yig'iladi; Search alohida dumaloq orol; shisha faqat
+navigatsiya qatlamiga. `ShellService` da: `island`/`pill` 21px inset; shisha = blur + `saturate`
++ yuqori qirrada `inset 0 1px 0 rgba(255,255,255,.45)` — aynan shu chiziq "material" hissini
+beradi, to'liq sinishsiz; `<nav>` ichida yig'ilish skripti (faol tabdan boshqasini yashiradi,
+yuqoriga scroll'da qaytaradi, `prefers-reduced-motion` da harakatsiz) — nav ichida bo'lgani
+uchun qayta-normalizatsiyada bar bilan birga almashadi; `search` tabi `island`/`pill` da o'ngda
+alohida shisha doira (`data-od-search`), lekin hali ham `data-od-tab` — prototip ko'prigi va
+shell shartnomasi o'zgarmaydi. `bar`/`contrast` tegilmagan (utility ilovalar).
+
+**LLM'siz qayta-render vositasi** (scratchpad `rerender.ts`): loyihaning saqlangan ekranlariga
+bugungi shell/kit/tokenlarni qayta qo'llab `/tmp` ga yozadi — modelning kompozitsiyasi qoladi,
+faqat bizning hunar o'zgaradi; $0, soniyalarda. Har keyingi qadam shu bilan ko'riladi.
+
+- Fayllar: `src/app/Services/ShellService.ts`, `src/app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` (21px, qirra, bitta skript, reduced-motion, qidiruv oroli, `bar`/`contrast` tegilmagan) va `tsc` toza. Chrome'da Nova ekranlari qayta-render: bar 21px yuqorida, shisha ko'rinadi; alohida sahifada pastga surilganda pill faqat faol tabga qisqardi, yuqoriga surilganda qaytdi. Bitta ortiqcha tasdiq (nav'lar faqat faol tabda farqlashi) allaqachon mavjud test bilan qoplangani uchun olib tashlandi.
+
+### Nova — 2026 flagman mobil tizimi — GQ-13, "make habit tracker" bilan
+
+Foydalanuvchi: "stillar, font, ikonlar juda eski, 2026 emas". Sabab modelda emas — bizning
+deterministik qatlamda: 33 tizimning ko'pi veb-brend nusxasi; habit tracker uchun auto tanlov
+retro/doodle/bento/duolingo (ataylab g'alati tizimlar); `od-kit` 1px chegara va 12px burchak;
+64px tekis tab bar; ikonka 2px outline kulrang doirada. Model faqat kompozitsiya qiladi.
+
+**Nova** (`design-systems/nova/`): stone-tinted neytrallar, squircle 14/20/28px, kartalar
+chegarasiz ikki qatlamli yumshoq soya bilan, Instrument Serif (hero va sarlavha) + Geist,
+`--text-4xl: 88px`, `--icon-stroke: 1.75`, shisha `--od-blur: blur(20px)`. Ranglar
+`lib/palette.ts` dan AA bilan olingan; auto tanlovda ular planner palitrasi bilan almashadi va
+faqat hunar qoladi — aynan shu maqsad. Shrift URL'lari curl bilan tekshirildi (ikkalasi 200).
+
+Kit: `.od-icon-btn` endi `--od-icon-radius/-bg/-fg` tokenlarini o'qiydi (standart ko'rinish
+o'zgarmagan, Nova tinted squircle qo'yadi); yangi `.od-bento` + `.od-bento__wide`,
+`.od-card--glass`; halqa diagramma 3.5 → 5.5 qalinlik. Galereyaga "Bento" namunasi
+(testi shuni talab qildi). Prompt'dagi kit ro'yxatiga yangi klasslar kirdi.
+
+Auto tanlov: `nova` consumer turlarda ro'yxatda **uch marta** — flagman standart ko'rinish
+(200 seed'da 93 = 47%), xarakter tizimlari qoladi, shuning uchun bir xil brief doim bitta
+tizim bermaydi. `ShellService` Nova'ni `consumer` (orol/pill bar) deb biladi.
+
+**Tajriba nazorati.** Ikki urinishda ruletka Duolingo va Doodle berdi. Duolingo generatsiyasi
+foydali chiqdi: Settings jim qoldi (16px — QUIET_ROOTS ishladi), hero'lar 76/96/76, model
+bento'ni o'zi ishlatdi. Uchinchisida rejani chizishdan oldin loyihaning tizimi bazada `nova`
+ga qo'yildi — o'zgaruvchi faqat tizim. Server nova bilan chizgani bazadan tasdiqlandi
+(birinchi ekran `--font-display: "Instrument Serif"`).
+
+**Natija (f3682a79, Nova, moss `#587a4a` / krem):** serif hero'lar — Today "4 streaks alive"
+88px, Detail "12", Progress "31", Achievements "3 unlocked"; suzuvchi orol tab bar; chegarasiz
+squircle kartalar; tinted-squircle ikonkalar; bento uch ekranda; Settings jim. Qolgan: FAB (+)
+hali chiziladi (EYE-08 ma'lum), palitra yana yashil-ko'k oilasida.
+
+Bir o'lchov eslatmasi: "eng katta font" ko'rsatkichim faqat `font-size: Npx` literal'ni sanaydi;
+Nova'da model tokenlarni (`var(--text-4xl)`) ishlatgani uchun Detail 17px, Progress 11px deb
+ko'rsatdi — skrinshot esa 88px ni ko'rsatadi. Ko'rsatkich tokenlarni ham hisoblashi kerak.
+
+Brauzer eslatmasi: server qayta ishga tushgandan keyingi birinchi sahifada klaviatura yozuvi
+yutildi; React'ga mos `value` setter + `input` hodisasi ishladi.
+
+- Fayllar: `design-systems/nova/{tokens.css,STYLE.md,DESIGN.md,manifest.json}`, `kit/od-kit.css`, `kit/samples.ts`, `src/lib/charts.ts`, `src/app/Services/{DesignSystemService,ShellService,PromptComposer}.ts`, `src/app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` (style card shakli, tokenlar AA, kit galereyasi, auto shortlist) va `tsc` toza. Chrome'da to'liq generatsiya; kanvas va Today skrinshotlari yuborildi.
+- GQ-13 `Jarayonda`: foydalanuvchi tasdig'i kutilmoqda.
+
+### Qahramon lahza: blueprint'da nima va necha piksel — GQ-15, ikki generatsiya bilan
+
+Sleek bilan asosiy farq bitta raqamda edi: ularda streak ~120px, bizda 14px qator ichida. 12 ta
+blueprint'da "hero" so'zi bor edi, lekin faqat *nima* ekani — *qanchalik katta* ekani yo'q, va
+"katta" o'z holicha 14px bo'lib chiqaverdi. Endi sakkiz blueprint (dashboard, stats, detail,
+result, profile, player, paywall, onboarding) `hero: { what, size }` ko'taradi, `size` piksel
+oralig'i, va `BlueprintService.brief` uni `HERO MOMENT:` satri bilan spec'ga yozadi: sahifadagi
+eng katta narsa, hech narsa unga ikki shrift o'lchamidan yaqin kelmaydi.
+
+**Birinchi generatsiya (7d8cc425, Doodle, moss `#7a9e5f`):** hero ishlagan joyda ishladi —
+Detail 64px, Progress 76px. Lekin planner Today'ni `dashboard` emas, **`list`** deb belgiladi,
+`list` blueprint'i esa jim (to'g'ri: tranzaksiyalar ro'yxati baqirmasligi kerak). Bosh ekran 28px
+bilan qoldi. Yechim blueprint'da emas, kodda: `screenSpec` root tab ekraniga arxetipidan qat'i
+nazar hero beradi — tab bu manzil, u ilovaning bosh raqamini ko'taradi.
+
+**Ikkinchi generatsiya (a176142f, Retro, moss `#5f8b6f`):** Today **28 → 88px**, Detail 88,
+Achievements 84. Ikki kamchilik chiqdi va ikkalasi ham halol yozildi: (1) Settings ham 84px raqam
+oldi — root-tab zaxirasi jim bo'lishi kerak bo'lgan tab'larga ham tegdi; `QUIET_ROOTS`
+(settings, search, chat, camera, map) qo'shildi, test bilan; keyingi generatsiyada ko'rinadi.
+(2) Progress spec'ida hero bor edi, model e'tiborsiz qoldirdi (24px) — birinchi generatsiyada
+76px bergan edi. Bu ehtimollik, prompt emas; hakam (GQ-08) bilan o'lchanadi.
+
+Today yaqindan yana ikki nuqson ko'rsatdi: halqa "3 done" deydi, raqam 0/5 — ma'lumot zid; va
+"12-DAY MEDITATION STREAK" tracked-out kapital yorliq — `mobile.md` §11 taqiqlagan belgi, lint
+uni hali ushlamaydi. Ikkalasi alohida qator uchun nomzod.
+
+Yo'l-yo'lakay: "Create Habit" ekrani avvalgi generatsiyada `Untitled` bo'lib chiqqan edi
+(`<title></title>` bo'sh) — GEN-27 sifatida yozildi. Va bu safar planner reja tasdig'ini so'radi
+("Draw 6 screens") — CHAT-08 oqimi; brauzerda bosildi.
+
+- Fayllar: `blueprints/{dashboard,stats,detail,result,profile,player,paywall,onboarding}.json`, `src/app/Services/BlueprintService.ts`, `src/app/Services/ScreenContext.ts`, `src/app/Services/services.check.ts`.
+- Tekshirildi: `npm run check` va `tsc` toza (hero shakli, px oralig'i, spec'ga yetishi, root-tab zaxirasi, jim tab'lar). Chrome'da ikki to'liq generatsiya; bazadan har ekranning eng katta `font-size` i o'lchandi; kanvas va Today skrinshotlari yuborildi.
+- GQ-15 `Jarayonda` qoladi: foydalanuvchi tasdig'i kutilmoqda.
+
+### Palitra generatsiyaga kirdi — GQ-10 (3/3), brauzerda "make habit tracker" bilan
+
+Planner o'ylab topgan palitra endi haqiqatan ekranlarga tushadi. Qoida: **faqat tizim avtomatik
+tanlangan bo'lsa** (`projects.design_system_auto`). Odam tizimni qo'lda tanlagan bo'lsa — bu uning
+qarori, ranglar tegilmaydi. Palitra AA ga keltirilib bir marta `projects.palette` ga yoziladi;
+keyin chizilgan yoki haftalar o'tib qo'shilgan har ekran o'sha bitta `:root` ni oladi.
+
+Tizim o'z hunarini saqlaydi: `applyPaletteToRoot` katalog `:root` ining ustiga faqat rang (va
+radius) tokenlarini yozadi — shrift shkalasi, bo'shliqlar, harakat, soyalar tizimniki. Ya'ni
+generatsiya qilingan palitra generik skelet ustida emas, haqiqiy tizimning suyaklarida yuradi.
+
+To'rt o'qish nuqtasi bitta resolver'ga o'tdi (`DesignSystemService.readTokensRootFor`): reja
+chizish, keyin qo'shilgan/tahrirlangan ekran, prompt (model chizayotgan ranglarini ko'rishi shart)
+va kanvasdagi dizayn tizimi kadri. Regressiya qo'riqchisi: bu fayllarda yalang'och katalog
+`readTokensRoot(` chaqiruvi qolmasligi, va qo'lda tanlangan tizim qayta bo'yalmasligi.
+
+**Brauzerda, bitta o'zgarmas prompt:**
+
+| | 0-qadam (bazaviy) | 1-qadam (palitra) |
+|---|---|---|
+| Ilova | Ritual · bento | Streakly · doodle |
+| Ranglar | katalog ko'ki | terracotta `#ba5b3a` / krem `#faf6f2`, "warm, gentle, hand-made, steady" |
+| 6 ekranda `--accent` | tizimniki | hammasida `#ba5b3a` (bazadan tekshirildi) |
+| Qahramon lahza | yo'q (raqamlar qatorda) | hali yo'q — 2-qadam |
+
+**Ikki halol kuzatuv.** (1) Model qaytargan to'rt rang prompt'dagi JSON namunasi bilan aynan bir
+xil chiqdi (`#c05e3c`→`#ba5b3a`, `#faf6f2`, `#ffffff`, `#2b2422`). Alohida ikki chaqiruvda boshqa
+ranglar kelgan edi, demak doimiy nusxalash emas, lekin namuna kuchli langar — keyingi qadamda
+namunadagi aniq qiymatlar placeholder'ga almashadi. (2) Birinchi urinishda ikkinchi generatsiya
+umuman boshlanmadi: server qayta ishga tushgach client bundle buzilgan (`Failed to fetch
+dynamically imported module`), Enter hech narsa qilmagan, kuzatuvchim esa eski loyihani ushlab
+"palitra yo'q" deb ko'rsatdi. Sahifani qayta yuklash kifoya qildi; kuzatuvchi endi `created_at`
+bo'yicha filtrlaydi.
+
+- Fayllar: `src/database/migrations/0020_add_project_palette.ts`, `schema.ts`, `migrate.ts`, `src/app/Models/Project.ts`, `src/app/Services/DesignSystemService.ts`, `PromptComposer.ts`, `src/app/Http/Controllers/{Plan,Generate,Project}Controller.ts`, `src/lib/palette.ts` (`applyPaletteToRoot`, `parsePalette`), `palette.check.ts`, `new-features.check.ts`.
+- Tekshirildi: `npm run check` va `tsc` toza. Chrome'da to'liq oqim: kirish (sehrli havola), prompt, 6 ekran, kanvas va preview skrinshotlari foydalanuvchiga yuborildi. Bazada har ekranning `:root` i palitrani ko'taradi.
+- GQ-10 `Jarayonda` qoladi: foydalanuvchi vizual tasdig'i va hakam A/B (GQ-08) kutilmoqda.
+
+### Planner palitrani qaytaradi — GQ-10 (2/3)
+
+Planner prompti endi oltinchi qadam sifatida palitra so'raydi: to'rt rang, burchak hissi va uch-to'rt
+so'zlik xarakter. Promptda ikki narsa ataylab aytilgan — butun spektrdan tanlash (indigo va generik
+ko'kdan qochish, chunki katalogning 62% i shunday) va **xavfsizlik uchun emas, xarakter uchun
+tanlash**, chunki kontrast keyin kodda ta'mirlanadi. Ikkinchisi bo'lmasa model o'zini cheklab,
+xuddi katalog kabi xavfsiz kulranglarga qaytadi.
+
+`parsePlan` palitrani `readProposal` orqali o'tkazadi va u to'liq o'qilmasa **butunlay tashlab
+yuboradi**. Yarim palitra — kulrangga qaytish, ya'ni aynan shu qator bartaraf qilayotgan nuqson;
+palitra bo'lmasa loyiha avvalgidek kuratsiya qilingan tizimda qoladi.
+
+**Ikki marta haqiqiy planner chaqiruvi bilan tekshirildi** (`"habit tracker app"`, o'zgarmas):
+
+| | accent | xarakter | AA nuqson |
+|---|---|---|---|
+| 1-chaqiruv | `#d97a3d` to'q sariq | warm, gentle, encouraging, earthy | 0 |
+| 2-chaqiruv | `#2a9d8f` teal | calm, encouraging, minimal, warm | 0 |
+
+Ikkalasi ham ko'k emas, ikkalasi ham ta'mirdan keyin bitta ham AA nuqsonisiz o'tdi.
+
+Yo'l-yo'lakay bitta shubhani tekshirdim: model `appType` ni `productivity` deb qaytardi, holbuki
+GQ-09 `habits` ni alohida tur qilgan edi. Nuqson emas — `AppPatternService` naqshni `appType` dan
+emas, brief so'zlaridan tanlaydi, va `"habit tracker app"` to'g'ri `habits` ga tushadi.
+
+- Fayllar: `src/app/Services/PlannerService.ts`, `src/app/Services/services.check.ts`.
+- Tekshirildi: `npm run check` va `tsc` toza. Test tasdig'i validatsiya chetlab o'tilganda yiqiladi (buzuq holat vaqtincha yasalib, fayl tiklandi). Palitra hali hech qayerda ishlatilmayapti, shuning uchun ekran generatsiyasi o'zgarmagan va eval talab qilinmaydi.
+- Qoldi (3/3): palitra hamma ekranga bitta `:root` bo'lib kirsin. **Bu generatsiyani o'zgartiradi**, demak eval bilan o'lchanadi.
+
+### Palitra qatlami: rang matematikasi va AA ta'mirlash — GQ-10 (1/3)
+
+GQ-10 ning birinchi bo'lagi: model o'ylab topgan palitrani qabul qilib, undan to'liq token to'plamini
+chiqaradigan va AA ni majburlaydigan modul. Generatsiyaga hali ulanmagan, shuning uchun sifatga
+ta'sir qilmaydi va eval talab qilmaydi.
+
+**Nega model faqat beshta rang beradi.** Olti ekran — olti mustaqil namuna. Ekran o'zi tanlay
+oladigan har narsa — olti ekran kelishmaydigan narsa. Planner bir marta ishlaydi, demak u
+tanlagan palitra hammaga umumiy bo'la oladigan yagona narsa. Model **hukm** beradi (ottenka,
+kayfiyat, burchak hissi); **hunar** kodda qoladi: siyoh rampasi, chegaralar, hover holatlari,
+rangli chip ustidagi matn. Aynan shu joyda kirish imkoniyati yutiladi yoki yo'qotiladi, va oltmish
+tokenni boshida ushlab turishi so'ralgan model ularni sezilmas tarzda buzadi.
+
+Butun matematika bitta qoidaga bo'ysunadi: **rang yorug'likda harakatlanadi, ottenkada hech qachon**.
+Palitra — bu xarakter haqidagi hukm; swatch'ni AA gacha qoraytirish hukmni saqlaydi, uni xavfsiz
+kulrangga almashtirish esa aynan shu testdan o'tib, hukmni axlatga tashlaydi.
+
+Tasodifiy 400 ta palitra bilan sinaldi — har bir siyoh/yuza jufti, har bir rangli chip va
+to'ldirilgan tugma AA dan o'tadi. Shu sinov ikkita haqiqiy teshik topdi:
+
+- **O'rta tonli accent.** Oq rang qoraygan sari o'qilarli bo'ladi, qora esa yorishgan sari — demak
+  eng yomon holat o'rtada: o'rta tonli accent na oqni, na qorani ko'taradi (4.35:1). `usableAccent`
+  uni o'zi og'gan tomonga o'rtadan uzoqlashtiradi.
+- **O'rta tonli sahifa.** Hech qanday rangdagi AA matnni ko'tara olmaydi. Fon va yuza ottenkasi
+  saqlangan holda ishlaydigan yorug'lik diapazoniga tortiladi.
+
+Uchinchisi chegaraviy xato edi: `mix` butun bo'lmagan kanal qaytarardi, ya'ni o'lchangan fon CSS'ga
+yoziladigan rangdan bir hilol yaxshiroq edi — endigina maqsadga yetgan juftni yana ostiga tushirish
+uchun shuning o'zi yetarli.
+
+- Fayllar: `src/lib/color.ts` (yangi), `src/lib/palette.ts` (yangi), `src/lib/palette.check.ts` (yangi), `package.json`.
+- Tekshirildi: `npm run check` (yangi `palette.check.ts` bilan) va `tsc` toza. Uchala kafolat tegishli regressiyada yiqiladi — `usableAccent` olib tashlanganda, yuza diapazoni olib tashlanganda va `mix` yaxlitlanmaganda; buzuq holatlar vaqtincha yasalib, fayllar aynan tiklandi.
+- Qoldi (GQ-10 `Jarayonda`): planner palitrani qaytarsin (2/3), palitra `:root` bo'lib generatsiyaga kirsin (3/3). Uchinchi qadam generatsiyani o'zgartiradi, demak eval bilan o'lchanadi.
+
 ## 2026-09-23
 
 ### FAB kartani yopadi: o'lchovga qo'shildi, tuzatish qaytarildi — EYE-08

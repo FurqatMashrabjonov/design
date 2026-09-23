@@ -74,7 +74,22 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EYE-07 | Audit haqiqiy 390px'da o'lchasin, prob jim xato qaytarmasin | Generatsiya / Sifat | MVP | Tayyor | Kichik | EYE-06 | 500px'da o'lchanardi; iframe bilan 390px, prob javob bermasa throw |
 | GQ-09 | Har ilova turida rangli nomzod bo'lsin; habits o'z turi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | DS-01 | 48 katakdan 3 tasi high edi; productivity va marketplace to'liq kulrang |
 | EYE-08 | FAB matn ustida turishini o'lchash (covered-text) | Generatsiya / Sifat | MVP | Tayyor | Kichik | EYE-07 | Qoida ishlaydi: ikkala ilovada 1 tadan topildi; joylashuvni tuzatish qaytarildi |
-| GQ-10 | Palitrani model o'ylab topsin (planner qaytarsin, kod AA ga keltirsin) | Generatsiya / Dizayn tizimlari | MVP | Rejada | Katta | GQ-09, DS-01 | A/B: model palitrasi vs kuratsiya qilingan tizim, bir xil brief |
+| GQ-13 | 2026 flagman mobil tizimi: tinted neutrals, squircle, shisha pill tab bar, serif+grotesk, bento kit | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-10, GQ-15, THM-07 | Auto tanlov consumer ilovalarda flagmanni birinchi qo'yadi; bir xil prompt bilan bitta generatsiya |
+| GQ-10 | Palitrani model o'ylab topsin (planner qaytarsin, kod AA ga keltirsin) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Katta | GQ-09, DS-01 | A/B: model palitrasi vs kuratsiya qilingan tizim, bir xil brief |
+| GQ-15 | Blueprint'ga qahramon lahza: nima va qanchalik katta | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-10 | Asosiy raqam sahifaning eng katta elementi; hakam ierarxiya bahosi tushmaydi |
+| GQ-16 | Komponent varag'i kirish sifatida: HOUSE STYLE CSS o'rniga HTML parchalari | Generatsiya / Izchillik | MVP | Rejada | O'rta | GQ-10, THM-08 | Bir ilovada karta bir xil yig'iladi; hakam coherence o'sadi |
+| GQ-17 | Planner'ga "bitta jasur harakat" maydoni | Generatsiya / Sifat | MVP | Rejada | Kichik | GQ-10 | Har ekran spec'ida ilovaning bitta jasur harakati; hakam polish o'sadi |
+| GEN-27 | Ekran "Untitled" bo'lib qoladi: <title> bo'sh bo'lganda nom rejadagi ekran nomidan olinsin | Generatsiya / Ishonchlilik | MVP | Rejada | Kichik |  | Rejalashtirilgan ekran hech qachon Untitled bo'lmaydi |
+| GQ-18 | iOS 26 tab bar qoidalari ShellService'ga: 21px inset, scroll'da yig'ilish, qidiruv oroli, shisha qirra | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-13 | Bar chetdan 21px ichkarida, scroll'da faol tabga yig'iladi, shisha faqat navigatsiya qatlamida |
+| GQ-19 | Detail sarlavhasi: katta serif title, scroll'da 17px ga yig'iladi, chiziq o'rniga blur qirra | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13, GQ-18 | Har detail ekranda bir xil, kodda |
+| GQ-20 | Ikonka muomalasi: og'irlik tizimdan, duotone CSS bilan, faol tabda chizish animatsiyasi | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | Kulrang doira hech qayerda qolmaydi |
+| GQ-21 | Sticker sloti: kodda chiziladigan soft-3D SVG stickerlar (12 ta), token rangida | Generatsiya / Kontent | MVP | Tayyor | O'rta | GQ-13 | data-od-sticker sloti, emoji o'rniga |
+| GQ-22 | Bento qoidalari blueprint va lintda: qahramon plitka + kvadratlar, bir xil kartalar to'plamiga taqiq | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-13, GQ-15 | Lint 'identical-card-stack'; blueprint bento varianti |
+| GQ-23 | Tipografiya shkalasi iOS 26 ga: 34/17/15/13/11, tabular raqamlar, optik o'lcham | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | mobile.md va Nova shu shkalada |
+| GQ-24 | Harakat: prujinali easing tokeni, bosishda 0.98 scale, tab morph, reduced-motion | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | Kit va shell'da, reduced-motion'da o'chadi |
+| GQ-25 | Nova dark varianti va 'tungi/focus' brief'larda dark-first | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10, GQ-13 | To'q palitrada Nova hunari to'g'ri ishlaydi |
+| GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik | GQ-10 | 5 chaqiruvda kamida 3 xil ottenka oilasi |
+| GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | MVP | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
@@ -83,8 +98,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-06 | Brief sanagan ekranlar chegara bo'ladi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-07 | Sahifa yopilsa ham generatsiya serverda davom etadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-08 | Eval'da vizual hakam (skrinshot + rubrika + pairwise) | Generatsiya / Sifat | MVP | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
-| GQ-09 | Mobil uchun jilo tizimlari | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
-| GQ-10 | Vizual tanqid sikli (1 marta, vision model) | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
+| GQ-14 | Vizual tanqid sikli (1 marta, vision model) | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-11 | Anchor ekran kuchliroq modelda | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-12 | Desktop prompt yo'li va web skill'larni tozalash | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | LP-01 | Preview: chala HTML'ga skript qo'shilmaydi, kod ko'rinmaydi | Generatsiya / Render | MVP | Tayyor | Kichik |  | docs/LIVE-PREVIEW-PLAN.md |

@@ -57,7 +57,7 @@ export const Project = {
     db.update(projects).set({ userId }).where(isNull(projects.userId)).run()
   },
 
-  create(data: { id: string; name: string; designSystem: string; device: string; userId?: string | null }): ProjectRow {
+  create(data: { id: string; name: string; designSystem: string; device: string; userId?: string | null; designSystemAuto?: boolean }): ProjectRow {
     db.insert(projects).values(data).run()
     return Project.find(data.id)!
   },
@@ -69,6 +69,11 @@ export const Project = {
 
   rename(id: string, name: string) {
     db.update(projects).set({ name }).where(eq(projects.id, id)).run()
+  },
+
+  // GQ-10: the built palette (already AA-repaired), so a screen added later gets the same colours.
+  savePalette(id: string, palette: unknown) {
+    db.update(projects).set({ palette: JSON.stringify(palette) }).where(eq(projects.id, id)).run()
   },
 
   saveTheme(id: string, theme: unknown) {

@@ -10,6 +10,10 @@ export const projects = sqliteTable('projects', {
   navigation: text('navigation'),
   // Validated theme overrides as JSON (see lib/theme-override.ts); null = design system as-is.
   theme: text('theme'),
+  // GQ-10: the AA-repaired palette the planner invented (lib/palette.ts Palette as JSON); null =
+  // the catalogue system's own colours. Only set when the system was chosen automatically.
+  palette: text('palette'),
+  designSystemAuto: integer('design_system_auto', { mode: 'boolean' }).notNull().default(false),
   // What later screens still need from the plan — summary, app type, data model — as JSON.
   plan: text('plan'),
   // The owner (OWN-01). Null only for projects made before accounts existed (OWN-05).

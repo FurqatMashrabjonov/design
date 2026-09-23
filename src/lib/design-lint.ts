@@ -2,6 +2,7 @@ import { extractRootBlock } from './screen-normalizer.ts'
 import { HIG, declaredFontSizes } from './hig-rules.ts'
 import { renderCharts } from './charts.ts'
 import { renderMaps } from './maps.ts'
+import { renderStickers } from './stickers.ts'
 
 /**
  * Deterministic checks for the craft rules that are mechanically checkable.
@@ -184,7 +185,7 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
   }
 
   const handDrawn = (body.match(/<svg\b[^>]*viewBox\s*=\s*["']0 0 24 24["'][^>]*>/gi) ?? []).filter(
-    (tag) => !/data-od-icon|data-od-shell|class="[^"]*lucide/i.test(tag),
+    (tag) => !/data-od-icon|data-od-shell|data-od-sticker-rendered|class="[^"]*lucide/i.test(tag), // stickers (GQ-21) are drawn by us
   )
   if (handDrawn.length > 0) {
     findings.push({
@@ -306,7 +307,51 @@ export function lintScreen(html: string, opts: LintOptions = {}): Finding[] {
     })
   }
 
+  // GQ-22: a stack of identical cards is the layout a model reaches for when it has not decided
+  // what a section is. Four or more siblings with the same card class, one after another, with
+  // nothing between them — and not inside a bento, where uniform squares under a wide tile are the
+  // point. Sizes are not measured here; sameness of markup is what the model produces.
+  const stack = identicalCardStack(page)
+  if (stack) {
+    findings.push({
+      rule: 'identical-card-stack',
+      severity: 'warn',
+      message: `${stack.count} identical cards in a row. Vary what a section is — a row, a list, one number, a photo that fills the width — or lead a bento with one wide tile.`,
+      samples: [stack.sample],
+    })
+  }
+
   return findings
+}
+
+/** The longest run of consecutive sibling `od-card` elements with identical class attributes, outside a bento. */
+function identicalCardStack(page: string): { count: number; sample: string } | null {
+  const body = page.replace(/<(style|script)\b[\s\S]*?<\/\1>/gi, ' ')
+  const tags = body.matchAll(/<(\/?)([a-z][a-z0-9-]*)\b([^>]*?)(\/?)>/gi)
+  const VOID = new Set(['img', 'br', 'hr', 'input', 'meta', 'link', 'source', 'wbr'])
+  // A stack of open elements; each frame counts the run of identical cards among its direct children.
+  // The longest run anywhere on the page is kept as it happens, since frames vanish when they close.
+  const open: { cls: string; run: number; runCls: string }[] = [{ cls: '', run: 0, runCls: '' }]
+  let best: { count: number; sample: string } | null = null
+  for (const m of tags) {
+    const [, close, name, attrs, selfClose] = m
+    const tag = name!.toLowerCase()
+    if (close) {
+      if (open.length > 1) open.pop()
+      continue
+    }
+    const parent = open[open.length - 1]!
+    const cls = (/\bclass="([^"]*)"/i.exec(attrs!) ?? [])[1]?.trim().split(/\s+/).sort().join(' ') ?? ''
+    const isCard = /\bod-card\b/.test(cls)
+    if (!/\bod-bento\b/.test(parent.cls)) {
+      if (isCard && cls === parent.runCls) parent.run++
+      else if (isCard) (parent.run = 1), (parent.runCls = cls)
+      else if (!VOID.has(tag)) (parent.run = 0), (parent.runCls = '') // any other sibling breaks the run
+      if (parent.run >= 4 && parent.run > (best?.count ?? 0)) best = { count: parent.run, sample: `<div class="${parent.runCls}"> ×${parent.run}` }
+    }
+    if (!selfClose && !VOID.has(tag)) open.push({ cls, run: 0, runCls: '' })
+  }
+  return best
 }
 
 /**
@@ -342,6 +387,7 @@ export function autofixScreen(html: string): string {
   // ask for a map photo, become a drawn street plan (lib/maps.ts, GQ-04) before photos are looked up.
   out = renderCharts(out)
   out = renderMaps(out)
+  out = renderStickers(out) // GQ-21: soft-3D glyph slots, drawn in the tokens' colours
 
   // An icon-only button gets a 44×44 invisible hit area centred on it, whatever its drawn size.
   // :where() keeps the position rule at zero specificity, so a button the screen positions itself

@@ -29,11 +29,11 @@
 
 /* Text */
 .od-hero__eyebrow { font-size: var(--text-xs, 12px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.od-hero__title { font-family: var(--font-display); font-size: var(--text-2xl, 28px); line-height: var(--leading-tight, 1.15); letter-spacing: var(--tracking-display, -0.01em); font-weight: 700; margin: 0; color: var(--fg); }
+.od-hero__title { font-family: var(--font-display); font-size: var(--text-2xl, 28px); line-height: var(--leading-tight, 1.15); letter-spacing: var(--tracking-display, -0.01em); font-weight: var(--od-display-weight, 700); font-optical-sizing: auto; margin: 0; color: var(--fg); }
 .od-hero__sub { font-size: var(--text-base, 16px); color: var(--muted); margin: 4px 0 0; }
 .od-section { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
 .od-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.od-section__title { font-family: var(--font-display); font-size: var(--text-lg, 18px); font-weight: 650; margin: 0; color: var(--fg); }
+.od-section__title { font-family: var(--od-heading-font, var(--font-display)); font-size: var(--text-lg, 18px); font-weight: var(--od-heading-weight, 650); margin: 0; color: var(--fg); }
 .od-section__link { font-size: var(--text-sm, 14px); font-weight: 600; color: var(--od-accent-text); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
 
 /* Buttons */
@@ -45,7 +45,12 @@
 .od-btn--sm { min-height: 36px; padding: 0 var(--space-3, 12px); font-size: var(--text-sm, 14px); border-radius: var(--radius-sm, 8px); }
 .od-btn--block { width: 100%; }
 .od-btn i[data-lucide], .od-btn svg { width: 18px; height: 18px; }
-.od-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: var(--radius-pill, 999px); border: 0; background: var(--surface-warm, var(--surface)); color: var(--fg); cursor: pointer; flex: none; }
+.od-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: var(--od-icon-radius, var(--radius-pill, 999px)); border: 0; background: var(--od-icon-bg, var(--surface-warm, var(--surface))); color: var(--od-icon-fg, var(--fg)); cursor: pointer; flex: none; }
+/* GQ-13: a bento block — one wide tile, then squares. The grey-circle icon button and the stack of
+   identical cards are what date a screen; a system sets --od-icon-* to tint the container. */
+.od-bento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3, 12px); }
+.od-bento__wide { grid-column: 1 / -1; }
+.od-card--glass { background: color-mix(in oklab, var(--surface), transparent 30%); backdrop-filter: var(--od-blur, blur(16px)); -webkit-backdrop-filter: var(--od-blur, blur(16px)); }
 .od-icon-btn i[data-lucide], .od-icon-btn svg { width: 20px; height: 20px; }
 
 /* Surfaces */
@@ -72,6 +77,8 @@
 .od-row__lead { flex: none; width: 40px; height: 40px; border-radius: var(--radius-md, 12px); display: flex; align-items: center; justify-content: center; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--od-accent-text); overflow: hidden; }
 .od-row__lead > img { width: 100%; height: 100%; object-fit: cover; }
 .od-row__lead i[data-lucide], .od-row__lead svg { width: 20px; height: 20px; }
+/* GQ-20: duotone without changing libraries — a light fill of the icon's own colour inside its closed shapes. A system sets --od-icon-duotone: 0% to stay pure line. */
+.od-row__lead svg, .od-icon-btn svg, .od-empty__icon svg { fill: color-mix(in oklab, currentColor var(--od-icon-duotone, 14%), transparent); }
 .od-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .od-row__title { font-size: var(--text-base, 16px); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .od-row__sub { font-size: var(--text-sm, 14px); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -106,11 +113,12 @@
 /* Numbers */
 .od-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .od-stat__label { font-size: var(--text-sm, 14px); color: var(--muted); }
-.od-stat__value { font-family: var(--font-display); font-size: var(--text-2xl, 28px); font-weight: 700; letter-spacing: var(--tracking-display, -0.01em); font-variant-numeric: tabular-nums; color: var(--fg); line-height: 1.1; }
+/* GQ-23: --od-display-weight lets a one-weight serif (Nova) draw its figures at 400 instead of a faux bold. */
+.od-stat__value { font-family: var(--font-display); font-size: var(--text-2xl, 28px); font-weight: var(--od-display-weight, 700); font-optical-sizing: auto; letter-spacing: var(--tracking-display, -0.01em); font-variant-numeric: tabular-nums; color: var(--fg); line-height: 1.1; }
 .od-stat__delta { font-size: var(--text-sm, 14px); font-weight: 600; color: var(--muted); }
 .od-stat__delta--up { color: var(--od-success-text); }
 .od-stat__delta--down { color: var(--od-danger-text); }
-.od-price { font-family: var(--font-display); font-size: var(--text-xl, 22px); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
+.od-price { font-family: var(--font-display); font-size: var(--text-xl, 22px); font-weight: var(--od-display-weight, 700); font-variant-numeric: tabular-nums; color: var(--fg); }
 .od-price__unit { font-size: var(--text-sm, 14px); font-weight: 500; color: var(--muted); }
 .od-progress { height: 8px; border-radius: 4px; background: var(--surface-warm, var(--border)); overflow: hidden; }
 .od-progress > span { display: block; height: 100%; width: var(--value, 50%); border-radius: inherit; background: var(--accent); }
@@ -140,7 +148,7 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 
 /* States and bars */
 .od-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2, 8px); padding: var(--space-8, 32px) var(--space-4, 16px); color: var(--muted); }
-.od-empty__icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface-warm, var(--surface)); color: var(--muted); margin-bottom: 4px; }
+.od-empty__icon { width: 56px; height: 56px; border-radius: var(--od-icon-radius, 50%); display: flex; align-items: center; justify-content: center; background: var(--od-icon-bg, var(--surface-warm, var(--surface))); color: var(--od-icon-fg, var(--muted)); margin-bottom: 4px; }
 .od-empty__title { font-weight: 650; color: var(--fg); font-size: var(--text-lg, 18px); margin: 0; }
 .od-bottom-bar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: var(--space-3, 12px); padding: var(--space-3, 12px) var(--space-4, 16px) calc(var(--space-3, 12px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--border-soft, var(--border)); margin-top: auto; }
 .od-bottom-bar > .od-btn { flex: 1; }
@@ -150,3 +158,14 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
    is tapped through its row. */
 .od-chip, .od-segmented > button, .od-btn--sm, .od-stepper > button, .od-section__link { position: relative; }
 .od-chip::after, .od-segmented > button::after, .od-btn--sm::after, .od-stepper > button::after, .od-section__link::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+
+/* GQ-24: motion as a token. Press feedback is a small scale with a spring-ish curve, state colours cross-fade, the switch knob glides — and none of it under prefers-reduced-motion. A system tunes --ease-spring / --motion-press; the defaults give every system the same feel. */
+@media (prefers-reduced-motion: no-preference) {
+  .od-btn, .od-icon-btn, .od-chip, .od-segmented > button, .od-stepper > button, .od-section__link { transition: transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)), background-color var(--motion-fast, 150ms) ease, color var(--motion-fast, 150ms) ease, box-shadow var(--motion-fast, 150ms) ease, border-color var(--motion-fast, 150ms) ease; }
+  .od-row { transition: background-color var(--motion-fast, 150ms) ease, transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
+  .od-btn:active, .od-icon-btn:active, .od-chip:active, .od-segmented > button:active, .od-stepper > button:active { transform: scale(.96); }
+  .od-row:active { transform: scale(.985); }
+  .od-switch { transition: background-color var(--motion-base, 220ms) ease; }
+  .od-switch::after { transition: transform var(--motion-base, 220ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
+  .od-progress > span { transition: width var(--motion-base, 220ms) var(--ease-standard, ease-out); }
+}

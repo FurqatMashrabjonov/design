@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "nova",
+  "name": "Nova",
+  "category": "Mobile",
+  "description": "2026 flagship for consumer phone apps: tinted neutrals, squircle cards, serif hero figure, floating tab bar.",
+  "source": { "type": "bundled", "origin": "Authored in-house, 2026-09-24 (GQ-13)" },
+  "files": { "design": "DESIGN.md", "tokens": "tokens.css" }
+}

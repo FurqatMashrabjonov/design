@@ -19,6 +19,10 @@
     "placement": "none",
     "note": "Reading is the action; no filled button unless the brief asks for one."
   },
+  "hero": {
+    "what": "the headline number for the selected period, with its change vs the previous period beside it",
+    "size": "a display figure of 64–96px above the chart; the chart is second, never bigger than the number"
+  },
   "avoid": [
     "Several charts of the same data",
     "Charts without axis labels or values",
@@ -41,6 +45,10 @@
     {
       "id": "c",
       "layout": "Ranked: headline number with change, then the breakdown as horizontal bars ranked largest first, chart smaller below."
+    },
+    {
+      "id": "d",
+      "layout": "Bento: the period selector, then one wide 2×1 tile with the headline number and its change, then a 2-column grid of square tiles (a small chart, a best value, a count, a comparison), each with one job, 12–16px gaps, at most five tiles; the breakdown list follows as rows."
     }
   ],
   "kit": "<div class=\"od-page\"><div class=\"od-segmented\"><button class=\"is-active\">[week]</button><button>[month]</button></div><div class=\"od-card\"><div class=\"od-stat\"><span class=\"od-stat__label\">[metric]</span><span class=\"od-stat__value\">[value]</span><span class=\"od-stat__delta od-stat__delta--up\">[change]</span></div><div data-od-chart=\"bar\" data-values=\"[values]\" data-labels=\"[labels]\"></div></div><section class=\"od-section\"><h2 class=\"od-section__title\">[breakdown]</h2><div class=\"od-list\">[od-row × 4 with od-row__trail values]</div></section></div>"

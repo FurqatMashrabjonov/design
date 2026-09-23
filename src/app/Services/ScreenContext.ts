@@ -111,6 +111,10 @@ Wherever this screen shows one of these, use its exact name and values; when it 
 ${lines.join('\n')}`
 }
 
+// Root tabs that are quiet on purpose: a settings list with an 84px number on top is a mistake the
+// first version of the fallback made. A tab whose job is a tool, not a status, gets no headline.
+const QUIET_ROOTS = new Set(['settings', 'search', 'chat', 'camera', 'map'])
+
 /** A planned screen's spec, written so the drawing model composes a decided screen instead of deciding one. */
 /** @param seed the app (its name): picks the app's layout variant for each archetype (VAR-02). */
 export function screenSpec(s: PlannedScreen, seed?: string): string {
@@ -122,6 +126,11 @@ export function screenSpec(s: PlannedScreen, seed?: string): string {
     s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
     // The archetype's structural pattern (blueprints/<archetype>.json); the plan's sections above say what content fills it.
     s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype, seed)}`,
+    // GQ-15: a tab's root screen is a destination and carries the app's headline number whatever
+    // its archetype. The planner filed a habit tracker's Today as a `list`, whose blueprint is
+    // quiet by design, and the home screen came out with nothing bigger than 28px.
+    s.screenType === 'root-tab' && s.archetype && !QUIET_ROOTS.has(s.archetype) && !BlueprintService.find(s.archetype)?.hero &&
+      'HERO MOMENT: the one number that says how this tab is going right now (a streak, a count done today, a total), with its label under it. Draw it as a display figure of 72–96px on its own line above the list — the largest thing on the screen by a clear margin; the list under it is one step quieter.',
   ]
     .filter(Boolean)
     .join('\n')

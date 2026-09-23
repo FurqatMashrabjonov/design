@@ -19,6 +19,10 @@
     "placement": "bottom-bar",
     "note": "Full-width \"Continue\" at the bottom."
   },
+  "hero": {
+    "what": "one illustration or one short headline that names the promise",
+    "size": "an illustration of 200–260px height, or a headline of 34–40px over two lines; the body copy is one short sentence"
+  },
   "avoid": [
     "Tab bar during onboarding",
     "Paragraphs of text",

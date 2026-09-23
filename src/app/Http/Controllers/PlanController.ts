@@ -10,6 +10,7 @@ import { PendingPlans } from '@/app/Services/PendingPlans'
 import { readReference, referenceBlock, type ReferenceStyle } from '@/app/Services/ReferenceService'
 import { parseRefImages } from '@/lib/ref-images'
 import { mapLimit } from '@/app/Services/Pool'
+import { buildPalette, parsePalette } from '@/lib/palette'
 import { prefetchImage, resolveImages } from '@/app/Services/ImageService'
 import { imageQueries } from '@/lib/image-slots'
 import { navClearance } from '@/app/Services/ShellService'
@@ -145,8 +146,19 @@ export const PlanController = {
             return
           }
 
-          const system = composeSystemPrompt(project.designSystem, project.device)
-          const tokensCss = DesignSystemService.readTokensRoot(project.designSystem)
+          // GQ-10: a system chosen for the person (not by them) may have its colours replaced by
+          // the palette the planner invented for this app. Built and repaired to AA once, saved,
+          // then every screen — drawn now or added weeks later — gets the same :root.
+          if (project.designSystemAuto && plan.palette && !parsePalette(project.palette)) {
+            const built = buildPalette(plan.palette)
+            Project.savePalette(project.id, built)
+            project.palette = JSON.stringify(built)
+            log.push(`Invented a palette for this app${built.character ? ` — ${built.character}` : ''}: accent ${built.accent} on ${built.bg}`)
+          }
+          const tokensCss = DesignSystemService.readTokensRootFor(project)
+          const system = composeSystemPrompt(project.designSystem, project.device, undefined, {
+            tokensRoot: DesignSystemService.readTokensRootFor(project, true),
+          })
           const fontUrls = DesignSystemService.readFontUrls(project.designSystem)
           const iconStroke = DesignSystemService.readIconStroke(project.designSystem)
           const leakTerms = DesignSystemService.readLeakTerms(project.designSystem)

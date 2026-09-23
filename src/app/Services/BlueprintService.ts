@@ -33,6 +33,12 @@ export type Blueprint = {
   hig: string[]
   /** 2–3 structurally different layouts for the same sections (VAR-02). */
   variants?: { id: string; layout: string }[]
+  /**
+   * GQ-15: the one thing the screen is about and how big it is drawn. The size is a floor in px,
+   * because "hero" on its own came out as a 14px number in a row — Sleek's is ~120px. Not every
+   * archetype has one; a settings screen is quiet on purpose.
+   */
+  hero?: { what: string; size: string }
   /** The pattern sketched with od-kit classes (KIT-04); [brackets] stand for this app's content. */
   kit?: string
 }
@@ -80,6 +86,9 @@ export const BlueprintService = {
     return [
       v ? `Screen pattern (${b.id}, layout ${v.id}): ${v.layout} Use this layout, not the most common one.` : `Screen pattern (${b.id}): ${b.layout}`,
       `It must show: ${b.sections.required.join('; ')}.`,
+      // The one place the brief says "big" in numbers. Left to taste, the hero was a 14px figure in a
+      // row; a floor in px is the difference between a screen and a list.
+      b.hero && `HERO MOMENT: ${b.hero.what}. Draw it as ${b.hero.size}. It is the largest thing on the screen by a clear margin — nothing else comes within two type sizes of it, and everything else on the screen is at least one step quieter.`,
       `Primary action placement: ${b.primaryAction.note}`,
       `Avoid: ${b.avoid.join('; ')}.`,
       BlueprintService.platformNotes(id),

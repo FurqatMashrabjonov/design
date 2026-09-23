@@ -15,7 +15,7 @@ The style card above decides the *look* and wins on look; where a number differs
 
 - **Three levels, no more:** one primary element, a few secondary, the rest tertiary. If two compete for first place, demote one.
 - **Build hierarchy from weight and colour before size.** Primary text in `var(--fg)`, supporting text in `var(--muted)`, metadata in `var(--meta)`. Size alone makes a screen shout.
-- **At most four font sizes and three weights on a screen.** Body text 15–17px, never below 15. Secondary 13–14px. Nothing on the screen below 11px, captions included.
+- **At most four font sizes and three weights on a screen.** The phone scale: body 17px (min 15), secondary 15px, captions 13px, tab labels 11px; screen title 34px; hero figure 64–96px.
 - **Headings are short.** A screen title is 1–3 words. Section labels are 1–2 words. If a heading wraps to three lines at 390px, rewrite it.
 - **At most two typeface families on a screen**, and if there are two they must be obviously different (a display face against a text face). Units are smaller and lighter than the number they follow.
 - **Long text truncates on purpose:** one line with an ellipsis for titles in rows, two lines for descriptions. Never let a label push its neighbour off the row.

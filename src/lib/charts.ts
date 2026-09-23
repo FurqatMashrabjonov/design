@@ -139,7 +139,7 @@ function ring(d: ReturnType<typeof parse>, bare = false): string {
     // The centre is bounded by the circle it sits in: a long label used to run out of the ring and
     // across whatever was beside it. It stays inside and ellipses rather than spilling.
     : `<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:0 18%;box-sizing:border-box;overflow:hidden;text-align:center"><strong style="font-size:clamp(14px,22%,32px);color:var(--fg);font-variant-numeric:tabular-nums">${num(value)}${escapeHtml(d.unit)}</strong>${label}</div>`
-  return `<div style="position:relative;height:100%;aspect-ratio:1;max-height:180px;max-width:100%;margin:0 auto"><svg viewBox="0 0 42 42" style="width:100%;height:100%;transform:rotate(-90deg)" aria-hidden="true"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--border)" stroke-width="3.5"/><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="${num(pct)} ${num(100 - pct)}"/></svg>${centre}</div>`
+  return `<div style="position:relative;height:100%;aspect-ratio:1;max-height:180px;max-width:100%;margin:0 auto"><svg viewBox="0 0 42 42" style="width:100%;height:100%;transform:rotate(-90deg)" aria-hidden="true"><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--border)" stroke-width="5.5"/><circle cx="21" cy="21" r="${r}" fill="none" stroke="var(--accent)" stroke-width="5.5" stroke-linecap="round" stroke-dasharray="${num(pct)} ${num(100 - pct)}"/></svg>${centre}</div>`
 }
 
 function heatmap(d: ReturnType<typeof parse>, columns: number): string {

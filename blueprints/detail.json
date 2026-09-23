@@ -20,6 +20,10 @@
     "placement": "bottom-bar",
     "note": "Filled button in a sticky bottom bar, with the price or total beside it."
   },
+  "hero": {
+    "what": "the item's identity — a full-width photo, or its key number when it has no photo (a streak, a price, a score)",
+    "size": "a photo of 220–280px height full-bleed, or a display figure of 72–96px; the title sits on or right under it"
+  },
   "avoid": [
     "The primary button scrolled out of reach",
     "Repeating the title in hero and header",

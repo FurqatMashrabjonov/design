@@ -19,6 +19,10 @@
     "placement": "bottom-bar",
     "note": "One filled next-step button at the bottom; the secondary is a text link."
   },
+  "hero": {
+    "what": "the outcome — the amount, the score, or the confirmation icon",
+    "size": "a display figure or icon of 72–96px centred in the top third, with one line of copy under it"
+  },
   "avoid": [
     "Tab bar on a result screen of a flow",
     "Confetti with no information",

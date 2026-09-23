@@ -3,7 +3,7 @@ import { extractArtifact } from '../../artifact.ts'
 import { streamCompletion } from './LlmService.ts'
 import { DesignSystemService } from './DesignSystemService.ts'
 import { composeSystemPrompt } from './PromptComposer.ts'
-import { parsePlan } from './PlannerService.ts'
+import { parsePlan, type PlannedScreen } from './PlannerService.ts'
 import { mapLimit } from './Pool.ts'
 import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellService.ts'
 
@@ -66,6 +66,17 @@ assert.throws(() => parsePlan(JSON.stringify({ appName: 'X', screens: [] })), /n
 assert.throws(() => parsePlan('not json'))
 const many = parsePlan(JSON.stringify({ screens: Array.from({ length: 9 }, (_, i) => ({ name: `S${i}` })) }))
 assert.equal(many.screens.length, 6, 'capped at 6 screens')
+
+// planner palette (GQ-10): carried through when it is usable, dropped whole when it is not.
+const screens = [{ name: 'Home', description: 'Today view' }]
+const withPalette = parsePlan(JSON.stringify({ screens, palette: { accent: '#C05E3C', bg: '#faf6f2', surface: '#ffffff', fg: '#2b2422', radius: 'round', character: 'warm, earthy' } }))
+assert.equal(withPalette.palette?.accent, '#c05e3c', 'a usable palette reaches the plan')
+assert.equal(withPalette.palette?.radius, 'round')
+assert.equal(plan.palette, undefined, 'a plan with no palette stays on the curated system')
+// Half a palette is worse than none: it would paint greys over a system that was already coherent.
+for (const broken of [{ accent: '#c05e3c', bg: '#faf6f2', surface: '#ffffff' }, { accent: 'terracotta', bg: '#faf6f2', surface: '#fff', fg: '#222' }, 'warm']) {
+  assert.equal(parsePlan(JSON.stringify({ screens, palette: broken })).palette, undefined, `broken palette is dropped: ${JSON.stringify(broken)}`)
+}
 
 // pool: never exceeds the concurrency limit, still runs every item, preserves result order
 let inFlight = 0
@@ -305,6 +316,15 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   for (const part of ['User goal: Find dinner', 'Primary action', '1. Search', '3. Featured', 'data-od-link', '"Dish Detail"']) assert.ok(spec.includes(part), `spec carries ${part}`)
   assert.ok(!screenSpec(v2.screens[3]).includes('Sections'), 'an old-shape screen still yields a usable brief')
   assert.ok(spec.includes(`Screen pattern (${v2.screens[0].archetype}):`) && spec.includes('It must show:') && spec.includes('Avoid:'), 'the archetype\'s blueprint is in the spec')
+  // GQ-15: a tab's root screen carries a hero even when its archetype's blueprint has none.
+  const quietRoot = screenSpec({ ...v2.screens[0], archetype: 'list', screenType: 'root-tab', activeTabId: 'home' } as PlannedScreen)
+  assert.ok(quietRoot.includes('HERO MOMENT:'), 'a root-tab list screen still gets a headline number')
+  const quietDetail = screenSpec({ ...v2.screens[0], archetype: 'list', screenType: 'detail-view', parentScreen: 'Home' } as PlannedScreen)
+  assert.ok(!quietDetail.includes('HERO MOMENT:'), 'a pushed list stays a quiet list')
+  const loudRoot = screenSpec({ ...v2.screens[0], archetype: 'dashboard', screenType: 'root-tab', activeTabId: 'home' } as PlannedScreen)
+  assert.equal((loudRoot.match(/HERO MOMENT:/g) ?? []).length, 1, 'an archetype with its own hero is not told twice')
+  const quietTab = screenSpec({ ...v2.screens[0], archetype: 'settings', screenType: 'root-tab', activeTabId: 'settings' } as PlannedScreen)
+  assert.ok(!quietTab.includes('HERO MOMENT:'), 'a settings tab stays quiet even as a root tab')
   assert.deepEqual(parseStoredPlan(JSON.stringify({ summary: 's', entities: v2.entities }))?.entities, v2.entities)
   for (const junk of [null, '', '{', '"x"']) assert.equal(parseStoredPlan(junk), null)
 }
@@ -411,11 +431,19 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
     for (const h of b.hig) assert.ok(HIG.includes(h), `${id}: unknown HIG card "${h}"`)
     assert.ok(BlueprintService.brief(id).length < 4200, `${id}: the brief stays short (pattern + platform notes + kit sketch): ${BlueprintService.brief(id).length}`)
     assert.ok(!/\b(Airbnb|Uber|Spotify|Instagram|Duolingo|Apple|Google)\b/.test(JSON.stringify(b)), `${id}: no brand names`)
+    // GQ-15: a hero names what it is and how big, in pixels — "big" without a number came out at 14px.
+    if (b.hero) {
+      assert.ok(b.hero.what.length > 15 && b.hero.what.length < 200, `${id}: hero.what`)
+      assert.ok(/\d+(–|-)\d+px/.test(b.hero.size), `${id}: hero.size states a px range`)
+      assert.ok(BlueprintService.brief(id).includes(`HERO MOMENT: ${b.hero.what}`), `${id}: the hero reaches the screen brief`)
+    }
   }
+  assert.ok(BlueprintService.find('dashboard')!.hero && BlueprintService.find('stats')!.hero && BlueprintService.find('detail')!.hero, 'the screens a habit app is made of carry a hero')
+  assert.ok(!BlueprintService.find('settings')!.hero, 'a settings screen is quiet on purpose')
   // VAR-02: layout variants, picked per app, stable
   for (const id of ARCHETYPES) {
     const vs = BlueprintService.find(id)!.variants ?? []
-    assert.ok(vs.length >= 2 && vs.length <= 3 && new Set(vs.map((v) => v.id)).size === vs.length, `${id}: 2–3 distinct variants`)
+    assert.ok(vs.length >= 2 && vs.length <= 4 && new Set(vs.map((v) => v.id)).size === vs.length, `${id}: 2–4 distinct variants`) // GQ-22: three archetypes gained a bento variant
   }
   assert.deepEqual(BlueprintService.variant('feed', 'GoBite'), BlueprintService.variant('feed', ' gobite '), 'the same app always gets the same layout')
   const picks = new Set(['GoBite', 'NovaBank', 'Tasky', 'Stayfinder', 'Tempo', 'Habitly', 'Zen', 'Pagely', 'Shelf', 'Trailmate'].map((a) => BlueprintService.variant('feed', a)!.id))

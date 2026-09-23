@@ -40,7 +40,7 @@ export const ProjectController = {
       })(),
       messages: Message.forProject(id),
       // For the design-system frame on the canvas (lib/ds-sample.ts).
-      tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
+      tokens: { root: DesignSystemService.readTokensRootFor(project), fonts: DesignSystemService.readFontUrls(project.designSystem) },
       // GQ-07: a planned run still drawing (its page may have closed); the editor refreshes until it ends.
       planRunning: PlanRuns.running(id),
       designSystems: DesignSystemService.list(),
@@ -56,7 +56,7 @@ export const ProjectController = {
     const designSystem =
       data.designSystem === AUTO ? DesignSystemService.autoFor(data.brief ?? '', AppPatternService.classify(data.brief ?? '')?.id, id) : data.designSystem
     DesignSystemService.assertExists(designSystem)
-    return Project.create({ id, name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null })
+    return Project.create({ id, name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null, designSystemAuto: data.designSystem === AUTO })
   },
 
   moveScreen(data: { id: string; x: number; y: number }) {

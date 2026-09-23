@@ -19,6 +19,10 @@
     "placement": "inline",
     "note": "The play/pause button, the largest control, centred."
   },
+  "hero": {
+    "what": "the artwork of what is playing — the cover, the episode image, the video frame",
+    "size": "artwork of 320–342px square filling the width with 24px gutters; title and controls under it"
+  },
   "avoid": [
     "Small artwork with lots of text",
     "Controls all the same size",

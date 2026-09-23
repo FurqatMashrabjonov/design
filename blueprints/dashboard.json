@@ -19,6 +19,10 @@
     "placement": "inline",
     "note": "Inside or directly under the hero card — the next step, e.g. \"Start workout\"."
   },
+  "hero": {
+    "what": "the single most important number for today (a streak, a balance, a completion count) with its unit or label under it",
+    "size": "a display figure of 80–112px, sitting alone on its own line at the top of the content; the label under it is 13–15px"
+  },
   "avoid": [
     "Four equal stat tiles with no hierarchy",
     "Charts that repeat the hero number",
@@ -43,6 +47,10 @@
     {
       "id": "c",
       "layout": "Timeline: a date strip across the top, then today's items as a vertical timeline with times on the left; the key number sits in a slim banner above it."
+    },
+    {
+      "id": "d",
+      "layout": "Bento: a greeting line, then one wide 2×1 hero tile carrying the key number (the serif display figure with its label), then a 2-column grid of square tiles where each tile has exactly one job — a number, a sparkline, a photo, or the primary action — 12–16px gaps, at most five tiles in all. Then today's items as rows. Never a stack of identical cards."
     }
   ],
   "kit": "<div class=\"od-page\"><div><div class=\"od-hero__eyebrow\">[date]</div><h1 class=\"od-hero__title\">[greeting]</h1></div><div class=\"od-card\"><div class=\"od-stat\"><span class=\"od-stat__label\">[label]</span><span class=\"od-stat__value\">[value]</span><span class=\"od-stat__delta od-stat__delta--up\">[change]</span></div><div class=\"od-progress\" style=\"--value:[pct]%\"><span></span></div><button class=\"od-btn od-btn--block\">[next step]</button></div><section class=\"od-section\"><div class=\"od-section__head\"><h2 class=\"od-section__title\">[section]</h2><button class=\"od-section__link\">[see all]</button></div><div class=\"od-list\">[od-row × 3]</div></section></div>"

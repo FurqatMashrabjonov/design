@@ -20,6 +20,10 @@
     "placement": "bottom-bar",
     "note": "Full-width subscribe button naming the trial or price."
   },
+  "hero": {
+    "what": "the price of the recommended plan",
+    "size": "a display figure of 56–72px on the highlighted plan; the other plans are plain"
+  },
   "avoid": [
     "Hidden price or period",
     "Pre-selecting the most expensive plan without marking it",

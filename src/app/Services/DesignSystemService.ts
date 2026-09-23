@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
+import { applyPaletteToRoot, parsePalette } from '../../lib/palette.ts'
 import { join } from 'node:path'
 import { extractRootBlock, parseDeclarations } from '../../lib/screen-normalizer.ts'
 
@@ -64,24 +65,26 @@ const STYLE_WORDS: [RegExp, string][] = [
 // Notion and every food app in Airbnb — two people typing the same thing got the same app, and 21 of
 // the 33 systems were never reachable without picking one by hand. The project id chooses among
 // these the way artDirection and navStyle choose, so one project is coherent and two differ.
+// GQ-13: 'nova' is listed three times on purpose — the flagship is the default look (~60%) for a
+// consumer app, and the character systems remain so the same brief does not always give one system.
 const BY_APP_TYPE: Record<string, string[]> = {
   fintech: ['stripe', 'linear-app', 'midnight', 'dashboard'],
-  'food-delivery': ['airbnb', 'shopify', 'bento', 'doodle'],
-  commerce: ['shopify', 'airbnb', 'elegant', 'bento'],
-  marketplace: ['airbnb', 'shopify', 'bento', 'intercom'],
-  booking: ['airbnb', 'apple', 'elegant', 'material'],
-  travel: ['airbnb', 'elegant', 'bento', 'apple'],
-  fitness: ['nike', 'midnight', 'bento', 'neon'],
-  health: ['apple', 'claude', 'cal', 'material'],
-  learning: ['duolingo', 'doodle', 'bento', 'retro'],
-  media: ['spotify', 'midnight', 'neon', 'tesla'],
-  productivity: ['notion', 'linear-app', 'cal', 'bento'],
+  'food-delivery': ['nova', 'nova', 'nova', 'airbnb', 'shopify', 'bento', 'doodle'],
+  commerce: ['nova', 'nova', 'nova', 'shopify', 'airbnb', 'elegant', 'bento'],
+  marketplace: ['nova', 'nova', 'nova', 'airbnb', 'shopify', 'bento', 'intercom'],
+  booking: ['nova', 'nova', 'nova', 'airbnb', 'apple', 'elegant', 'material'],
+  travel: ['nova', 'nova', 'nova', 'airbnb', 'elegant', 'bento', 'apple'],
+  fitness: ['nova', 'nova', 'nova', 'nike', 'midnight', 'bento', 'neon'],
+  health: ['nova', 'nova', 'nova', 'apple', 'claude', 'cal', 'material'],
+  learning: ['nova', 'nova', 'nova', 'duolingo', 'doodle', 'bento', 'retro'],
+  media: ['nova', 'nova', 'nova', 'spotify', 'midnight', 'neon', 'tesla'],
+  productivity: ['nova', 'notion', 'linear-app', 'cal', 'bento'],
   // A habit tracker is a streak app, not a task manager: its own type (app-patterns/habits.json)
   // with its own candidates. It used to fall under productivity, where all four candidates are the
   // greyest systems we have, so every habit tracker this product made was guaranteed to look like
   // an internal tool — not by an unlucky seed, by the table.
-  habits: ['duolingo', 'bento', 'doodle', 'retro'],
-  social: ['apple', 'bento', 'glassmorphism', 'intercom'],
+  habits: ['nova', 'nova', 'nova', 'duolingo', 'bento', 'doodle', 'retro'],
+  social: ['nova', 'nova', 'nova', 'apple', 'bento', 'glassmorphism', 'intercom'],
 }
 
 // FNV-1a, the same stable pick the blueprints and the bottom bar use.
@@ -192,6 +195,18 @@ export const DesignSystemService = {
       .map(([k, v]) => `  ${k}: ${v};`)
       .join('\n')
     return decls ? `:root {\n${decls}\n}` : ''
+  },
+
+  /**
+   * GQ-10: the `:root` a project's screens actually use. A project whose system was chosen for
+   * it may carry a palette the planner invented; its colours are written over the system's, and
+   * the system keeps its craft (type, spacing, motion, fonts). A project without one — or one
+   * whose person picked the system by hand — gets the catalogue block unchanged.
+   */
+  readTokensRootFor(project: { designSystem: string; palette?: string | null }, forPrompt = false): string {
+    const root = this.readTokensRoot(project.designSystem, forPrompt)
+    const palette = parsePalette(project.palette)
+    return palette ? applyPaletteToRoot(root, palette) : root
   },
 
   /**

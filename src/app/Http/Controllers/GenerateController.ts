@@ -72,6 +72,8 @@ export const GenerateController = {
     const editElementId = typeof body.editElementId === 'string' && body.editElementId ? body.editElementId : null
     const skill = typeof body.skill === 'string' ? body.skill : undefined
 
+    // GQ-10: the model draws against the app's saved palette, not the catalogue's colours.
+    const promptTokens = { tokensRoot: DesignSystemService.readTokensRootFor(Project.find(project.id) ?? project, true) }
     let systemPrompt: string
     let userMessage: string
     let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot; bar: NavStyle } | undefined
@@ -95,11 +97,11 @@ export const GenerateController = {
     } else if (editScreen) {
       // Edit by parts (lib/screen-patch.ts): the model returns only what changes, addressed by the
       // same ids the canvas shows, and everything else stays byte-identical.
-      systemPrompt = `${composeSystemPrompt(project.designSystem, project.device, skill)}\n\n---\n\n${EDIT_MODE}`
+      systemPrompt = `${composeSystemPrompt(project.designSystem, project.device, skill, promptTokens)}\n\n---\n\n${EDIT_MODE}`
       const data = dataBlock(parseStoredPlan(project.plan)?.entities ?? [])
       userMessage = [data, `Current screen (${editScreen.name}):\n\`\`\`html\n${editBase}\n\`\`\``, `Change request: ${prompt}`].filter(Boolean).join('\n\n')
     } else {
-      systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill)
+      systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill, promptTokens)
       userMessage = prompt
       // Adding to a planned app: the screen joins that app — its name, its screens, its shell and
       // its house style — instead of being designed from the bare prompt as if it stood alone.
@@ -189,7 +191,8 @@ export const GenerateController = {
           let patchNote: { parts: string[]; log: string[] } | undefined
 
           const normalizeOpts = {
-            tokensCss: DesignSystemService.readTokensRoot(projectRef.designSystem),
+            // GQ-10: a screen added or edited later takes the app's saved palette, not the catalogue's.
+            tokensCss: DesignSystemService.readTokensRootFor(Project.find(projectRef.id) ?? projectRef),
             fontUrls: DesignSystemService.readFontUrls(projectRef.designSystem),
             iconStroke: DesignSystemService.readIconStroke(projectRef.designSystem),
             kitCss: KitService.css(),
