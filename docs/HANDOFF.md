@@ -1,6 +1,6 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-22. Eng yangi ish: `generation-quality` branch. Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat.
+> Yozilgan: 2026-09-21, yangilangan 2026-09-23. Eng yangi ish: `generation-quality` branch. Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat.
 
 ## 1. Yangi kompyuterda sozlash
 
@@ -30,6 +30,98 @@ Ikki bosqich parallel: **G · Generatsiya sifati** (`docs/GENERATION-PLAN.md`) v
 | M · Muharrir | M0 (EDT-20/21/16/22, GEN-08), M1 (CHAT-01…08, GEN-09, EDT-29), M2 (EDT-23, 24, 17, 25, 26, 18, 19, 31), M3 (EDT-09, EDT-12), M4 (EDT-27, 11, 28, 30), M5 (EDT-10, 32, EXP-03, THM-08), THM-02/03 | — |
 
 Batafsil — `docs/CHANGELOG.md` (eng yangisi tepada), Notion'da "Muharrir doskasi" va "Generatsiya doskasi" ko'rinishlari.
+
+## 2b. 2026-09-23 sessiyasi: nima o'rganildi va qayerda to'xtadik
+
+Kun bo'yi bitta savolga javob izladik: *nega shuncha o'zgarishdan keyin ham oddiy "habit tracker app"
+dabdala chiqadi?* Javob quvurda emas, **o'lchovda** edi.
+
+**Eng muhim topilma: biz noto'g'ri raqamni optimallashtirib kelganmiz.** `npm run eval` statik CSS
+tekshiruvini (`lint.cleanShare = 0.65`) ko'rsatardi, brauzerda ishlaydigan render audit esa metrikaga
+umuman kirmagan edi. Qo'yganda **0.25** chiqdi — 24 ekrandan 18 tasida ko'z ko'radigan nuqson.
+Audit endi `npm run eval` ning o'z metrikasida (`metrics.audit`), `OD_SKIP_AUDIT=1` bilan o'chadi.
+
+Yo'l-yo'lakay auditning o'zida uchta xato topildi va tuzatildi: u **500 pikselda** o'lchayotgan edi
+(headless Chrome 390px oyna ocholmaydi — endi 390px iframe ichida), prob ishga tushmasa **`[]`
+qaytarardi** (ya'ni "toza ekran" deb ko'rsatardi — endi `throw`), va yarim shaffof qatlamlarni
+o'tkazib yuborardi (skrimdagi oq matn skrim **ortidagi** oq sahifaga solishtirilardi).
+
+Natija: `cleanShare` **0.25 → 0.833**, hammasi generatsiyasiz, $0 ga (tuzatishlar deterministik
+bo'lgani uchun saqlangan ekranlarga qayta qo'llab o'lchandi).
+
+**Uchta tajriba, uchta xulosa:**
+
+| Nima qildik | Natija | Xulosa |
+|---|---|---|
+| KIT-05: promptga komponent qiymatlarini qo'shdik | kit ishlatish 0.61 → **0.24**, lint 0.65 → 0.48 | promptga material qo'shish **ishlamaydi** |
+| FAB: chiqqan HTML geometriyasini yamadik | uch urinish, to'liq yechim yo'q | chiqishni qayta joylashtirish **ishlamaydi** |
+| GQ-09: kirishdagi jadvalni tuzatdik | kulrang Notion → iliq Retro, sifat tushmadi | **richag kirishda** |
+
+KIT-05 butunlay qaytarildi. FAB tuzatishi ham qaytarildi, faqat `covered-text` o'lchovi qoldi.
+Shundan `CLAUDE.md` ga yangi arxitektura qoidasi yozildi: **kod qo'sha oladi va almashtira oladi,
+lekin qayta joylashtirmaydi.**
+
+**GQ-09 nima edi:** `BY_APP_TYPE` jadvalida 48 nomzod katagidan atigi 3 tasi `high` rang energiyali,
+va `productivity` bilan `marketplace` da to'rttasi ham `low` edi. `"habit"` so'zi `productivity` da
+turardi — ya'ni **bu mahsulot yaratadigan har bir habit tracker kulrang bo'lishi kafolatlangan** edi.
+Endi `app-patterns/habits.json` o'z turi, nomzodlari `duolingo|bento|doodle|retro`, va test hech bir
+ilova turining to'liq kulrang bo'lishiga yo'l qo'ymaydi.
+
+### Keyingi ish: palitrani model o'ylab topsin (kelishilgan, hali boshlanmagan)
+
+Foydalanuvchi bilan kelishuv: dizayn tizimini majburlash **shiftni pasaytiryapti**. Buni o'lchadik —
+33 tizimning rang qamrovi:
+
+```
+ko'k 200-260   ████████████ 12   (37%)
+qizil 0-30     ████████ 8
+yashil         ███ 3
+to'q sariq     █ 1      pushti █ 1      sariq █ 1
+fon: yorug' 25 · to'q 7          pastel: 0 · yorqin 23
+```
+
+Katalogning 62% i ko'k va qizil; pastel **umuman yo'q**. Shu teshik bugun boshqa bir xatoni ham
+tushuntirdi: pushti reference rasm berilganda ko'k Cal chiqqan edi — chunki katalogda **bitta**
+pushti tizim bor va `matchSystem` eng yaqinini tanlaydi.
+
+**Kelishilgan shakl** (A/B qilinadi, hali yozilmagan):
+
+1. Planner chaqiruvi (allaqachon bitta va bir marta ishlaydi) reja bilan birga **palitra** qaytaradi:
+   accent, bg, surface, fg, radius, shrift juftligi, xarakter — shu ilova uchun o'ylab topilgan.
+2. Kod uni tekshiradi va AA ga keltiradi. **Bu qatlam bugun yozildi va tayyor**: kontrast algoritmi,
+   `--od-*-text` hisoblash (rangli chip fonlari bilan birga), yuza-siyoh matritsasi — hech biri
+   tizimga bog'liq emas, istalgan palitrada ishlaydi.
+3. Tasdiqlangan palitra hammaga bitta bir xil `:root` bo'lib kiradi — xuddi hozirgi tizim kabi.
+   Ya'ni **bitta ilova = bitta palitra**, 6 ta mustaqil chaqiruv bir-biriga zid ketmaydi.
+
+**Nega "tizim butunlay bo'lmasin" emas:** 6 ekran 6 ta mustaqil LLM namunasi. Har biri o'zi tanlasa,
+6 xil ilova chiqadi. Sleek'ning skrinshoti aynan shuni ko'rsatadi — 5 ekrandan 2 tasi to'q binafsha,
+3 tasi oq-to'q sariq, nav panellari ham har xil. Ular xarakterni izchillik hisobiga sotib olishgan.
+
+**Ochiq xavflar:** (a) AI palitralari o'zaro o'xshab ketishi mumkin — `sameness.crossBriefMean` buni
+darhol ko'rsatadi; (b) dizayn tizimi faqat rang emas (shrift shkalasi, radius, soya tili, zichlik),
+model rangni beradi, hunarni avtomatik bermaydi. Shuning uchun 33 tizim o'chirilmaydi — namuna
+bo'lib qoladi.
+
+**Sinash usuli** (foydalanuvchi tanlagan): bitta prompt — `"habit tracker app"`, uch so'z, o'zgartirmasdan —
+ideal bo'lguncha aylantiramiz. Har 3–4 tuzatishdan keyin bir marta 4-briefli eval (~$0.10) faqat
+"buzmadikmi" deb tekshirish uchun.
+
+### Bitta prompt bilan topilgan, hali ochiq nuqsonlar
+
+Ikkala ilovada ham takrorlandi (Streakly/notion va HabitLoop/retro):
+
+1. **FAB oxirgi kartaning matnini yopadi** — `covered-text` bilan o'lchanadi. Tuzatish **kirishda**
+   bo'lishi kerak (`list` blueprintida asosiy amal inline joylashsin), kodda emas — sinab ko'rildi,
+   ishlamadi.
+2. **Qidiruv lupasi maydondan tashqarida yolg'iz turadi** — markup xatosi, hali tegilmagan.
+3. **Uzun nom ellipsissiz kesiladi** (`"No phone after 1..."`).
+4. **Qahramon lahza yo'q** — streak `12 days` bo'lib qator ichida 14px turibdi. Sleek'da o'sha raqam
+   ~120px. Bu Sleek bilan asosiy farq va u blueprintga bitta maydon bo'lib tushadi: *qaysi bo'lim
+   qahramon va qanchalik katta*.
+
+`od-kit.css` ning iOS o'lchamidagi switch'i (51×31) `small-target` beradi va bu **ma'lum cheklov**:
+`input` `::after` ola olmaydi, kattalashtirish esa chizilgan boshqaruvni buzadi.
 
 ## 3. Keyingi ish
 

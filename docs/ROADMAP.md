@@ -74,6 +74,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EYE-07 | Audit haqiqiy 390px'da o'lchasin, prob jim xato qaytarmasin | Generatsiya / Sifat | MVP | Tayyor | Kichik | EYE-06 | 500px'da o'lchanardi; iframe bilan 390px, prob javob bermasa throw |
 | GQ-09 | Har ilova turida rangli nomzod bo'lsin; habits o'z turi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | DS-01 | 48 katakdan 3 tasi high edi; productivity va marketplace to'liq kulrang |
 | EYE-08 | FAB matn ustida turishini o'lchash (covered-text) | Generatsiya / Sifat | MVP | Tayyor | Kichik | EYE-07 | Qoida ishlaydi: ikkala ilovada 1 tadan topildi; joylashuvni tuzatish qaytarildi |
+| GQ-10 | Palitrani model o'ylab topsin (planner qaytarsin, kod AA ga keltirsin) | Generatsiya / Dizayn tizimlari | MVP | Rejada | Katta | GQ-09, DS-01 | A/B: model palitrasi vs kuratsiya qilingan tizim, bir xil brief |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
