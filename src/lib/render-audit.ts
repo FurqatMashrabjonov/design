@@ -6,7 +6,7 @@
 
 import { HIG } from './hig-rules.ts'
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'small-target', 'low-contrast', 'overlap', 'squeezed-text'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'small-target', 'low-contrast', 'overlap', 'squeezed-text', 'covered-text'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; id: string | null; detail: string }
 
@@ -105,6 +105,23 @@ for (var i = 0; i < all.length; i++) {
     texts.push(el);
   }
 }
+// 5b. A floating action button sits over text. EYE-08: the model draws a FAB although the shell
+// contract asks it not to, and a fixed box always covers whatever is behind it — on both apps we
+// generated it landed on the last card and swallowed the end of a sentence. Page padding cannot fix
+// this, so it is reported rather than repaired: nothing small and fixed should sit on words.
+for (var q = 0; q < all.length && q < 600; q++) {
+  var fx = all[q], fcs = getComputedStyle(fx);
+  if (fcs.position !== 'fixed' || inShell(fx) || !visible(fx)) continue;
+  var fr = fx.getBoundingClientRect();
+  if (fr.width > 160 || fr.height > 96) continue; // a bar, not a floating button
+  for (var w = 0; w < texts.length && w < 400; w++) {
+    var tx = texts[w];
+    if (fx.contains(tx) || tx.contains(fx) || pinned(tx)) continue;
+    var tr = tx.getBoundingClientRect();
+    var ow = Math.min(fr.right, tr.right) - Math.max(fr.left, tr.left), oh = Math.min(fr.bottom, tr.bottom) - Math.max(fr.top, tr.top);
+    if (ow > 6 && oh > 6) { add('covered-text', tx, label(fx) + ' covers ' + label(tx)); break; }
+  }
+}
 // 5. Two pieces of text drawn over each other (neither containing the other).
 for (var x = 0; x < texts.length && x < 400; x++) {
   var ra = texts[x].getBoundingClientRect();
@@ -126,6 +143,7 @@ const HOW: Record<AuditRule, string> = {
   'small-target': `is too small to tap — make it at least ${HIG.minTargetPx}×${HIG.minTargetPx}px (min-height / min-width or padding), without changing its look otherwise`,
   'low-contrast': `text is too faint — it needs ${HIG.contrast.text}:1 against its background (${HIG.contrast.largeText}:1 from ${HIG.contrast.largeTextPx}px): darken the text (var(--fg), var(--fg-2), or a colour mixed toward var(--fg)); never lighten the background`,
   overlap: 'two texts are drawn over each other — give each its own line or enough space (display: block, gap, line-height)',
+  'covered-text': 'a floating button sits on top of text — move it clear of the words, or drop it and put the action in the flow where the pattern already places it',
   'squeezed-text': 'text is squeezed into a narrow column because something beside it takes the row — give the text min-width: 0 and flex: 1, and give the image or control next to it a fixed width (flex: none)',
 }
 

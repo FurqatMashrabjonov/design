@@ -5,6 +5,49 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-23
 
+### FAB kartani yopadi: o'lchovga qo'shildi, tuzatish qaytarildi — EYE-08
+
+Ikkala ilovada ham bir xil: FAB oxirgi kartaning gapini yopadi. Uch marta tuzatishga urindim va
+uchalasi ham noto'g'ri yo'l bo'lib chiqdi.
+
+1. **Pastki padding qo'shdim** (112 → 156px). Noto'g'ri: `position: fixed` element skrollning
+   o'rtasida ham kontent ustida turadi, hujjat oxiridagi padding unga ta'sir qilmaydi.
+2. **FAB'ni nav klirensidan yuqoriga ko'chirdim** (84 → 128px) va qutisiga joy ajratdim.
+   O'lchandi — nav orolchasi bilan to'qnashuv ketdi, progress chizig'i ochildi, lekin karta matni
+   hali ham yopiq.
+3. Uchinchi urinishga o'tishdan oldin foydalanuvchi to'xtatdi va haq edi.
+
+**Xulosa, va u endi arxitektura qoidasi:** uch urinish va to'liq yechim yo'qligi — "mulohazali
+tuzatish" ning imzosi. Men modelning niyatini taxmin qilib uning qutisini ko'chirayotgan edim.
+Statik CSS `position: fixed` element **nima ustida** turishini bila olmaydi; buni faqat chizilgan
+sahifa biladi.
+
+Qaytarildi: `findFab`, `FAB_GAP`, `data-od-fab` qoidasi va `applyNavClearance` dagi o'zgarish —
+`screen-normalizer.ts` commit holatiga qaytdi.
+
+**Qoldi:** `lib/render-audit.ts` da yangi `covered-text` qoidasi. Kichik `position: fixed` quti
+(160×96 dan kichik, ya'ni panel emas, suzuvchi tugma) matn ustida tursa xabar beradi. Bu tahrirlash
+emas, o'lchash — va u darhol ishladi:
+
+| | avval | `covered-text` bilan |
+|---|---|---|
+| HabitLoop | 0.833 | **0.667** (covered-text: 1) |
+| Streakly | 0.833 | **0.667** (covered-text: 1) |
+
+Raqam tushdi, chunki avval ko'rmagan nuqsonni endi ko'ryapmiz. Bu regressiya emas, o'lchovning
+to'g'rilanishi.
+
+Keyingi qadam kodda emas, **kirishda**: agar bu raqam yomon tursa, `list` arxetipining blueprinti
+asosiy amalni inline joylashtirishni aniqroq aytadi, shunda model FAB chizishga sabab topmaydi.
+Shell shartnomasi FAB'ni allaqachon taqiqlaydi va model uni 2 ilovadan 2 tasida chizdi, ya'ni
+taqiq so'zi ishlamayapti — lekin taqiqni kuchaytirish ham promptni kuchaytirish, bu esa bugun
+KIT-05 da sinovdan o'tmagan yo'l.
+
+Tegilgan fayllar: `src/lib/render-audit.ts`, `CLAUDE.md` (arxitektura qoidasi).
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; qoida ikkala ilovaning 12 ekranida
+o'lchandi va FABsiz ekranlarda ishlamasligi tasdiqlandi.
+
+
 ### Audit telefon kengligida o'lchamayotgan ekan, va shift jadvalda qulflangan ekan — EYE-07, GQ-09
 
 **Ikkita xato, ikkalasi ham meniki.**
