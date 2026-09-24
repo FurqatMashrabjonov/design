@@ -1,3 +1,4 @@
+import { inkOn, toHex, toRgb } from './color.ts'
 // Project-level theme overrides, applied on top of a screen at render time.
 //
 // Generated screens reference the design system only through CSS custom properties, and the
@@ -115,20 +116,10 @@ export function isEmptyTheme(theme: Theme | null | undefined): boolean {
   return !theme || Object.keys(theme).length === 0
 }
 
-function luminance(hex: string): number {
-  const channel = (i: number) => {
-    const c = parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-  }
-  return 0.2126 * channel(0) + 0.7152 * channel(1) + 0.0722 * channel(2)
-}
-
 /** Text colour for a filled accent: whichever of white / near-black contrasts more. */
 export function onAccent(hex: string): string {
-  const l = luminance(hex)
-  const white = 1.05 / (l + 0.05)
-  const dark = (l + 0.05) / (luminance('#111111') + 0.05)
-  return white >= dark ? '#ffffff' : '#111111'
+  const rgb = toRgb(hex)
+  return rgb ? toHex(inkOn(rgb)) : '#ffffff'
 }
 
 function fontStack(id: string): string {

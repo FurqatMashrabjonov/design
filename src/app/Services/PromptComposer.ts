@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DesignSystemService } from './DesignSystemService.ts'
 
@@ -25,32 +25,20 @@ function readCraft(slug: string) {
   return readFileSync(join(ROOT, 'craft', `${slug}.md`), 'utf8')
 }
 
-const DEVICE_SKILL = { desktop: 'web-screen', mobile: 'mobile-screen' } as const
-
-/** Resolve a skill ID from device name or direct skill name */
-function resolveSkillId(device: string, skill?: string): string {
-  if (skill && existsSync(join(ROOT, 'skills', skill, 'SKILL.md'))) return skill
-  return DEVICE_SKILL[device as keyof typeof DEVICE_SKILL] ?? DEVICE_SKILL.desktop
-}
+// The product draws phone screens only (every project is created mobile), so there is one skill.
+const SKILL = 'mobile-screen'
 
 // Order: intro -> DESIGN.md + tokens.css (brand) -> craft references (universal quality rules) -> skill body (workflow + output contract).
-/**
- * @param opts.tokensRoot the `:root` block to show the model instead of the catalogue one — a
- * project with a generated palette (GQ-10) must be drawn against the colours it will actually get.
- */
-export function composeSystemPrompt(designSystem: string, device: string, skill?: string, opts: { tokensRoot?: string } = {}) {
-  const skillData = readSkill(resolveSkillId(device, skill))
+export function composeSystemPrompt(designSystem: string) {
+  const skillData = readSkill(SKILL)
   const craft = skillData.craftRequires.map(readCraft).join('\n\n---\n\n')
 
-  // Build design system section with both prose and tokens. Mobile reads the style card (look only);
-  // desktop still reads the full brand document.
-  const isMobile = device === 'mobile'
-  const designMd = isMobile ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
-  const tokensCss = opts.tokensRoot ?? DesignSystemService.readTokensRoot(designSystem, true)
+  // The style card, not DESIGN.md: it describes the look only, so the model never copies the brand's product.
+  const designMd = DesignSystemService.readStyleCard(designSystem)
+  const tokensCss = DesignSystemService.readTokensRoot(designSystem, true)
   let designSection = `# Design system\n\n${designMd}`
   if (tokensCss) {
     designSection += `\n\n## Design tokens (CSS custom properties)\n\nPaste this :root block into your <style> tag verbatim — do not rename, drop, or re-value any property:\n\n\`\`\`css\n${tokensCss}\n\`\`\`\n\nThis block is the complete token vocabulary. \`var(--x)\` is only valid for a property defined above.`
-    if (!isMobile) designSection += ` The prose section quotes the real product's internal variable names (\`--hds-color-…\`, \`--geist-…\`, \`--palette-…\` and similar) as background research — those do not exist here, so never reference one.`
   }
 
   // Add data-od-id instruction for element-level editing support
@@ -79,13 +67,12 @@ export function composeSystemPrompt(designSystem: string, device: string, skill?
 
 **Fonts.** No font \`<link>\` or \`@import\`: the system's webfonts are injected, and any you add is stripped. Reference type only through \`var(--font-display)\`, \`var(--font-body)\`, and \`var(--font-mono)\`.`
 
-  return [INTRO, designSection, craft, isMobile ? MOBILE_AESTHETIC : '', skillData.body, elementInstruction, assetContract]
+  return [INTRO, designSection, craft, MOBILE_AESTHETIC, skillData.body, elementInstruction, assetContract]
     .filter(Boolean)
     .join('\n\n---\n\n')
 }
 
-// VAR-03: the aesthetic bar for a phone screen, in a few decisions (about 250 tokens). Mobile only;
-// the desktop skills carry their own longer guidance.
+// VAR-03: the aesthetic bar for a phone screen, in a few decisions (about 250 tokens).
 const MOBILE_AESTHETIC = `## Aesthetic bar
 - One focal point per screen: the biggest thing is the most important thing; everything else is at least one step quieter.
 - Contrast of scale: one large number or headline against small, calm supporting text — never a page of medium-sized text.
@@ -98,13 +85,12 @@ const MOBILE_AESTHETIC = `## Aesthetic bar
 /** Compose a prompt specifically for editing a single element within a screen */
 export function composeElementEditPrompt(
   designSystem: string,
-  device: string,
   fullHtml: string,
   elementId: string,
   elementHtml: string,
   instruction: string,
 ): string {
-  const designMd = device === 'mobile' ? DesignSystemService.readStyleCard(designSystem) : DesignSystemService.readDesignMd(designSystem)
+  const designMd = DesignSystemService.readStyleCard(designSystem)
   const tokensCss = DesignSystemService.readTokensRoot(designSystem, true)
 
   let systemPrompt = `You are an expert product designer. You will edit ONE specific element within an existing screen.

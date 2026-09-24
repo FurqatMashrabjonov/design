@@ -71,11 +71,6 @@ export const Project = {
     db.update(projects).set({ name }).where(eq(projects.id, id)).run()
   },
 
-  // GQ-10: the built palette (already AA-repaired), so a screen added later gets the same colours.
-  savePalette(id: string, palette: unknown) {
-    db.update(projects).set({ palette: JSON.stringify(palette) }).where(eq(projects.id, id)).run()
-  },
-
   saveTheme(id: string, theme: unknown) {
     db.update(projects).set({ theme: JSON.stringify(theme) }).where(eq(projects.id, id)).run()
   },

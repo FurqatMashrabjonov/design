@@ -26,13 +26,7 @@ export function navStyleFor(appName: string, nav: AppNavigation, about: { appTyp
   return navStyle(appName || 'app', { tabCount: nav.tabs.length, ...about })
 }
 
-export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean, style: NavStyle = 'island'): string {
-  if (!isMobile) {
-    return `SIDEBAR CONTRACT
-1. Render the shared sidebar with EXACTLY these items in this order: [${tabLabels(nav)}].
-2. The active item is "${activeLabel(slot, nav)}"; every other item is muted.
-3. Never invent, rename, drop, or reorder items.`
-  }
+export function shellContract(slot: ScreenSlot, nav: AppNavigation, style: NavStyle = 'island'): string {
   if (slot.screenType === 'root-tab') {
     return `SHELL CONTRACT — the shared chrome is injected for you
 1. A shared ${NAV_HEIGHT}px bottom tab bar ([${tabLabels(nav)}]) is added to your page automatically AFTER you finish.
@@ -48,10 +42,8 @@ export function shellContract(slot: ScreenSlot, nav: AppNavigation, isMobile: bo
 4. Start your content directly below where that header sits.`
 }
 
-// Mobile shells are assembled in code so every screen gets byte-identical markup.
-// Desktop has no sidebar builder yet, so it stays on the prose contract.
-export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, isMobile: boolean, title: string, style: NavStyle = 'island'): ShellParts {
-  if (!isMobile) return {}
+// Shells are assembled in code so every screen gets byte-identical markup.
+export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, title: string, style: NavStyle = 'island'): ShellParts {
   return slot.screenType === 'root-tab'
     ? { nav: buildBottomNav(nav, slot.activeTabId, style) }
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home'), title }

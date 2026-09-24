@@ -10,7 +10,6 @@ import { PendingPlans } from '@/app/Services/PendingPlans'
 import { readReference, referenceBlock, type ReferenceStyle } from '@/app/Services/ReferenceService'
 import { parseRefImages } from '@/lib/ref-images'
 import { mapLimit } from '@/app/Services/Pool'
-import { buildPalette, parsePalette } from '@/lib/palette'
 import { prefetchImage, resolveImages } from '@/app/Services/ImageService'
 import { imageQueries } from '@/lib/image-slots'
 import { navClearance } from '@/app/Services/ShellService'
@@ -28,7 +27,6 @@ import { briefStyle } from '@/lib/intent'
 import { isEmptyTheme, parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 
-const INVENT_PALETTE = process.env.OD_INVENT_PALETTE === '1'
 
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
 // Only used to seed a brand-new, empty project — positions are assigned by plan order (0, 1, 2, ...).
@@ -124,7 +122,7 @@ export const PlanController = {
             screenIds = (edits.keep ?? pendingPlan.plan.screens.map((_, k) => k)).filter((i) => i < pendingPlan.screenIds.length).map((i) => pendingPlan.screenIds[i]!)
             log.push(`Approved ${plan.screens.length} of ${pendingPlan.plan.screens.length} planned screens`)
           } else {
-            plan = await planScreensWithRetry(brief, project.device, tally, project.id)
+            plan = await planScreensWithRetry(brief, tally)
             // Screen ids are decided now (LP-04): the canvas keys each plan frame by the id its screen
             // will be saved under, so the frame that streamed is the frame that stays.
             screenIds = plan.screens.map(() => crypto.randomUUID())
@@ -152,27 +150,13 @@ export const PlanController = {
           // GQ-10: a system chosen for the person (not by them) may have its colours replaced by
           // the palette the planner invented for this app. Built and repaired to AA once, saved,
           // then every screen — drawn now or added weeks later — gets the same :root.
-          // GQ-33: an invented palette is opt-in. It replaced the colours of whichever system was
-          // chosen, and the systems now chosen automatically were authored with their colours as
-          // part of the design — a planner palette laid over Nova put a 60%-saturated teal ink ramp
-          // where Nova's 8% one had been. Every comparison the person approved was run without it;
-          // this makes the product match what was approved. OD_INVENT_PALETTE=1 brings it back.
-          if (INVENT_PALETTE && project.designSystemAuto && plan.palette && !parsePalette(project.palette)) {
-            const built = buildPalette(plan.palette)
-            Project.savePalette(project.id, built)
-            project.palette = JSON.stringify(built)
-            log.push(`Invented a palette for this app${built.character ? ` — ${built.character}` : ''}: accent ${built.accent} on ${built.bg}`)
-          }
-          const tokensCss = DesignSystemService.readTokensRootFor(project)
-          const system = composeSystemPrompt(project.designSystem, project.device, undefined, {
-            tokensRoot: DesignSystemService.readTokensRootFor(project, true),
-          })
+          const tokensCss = DesignSystemService.readTokensRoot(project.designSystem)
+          const system = composeSystemPrompt(project.designSystem)
           const fontUrls = DesignSystemService.readFontUrls(project.designSystem)
           const iconStroke = DesignSystemService.readIconStroke(project.designSystem)
           const leakTerms = DesignSystemService.readLeakTerms(project.designSystem)
           const colorEnergy = DesignSystemService.readColorEnergy(project.designSystem)
           const fw = frameSize(project.device).width
-          const isMobile = project.device === 'mobile'
           const screenNames = plan.screens.map((s) => s.name)
           // NAV-01: one bar shape for the whole app, decided from its name before anything is drawn.
           const bar = navStyleFor(plan.appName, plan.navigation, { appType: plan.appType, designSystem: project.designSystem })
@@ -185,7 +169,7 @@ export const PlanController = {
             screenBrief({
               app: `${plan.appName} — ${plan.summary}`,
               screenNames,
-              contract: shellContract(s, plan.navigation, isMobile, bar),
+              contract: shellContract(s, plan.navigation, bar),
               sheet,
               content,
               data,
@@ -225,7 +209,7 @@ export const PlanController = {
                   tokensCss,
                   fontUrls,
                   iconStroke,
-                  shell: shellPartsFor(s, plan.navigation, isMobile, s.name, bar),
+                  shell: shellPartsFor(s, plan.navigation, s.name, bar),
                   navClearance: navClearance(bar),
                   kitCss: KitService.css(),
                 }),

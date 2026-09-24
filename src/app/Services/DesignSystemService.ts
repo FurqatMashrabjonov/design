@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
-import { applyPaletteToRoot, parsePalette } from '../../lib/palette.ts'
 import { join } from 'node:path'
 import { extractRootBlock, parseDeclarations } from '../../lib/screen-normalizer.ts'
+import { hash } from '../../lib/hash.ts'
+import { luminance, toRgb, type Rgb } from '../../lib/color.ts'
 
 const DS_DIR = join(process.cwd(), 'design-systems')
 
@@ -111,12 +112,6 @@ function namedSystem(brief: string): string | null {
   return null
 }
 
-// FNV-1a, the same stable pick the blueprints and the bottom bar use.
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
-  return h >>> 0
-}
 
 export const DesignSystemService = {
   /** The system for a brief when the person left the choice to us. */
@@ -224,18 +219,6 @@ export const DesignSystemService = {
   },
 
   /**
-   * GQ-10: the `:root` a project's screens actually use. A project whose system was chosen for
-   * it may carry a palette the planner invented; its colours are written over the system's, and
-   * the system keeps its craft (type, spacing, motion, fonts). A project without one — or one
-   * whose person picked the system by hand — gets the catalogue block unchanged.
-   */
-  readTokensRootFor(project: { designSystem: string; palette?: string | null }, forPrompt = false): string {
-    const root = this.readTokensRoot(project.designSystem, forPrompt)
-    const palette = parsePalette(project.palette)
-    return palette ? applyPaletteToRoot(root, palette) : root
-  },
-
-  /**
    * Webfont stylesheet URLs this system needs, declared as `@import url(…)` in tokens.css.
    * Screens are told to reference `--font-*`, but nothing makes a model remember the
    * `<link>` — so the loading step is owned here and injected deterministically.
@@ -263,20 +246,6 @@ export const DesignSystemService = {
 // The picture decides the look, so it must decide the system too — before a screen is drawn. The
 // judgement (what colour, how round, how loud) is the model's; the choice is arithmetic here, so
 // the same picture always lands on the same system and every candidate is scored the same way.
-
-type Rgb = [number, number, number]
-
-function toRgb(hex: string | null | undefined): Rgb | null {
-  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec((hex ?? '').trim())
-  if (!m) return null
-  const h = m[1]!.length === 3 ? m[1]!.split('').map((c) => c + c).join('') : m[1]!
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb
-}
-
-const luminance = ([r, g, b]: Rgb) => {
-  const f = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-}
 
 /** Hue in degrees and how saturated it is (0–1) — a grey has no meaningful hue. */
 function hueChroma([r, g, b]: Rgb): { hue: number; chroma: number } {
@@ -338,8 +307,11 @@ export function matchSystem(ref: ReferenceMatchInput): { id: string; score: numb
   const wanted = Object.entries(MOOD_WORDS).filter(([word]) => new RegExp(word, 'i').test(mood)).map(([, re]) => re)
 
   let best: { id: string; score: number } | null = null
+  // Only the systems written for a phone: a reference picture used to be matched against all of
+  // them and could land on a brand package written for websites, which the automatic choice no
+  // longer offers for exactly that reason. The manifest's category is the one list of them.
   for (const entry of DesignSystemService.list()) {
-    if (!entry.hasTokens) continue
+    if (!entry.hasTokens || entry.category !== 'Mobile') continue
     const bg = toRgb(entry.swatch.bg)
     const accent = toRgb(entry.swatch.accent)
     let score = 0

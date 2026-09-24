@@ -5,6 +5,54 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Tozalash: o'lik kod, takrorlar, desktop yo'li va o'ylab topilgan palitra (CLN-01)
+
+Kun bo'yi ko'p narsa qo'shildi, shuning uchun kod DRY / KISS / YAGNI bo'yicha ko'rib chiqildi. Har bir
+o'chirish dalil bilan: import grafi, chaqiruvchilar ro'yxati, va 38 ta tizimning mobil system prompti
+bosqichma-bosqich **bayt-bayt taqqoslandi** — to'rt bosqichning hammasidan keyin o'zgargan prompt: **0**.
+
+**Jami: 68 fayl, −3487 / +89 qator. Kod (ts/tsx): sof −1404 qator. Prompt matni: −1994 qator.**
+
+**1. O'lik kod.** `CritiqueService` (hech kim import qilmasdi); 4 ta ishlatilmagan shadcn komponenti;
+`fixFindings`/`auto` avtomatik tuzatish yo'li (hech bir klient yubormasdi) va uni o'lchagan
+`eval/fix-audit.ts`; **kanvasdagi har bir iframe ichida ishlagan render audit** — `onAudit` ni hech bir
+ota-komponent bermasdi, ya'ni har ekran to'liq DOM auditini ishga tushirib natijani hech kim
+tinglamaydigan joyga yuborardi. Audit endi faqat eval'da (headless, `AUDIT_SOURCE`).
+
+**2. DRY.** FNV-1a hash **6 nusxada** edi → `lib/hash.ts`. Rang matematikasi (luminance, toRgb)
+DesignSystemService va theme-override'da takrorlangan edi → `lib/color.ts`. `render-audit` o'z
+nusxasini saqlaydi — u iframe ichida matn sifatida ishlaydi va import qila olmaydi.
+
+**3. Desktop yo'li (YAGNI).** Har bir loyiha `device: 'mobile'` bilan yaratiladi, lekin kodda desktop
+promtining butun yo'li turardi: 11 ta web skill, 10 ta uzun craft essesi, `DESIGN.md` ni promptga
+berish, sidebar shartnomasi, `SkillService` (ro'yxati dashboard'ga yuborilardi, klient o'qimasdi).
+Endi bitta skill (`mobile-screen`), bitta shell yo'li.
+
+**4. O'ylab topilgan palitra (GQ-10, GQ-26) — butunlay.** GQ-33 dan beri sukut bo'yicha o'chiq edi,
+lekin planner har rejada modeldan palitra va ottenka yo'nalishini **hali ham so'rardi** va javobni
+tashlab yuborardi. `lib/palette.ts` (388 qator), `palette.check.ts`, `hueDirection`, planner
+promptining 6-qoidasi, `readTokensRootFor`, `Project.savePalette` olib tashlandi. Bazadagi `palette`
+ustuni qoladi (SQLite'da ustun o'chirish murakkab), lekin endi o'qilmaydi — eski loyihalar o'z
+tizimining ranglarida chiziladi.
+
+**5. `matchSystem`** endi faqat telefon uchun yozilgan tizimlarni (manifestda `category: "Mobile"`)
+solishtiradi: pushti → Ember, qora+lime → Volt, ko'k yorug' → Lumen, krem+terrakota → Nova. Avval
+rasm veb-brend paketiga tushishi mumkin edi.
+
+**6. Hujjatlar.** 12 ta tugagan reja `docs/archive/` ga. CLAUDE.md'dagi desktop, craft esselari,
+kanvas auditi va palitra haqidagi eskirgan qoidalar yangilandi.
+
+**Tekshiruv va muhim yon topilma.** Planner prompti o'zgargani uchun Volt'ning uchta briefi qayta
+yurgizildi: **0.524**. Oldin 0.81 edi, shuning uchun o'sha kod bilan yana yurgizildi: **0.750**.
+Rejalar deyarli bir xil (arxetiplar to'plami bir xil, bo'limlar 4.1 va 4.2). Xulosa: regressiya yo'q,
+lekin **21 ekranlik bitta eval ±0.2 tebranadi**. Bugungi tizimlararo taqqoslashlar (Nova 0.70,
+Lumen 0.65, Graphite 0.667, Ember 0.571, Volt 0.81) asosan shu shovqin ichida — tartiblash uchun har
+tizimga kamida 2–3 yugurish kerak.
+
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; mobil promptlar 4 bosqichdan keyin ham
+o'zgarmagan; ikkita eval.
+
+
 ### Volt — qora sport tizimi (GQ-35)
 
 Sleek galereyasidagi ~42 presetni oilalarga ajratganda eng katta javobsiz oila shu chiqdi: 7 ta

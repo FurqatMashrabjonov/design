@@ -31,10 +31,9 @@ function renormalize(p: Row, s: ScreenRow & { screen_type: string; active_tab_id
   const nav = parseNavigation((db.prepare('SELECT navigation, plan FROM projects WHERE id = ?').get(p.id) as { navigation: string | null }).navigation)
   if (!nav) return s.html
   const plan = JSON.parse((db.prepare('SELECT plan FROM projects WHERE id = ?').get(p.id) as { plan: string | null }).plan ?? '{}')
-  const project = { designSystem: p.design_system, palette: p.palette }
   const bar = navStyleFor(p.name, nav, { appType: plan.appType, designSystem: p.design_system })
   const slot: ScreenSlot = { name: s.name, screenType: s.screen_type as ScreenSlot['screenType'], activeTabId: s.active_tab_id ?? undefined, parentScreen: s.parent_screen_name ?? undefined }
-  return normalizeScreen(s.html, { tokensCss: DesignSystemService.readTokensRootFor(project), fontUrls: DesignSystemService.readFontUrls(p.design_system), iconStroke: DesignSystemService.readIconStroke(p.design_system), shell: shellPartsFor(slot, nav, true, s.name, bar), navClearance: navClearance(bar), kitCss: KitService.css() })
+  return normalizeScreen(s.html, { tokensCss: DesignSystemService.readTokensRoot(p.design_system), fontUrls: DesignSystemService.readFontUrls(p.design_system), iconStroke: DesignSystemService.readIconStroke(p.design_system), shell: shellPartsFor(slot, nav, s.name, bar), navClearance: navClearance(bar), kitCss: KitService.css() })
 }
 
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -73,7 +72,7 @@ async function judge(p: Row, shots: string[]) {
   const v = parseJudgement<Verdict>(await ask(RUBRIC, prompt, join(OUT, p.id)).catch((e) => (console.warn(`${p.name}: ${e.message}`), '')))
   if (!v) return null
   const overall = mean(v.screens.map((s) => s.overall))
-  const report = { id: p.id, name: p.name, system: p.design_system, palette: p.palette ? JSON.parse(p.palette).accent : null, overall, coherence: v.coherence, app_overall: v.app_overall, hierarchy: mean(v.screens.map((s) => s.hierarchy)), spacing: mean(v.screens.map((s) => s.spacing)), polish: mean(v.screens.map((s) => s.polish)), fidelity: mean(v.screens.map((s) => s.fidelity)), screens: v.screens }
+  const report = { id: p.id, name: p.name, system: p.design_system, overall, coherence: v.coherence, app_overall: v.app_overall, hierarchy: mean(v.screens.map((s) => s.hierarchy)), spacing: mean(v.screens.map((s) => s.spacing)), polish: mean(v.screens.map((s) => s.polish)), fidelity: mean(v.screens.map((s) => s.fidelity)), screens: v.screens }
   writeFileSync(join(OUT, p.id, 'judge.json'), JSON.stringify(report, null, 2))
   return report
 }

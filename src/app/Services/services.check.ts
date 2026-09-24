@@ -24,19 +24,11 @@ assert.ok(DesignSystemService.list().some((d) => d.id === 'minimal' && d.name ==
 assert.ok(DesignSystemService.exists('minimal'))
 assert.ok(!DesignSystemService.exists('../../etc'))
 
-// compose: skill body + only its requested craft files land in the prompt, DESIGN.md always does
-const mobile = composeSystemPrompt('minimal', 'mobile')
+// compose: the mobile skill body, its one craft file and the style card land in the prompt
+const mobile = composeSystemPrompt('minimal')
 assert.ok(mobile.includes('390px'), 'mobile skill body present')
 assert.ok(mobile.includes('— style card'), 'style card present')
-assert.ok(composeSystemPrompt('minimal', 'desktop').includes('# Minimal'), 'desktop still reads DESIGN.md')
 assert.ok(mobile.includes('# Mobile screen craft'), 'requested craft file present')
-assert.ok(!mobile.includes('Anti-AI-slop') && !mobile.includes('Form validation'), 'web craft essays stay out of the mobile prompt')
-assert.ok(!mobile.includes('Laws of UX'), 'web-only craft file absent from mobile prompt')
-
-const web = composeSystemPrompt('minimal', 'desktop')
-assert.ok(web.includes('1440px'), 'web skill body present')
-assert.ok(web.includes('Laws of UX'), 'web-only craft file present')
-assert.ok(!web.includes('Animation discipline'), 'mobile-only craft file absent from web prompt')
 
 // SSE parser: events split across chunk boundaries, keep-alive comments, [DONE]
 const sse = [
@@ -89,16 +81,7 @@ assert.equal(screenTitle('Cart', 'GoBite'), 'Cart')
 assert.equal(screenTitle('Cart (GoBite)', 'GoBite'), 'Cart')
 assert.equal(screenTitle('Settings', ''), 'Settings')
 
-// planner palette (GQ-10): carried through when it is usable, dropped whole when it is not.
 const screens = [{ name: 'Home', description: 'Today view' }]
-const withPalette = parsePlan(JSON.stringify({ screens, palette: { accent: '#C05E3C', bg: '#faf6f2', surface: '#ffffff', fg: '#2b2422', radius: 'round', character: 'warm, earthy' } }))
-assert.equal(withPalette.palette?.accent, '#c05e3c', 'a usable palette reaches the plan')
-assert.equal(withPalette.palette?.radius, 'round')
-assert.equal(plan.palette, undefined, 'a plan with no palette stays on the curated system')
-// Half a palette is worse than none: it would paint greys over a system that was already coherent.
-for (const broken of [{ accent: '#c05e3c', bg: '#faf6f2', surface: '#ffffff' }, { accent: 'terracotta', bg: '#faf6f2', surface: '#fff', fg: '#222' }, 'warm']) {
-  assert.equal(parsePlan(JSON.stringify({ screens, palette: broken })).palette, undefined, `broken palette is dropped: ${JSON.stringify(broken)}`)
-}
 
 // pool: never exceeds the concurrency limit, still runs every item, preserves result order
 let inFlight = 0
@@ -129,7 +112,7 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
     for (const m of card.matchAll(/var\((--[\w-]+)/g)) assert.ok(tokens.has(m[1]), `${id}: ${m[1]} is not in tokens.css`)
     if (!STYLE_NAMED.includes(id)) assert.ok(!new RegExp(`\\b${id.split('-')[0]}\\b`, 'i').test(card), `${id}: brand name in style card`)
   }
-  const duo = composeSystemPrompt('duolingo', 'mobile')
+  const duo = composeSystemPrompt('duolingo')
   assert.ok(!/\bowl\b|\bDuo\b|Duolingo|mascot/i.test(duo), 'the brand and its mascot never reach a mobile prompt')
 }
 
@@ -169,12 +152,11 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   assert.equal(slotForAddedScreen('show statsy things', nav, existing).screenType, 'detail-view', 'tab labels match as whole words')
 
   const detail = slotForAddedScreen('water log', nav, existing)
-  assert.ok(shellContract(detail, nav, true).includes("this screen's title"), 'the title is the model\'s to choose')
-  assert.ok(shellPartsFor(detail, nav, true, 'Water log').header?.includes('data-od-back="SnapCal — Home"'))
-  assert.ok(shellPartsFor({ screenType: 'root-tab', activeTabId: 'stats' }, nav, true, 'Stats').nav?.includes('data-od-shell="bottom-nav"'))
-  assert.deepEqual(shellPartsFor(detail, nav, false, 'x'), {}, 'desktop has no injected shell')
+  assert.ok(shellContract(detail, nav).includes("this screen's title"), 'the title is the model\'s to choose')
+  assert.ok(shellPartsFor(detail, nav, 'Water log').header?.includes('data-od-back="SnapCal — Home"'))
+  assert.ok(shellPartsFor({ screenType: 'root-tab', activeTabId: 'stats' }, nav, 'Stats').nav?.includes('data-od-shell="bottom-nav"'))
 
-  const brief = screenBrief({ app: 'SnapCal', screenNames: existing.map((s) => s.name), contract: shellContract(detail, nav, true), sheet: '<div class="od-card">x</div>', heading: 'Screen to add', description: 'water log' })
+  const brief = screenBrief({ app: 'SnapCal', screenNames: existing.map((s) => s.name), contract: shellContract(detail, nav), sheet: '<div class="od-card">x</div>', heading: 'Screen to add', description: 'water log' })
   for (const part of ['App: SnapCal', 'SnapCal — Home, Meal detail, SnapCal — Profile', 'SHELL CONTRACT', '# HOUSE STYLE', '```html\n<div class="od-card">x</div>\n```', 'water log']) assert.ok(brief.includes(part), `brief carries "${part}"`)
 
   // GQ-16: the sheet is the kit filled with this app's data, small, and the same for every caller.
@@ -284,7 +266,7 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
 {
   const { readdirSync, existsSync, readFileSync } = await import('node:fs')
   for (const id of readdirSync('design-systems').filter((d) => existsSync(`design-systems/${d}/DESIGN.md`))) {
-    const size = composeSystemPrompt(id, 'mobile').length
+    const size = composeSystemPrompt(id).length
     assert.ok(size < 24_000, `${id}: mobile system prompt is ${size} chars (budget 24 000, about 6k tokens)`)
   }
   assert.ok(readFileSync('craft/mobile.md', 'utf8').split('\n').length <= 150, 'craft/mobile.md is at most 150 lines')
@@ -515,15 +497,6 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   }
 }
 
-// GQ-33: an invented palette is opt-in. Laid over an authored system it replaced the system's own
-// colours — Nova's 8% ink ramp became a 60% teal one — and every comparison the person approved had
-// been run without it, so the default has to be the same.
-{
-  const { readFileSync } = await import('node:fs')
-  const plan = readFileSync('src/app/Http/Controllers/PlanController.ts', 'utf8')
-  assert.ok(plan.includes("const INVENT_PALETTE = process.env.OD_INVENT_PALETTE === '1'"), 'palette invention is behind an opt-in flag')
-  assert.ok(/if \(INVENT_PALETTE && project\.designSystemAuto/.test(plan), 'and nothing invents a palette without it')
-}
 
 // UX-02: app-type patterns, matched in code, only one reaches the planner
 {

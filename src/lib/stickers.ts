@@ -1,3 +1,4 @@
+import { hash } from './hash.ts'
 // GQ-21: stickers drawn in code. A 2026 screen carries a soft-3D glyph where 2020 had an emoji —
 // a streak flame on the hero card, a trophy on an achievement, a leaf on an empty state. We cannot
 // generate raster art, and an emoji is rendered by the viewer's platform (and banned by lint), so
@@ -58,8 +59,3 @@ export function renderStickers(html: string): string {
   })
 }
 
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
-  return h | 0
-}

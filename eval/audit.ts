@@ -34,7 +34,7 @@ export function auditHtml(html: string): AuditFinding[] {
   return parseAudit(JSON.parse(json.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')))
 }
 
-// Only when run directly; eval/fix-audit.ts imports auditHtml.
+// Only when run directly; eval/run.ts imports auditHtml.
 if (run && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = join('eval', 'out', run, 'screens')
   const byRule: Record<string, number> = {}

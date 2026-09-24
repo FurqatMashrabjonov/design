@@ -1,5 +1,6 @@
 import type { AppNavTab, AppNavigation } from './PlannerService.ts'
 import { ICON_PATHS } from './shell-icons.ts'
+import { hash } from '../../lib/hash.ts'
 
 // ponytail: a flat synonym table, no fuzzy matching — extend it when the eval's fallbackIcons counter moves.
 export const ICON_SYNONYMS: Record<string, string> = {
@@ -92,13 +93,6 @@ const BY_APP_TYPE: Record<string, NavCharacter> = {
   travel: 'consumer', booking: 'consumer', learning: 'playful', health: 'playful', fitness: 'playful',
 }
 
-// FNV-1a, the same stable pick BlueprintService uses for layout variants: one app is coherent
-// (every screen builds the same bar) and two apps rarely land on the same shape.
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
-  return h >>> 0
-}
 
 /**
  * Which bar this app gets. Decided in code — never by the model: its character narrows the

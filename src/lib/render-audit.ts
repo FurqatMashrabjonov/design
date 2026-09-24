@@ -137,31 +137,6 @@ for (var x = 0; x < texts.length && x < 400; x++) {
 return out;
 `
 
-const HOW: Record<AuditRule, string> = {
-  overflow: 'runs past the right edge of the screen — constrain it (max-width: 100%, min-width: 0, flex-wrap, or a shorter label)',
-  'clipped-text': 'text is cut off without an ellipsis — let it wrap, or add text-overflow: ellipsis with white-space: nowrap',
-  'small-target': `is too small to tap — make it at least ${HIG.minTargetPx}×${HIG.minTargetPx}px (min-height / min-width or padding), without changing its look otherwise`,
-  'low-contrast': `text is too faint — it needs ${HIG.contrast.text}:1 against its background (${HIG.contrast.largeText}:1 from ${HIG.contrast.largeTextPx}px): darken the text (var(--fg), var(--fg-2), or a colour mixed toward var(--fg)); never lighten the background`,
-  overlap: 'two texts are drawn over each other — give each its own line or enough space (display: block, gap, line-height)',
-  'covered-text': 'a floating button sits on top of text — move it clear of the words, or drop it and put the action in the flow where the pattern already places it',
-  'squeezed-text': 'text is squeezed into a narrow column because something beside it takes the row — give the text min-width: 0 and flex: 1, and give the image or control next to it a fixed width (flex: none)',
-}
-
-/**
- * The instruction for fixing a screen's findings in one edit-by-parts call (EYE-02): each problem
- * with the element at fault, so the model touches only those elements. Findings without an element
- * id cannot be targeted and are left out; at most twelve.
- */
-export function fixInstruction(findings: AuditFinding[]): string {
-  const seen = new Set<string>()
-  const lines = findings
-    .filter((f) => f.id && !seen.has(`${f.rule}|${f.id}`) && seen.add(`${f.rule}|${f.id}`))
-    .slice(0, 12)
-    .map((f) => `- data-od-id="${f.id}"${f.detail ? ` (${f.detail})` : ''}: ${HOW[f.rule]}.`)
-  return lines.length
-    ? `Fix these problems found in the rendered screen. Change only the elements listed, as little as needed; keep the design, the content and every other element exactly as they are.\n${lines.join('\n')}`
-    : ''
-}
 
 /** Findings arrive from a sandboxed page: keep only well-formed ones, capped. */
 export function parseAudit(v: unknown): AuditFinding[] {
@@ -178,10 +153,4 @@ export function parseAudit(v: unknown): AuditFinding[] {
 }
 
 /** The in-frame script: audits once the page has settled and posts the findings to the editor. */
-export const AUDIT_BRIDGE = `<script id="__od_audit">
-(function () {
-  function run() { try { window.parent.postMessage({ type: 'od:audit', findings: (function () { ${AUDIT_SOURCE} })() }, '*'); } catch (e) {} }
-  var go = function () { setTimeout(run, 400); };
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(go); else window.addEventListener('load', go);
-})();
-</script>`
+

@@ -311,35 +311,6 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.deepEqual(EditPairService.forProject('nope'), [])
 }
 
-// EYE-02: the render audit's findings become one edit-by-parts call on the elements at fault
-{
-  const base = '<!doctype html><html><head><style>.t{color:#ddd}</style></head><body><main><h1>Title</h1><p class="t">Faint</p><button class="b">Go</button></main></body></html>'
-  Screen.create({ id: 's-fix', projectId: 'p9', name: 'Fixable', prompt: 'x', html: base, x: 0, y: 0 })
-  const ids = annotateElements(base)
-  const pId = ids.match(/<p class="t" data-od-id="([^"]+)"/)![1]
-  sent = []
-  reply = () => sse(`<affects>${pId}</affects><edit target="${pId}"><p class="t" data-od-id="${pId}" style="color:var(--fg)">Faint</p></edit>`)
-  await post(GenerateController, { projectId: 'p9', editScreenId: 's-fix', prompt: '', fixFindings: [{ rule: 'low-contrast', id: pId, detail: 'Faint 1.4:1' }, { rule: 'overlap', id: null, detail: 'no element' }, { rule: 'evil', id: 'x' }] })
-  assert.equal(sent.length, 1, 'one call for all findings')
-  assert.ok(sent[0].user.includes(`data-od-id="${pId}" (Faint 1.4:1): text is too faint`) && !sent[0].user.includes('no element'), 'the instruction names the element and how to fix it; untargetable findings are left out')
-  assert.ok(Screen.find('s-fix')!.html.includes('style="color:var(--fg)">Faint'), 'the element was fixed by parts')
-  assert.equal(ScreenVersion.count('s-fix'), 1, 'one version for the whole fix')
-  const talk = Message.forProject('p9').slice(-2)
-  assert.deepEqual(talk.map((m) => [m.role, m.kind]), [['user', 'edit'], ['agent', 'edit']])
-  assert.equal(talk[0].text, 'Fix 1 problem found in the rendered screen', 'the chat says what was asked in plain words')
-  // EYE-04: an automatic repair is the agent's own work — no request in the person's name.
-  const before = Message.forProject('p9').length
-  const p2 = annotateElements(Screen.find('s-fix')!.html).match(/<p class="t" data-od-id="([^"]+)"/)![1]
-  reply = () => sse(`<affects>${p2}</affects><edit target="${p2}"><p class="t" data-od-id="${p2}" style="color:var(--fg)">Fixed</p></edit>`)
-  await post(GenerateController, { projectId: 'p9', editScreenId: 's-fix', prompt: '', auto: true, fixFindings: [{ rule: 'low-contrast', id: p2, detail: 'Faint 1.4:1' }] })
-  const said = Message.forProject('p9').slice(before)
-  assert.deepEqual(said.map((m) => m.role), ['agent'], 'an automatic repair is not asked for in the person\'s name')
-  assert.match(said[0].text, /Checked “Fixable” and fixed 1 rendering problem/)
-
-  const bad = await GenerateController.stream(new Request('http://test/api', { method: 'POST', body: JSON.stringify({ projectId: 'p9', editScreenId: 's-fix', fixFindings: [{ rule: 'overlap', id: null }] }) }))
-  assert.equal(bad.status, 400, 'nothing with an element to fix is refused before any call')
-}
-
 // CHAT-08: with `gate`, the run stops at the plan and waits; the approval draws the plan with the
 // person's edits and the ids the canvas already holds.
 {

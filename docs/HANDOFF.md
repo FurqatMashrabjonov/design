@@ -23,7 +23,7 @@ npm run dev                         # http://localhost:3000
 
 ## 2. Hozirgi holat
 
-Ikki bosqich parallel: **G · Generatsiya sifati** (`docs/GENERATION-PLAN.md`) va **M · Muharrir UX** (`docs/EDITOR-PLAN.md`). Foydalanuvchi qarori: avval muharrir, keyin generatsiyaning qolgani.
+Ikki bosqich parallel: **G · Generatsiya sifati** (`docs/archive/GENERATION-PLAN.md`) va **M · Muharrir UX** (`docs/archive/EDITOR-PLAN.md`). Foydalanuvchi qarori: avval muharrir, keyin generatsiyaning qolgani.
 
 | Bosqich | Tayyor | Qolgan |
 |---|---|---|

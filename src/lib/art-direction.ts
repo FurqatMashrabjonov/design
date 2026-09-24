@@ -1,3 +1,4 @@
+import { hash } from './hash.ts'
 // VAR-01: every project gets one art direction, kept for all its screens and different from the
 // next project's. The design system decides colour, type and radii; the direction decides
 // composition — how big the type plays, how much air, whether content sits in cards, in rows or
@@ -31,11 +32,6 @@ const FOR_TYPE: Record<string, string[]> = {
   learning: ['friendly', 'mosaic', 'calm'],
 }
 
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
-  return h >>> 0
-}
 
 export function artDirection(seed: string, appType?: string): ArtDirection {
   const ids = FOR_TYPE[appType ?? ''] ?? ART_DIRECTIONS.map((d) => d.id)

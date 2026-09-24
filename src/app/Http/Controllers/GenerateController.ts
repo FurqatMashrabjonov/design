@@ -1,5 +1,4 @@
 import { artBlock, artDirection } from '@/lib/art-direction'
-import { fixInstruction, parseAudit } from '@/lib/render-audit'
 import { parseRefImages, refImageNote } from '@/lib/ref-images'
 import { referenceBlock } from '@/app/Services/ReferenceService'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
@@ -27,7 +26,7 @@ import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
 import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/lib/agent-messages'
 
-// POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, regenerateScreenId?, skill? } -> text/plain stream
+// POST { prompt, projectId?, device?, designSystem?, editScreenId?, editElementId?, regenerateScreenId? } -> text/plain stream
 // regenerateScreenId redraws that screen from its stored spec — also how a failed screen is retried.
 export const GenerateController = {
   // opts.userId: the signed-in owner, set by the API route (server/guard.ts); a new project is theirs.
@@ -35,11 +34,6 @@ export const GenerateController = {
     const body = await request.json().catch(() => ({}))
     const regenerateId = typeof body.regenerateScreenId === 'string' && body.regenerateScreenId ? body.regenerateScreenId : null
     let prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
-    // EYE-02: "fix what the render audit found" — the findings come from the browser, so they are
-    // validated and turned into the instruction here; the prompt field is not used.
-    const fixes = Array.isArray(body.fixFindings) && typeof body.editScreenId === 'string' ? parseAudit(body.fixFindings) : []
-    if (fixes.length) prompt = fixInstruction(fixes)
-    if (Array.isArray(body.fixFindings) && !prompt) return new Response('No problem with an element to fix', { status: 400 })
     if (!regenerateId && (!prompt || prompt.length > 4000)) return new Response('Prompt must be 1-4000 characters', { status: 400 })
     // LLM-02: pictures the person attached to this request. Validated here because they come from
     // the browser, and they ride this one request only — an image is prompt tokens every time.
@@ -72,10 +66,8 @@ export const GenerateController = {
     }
 
     const editElementId = typeof body.editElementId === 'string' && body.editElementId ? body.editElementId : null
-    const skill = typeof body.skill === 'string' ? body.skill : undefined
 
     // GQ-10: the model draws against the app's saved palette, not the catalogue's colours.
-    const promptTokens = { tokensRoot: DesignSystemService.readTokensRootFor(Project.find(project.id) ?? project, true) }
     let systemPrompt: string
     let userMessage: string
     let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot; bar: NavStyle } | undefined
@@ -89,7 +81,6 @@ export const GenerateController = {
       elementLabel = elementInfo(editBase, editElementId).label
       systemPrompt = composeElementEditPrompt(
         project.designSystem,
-        project.device,
         editBase,
         editElementId,
         existingElementHtml,
@@ -99,11 +90,11 @@ export const GenerateController = {
     } else if (editScreen) {
       // Edit by parts (lib/screen-patch.ts): the model returns only what changes, addressed by the
       // same ids the canvas shows, and everything else stays byte-identical.
-      systemPrompt = `${composeSystemPrompt(project.designSystem, project.device, skill, promptTokens)}\n\n---\n\n${EDIT_MODE}`
+      systemPrompt = `${composeSystemPrompt(project.designSystem)}\n\n---\n\n${EDIT_MODE}`
       const data = dataBlock(parseStoredPlan(project.plan)?.entities ?? [])
       userMessage = [data, `Current screen (${editScreen.name}):\n\`\`\`html\n${editBase}\n\`\`\``, `Change request: ${prompt}`].filter(Boolean).join('\n\n')
     } else {
-      systemPrompt = composeSystemPrompt(project.designSystem, project.device, skill, promptTokens)
+      systemPrompt = composeSystemPrompt(project.designSystem)
       userMessage = prompt
       // Adding to a planned app: the screen joins that app — its name, its screens, its shell and
       // its house style — instead of being designed from the bare prompt as if it stood alone.
@@ -124,7 +115,7 @@ export const GenerateController = {
           // The same direction the planned screens got: seeded by the project, not by the request.
           art: [artBlock(artDirection(project.id, stored?.appType)), referenceBlock(stored?.reference ?? { composition: '', mood: [] })].filter(Boolean).join('\n\n'),
           screenNames: siblings.map((s) => s.name),
-          contract: shellContract(slot, nav, project.device === 'mobile', addTo.bar),
+          contract: shellContract(slot, nav, addTo.bar),
           sheet: componentSheet(stored?.entities ?? []),
           // No brief is stored with a project, so the app's language is read off the screen it already has —
           // never off the chat message: people ask for an English app's next screen in their own language.
@@ -141,12 +132,9 @@ export const GenerateController = {
     // has no row yet, so its first exchange is written once the project exists.
     const startedAt = Date.now()
     const kind: MessageKind = redraw ? 'regenerate' : editScreen && editElementId ? 'element' : editScreen ? 'edit' : 'add'
-    const fixCount = fixes.length ? fixInstruction(fixes).split('\n').length - 1 : 0
-    // EYE-04: the product checks its own work. An automatic repair is the agent's doing, so the
-    // conversation records it as such — no request in the user's name, and no list of defects.
-    const ask = redraw ? `Regenerate “${redraw.name}”` : fixCount ? `Fix ${fixCount} problem${fixCount === 1 ? '' : 's'} found in the rendered screen` : String(body.prompt).trim()
+    const ask = redraw ? `Regenerate “${redraw.name}”` : String(body.prompt).trim()
     const target = redraw ?? editScreen
-    if (!isNew && !(fixCount && body.auto === true)) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    if (!isNew) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
     // Asking for a drawn screen again is a signal about it (FB-01); retrying a failed one is not.
     if (redraw?.html) FeedbackController.record(project.id, redraw.id, 'regenerate')
     const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
@@ -194,7 +182,7 @@ export const GenerateController = {
 
           const normalizeOpts = {
             // GQ-10: a screen added or edited later takes the app's saved palette, not the catalogue's.
-            tokensCss: DesignSystemService.readTokensRootFor(Project.find(projectRef.id) ?? projectRef),
+            tokensCss: DesignSystemService.readTokensRoot(projectRef.designSystem),
             fontUrls: DesignSystemService.readFontUrls(projectRef.designSystem),
             iconStroke: DesignSystemService.readIconStroke(projectRef.designSystem),
             kitCss: KitService.css(),
@@ -232,7 +220,7 @@ export const GenerateController = {
             // an app keeps the app's name off its own ("GoBite — Cart" → "Cart"), like the planned run.
             title = isNew ? extracted.title : screenTitle(extracted.title, projectRef.name ?? '')
             if (editScreen && title === 'Untitled') title = editScreen.name
-            const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, projectRef.device === 'mobile', title, addTo.bar)
+            const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, title, addTo.bar)
             finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: navClearance(addTo?.bar ?? 'island') })), abort.signal, { name: projectRef.name ?? title }))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
@@ -284,10 +272,7 @@ export const GenerateController = {
             projectId: projectRef.id,
             role: 'agent',
             kind,
-            text:
-              fixCount && body.auto === true
-                ? `Checked “${changed.name}” and fixed ${fixCount} rendering problem${fixCount === 1 ? '' : 's'} — now v${ScreenVersion.count(changed.id) + 1}.`
-                : changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
             meta: {
               screens: [changed],
               log: [...(patchNote?.log ?? []), `${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],

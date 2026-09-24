@@ -6,7 +6,6 @@ import { Feedback } from '@/app/Models/Feedback'
 import { Message } from '@/app/Models/Message'
 import { AUTO, DesignSystemService } from '@/app/Services/DesignSystemService'
 import { AppPatternService } from '@/app/Services/AppPatternService'
-import { SkillService } from '@/app/Services/SkillService'
 import { UsageService } from '@/app/Services/UsageService'
 import { PlanRuns } from '@/app/Services/PlanRuns'
 import { parseTheme, sanitizeTheme } from '@/lib/theme-override'
@@ -20,7 +19,6 @@ export const ProjectController = {
       projects: Project.cardsForUser(userId),
       usage: { calls: UsageService.callsToday(userId), limit: UsageService.limits(userId).callsPerDay },
       designSystems: DesignSystemService.list(),
-      skills: SkillService.list(),
     }
   },
 
@@ -40,11 +38,10 @@ export const ProjectController = {
       })(),
       messages: Message.forProject(id),
       // For the design-system frame on the canvas (lib/ds-sample.ts).
-      tokens: { root: DesignSystemService.readTokensRootFor(project), fonts: DesignSystemService.readFontUrls(project.designSystem) },
+      tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
       // GQ-07: a planned run still drawing (its page may have closed); the editor refreshes until it ends.
       planRunning: PlanRuns.running(id),
       designSystems: DesignSystemService.list(),
-      skills: SkillService.list(),
     }
   },
 

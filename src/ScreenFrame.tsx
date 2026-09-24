@@ -8,7 +8,6 @@ import { SERIALIZE_BRIDGE, parseTree, type ODTree } from '@/lib/figma-serialize'
 import { clampFrameHeight, parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
 import { annotateElements } from '@/lib/element-ops'
 import { parseRect, safeElementId, withEditBridge, type BridgeRect } from '@/lib/edit-bridge'
-import { AUDIT_BRIDGE, parseAudit, type AuditFinding } from '@/lib/render-audit'
 
 // Renders at native device width; the height grows to fit the screen (see lib/frame-height.ts).
 // The canvas's own transform handles zoom.
@@ -53,7 +52,6 @@ export function ScreenFrame(props: {
   /** Cmd+Z (redo: Shift+Cmd+Z) pressed inside the frame. */
   onUndo?: (redo: boolean) => void
   /** What the render audit found once the screen settled (lib/render-audit.ts, EYE-01). */
-  onAudit?: (findings: AuditFinding[]) => void
   /** Floating panel shown under the selected element. */
   panel?: ReactNode
   /** Start editing the selected element's text in place (a panel button); bump `key` to repeat. */
@@ -130,7 +128,7 @@ export function ScreenFrame(props: {
     // Removed after annotation, so element ids are computed from exactly what the server sees.
     const base = (editable ? annotateElements(rawHtml) : rawHtml).replace(/\sloading="lazy"/g, '')
     const themed = withLiveTheme(base, themeRef.current)
-    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${AUDIT_BRIDGE}${SERIALIZE_BRIDGE}</body>`) : themed
+    return editable ? withEditBridge(withHeightProbe(themed, props.frameId!, f.height)).replace('</body>', `${SERIALIZE_BRIDGE}</body>`) : themed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawHtml, editable, props.streaming, props.frameId, f.height])
 
@@ -207,8 +205,6 @@ export function ScreenFrame(props: {
           if (tree) wait.resolve(tree)
           else wait.reject(new Error(d.error || 'The screen could not be read'))
         }
-      } else if (d?.type === 'od:audit') {
-        p.onAudit?.(parseAudit(d.findings))
       } else if (d?.type === 'od:wheel') {
         forwardWheel(iframeRef.current, d)
       } else {

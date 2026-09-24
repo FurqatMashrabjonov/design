@@ -1,10 +1,8 @@
 import assert from 'node:assert'
 import { DesignSystemService } from './DesignSystemService.ts'
-import { SkillService } from './SkillService.ts'
 import { composeSystemPrompt, composeElementEditPrompt } from './PromptComposer.ts'
 import { annotateHtml } from '../../lib/element-annotator.ts'
 import { extractElement, patchElement, listElementIds } from '../../lib/element-patcher.ts'
-import { THRESHOLD, WEIGHTS } from './CritiqueService.ts'
 import { clampFrameHeight, parseHeightMessage, pinViewportHeight, withHeightProbe, MAX_FRAME_HEIGHT } from '../../lib/frame-height.ts'
 
 console.log('Testing Design Systems...')
@@ -18,21 +16,9 @@ assert.ok(DesignSystemService.exists('stripe'), 'stripe design system must exist
 // Test token CSS presence and prompt injection
 const linearTokens = DesignSystemService.readTokensCss('linear-app')
 assert.ok(linearTokens.length > 0, 'linear-app should have tokens.css')
-const promptWithTokens = composeSystemPrompt('linear-app', 'desktop')
+const promptWithTokens = composeSystemPrompt('linear-app')
 assert.ok(promptWithTokens.includes('Design tokens (CSS custom properties)'), 'Prompt must contain tokens')
 assert.ok(promptWithTokens.includes('Element targeting'), 'Prompt must contain data-od-id instruction')
-
-console.log('Testing Skills...')
-const skills = SkillService.list()
-assert.ok(skills.length >= 10, `Expected at least 10 skills, got ${skills.length}`)
-assert.ok(SkillService.exists('frontend-design'), 'frontend-design skill must exist')
-assert.ok(SkillService.exists('landing-page'), 'landing-page skill must exist')
-assert.ok(SkillService.exists('dashboard'), 'dashboard skill must exist')
-assert.ok(SkillService.exists('email-template'), 'email-template skill must exist')
-assert.ok(SkillService.exists('pricing-page'), 'pricing-page skill must exist')
-
-const landingPrompt = composeSystemPrompt('minimal', 'desktop', 'landing-page')
-assert.ok(landingPrompt.includes('landing-page'), 'Prompt must resolve custom skill')
 
 console.log('Testing Element Annotation & Patching...')
 const rawHtml = `<!doctype html>
@@ -67,14 +53,9 @@ assert.ok(patched.includes('data-od-id="navbar"'), 'Navbar must be untouched')
 assert.ok(patched.includes('data-od-id="footer"'), 'Footer must be untouched')
 
 // Test composeElementEditPrompt
-const elementEditPrompt = composeElementEditPrompt('minimal', 'desktop', annotated, 'hero', heroHtml!, 'Make headline bolder')
+const elementEditPrompt = composeElementEditPrompt('minimal', annotated, 'hero', heroHtml!, 'Make headline bolder')
 assert.ok(elementEditPrompt.includes('data-od-id="hero"'), 'Prompt must specify target element id')
 assert.ok(elementEditPrompt.includes('Return ONLY the updated element HTML'), 'Prompt must require scoped output')
-
-console.log('Testing Critique Config...')
-assert.equal(THRESHOLD, 8.0, 'Threshold must be 8.0')
-const totalWeight = WEIGHTS.layout + WEIGHTS.brandCompliance + WEIGHTS.accessibility + WEIGHTS.copyQuality
-assert.ok(Math.abs(totalWeight - 1.0) < 0.001, 'Weights must sum to 1.0')
 
 console.log('Testing App Coherence & Navigation Shell...')
 const { parsePlan } = await import('./PlannerService.ts')
@@ -103,7 +84,7 @@ assert.equal(multiPlan.screens[0].screenType, 'root-tab', 'Screen 1 is root-tab'
 assert.equal(multiPlan.screens[1].screenType, 'detail-view', 'Screen 2 is detail-view')
 
 // Verify mobile-screen prompt includes app-consistency craft rules
-const mobilePrompt = composeSystemPrompt('minimal', 'mobile')
+const mobilePrompt = composeSystemPrompt('minimal')
 assert.ok(mobilePrompt.includes('The SHELL CONTRACT wins'), 'Mobile prompt must tell the model not to draw injected chrome')
 assert.ok(mobilePrompt.includes('HOUSE STYLE block'), 'Mobile prompt must contain the house-style rule')
 
@@ -389,6 +370,11 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   const darkBg = DesignSystemService.list().find((e) => e.id === darkPick.id)!.swatch.bg ?? '#ffffff'
   assert.ok(parseInt(darkBg.slice(1, 3), 16) < 90, `a dark reference must pick a dark system (got ${darkPick.id} on ${darkBg})`)
   assert.equal(matchSystem({ mood: ['bold'] }), null, 'no colour in the picture, no opinion about the system')
+  // Only a system written for a phone is ever the answer — never a brand package for websites.
+  const mobile = new Set(DesignSystemService.list().filter((e) => e.category === 'Mobile').map((e) => e.id))
+  for (const ref of [pink, { accent: '#39ff88', background: '#0b0b10' }, { accent: '#0a6cf0', background: '#f2f4f8' }, { accent: '#e8845a', background: '#ffffff' }])
+    assert.ok(mobile.has(matchSystem(ref)!.id), `a reference lands on a phone system, got ${matchSystem(ref)!.id}`)
+  assert.equal(darkPick.id === 'graphite' || darkPick.id === 'volt', true, `a dark lime picture lands on a dark phone system (got ${darkPick.id})`)
 
   // The theme carries the picture's own accent and corners, whatever system was matched.
   assert.deepEqual(themeFromReference(pink), { accent: '#ff5fa2', radius: 'round' })
@@ -889,7 +875,7 @@ console.log('Testing Judge Regressions (GQ-18/19 follow-ups)...')
   assert.ok(drop(page('<h1>Create Habit</h1>'), 'Create Habit').includes('<header data-od-shell="detail-header"><h1>Create Habit</h1></header>'), 'the header\'s own title is not the one removed')
   const { shellPartsFor: parts } = await import('./ScreenContext.ts')
   const nav = { type: 'bottom-tabs' as const, tabs: [{ id: 'a', label: 'A', icon: 'home' }, { id: 'b', label: 'B', icon: 'user' }] }
-  assert.equal(parts({ screenType: 'detail-view', parentScreen: 'Home' }, nav, true, 'Create Habit').title, 'Create Habit', 'the normaliser is told the title the header shows')
+  assert.equal(parts({ screenType: 'detail-view', parentScreen: 'Home' }, nav, 'Create Habit').title, 'Create Habit', 'the normaliser is told the title the header shows')
 }
 
 console.log('Testing Motion Tokens (GQ-24)...')
@@ -1089,23 +1075,6 @@ console.log('Testing iOS 26 Bar (GQ-18)...')
 
 }
 
-console.log('Testing Palette Wiring (GQ-10)...')
-{
-  // A system the person chose by hand is a choice and keeps its colours; only an automatic pick
-  // may be recoloured. And every path that reads tokens must read the project's, not the catalogue's,
-  // or a screen added later would come back in the old colours.
-  const planCtl = readFileSync('src/app/Http/Controllers/PlanController.ts', 'utf8')
-  assert.ok(/project\.designSystemAuto && plan\.palette/.test(planCtl), 'the palette is applied only when the system was chosen automatically')
-  assert.ok(planCtl.includes('Project.savePalette('), 'the built palette is saved so later screens share it')
-  const store = readFileSync('src/app/Http/Controllers/ProjectController.ts', 'utf8')
-  assert.ok(/designSystemAuto: data\.designSystem === AUTO/.test(store), 'creating a project records whether the system was automatic')
-  for (const file of ['src/app/Http/Controllers/PlanController.ts', 'src/app/Http/Controllers/GenerateController.ts', 'src/app/Http/Controllers/ProjectController.ts']) {
-    const text = readFileSync(file, 'utf8')
-    assert.ok(!/DesignSystemService\.readTokensRoot\(/.test(text), `${file} must read tokens through readTokensRootFor, never the bare catalogue root`)
-  }
-  const composer = readFileSync('src/app/Services/PromptComposer.ts', 'utf8')
-  assert.ok(/opts\.tokensRoot \?\?/.test(composer), 'the drawing prompt shows the model the palette it will actually get')
-}
 
 console.log('All new features and App Coherence verified successfully! \u2705')
 

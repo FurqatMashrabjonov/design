@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { hash } from '../../lib/hash.ts'
 
 // Screen archetype blueprints (blueprints/<id>.json, one per planner archetype): the structure a
 // kind of screen needs — what it must show, where its primary action lives, the mistakes that make
@@ -51,12 +52,6 @@ export type Blueprint = {
   kit?: string
 }
 
-// FNV-1a: a stable pick from a string, the same on every run and machine.
-function hash(s: string): number {
-  let h = 0x811c9dc5
-  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
-  return h >>> 0
-}
 
 const cache = new Map<string, Blueprint | null>()
 
