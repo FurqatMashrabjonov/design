@@ -281,7 +281,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LLM-07 | Modelni almashtirish: admin sozlamasi va zaxira provayder | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-06, ADM-08 | Admin tanlaydi; xatoda zaxiraga o'tadi |
 | INF-10 | SQLite → Postgres: drizzle pg, async modellar, ma'lumotni ko'chirish | Infratuzilma / Ma'lumotlar bazasi | MVP | Tayyor | Katta | INF-01, INF-02 | Ilova, testlar, eval Postgres'da; ma'lumot ko'chirilgan; check/tsc/brauzer toza |
 | ADM-13 | Maxfiy kalitlar admin'dan: shifrlangan saqlash, test, rotatsiya | Monitoring / Kirish nazorati | MVP | Tayyor | O'rta | ADM-08 | Kalitlar admin'da; AES-256-GCM; brauzerga faqat oxirgi 4 belgi |
-| ADM-10 | Admin qobig'i: yig'iladigan sidebar, guruhlar, ⌘K | Monitoring / Analitika | MVP | Rejada | Kichik | ADM-09 | Sidebar yig'iladi; guruhlar; ⌘K |
+| ADM-10 | Admin qobig'i: yig'iladigan sidebar, guruhlar, ⌘K | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-09 | Sidebar yig'iladi; guruhlar; ⌘K |
 | ADM-11 | Jadval v2: server tomonda qidiruv, filtr, saralash, URL'da holat | Monitoring / Analitika | MVP | Rejada | O'rta | ADM-10 | Filtr, qidiruv, sahifalash serverda; yon panel; CSV |
 | OBS-10 | Telescope: HTTP so'rovlar jurnali | Monitoring / Xatolar | MVP | Rejada | O'rta | ADM-11 | Har so'rov yoziladi, maxfiy narsalar maskalanadi, 7 kun |
 | OBS-11 | Telescope: server loglari va xatolar (guruhlangan) | Monitoring / Xatolar | MVP | Rejada | O'rta | OBS-10 | console.* va xatolar bazada, izi bo'yicha guruhlangan |

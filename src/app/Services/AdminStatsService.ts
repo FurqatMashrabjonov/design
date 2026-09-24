@@ -159,6 +159,23 @@ export const AdminStatsService = {
     return { failures, failedScreens }
   },
 
+  /** ADM-10: the command palette — users by email/name, projects by name; the text matches literally. */
+  async search(q: string) {
+    const t = q.trim()
+    if (!t) return { users: [], projects: [] }
+    const like = `%${t.replace(/[\\%_]/g, (c) => '\\' + c)}%`
+    const [users, projects] = await Promise.all([
+      all<{ id: string; name: string; email: string }>(sql`
+        SELECT id, name, email FROM "user" WHERE email ILIKE ${like} OR name ILIKE ${like} ORDER BY created_at DESC LIMIT 6
+      `),
+      all<{ id: string; name: string; owner: string | null }>(sql`
+        SELECT p.id, p.name, u.email AS owner FROM projects p LEFT JOIN "user" u ON u.id = p.user_id
+        WHERE p.name ILIKE ${like} ORDER BY p.created_at DESC LIMIT 6
+      `),
+    ])
+    return { users, projects }
+  },
+
   /** ADM-08: the switches in force, where each comes from, and the system at a glance. */
   async controls() {
     const [counts, limits, settings, actions] = await Promise.all([

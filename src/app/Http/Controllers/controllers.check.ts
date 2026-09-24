@@ -660,6 +660,22 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.deepEqual((await AdminController.testSecret('ANTHROPIC_API_KEY')), { ok: false, detail: 'No key set' })
 }
 
+// ADM-10: the admin command palette searches users and projects; % and _ match literally
+{
+  const { AdminController } = await import('./AdminController.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user } = await import('../../../database/schema.ts')
+  const now = new Date()
+  await db.insert(user).values({ id: 'pal', name: 'Pal Ette', email: 'palette@x.uz', createdAt: now, updatedAt: now })
+  await Project.create({ id: 'pal-p', name: 'Zeta 100% App', designSystem: 'minimal', device: 'mobile', userId: 'pal' })
+  assert.ok((await AdminController.search('PALETTE')).users.some((u) => u.id === 'pal'), 'a user is found by email, any case')
+  assert.ok((await AdminController.search('ette')).users.some((u) => u.id === 'pal'), 'and by name')
+  const hit = (await AdminController.search('100%')).projects
+  assert.deepEqual(hit.map((p) => [p.id, p.owner]), [['pal-p', 'palette@x.uz']], 'a project by name, with its owner')
+  assert.deepEqual((await AdminController.search('%')).projects.map((p) => p.id), ['pal-p'], '% is a literal, not a wildcard')
+  assert.deepEqual(await AdminController.search('  '), { users: [], projects: [] }, 'blank text finds nothing')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

@@ -43,6 +43,7 @@ export const AdminController = {
   },
   generations: async (f: { onlyErrors?: boolean }) => ({ calls: await AdminStatsService.calls(f), ...(await AdminStatsService.quality()) }),
   controls: () => AdminStatsService.controls(),
+  search: (q: string) => AdminStatsService.search(q),
 
   async ban(adminId: string, d: { userId: string; reason: string }) {
     const target = await User.find(d.userId)

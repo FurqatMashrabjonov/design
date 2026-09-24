@@ -5,6 +5,40 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Admin qobig'i: yig'iladigan sidebar, guruhlar, ⌘K (ADM-10)
+
+Ikki subagent parallel ishladi: biri qobiqni, ikkinchisi paletni qildi. Fayllari ajratilgan edi.
+Birlashtirish va brauzerdagi sinov lead tomonidan.
+- **Guruhlar:** Monitor (Overview), AI (Generations), Business (Users), System (Settings).
+  Keyingi sahifalar (Requests, Logs, Providers, Credits) shu guruhlarga tushadi.
+- **Yig'iladigan sidebar.** 224px ↔ 56px, faqat ikonkalar va tooltiplar qoladi. Tugma yoki
+  ⌘B/Ctrl+B bilan ochiladi-yopiladi (matn maydonida ishlamaydi).
+  - Holat `localStorage`'da saqlanadi. U mount'dan keyin o'qiladi, shuning uchun hydration
+    nomuvofiqligi bo'lmaydi.
+- **⌘K / Ctrl+K palet:**
+  - Qidiradi: sahifalar, foydalanuvchilar (email yoki ism), loyihalar (nom va egasi).
+  - Klaviatura: ↑↓ (aylanib yuradi), Enter, Esc. Server qidiruvi 150ms kechikish bilan,
+    eskirgan javoblar tashlanadi.
+  - Server tomoni: `adminSearch` → `requireAdmin` va validator; `ILIKE`'da `%`, `_` va `\`
+    harfma-harf qidiriladi.
+  - Telefonda ⌘K yo'q, shuning uchun qidiruv tugmasi gorizontal menyuda.
+
+Fayllar: `routes/admin.tsx`, `admin/CommandPalette.tsx` (yangi), `server/admin-fns.ts`,
+`AdminController.ts`, `AdminStatsService.ts`, `controllers.check.ts`.
+
+Tekshiruv:
+- `npm run check`, `npx tsc --noEmit` toza. Test: email katta-kichik harfdan qat'i nazar va ism
+  bo'yicha topiladi; "100%" loyihani topadi; "%" hammasini emas, faqat o'sha loyihani qaytaradi;
+  bo'sh qidiruv hech narsa qaytarmaydi.
+- Brauzerda:
+  - guruhlar ko'rinadi;
+  - ⌘K palet ochiladi, "penny" → PennyWise, Enter bilan loyiha sahifasiga o'tadi;
+  - ⌘B sidebar'ni yig'adi, holat sahifa qayta yuklangandan keyin ham saqlanadi;
+  - yig'ilgan holatda tooltip ("Users") chiqadi;
+  - telefonda (420px) qidiruv tugmasi menyuda, bosilsa palet ochiladi.
+  - Avtomatlashtirish vositasining ⌘K tugma bosishi sahifaga yetmadi, shuning uchun hodisa sahifa
+    ichidan yuborib sinaldi.
+
 ### API kalitlari admin paneldan (ADM-13)
 
 DeepSeek, Gemini, Anthropic, Pexels, Polar token va webhook secret endi **Admin → Settings → API

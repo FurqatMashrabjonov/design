@@ -29,6 +29,10 @@ export const adminGenerations = createServerFn({ method: 'GET' })
   .validator((d: unknown) => ({ onlyErrors: obj(d).onlyErrors === true }))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.generations(data)))
 
+export const adminSearch = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => ({ q: str(obj(d).q ?? '', 100) }))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.search(data.q)))
+
 export const adminControls = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.controls()))
 
 export const adminBan = createServerFn({ method: 'POST' })
