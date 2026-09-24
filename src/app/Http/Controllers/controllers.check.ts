@@ -503,15 +503,34 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
 {
   const { CreditService, CREDIT_PRICES, CHEAPEST_CREDIT_USD } = await import('../../Services/CreditService.ts')
   const PEAK_P90_USD = { plan: 0.0045, screen: 0.0114, element: 0.006 }
-  const worst = { plan: PEAK_P90_USD.plan, draw: 6.5 * PEAK_P90_USD.screen, screen: PEAK_P90_USD.screen, element: PEAK_P90_USD.element }
-  for (const kind of ['plan', 'draw', 'screen', 'element'] as const) {
-    const usd = CreditService.priceOf(kind) * CHEAPEST_CREDIT_USD
-    assert.ok(usd >= worst[kind] * 1.25, `${kind}: ${CreditService.priceOf(kind)} credits = $${usd.toFixed(4)}, under 1.25 × its worst cost $${worst[kind]}`)
+  const { PRICES, MODELS, costOf } = await import('../../Services/LlmService.ts')
+  // LLM-07: every other model is held to the same rule. Its worst cost is DeepSeek's token profile
+  // (plan 2k in/2k out, screen 10k in of which 7k cached/6k out, element 15k in/0.5k out), priced at
+  // that model's rates and scaled by what DeepSeek's log measured over the same profile.
+  const PROFILE = {
+    plan: { promptTokens: 2000, cachedTokens: 0, completionTokens: 2000 },
+    screen: { promptTokens: 10000, cachedTokens: 7000, completionTokens: 6000 },
+    element: { promptTokens: 15000, cachedTokens: 0, completionTokens: 500 },
   }
-  assert.equal(CreditService.priceOf('app'), 15, 'an app is 15 credits: the plan and its drawing (BIL-02)')
+  const peak = new Date('2026-09-23T07:00:00Z') // a Wednesday, in DeepSeek's peak hours
+  const worstAt = (m: string, k: keyof typeof PROFILE) => {
+    const u = { ...PROFILE[k], cacheWriteTokens: 0 }
+    // Claude writes its cache before it reads it: the worst case pays the write.
+    if (PRICES[m]!.cacheWrite) Object.assign(u, { cacheWriteTokens: u.cachedTokens, cachedTokens: 0 })
+    return costOf(u, m, peak) * (PEAK_P90_USD[k] / costOf(PROFILE[k], 'deepseek-flash', peak))
+  }
+  for (const m of Object.keys(MODELS)) {
+    assert.ok(CREDIT_PRICES[m], `${m} can be picked, so it needs credit prices`)
+    const worst = { plan: worstAt(m, 'plan'), draw: 6.5 * worstAt(m, 'screen'), screen: worstAt(m, 'screen'), element: worstAt(m, 'element') }
+    for (const kind of ['plan', 'draw', 'screen', 'element'] as const) {
+      const credits = await CreditService.priceOf(kind, m)
+      const usd = credits * CHEAPEST_CREDIT_USD
+      assert.ok(usd >= worst[kind] * 1.25 - 1e-9, `${m} ${kind}: ${credits} credits = $${usd.toFixed(4)}, under 1.25 × its worst cost $${worst[kind].toFixed(4)}`)
+    }
+  }
+  assert.equal(await CreditService.priceOf('app'), 15, 'an app is 15 credits: the plan and its drawing (BIL-02)')
   assert.deepEqual(CREDIT_PRICES['deepseek-flash'], { plan: 1, draw: 14, screen: 2, element: 1 })
-  assert.throws(() => CreditService.priceOf('screen', 'gpt-imaginary'), /No credit price/)
-  const { PRICES } = await import('../../Services/LlmService.ts')
+  await assert.rejects(() => CreditService.priceOf('screen', 'gpt-imaginary'), /No credit price/)
   for (const m of Object.keys(CREDIT_PRICES)) assert.ok(PRICES[m], `${m} has credit prices, so it needs a token price too`)
   // Which action a request is.
   assert.equal(CreditService.kindOf('/api/generate-plan', { brief: 'x', gate: true }), 'plan')
@@ -547,7 +566,7 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.equal(await CreditService.signupGrant('newbie'), true)
   assert.equal(await CreditService.signupGrant('newbie'), false, 'the start is granted once')
   assert.equal(await Credit.balance('newbie'), SIGNUP_CREDITS)
-  assert.equal(SIGNUP_CREDITS, 4 * CreditService.priceOf('app'), 'the free start is four apps (BIL-02)')
+  assert.equal(SIGNUP_CREDITS, 4 * (await CreditService.priceOf('app')), 'the free start is four apps (BIL-02)')
 }
 
 // BIL-09/10: plans grant monthly (a yearly plan too), once per month; unused plan credits lapse at the
@@ -674,6 +693,47 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.deepEqual(hit.map((p) => [p.id, p.owner]), [['pal-p', 'palette@x.uz']], 'a project by name, with its owner')
   assert.deepEqual((await AdminController.search('%')).projects.map((p) => p.id), ['pal-p'], '% is a literal, not a wildcard')
   assert.deepEqual(await AdminController.search('  '), { users: [], projects: [] }, 'blank text finds nothing')
+}
+
+// LLM-07: the model a call site runs on is an admin setting — checked, read at call time, and it
+// moves the credit price with it.
+{
+  const { AdminController } = await import('./AdminController.ts')
+  const { CreditService } = await import('../../Services/CreditService.ts')
+  await import('../../Services/SecretService.ts') // registers the settings source, as guard.ts does
+  await assert.rejects(() => AdminController.setSetting('adm', { key: 'llm.model.screen', value: 'gpt-imaginary' }), /Invalid value/)
+  await assert.rejects(() => AdminController.setSetting('adm', { key: 'llm.fallback', value: 'claude-opus-9' }), /Invalid value/)
+  await AdminController.setSetting('adm', { key: 'llm.fallback', value: '' })
+  await AdminController.setSetting('adm', { key: 'llm.model.screen', value: 'claude-haiku-4-5' })
+  assert.equal(await CreditService.priceOf('screen'), 10, 'a screen costs the Claude row once screens run on Claude')
+  assert.equal(await CreditService.priceOf('plan'), 1, 'the plan model is untouched')
+  assert.ok((await AdminController.models()).some((m) => m.id === 'claude-haiku-4-5' && m.provider === 'anthropic' && m.credits?.screen === 10))
+  const llmFetch = globalThis.fetch
+  const realKey = process.env.ANTHROPIC_API_KEY
+  process.env.ANTHROPIC_API_KEY = 'test-anthropic'
+  const hits: { url: string; headers: Record<string, string>; body: any }[] = []
+  const html = '<artifact title="Claude screen"><!doctype html><html><head><title>Claude screen</title></head><body><main><p>hi</p></main></body></html></artifact>'
+  globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
+    hits.push({ url: String(url), headers: init?.headers as Record<string, string>, body: JSON.parse(String(init?.body)) })
+    const ev = (o: unknown) => `event: x\ndata: ${JSON.stringify(o)}\n\n`
+    return new Response(ev({ type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 1 } } }) + ev({ type: 'content_block_delta', delta: { type: 'text_delta', text: html } }) + ev({ type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 50 } }), { status: 200 })
+  }) as typeof fetch
+  try {
+    await Project.create({ id: 'p-llm07', name: 'L', designSystem: 'minimal', device: 'mobile' })
+    const out = await post(GenerateController, { projectId: 'p-llm07', prompt: 'a settings screen' })
+    assert.ok(!out.includes('GEN_ERROR'), out)
+    assert.equal(hits[0]?.url, 'https://api.anthropic.com/v1/messages', 'the screen call went to Anthropic')
+    assert.equal(hits[0]!.body.model, 'claude-haiku-4-5-20251001')
+    assert.equal(hits[0]!.headers['x-api-key'], 'test-anthropic')
+    assert.ok((await Screen.forProject('p-llm07')).some((sc) => sc.html.includes('Claude screen')), 'the screen was drawn from its stream')
+  } finally {
+    globalThis.fetch = llmFetch
+    if (realKey === undefined) delete process.env.ANTHROPIC_API_KEY
+    else process.env.ANTHROPIC_API_KEY = realKey
+    await AdminController.setSetting('adm', { key: 'llm.model.screen', value: null })
+    await AdminController.setSetting('adm', { key: 'llm.fallback', value: null })
+  }
+  assert.equal(await CreditService.priceOf('screen'), 2, 'reset: DeepSeek again')
 }
 
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change

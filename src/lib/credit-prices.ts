@@ -5,9 +5,18 @@
 export type ActionKind = 'plan' | 'draw' | 'app' | 'screen' | 'element'
 export type Prices = Record<Exclude<ActionKind, 'app'>, number>
 
-/** By model: a model that costs more to run costs more credits (LLM-06 adds a row per approved model). */
+/**
+ * By model: a model that costs more to run costs more credits. LLM-07: every model an admin can pick
+ * has a row. The rows past DeepSeek's come from its measured token profile scaled to each model's
+ * token prices (Claude's cached prompt counted as a cache write, its worst case), × 1.25, at the
+ * cheapest credit, rounded up — then a little headroom (Sonnet 5's tokenizer counts ~30% more).
+ */
 export const CREDIT_PRICES: Record<string, Prices> = {
   'deepseek-flash': { plan: 1, draw: 14, screen: 2, element: 1 },
+  'gemini-3.1-flash-lite': { plan: 1, draw: 20, screen: 3, element: 1 },
+  'gemini-2.5-flash': { plan: 2, draw: 26, screen: 4, element: 2 },
+  'claude-haiku-4-5': { plan: 3, draw: 65, screen: 10, element: 4 },
+  'claude-sonnet-5': { plan: 8, draw: 156, screen: 24, element: 9 },
 }
 
 /** BIL-07: a new account starts with these — four apps, once. */

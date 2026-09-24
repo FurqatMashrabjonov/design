@@ -8,15 +8,25 @@ import { AdminAction } from '@/app/Models/AdminAction'
 import { Credit } from '@/app/Models/Credit'
 import { SecretService, type SecretName } from '@/app/Services/SecretService'
 import { isAdmin } from '@/app/Services/AuthService'
+import { clearLlmSettings, isUsableModel, MODELS, PRICES } from '@/app/Services/LlmService'
+import { CREDIT_PRICES } from '@/lib/credit-prices'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
+
+const billable = (v: string) => isUsableModel(v) && !!CREDIT_PRICES[v]
 
 /** The settings an admin may change from the panel, and how each value is checked. */
 export const ADMIN_SETTINGS = {
   'generation.paused': (v: string) => v === '1',
   'limits.callsPerDay': (v: string) => /^\d{1,6}$/.test(v),
   'limits.dailyBudgetUsd': (v: string) => /^\d{1,5}(\.\d{1,2})?$/.test(v),
+  // LLM-07: the model each call site runs on, and the one a failed call is retried on ('' = none).
+  // Only a model we can call, price in dollars and charge in credits.
+  'llm.model.plan': (v: string) => billable(v),
+  'llm.model.screen': (v: string) => billable(v),
+  'llm.model.edit': (v: string) => billable(v),
+  'llm.fallback': (v: string) => v === '' || billable(v),
 } as const
 export type AdminSettingKey = keyof typeof ADMIN_SETTINGS
 
@@ -95,7 +105,22 @@ export const AdminController = {
   async setSetting(adminId: string, d: { key: AdminSettingKey; value: string | null }) {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')
     await Setting.set(d.key, d.value)
+    if (d.key.startsWith('llm.')) clearLlmSettings() // this server reads the new model at once
     await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
   },
+
+  /** LLM-07: the models an admin can pick, for the Providers page — what each costs and whether its key is set. */
+  models: () =>
+    Promise.all(
+      Object.entries(MODELS).map(async ([id, m]) => ({
+        id,
+        provider: m.provider,
+        label: m.label,
+        apiModel: m.apiModel,
+        prices: PRICES[id] ?? null,
+        credits: CREDIT_PRICES[id] ?? null,
+        keySet: !!(await SecretService.get(({ deepseek: 'DEEPSEEK_API_KEY', gemini: 'GEMINI_API_KEY', anthropic: 'ANTHROPIC_API_KEY' } as const)[m.provider])),
+      })),
+    ),
 
 }
