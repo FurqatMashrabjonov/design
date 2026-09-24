@@ -60,8 +60,8 @@ export const auth = betterAuth({
 /** ADM-01: the first admins come from ADMIN_EMAILS (comma-separated); more can be named in the panel. */
 export function isAdmin(u: { email: string; role?: string | null }): boolean {
   if (u.role === 'admin') return true
-  const list = (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  return list.includes(u.email.toLowerCase())
+  return adminEmails().includes(u.email.toLowerCase())
 }
+export const adminEmails = () => (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
 
 export const signInMethods = { google: Boolean(google), magicLink: true }

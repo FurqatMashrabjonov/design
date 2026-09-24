@@ -751,6 +751,71 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.equal((await TelescopeService.requests({})).total, 57, 'recent rows stay')
 }
 
+// ADM-11: the admin tables page, sort, filter and export in SQL; the query parser whitelists everything
+{
+  const { AdminController } = await import('./AdminController.ts')
+  const { parseCallsQuery, parseUsersQuery } = await import('../../../admin/table-query.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user, llmCalls } = await import('../../../database/schema.ts')
+  // Everything here lives in March 2001, so the date filter keeps other tests' rows out.
+  const t0 = Date.parse('2001-03-01T00:00:00Z') / 1000
+  await db.insert(user).values([
+    { id: 'tbl-a', name: 'Alpha', email: 'alpha_tbl@x.uz', createdAt: new Date('2001-03-02T10:00:00Z'), updatedAt: new Date() },
+    { id: 'tbl-b', name: 'Bravo', email: 'bravo@x.uz', createdAt: new Date('2001-03-20T10:00:00Z'), updatedAt: new Date() },
+  ])
+  await db.insert(llmCalls).values(Array.from({ length: 30 }, (_, i) => ({
+    id: `tc-${String(i).padStart(2, '0')}`, userId: i % 2 ? 'tbl-b' : 'tbl-a', provider: 'deepseek', model: i % 3 === 0 ? 'tbl-m1' : 'tbl-m2',
+    promptTokens: 100 + i, completionTokens: 10, costUsd: i / 100, ms: 1000 + i, ok: i % 5 !== 0,
+    error: i === 0 ? 'boom, "quoted"\nline2' : i === 5 ? 'stopped at 100% done' : i % 5 === 0 ? 'timeout' : null,
+    createdAt: t0 + i * 43200,
+  })))
+  const march = { from: '2001-03-01', to: '2001-03-31' }
+  const calls = (q: Record<string, unknown>) => AdminController.callsPage(parseCallsQuery({ ...march, ...q }))
+  const first = await calls({ size: 10 })
+  assert.equal(first.rows.length, 10, 'a page holds `size` rows')
+  assert.equal(first.total, 30, 'and the total counts every match')
+  assert.equal(first.rows[0]!.id, 'tc-29', 'newest first by default')
+  assert.deepEqual((await calls({ size: 10, page: 2 })).rows.map((r) => r.id).slice(-1), ['tc-00'], 'the last page ends with the oldest')
+  assert.deepEqual((await calls({ sort: 'cost', dir: 'desc', size: 3 })).rows.map((r) => r.costUsd), [0.29, 0.28, 0.27], 'sort by cost')
+  assert.deepEqual((await calls({ sort: 'cost', dir: 'asc', size: 1 })).rows.map((r) => r.id), ['tc-00'], 'and ascending')
+  const errors = await calls({ result: 'error' })
+  assert.equal(errors.total, 6, 'result=error keeps the failed calls')
+  assert.ok(errors.rows.every((r) => !r.ok))
+  assert.equal((await calls({ errors: true })).total, 6, 'the old ?errors=true link still means result=error')
+  assert.equal((await calls({ result: 'ok' })).total, 24)
+  assert.equal((await calls({ model: 'tbl-m1' })).total, 10, 'model filter')
+  assert.ok((await calls({})).models.includes('tbl-m2'), 'the distinct models come with the page')
+  assert.equal((await AdminController.callsPage(parseCallsQuery({ from: '2001-03-01', to: '2001-03-01' }))).total, 2, 'a one-day range covers that whole day')
+  assert.equal((await calls({ minCost: 0.25 })).total, 5, 'min cost')
+  assert.equal((await calls({ q: 'alpha_tbl' })).total, 15, 'q matches the email')
+  assert.equal((await calls({ user: 'BRAVO' })).total, 15, 'user email contains, any case')
+  assert.deepEqual((await calls({ q: '%' })).rows.map((r) => r.id), ['tc-05'], '% in the search is a literal, not a wildcard')
+  const evil = parseCallsQuery({ ...march, sort: 'cost; DROP TABLE llm_calls', dir: 'sideways', page: -1, size: 5000, result: 'maybe', minCost: 'NaN' })
+  assert.deepEqual(evil, march, 'unknown sort, dir, page, size and filters fall back to the defaults')
+  assert.equal((await AdminController.callsPage(evil)).rows[0]!.id, 'tc-29', 'and the default sort applies')
+  const csv = await AdminController.callsCsv(parseCallsQuery({ ...march, result: 'error', model: 'tbl-m1' }))
+  const [head] = csv.split('\r\n')
+  assert.equal(head, 'id,time,user,project,provider,model,action_id,ok,prompt_tokens,cached_tokens,cache_write_tokens,completion_tokens,cost_usd,ms,error', 'CSV header')
+  assert.ok(csv.includes('"boom, ""quoted""\nline2"'), 'a comma, a quote and a newline are quoted and doubled')
+  assert.equal(csv.match(/^tc-/gm)?.length, 2, 'the CSV is the current filter, unpaged')
+  assert.ok(csv.includes('tc-15,2001-03-08T12:00:00.000Z,bravo@x.uz,'), 'one row per call')
+
+  const users = (q: Record<string, unknown>) => AdminController.usersPage(parseUsersQuery({ from: '2001-01-01', to: '2001-12-31', ...q }))
+  const u = await users({ size: 1 })
+  assert.deepEqual([u.rows.length, u.total, u.rows[0]!.id], [1, 2, 'tbl-b'], 'users page: newest joined first, total counts all')
+  assert.deepEqual((await users({ sort: 'joined', dir: 'asc' })).rows.map((r) => r.id), ['tbl-a', 'tbl-b'])
+  assert.deepEqual((await users({ sort: 'spend' })).rows.map((r) => [r.id, Math.round(r.spend * 100)]), [['tbl-b', 225], ['tbl-a', 210]], 'sort by spend')
+  assert.deepEqual((await users({ q: 'ALPHA_' })).rows.map((r) => r.id), ['tbl-a'], 'search by email')
+  assert.equal((await users({ q: 'bra' })).total, 1, 'and by name')
+  assert.equal((await users({ to: '2001-03-10' })).total, 1, 'joined date range')
+  assert.equal((await users({ role: 'admin' })).total, 0)
+  await db.update(user).set({ banned: true }).where((await import('drizzle-orm')).eq(user.id, 'tbl-b'))
+  assert.deepEqual((await users({ status: 'banned' })).rows.map((r) => r.id), ['tbl-b'], 'status filter')
+  assert.deepEqual((await users({ status: 'active' })).rows.map((r) => r.id), ['tbl-a'])
+  assert.deepEqual(parseUsersQuery({ sort: 'password', role: 'root' }), {}, 'users: unknown sort and filter values are dropped')
+  assert.ok((await AdminController.usersCsv(parseUsersQuery({ from: '2001-01-01', to: '2001-12-31' }))).startsWith('id,email,name,role,banned,joined'), 'users CSV header')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

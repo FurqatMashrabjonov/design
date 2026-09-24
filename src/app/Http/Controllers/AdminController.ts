@@ -8,6 +8,7 @@ import { AdminAction } from '@/app/Models/AdminAction'
 import { Credit } from '@/app/Models/Credit'
 import { SecretService, type SecretName } from '@/app/Services/SecretService'
 import { isAdmin } from '@/app/Services/AuthService'
+import { CSV_MAX_ROWS, toCsv, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
@@ -41,7 +42,7 @@ export const AdminController = {
       owner: p.userId ? { id: p.userId, email: (await User.find(p.userId))?.email ?? null } : null,
     }
   },
-  generations: async (f: { onlyErrors?: boolean }) => ({ calls: await AdminStatsService.calls(f), ...(await AdminStatsService.quality()) }),
+  generations: () => AdminStatsService.quality(),
   controls: () => AdminStatsService.controls(),
   search: (q: string) => AdminStatsService.search(q),
 
@@ -96,6 +97,31 @@ export const AdminController = {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')
     await Setting.set(d.key, d.value)
     await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
+  },
+
+  /** ADM-11: the tables, one page at a time, and the same filter as CSV (no paging, capped). */
+  async usersPage(q: UsersQuery) {
+    const r = await AdminStatsService.usersPage(q)
+    return { ...r, rows: r.rows.map((u) => ({ ...u, role: isAdmin(u) ? 'admin' : u.role })) }
+  },
+  callsPage: (q: CallsQuery) => AdminStatsService.callsPage(q),
+  async usersCsv(q: UsersQuery) {
+    const { rows } = await AdminStatsService.usersPage(q, { limit: CSV_MAX_ROWS, offset: 0 })
+    const iso = (s: number | null) => (s ? new Date(s * 1000).toISOString() : '')
+    return toCsv(rows, [
+      ['id', (u) => u.id], ['email', (u) => u.email], ['name', (u) => u.name], ['role', (u) => (isAdmin(u) ? 'admin' : u.role)], ['banned', (u) => Boolean(u.banned)],
+      ['joined', (u) => iso(u.createdAt)], ['last_seen', (u) => iso(u.lastSeen)], ['via', (u) => u.providers ?? 'email'], ['projects', (u) => u.projects],
+      ['screens', (u) => u.screens], ['calls_24h', (u) => u.calls24h], ['calls', (u) => u.calls], ['spend_usd', (u) => u.spend], ['credits', (u) => u.credits],
+    ])
+  },
+  async callsCsv(q: CallsQuery) {
+    const { rows } = await AdminStatsService.callsPage(q, { limit: CSV_MAX_ROWS, offset: 0 })
+    return toCsv(rows, [
+      ['id', (c) => c.id], ['time', (c) => new Date(c.createdAt * 1000).toISOString()], ['user', (c) => c.email], ['project', (c) => c.project],
+      ['provider', (c) => c.provider], ['model', (c) => c.model], ['action_id', (c) => c.actionId], ['ok', (c) => c.ok],
+      ['prompt_tokens', (c) => c.promptTokens], ['cached_tokens', (c) => c.cachedTokens], ['cache_write_tokens', (c) => c.cacheWriteTokens],
+      ['completion_tokens', (c) => c.completionTokens], ['cost_usd', (c) => c.costUsd], ['ms', (c) => c.ms], ['error', (c) => c.error],
+    ])
   },
 
 }
