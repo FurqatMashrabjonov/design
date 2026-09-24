@@ -19,8 +19,8 @@ export const Project = {
   },
 
   /**
-   * The dashboard's cards (DSH-04/11): each project with how many screens it shows, the first one
-   * (its thumbnail) and when it last changed — every change writes a message, so that is the
+   * The dashboard's cards (DSH-04/11): each project with how many screens it shows, the first three
+   * (its collage, UI-12) and when it last changed — every change writes a message, so that is the
    * latest message. Failed and deleted screens are not counted.
    */
   async cardsForUser(userId: string) {
@@ -34,7 +34,7 @@ export const Project = {
         favorite: projects.favorite,
         createdAt: projects.createdAt,
         screenCount: sql<number>`(SELECT count(*) FROM screens s WHERE ${shown})`.mapWith(Number),
-        coverId: sql<string | null>`(SELECT s.id FROM screens s WHERE ${shown} ORDER BY s.created_at, s.id LIMIT 1)`,
+        covers: sql<string[]>`ARRAY(SELECT s.id FROM screens s WHERE ${shown} ORDER BY s.created_at, s.id LIMIT 3)`,
         updatedAt: sql<number>`GREATEST(${projects.createdAt}, coalesce((SELECT max(m.created_at) FROM messages m WHERE m.project_id = ${projects.id}), 0))`.mapWith(Number),
       })
       .from(projects)
