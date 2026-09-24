@@ -5,6 +5,22 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Vizual poydevor: siyoh + lime brend, OKLCH tokenlar, Instrument Sans (UI-10)
+
+Subagent `ui-10-foundations` branch'ida qildi, lead birlashtirdi. `src/styles.css` tokenlari OKLCH'ga
+o'tdi: iliq qum neytrallar, siyoh matn, lime `--primary` (ustida siyoh), lime tint shkalasi, siyoh
+fokus halqasi, 4 radius + `--radius-phone`, `--elevation-1…4`, 12…64 tip shkalasi, spring harakat.
+Geist o'rniga o'zimizda turadigan Instrument Sans + Instrument Serif italic. Bitta `PhoneFrame`
+(landing va dashboard), `PromptBox variant="hero"` landing'dagi HeroPrompt o'rnida. Tugma balandliklari
+32/36/44. Sarlavha klasslari bir o'lcham pastga surildi. UI-11…14 qatorlari MVP'ga o'tkazildi.
+
+Fayllar: `src/styles.css`, `src/components/PhoneFrame.tsx`, `src/PromptBox.tsx`, `src/Landing.tsx`,
+`src/Dashboard.tsx`, `src/ScreenFrame.tsx`, `src/components/ui/*`, canvas/admin/sahifa sarlavhalari,
+`package.json`, `src/app/Services/new-features.check.ts` (lime ustidagi siyoh, matn va halqa kontrasti).
+
+Tekshirildi: `npx tsc --noEmit` va `npm run check` toza. Brauzerda: landing light/dark 1440 va 420,
+dashboard (misollar, so'nggi loyihalar), canvas light/dark (PennyWise), pricing.
+
 ### 2-to'lqin, parallel: Overview v2, Providers, tashqi HTTP va webhooklar, kreditlar/daromad (ADM-12, ADM-14, OBS-12, ADM-15)
 
 To'rtta subagent o'z branch'ida parallel ishladi (`adm-12-overview`, `adm-14-providers`,

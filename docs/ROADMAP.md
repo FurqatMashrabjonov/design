@@ -257,11 +257,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | DSH-06 | Birinchi kirishdagi bo'sh holat | Bosh sahifa / Birinchi tanishuv | MVP | Tayyor | Kichik | DSH-03 | Yangi foydalanuvchi ilhom kartalari va bir qatorli tushuntirishni ko'radi |
 | SHR-02 | Loyiha ko'rinishi uchun ommaviy ulashish havolasi | Ko'rish va ulashish / Ulashish | MVP | Rejada | O'rta | OWN-04 | Ega ulashishni yoqadi; taxmin qilib bo'lmaydigan havola bilan har kim faqat ko'radi |
 
-| UI-10 | Vizual poydevor: bitta brend, OKLCH tokenlar, shrift, soya/radius/harakat shkalasi, ikon qoidasi | Interfeys / Interfeys | Keyin | Rejada | O'rta | UI-01 | Bitta aksent va tokenlar; bitta PhoneFrame va PromptBox; landing dark |
-| UI-11 | Landing v2: ishlaydigan prompt, stil yorliqli galereya, jonli 'butun ilova' xaritasi, raqamli isbot | Marketing / Sayt | Keyin | Rejada | O'rta | UI-10 | Hero prompt, flow xaritasi, galereya, video, raqamlar |
-| UI-12 | Dashboard v2: prompt-first, 3 ekranli kollaj kartalar, birinchi kirish, canvas'ga o'tish animatsiyasi | Interfeys / Bosh sahifa | Keyin | Rejada | O'rta | UI-10 | Kollaj kartalar, bo'sh holatlar, View Transition |
-| UI-13 | Canvas v2: toza TopBar, generatsiya tajribasi, hover/tanlash holatlari | Muharrir / Kanvas | Keyin | Rejada | Katta | UI-10 | TopBar ≤6, shimmer skeleton, qadamlar, dark |
-| UI-14 | Vizual QA: light/dark/420px skrinshot solishtiruvi | Interfeys / Sifat | Keyin | Rejada | Kichik | UI-11..13 | Oldin/keyin skrinshotlari |
+| UI-10 | Vizual poydevor: bitta brend, OKLCH tokenlar, shrift, soya/radius/harakat shkalasi, ikon qoidasi | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-01 | Bitta aksent va tokenlar; bitta PhoneFrame va PromptBox; landing dark |
+| UI-11 | Landing v2: ishlaydigan prompt, stil yorliqli galereya, jonli 'butun ilova' xaritasi, raqamli isbot | Marketing / Sayt | MVP | Jarayonda | O'rta | UI-10 | Hero prompt, flow xaritasi, galereya, video, raqamlar |
+| UI-12 | Dashboard v2: prompt-first, 3 ekranli kollaj kartalar, birinchi kirish, canvas'ga o'tish animatsiyasi | Interfeys / Bosh sahifa | MVP | Jarayonda | O'rta | UI-10 | Kollaj kartalar, bo'sh holatlar, View Transition |
+| UI-13 | Canvas v2: toza TopBar, generatsiya tajribasi, hover/tanlash holatlari | Muharrir / Kanvas | MVP | Jarayonda | Katta | UI-10 | TopBar ≤6, shimmer skeleton, qadamlar, dark |
+| UI-14 | Vizual QA: light/dark/420px skrinshot solishtiruvi | Interfeys / Sifat | MVP | Rejada | Kichik | UI-11..13 | Oldin/keyin skrinshotlari |
 
 ## B4 · Pul ishlash
 
