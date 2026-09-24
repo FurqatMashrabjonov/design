@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, PenTool } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,8 +17,14 @@ import { cn } from '@/lib/utils'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 
-/** The only place a frame can be dragged from (Canvas looks for data-canvas-handle). */
-export function FrameHandle() {
+/** The only place a frame can be dragged from (Canvas looks for data-canvas-handle): the frame's name, or a grip. */
+export function FrameHandle(props: { children?: ReactNode }) {
+  if (props.children)
+    return (
+      <span data-canvas-handle className="flex min-w-0 cursor-grab items-center rounded px-0.5 active:cursor-grabbing" title="Drag to move">
+        {props.children}
+      </span>
+    )
   return (
     <span data-canvas-handle className="-ml-1 flex size-6 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-foreground active:cursor-grabbing" title="Drag to move" aria-label="Drag to move">
       <GripVertical className="size-4" />
@@ -94,7 +100,7 @@ export function FrameToolbar(props: FrameActions & {
 
   if (props.editing) {
     return (
-      <div className="mb-2 flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
         <Input
           autoFocus
           value={draft}
@@ -118,13 +124,15 @@ export function FrameToolbar(props: FrameActions & {
 
   const v = props.version
   return (
-    <div className="mb-2 flex h-7 items-center gap-1" onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}>
-      <FrameHandle />
-      <span className="truncate text-sm font-medium text-muted-foreground" title={props.hint}>
-        {props.name}
-      </span>
+    <div className="flex h-7 items-center gap-1 overflow-hidden" onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}>
+      {/* UI-13: the name is the handle, as in Figma, so it can have the whole row when the frame is small on screen. */}
+      <FrameHandle>
+        <span className={cn('truncate text-md font-medium', props.selected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')} title={props.hint}>
+          {props.name}
+        </span>
+      </FrameHandle>
       {v.total > 1 && (
-        <span className="ml-1 flex shrink-0 items-center text-xs tabular-nums text-muted-foreground" title={`Version ${v.position} of ${v.total}`}>
+        <span className="ml-1 hidden shrink-0 items-center text-xs tabular-nums text-muted-foreground @min-[200px]:flex" title={`Version ${v.position} of ${v.total}`}>
           <Button size="icon" variant="ghost" className="size-6" title="Previous version" aria-label="Previous version" disabled={busy === 'version' || v.position <= 1} onClick={() => guard('version', () => props.onStepVersion(-1))}>
             <ChevronLeft className="size-4" />
           </Button>
@@ -134,7 +142,7 @@ export function FrameToolbar(props: FrameActions & {
           </Button>
         </span>
       )}
-      <div className={cn('ml-auto flex items-center gap-0.5 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100', props.rating || props.selected ? 'opacity-100' : 'opacity-0')}>
+      <div className={cn('ml-auto hidden items-center gap-0.5 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100 @min-[220px]:flex', props.rating || props.selected ? 'opacity-100' : 'opacity-0')}>
         {(['up', 'down'] as const).map((v) => {
           const Icon = v === 'up' ? ThumbsUp : ThumbsDown
           const on = props.rating === v
