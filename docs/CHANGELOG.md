@@ -5,6 +5,63 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Lumen — iOS 26 tizimi, va chrome nega tizimga bo'ysunmagani (GQ-29, GQ-31)
+
+Foydalanuvchi so'radi: Nova'ga o'xshagan, o'z qoidalariga ega, 2026 uchun premium tizim yana bormi.
+Katalogni o'lchadim: **32 tizimdan 31 tasi "Bundled OpenDesign package"** — veb-brend skinlari
+(Nike, Airbnb, Stripe…), qoidalari sayt uchun yozilgan. Kategoriyasi `Mobile` bo'lgan yagona tizim —
+Nova. Ya'ni bizga yana brend emas, yana **mobil yo'nalish** kerak edi.
+
+Research (manbalar `docs/`da emas, chat tarixida): 2026 uchun uchta haqiqiy yo'nalish — Apple'ning
+**Liquid Glass** (2026-sentyabrdan barcha iOS ilovalar uchun majburiy), **quiet luxury / calm tonal**,
+va **engineered dark**. Birinchisi eng asoslisi, shuning uchun u yozildi.
+
+**Lumen** (`design-systems/lumen/`): noshaffof tinch kontent qatlami ostida suzuvchi shisha boshqaruv
+qatlami. Shisha shisha ustiga qo'yilmaydi. Burchaklar konsentrik. Nova'dan ataylab farq qiladi —
+sovuq yorug' neytrallar, **bitta** shrift (qahramon = vazn + tracking, ikkinchi yuz emas), blur 28px
++ saturate 180%. Siyoh shkalasi qo'lda 9% to'yinganlikda yozildi, hosiladan olinmadi: hosila
+yorug'lik oshgani sari to'yinganlikni saqlab qoladi va `--muted` ni 24% ga chiqaradi.
+
+**Birinchi sinov muvaffaqiyatsiz chiqdi va sababi qimmatli edi.** 20 ekrandan 20 tasida
+`backdrop-filter` bor edi, lekin foydalanuvchi "nega Liquid Glass ishlatmading" deb so'radi — va haq
+edi. Ikki sabab:
+
+1. **Panelni model emas, `ShellService` quradi, va u tizimni o'qimaydi.** Lumen `BY_SYSTEM` jadvalida
+   yo'q edi, shuning uchun `fintech → utility → bar` tushdi. `bar` esa noshaffof, to'liq kenglikda,
+   chetga yopishgan — ya'ni aynan Lumen'ning o'z uslub kartasi taqiqlagan narsa. **Tizimning eng
+   tanilgan elementi hech qachon chizilmadi.**
+2. **Oq ustida blur — oq.** `backdrop-filter` faqat ostida rangli narsa o'tsa ko'rinadi.
+
+Tuzatish ikkalasi ham kodda, chunki chrome kodniki:
+- `PINNED_BY_SYSTEM` — o'zligi chrome'da bo'lgan tizim shaklni qotiradi. Lumen doim `island`.
+  Ruletka tizimni tashlab yuborish bilan teng edi.
+- `--od-nav-tint` — panel yuzadan qanchasini saqlashi endi tizim tokeni (avval hamma uchun qat'iy
+  78%, ya'ni deyarli noshaffof). Lumen 56% qo'yadi. Hech narsa ko'rinmaydigan shisha — yumaloq
+  to'rtburchak.
+
+| | oldin | keyin |
+|---|---|---|
+| audit cleanShare | 0.45 | **0.65** |
+| overflow | 13 | **2** |
+| panel shakli | `bar` (noshaffof) | `island` (shisha, 20/20) |
+
+**GQ-31 — qahramon raqam ekranga sig'sin.** O'sha 13 ta overflow'ning asosiy sababi Lumen emas,
+`blueprints/dashboard.json` dagi `hero.size: "80–112px"` edi. Brauzerda o'lchadim (390px ekran,
+20px gutter): `$213` 100px'da 222px joy oladi, `$298.89` — 393px, `$4,218.40` — 469px. Ya'ni uzun
+figura eski o'lchamda **sig'ishi mumkin emas**. Serif ikki barobar tor (284px), Nova shuning uchun
+qutulib qolgan — omad edi, qoida emas.
+
+Endi o'lcham belgilar soniga bog'langan: 5 tagacha 88–112px, 6–7 ta 72–88px, 8+ 56–72px. Bu
+`dashboard`, `stats`, `result`, `detail` va `paywall` blueprintlariga tushdi va hamma tizimga foyda.
+
+Tegilgan fayllar: `design-systems/lumen/*` (yangi), `src/app/Services/ShellService.ts`,
+5 ta `blueprints/*.json`, `src/app/Services/new-features.check.ts`,
+`src/app/Services/services.check.ts`, `eval/run.ts` (`--briefs` bayrog'i),
+`eval/briefs-nova3.json`, `eval/briefs-lumen3.json`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; uchta brief Nova va Lumen'da yugurtirildi
+(har biri $0.078), ekranlar 390px'da chizilib ko'z bilan solishtirildi.
+
+
 ### Palitra ottenkasi kodda tanlanadi — GQ-26
 
 To'rt generatsiya ketma-ket yashil qaytargandi: moss, moss, `#2e7d32`, `#7a9e5f`. Sabab modelda

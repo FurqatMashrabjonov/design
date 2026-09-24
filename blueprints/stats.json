@@ -21,7 +21,9 @@
   },
   "hero": {
     "what": "the headline number for the selected period, with its change vs the previous period beside it",
-    "size": "a display figure of 64–96px above the chart; the chart is second, never bigger than the number"
+    "size": "a display figure above the chart; the chart is second, never bigger than the number. Size it by how long the figure is, measured for a 390px screen: up to 5 characters 88–112px, 6–7 characters 72–88px, 8 or more 56–72px. It fits on one line inside the gutters — never let it run past the screen edge.",
+    "sticker": "bolt",
+    "stickerWhy": "the effort the number represents"
   },
   "avoid": [
     "Several charts of the same data",

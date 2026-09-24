@@ -500,6 +500,21 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   assert.equal(BlueprintService.brief('nope'), '')
 }
 
+// GQ-31: a hero figure that cannot fit the screen. Measured in the grotesk the systems ship, on a
+// 390px screen with 20px gutters: "$213" is 222px wide at 100px, "$298.89" is 393px and "$4,218.40"
+// is 469px — so the old flat "80–112px" put a long figure off the screen, which is what thirteen
+// overflow findings in one run turned out to be. The band is named by character count because the
+// planner's own data is what tells the model how long the figure will be.
+{
+  const { BlueprintService } = await import('./BlueprintService.ts')
+  for (const id of ['dashboard', 'stats', 'result', 'detail']) {
+    const size = BlueprintService.find(id)!.hero!.size
+    assert.ok(/characters/.test(size), `${id}: the hero size depends on how long the figure is`)
+    assert.ok(/390px/.test(size), `${id}: it says which screen width that is measured for`)
+    assert.ok(!/figure of \d+–\d+px/.test(size), `${id}: no flat range that ignores the content`)
+  }
+}
+
 // UX-02: app-type patterns, matched in code, only one reaches the planner
 {
   const { AppPatternService } = await import('./AppPatternService.ts')

@@ -22,7 +22,9 @@
   },
   "hero": {
     "what": "the price of the recommended plan",
-    "size": "a display figure of 56–72px on the highlighted plan; the other plans are plain"
+    "size": "a display figure of 56–72px on the highlighted plan; the other plans are plain. If the price is long, take the lower end.",
+    "sticker": "star",
+    "stickerWhy": "the plan being recommended"
   },
   "avoid": [
     "Hidden price or period",

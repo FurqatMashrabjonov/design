@@ -21,7 +21,9 @@
   },
   "hero": {
     "what": "the outcome — the amount, the score, or the confirmation icon",
-    "size": "a display figure or icon of 72–96px centred in the top third, with one line of copy under it"
+    "size": "a display figure or icon centred in the top third, with one line of copy under it. For a figure: Size it by how long the figure is, measured for a 390px screen: up to 5 characters 88–112px, 6–7 characters 72–88px, 8 or more 56–72px. It fits on one line inside the gutters — never let it run past the screen edge.",
+    "sticker": "trophy",
+    "stickerWhy": "the win being confirmed"
   },
   "avoid": [
     "Tab bar on a result screen of a flow",
@@ -46,5 +48,5 @@
       "layout": "Illustration: a large illustration filling the top half, headline and one line, then two summary facts side by side."
     }
   ],
-  "kit": "<div class=\"od-page\" style=\"align-items:center;text-align:center\"><div class=\"od-empty__icon\"><i data-lucide=\"check\"></i></div><h1 class=\"od-hero__title\">[outcome]</h1><p class=\"od-hero__sub\">[what happens next]</p><div class=\"od-card\" style=\"width:100%;text-align:left\"><div class=\"od-kv\"><span>[fact]</span><span>[value]</span></div></div></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[next step]</button></div>"
+  "kit": "<div class=\"od-page\" style=\"align-items:center;text-align:center\"><div data-od-sticker=\"trophy\" style=\"width:88px;margin:0 auto\"></div><h1 class=\"od-hero__title\">[outcome]</h1><p class=\"od-hero__sub\">[what happens next]</p><div class=\"od-card\" style=\"width:100%;text-align:left\"><div class=\"od-kv\"><span>[fact]</span><span>[value]</span></div></div></div><div class=\"od-bottom-bar\"><button class=\"od-btn\">[next step]</button></div>"
 }

@@ -1,4 +1,4 @@
-// npm run eval -- [--only id,id] [--limit n] [--concurrency n] [--label name] [--no-shot] [--no-add] [--from run]
+// npm run eval -- [--only id,id] [--limit n] [--concurrency n] [--label name] [--no-shot] [--no-add] [--from run] [--briefs=file]
 // --from <run> skips generation and rebuilds metrics and sheets for an existing run (after a metrics change).
 // Generates every brief in eval/briefs.json through the real PlanController, in a throwaway database,
 // and writes eval/out/<label>/{index.html, compare.html, ab.html, results.json, metrics.json, screens/, sheet-N.png}.
@@ -29,6 +29,8 @@ const { values: args } = parseArgs({
   options: {
     only: { type: 'string' },
     limit: { type: 'string' },
+    // A one-off comparison set, so it does not change the eval's own baseline of 36 briefs.
+    briefs: { type: 'string' },
     // Briefs in flight. One brief already runs three screens at once, and DeepSeek caps a low-balance
     // account at five concurrent requests — a higher value here turned into 429s on the baseline run.
     concurrency: { type: 'string', default: '1' },
@@ -65,7 +67,10 @@ onLlmUsage((u) => {
 })
 const screenInputs: ScreenInput[] = []
 
-let briefs: Brief[] = JSON.parse(readFileSync('eval/briefs.json', 'utf8'))
+// --briefs points at another file, so a one-off comparison set does not change the eval's own
+// baseline (the 36 briefs every run is measured against).
+const briefsFile = args.briefs ?? 'eval/briefs.json'
+let briefs: Brief[] = JSON.parse(readFileSync(briefsFile, 'utf8'))
 if (args.only) briefs = briefs.filter((b) => args.only!.split(',').includes(b.id))
 if (args.limit) briefs = briefs.slice(0, Number(args.limit))
 if (briefs.length === 0) throw new Error('No briefs selected')
@@ -170,7 +175,7 @@ const prevLabel = readdirSync(OUT_ROOT)
   .pop()
 
 const errorCount = results.reduce((n, r) => n + r.errors.length, 0)
-const expectOf = Object.fromEntries((JSON.parse(readFileSync('eval/briefs.json', 'utf8')) as Brief[]).map((b) => [b.id, b.expect ?? []]))
+const expectOf = Object.fromEntries((JSON.parse(readFileSync(briefsFile, 'utf8')) as Brief[]).map((b) => [b.id, b.expect ?? []]))
 const planInputs = (rs: BriefResult[]) => rs.flatMap((r) => (r.plan ? [{ briefId: r.id, expect: expectOf[r.id] ?? [], ...r.plan }] : []))
 const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCount, usage, planInputs(results))
 

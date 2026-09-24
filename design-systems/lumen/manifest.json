@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "lumen",
+  "name": "Lumen",
+  "category": "Mobile",
+  "description": "iOS 26 for phone apps: an opaque content layer under a glass control layer, concentric corners, one typeface, weight and tracking instead of a display face.",
+  "source": { "type": "bundled", "origin": "Authored in-house, 2026-09-24 (GQ-29), after Apple's Liquid Glass" },
+  "files": { "design": "DESIGN.md", "tokens": "tokens.css" }
+}

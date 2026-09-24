@@ -21,7 +21,9 @@
   },
   "hero": {
     "what": "the single most important number for today (a streak, a balance, a completion count) with its unit or label under it",
-    "size": "a display figure of 80–112px, sitting alone on its own line at the top of the content; the label under it is 13–15px"
+    "size": "a display figure sitting alone on its own line at the top of the content; the label under it is 13–15px. Size it by how long the figure is, measured for a 390px screen: up to 5 characters 88–112px, 6–7 characters 72–88px, 8 or more 56–72px. It fits on one line inside the gutters — never let it run past the screen edge.",
+    "sticker": "fire",
+    "stickerWhy": "the streak or the day's momentum"
   },
   "avoid": [
     "Four equal stat tiles with no hierarchy",

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "lumen-data",
+    "appType": "fintech",
+    "designSystem": "lumen",
+    "brief": "Expense tracker for freelancers: this month's spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.",
+    "expect": [
+      "dashboard",
+      "list",
+      "detail",
+      "form",
+      "stats"
+    ]
+  },
+  {
+    "id": "lumen-photo",
+    "appType": "travel",
+    "designSystem": "lumen",
+    "brief": "Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.",
+    "expect": [
+      "feed",
+      "detail",
+      "form",
+      "result",
+      "list"
+    ]
+  },
+  {
+    "id": "lumen-editorial",
+    "appType": "media",
+    "designSystem": "lumen",
+    "brief": "Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.",
+    "expect": [
+      "feed",
+      "detail",
+      "list",
+      "profile",
+      "settings"
+    ]
+  }
+]

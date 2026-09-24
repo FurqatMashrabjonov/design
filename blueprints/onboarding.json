@@ -21,7 +21,9 @@
   },
   "hero": {
     "what": "one illustration or one short headline that names the promise",
-    "size": "an illustration of 200–260px height, or a headline of 34–40px over two lines; the body copy is one short sentence"
+    "size": "an illustration of 200–260px height, or a headline of 34–40px over two lines; the body copy is one short sentence",
+    "sticker": "sparkle",
+    "stickerWhy": "the promise being made"
   },
   "avoid": [
     "Tab bar during onboarding",

@@ -1,0 +1,114 @@
+/* Lumen — the iOS 26 system (GQ-29).
+   Apple's Liquid Glass, as far as a web page can hold it. The idea is not "frosted panels
+   everywhere": glass belongs to the control layer — the tab bar, the sticky header, sheets, a
+   floating button — while the content layer underneath stays opaque and calm, so the material
+   creates hierarchy instead of noise. Glass is never stacked on glass. Corners are concentric:
+   a control inside a container takes the container's radius minus its padding.
+   Where Nova is warm stone, two faces and a serif hero, this is cool light, one face, and the
+   hero is weight and tracking rather than a different typeface — which is how the platform
+   itself does it. The ink ramp is authored at 9% saturation, not derived, because the derivation
+   raises saturation as lightness rises (GQ-30). */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  /* The canvas is tinted cool and bright: glass needs something behind it to refract. */
+  --bg: #eff2f7;
+  --surface: #ffffff;
+  --surface-warm: #e7ebf2;
+  --fg: #151619;
+  --fg-2: #3f434b;
+  --muted: #5a606c;
+  --muted-2: #646a78;
+  --meta: #646a78;
+  --border: #c5cad3;
+  --border-soft: #e9ecf1;
+  --accent: #0a6cf0;
+  --accent-on: #ffffff;
+  --accent-hover: #095fd3;
+  --accent-active: #0854ba;
+  --success: #16a34a;
+  --warn: #b45309;
+  --warning: #b45309;
+  --danger: #dc2626;
+
+  /* One face, like the platform. The hero is weight and tracking, never a second typeface. */
+  --font-display: Inter, -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-body: Inter, -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 17px;
+  --text-lg: 20px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+  --text-3xl: 56px;
+  --text-4xl: 76px;
+  --leading-body: 1.47;
+  --leading-tight: 1.02;
+  --tracking-display: -0.035em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --section-y-desktop: 96px;
+  --section-y-tablet: 64px;
+  --section-y-phone: 36px;
+
+  /* Concentric: a control inside a card takes the card's radius minus its padding, which is why
+     the steps are 10px apart rather than doubling. */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --radius-pill: 9999px;
+
+  /* The content layer sits on a hairline and the faintest lift; the glass above it carries the
+     depth. A card that also blurs would be glass on glass. */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border-soft);
+  --elev-raised: 0 1px 1px rgba(15, 20, 35, 0.04), 0 8px 24px rgba(15, 20, 35, 0.06);
+  --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 70%);
+  --motion-fast: 150ms;
+  --motion-base: 260ms;
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Glass moves like a liquid: it settles rather than snaps. */
+  --ease-spring: cubic-bezier(0.32, 1.28, 0.55, 1);
+  --motion-press: 120ms;
+  --container-max: 1200px;
+  --container-gutter-desktop: 32px;
+  --container-gutter-tablet: 24px;
+  --container-gutter-phone: 20px;
+
+  --icon-stroke: 2;
+
+  --od-display-weight: 700;
+  --od-heading-weight: 600;
+  --od-heading-font: var(--font-body);
+
+  /* kit/od-kit.css reads these. The blur is the system's signature and is deliberately heavy:
+     saturation is raised with it, which is what makes colour bleed through the way glass does. */
+  --od-card-bg: var(--surface);
+  --od-card-border: 1px solid var(--border-soft);
+  --od-card-shadow: var(--elev-raised);
+  --od-blur: blur(28px) saturate(180%);
+  /* The injected bar reads this one on its own; the system's signature is a heavier blur than the
+     18px default, and less of the surface behind it so what passes under actually shows. */
+  --od-blur-nav: 30px;
+  --od-nav-tint: 56%;
+  --od-control-border: 1px solid var(--border);
+  --od-btn-weight: 600;
+  --od-btn-shadow: none;
+  --od-row-min: 50px;
+  --od-icon-radius: 9999px;
+  --od-icon-bg: color-mix(in oklab, var(--accent), var(--surface) 90%);
+  --od-icon-fg: var(--od-accent-text);
+  --od-accent-text: #0c59c1;
+  --od-success-text: #166d37;
+  --od-warn-text: #94470c;
+  --od-danger-text: #b02223;
+}

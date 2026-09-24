@@ -1,0 +1,23 @@
+[
+  {
+    "id": "nova-data",
+    "appType": "fintech",
+    "designSystem": "nova",
+    "brief": "Expense tracker for freelancers: this month's spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.",
+    "expect": ["dashboard", "list", "detail", "form", "stats"]
+  },
+  {
+    "id": "nova-photo",
+    "appType": "travel",
+    "designSystem": "nova",
+    "brief": "Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.",
+    "expect": ["feed", "detail", "form", "result", "list"]
+  },
+  {
+    "id": "nova-editorial",
+    "appType": "media",
+    "designSystem": "nova",
+    "brief": "Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.",
+    "expect": ["feed", "detail", "list", "profile", "settings"]
+  }
+]

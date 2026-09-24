@@ -75,6 +75,12 @@ const BY_SYSTEM: Record<string, NavCharacter> = {
   midnight: 'bold', neon: 'bold', brutalist: 'bold', neobrutalism: 'bold', glassmorphism: 'bold', dashboard: 'bold',
 }
 
+// GQ-29: a system whose identity IS its chrome pins the shape outright rather than drawing from a
+// character set. Lumen is iOS 26: its bar floats, is inset and is glass, and a roulette that can
+// land on the flat edge-to-edge `bar` throws the system away — which is exactly what happened on
+// its first run, where not one screen showed the material the system exists for.
+const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island' }
+
 // When the system says nothing, what the app is for does.
 const BY_APP_TYPE: Record<string, NavCharacter> = {
   productivity: 'utility', fintech: 'utility', social: 'consumer', media: 'consumer',
@@ -96,6 +102,8 @@ function hash(s: string): number {
  * character still differ.
  */
 export function navStyle(seed: string, opts: { tabCount?: number; appType?: string; designSystem?: string } = {}): NavStyle {
+  const pinned = opts.designSystem && PINNED_BY_SYSTEM[opts.designSystem]
+  if (pinned) return pinned
   const character = (opts.designSystem && BY_SYSTEM[opts.designSystem]) ?? (opts.appType && BY_APP_TYPE[opts.appType]) ?? null
   const set: readonly NavStyle[] = character ? NAV_SETS[character] : (['island', 'bar', 'pill', 'contrast'] as const)
   // Labels are what make a bar readable; with more than five tabs the narrow pill cannot fit them,
@@ -171,7 +179,10 @@ export function buildBottomNav(nav: AppNavigation, activeTabId?: string, style: 
   // GQ-18, from the iOS 26 bar: the floating shapes sit 21px in from the edges, and the glass is a
   // blur plus a one-pixel light along the top edge — the highlight is what reads as a material
   // rather than a tinted rectangle. Glass stays on the navigation layer only; content never gets it.
-  const glass = `background:color-mix(in oklab, var(--surface) 78%, transparent);backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);-webkit-backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),${lift}`
+  // How much of the surface the panel keeps is the system's call: at 78% the panel is nearly
+  // opaque, which is right for a system that only wants a floating shape, and wrong for one whose
+  // identity is the material — glass that nothing shows through is just a rounded rectangle.
+  const glass = `background:color-mix(in oklab, var(--surface) var(--od-nav-tint, 78%), transparent);backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);-webkit-backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),${lift}`
   const box: Record<NavStyle, string> = {
     island: `left:21px;right:21px;bottom:21px;height:${NAV_HEIGHT}px;border-radius:28px;${glass}`,
     pill: `left:50%;transform:translateX(-50%);bottom:21px;height:58px;padding-left:6px;padding-right:6px;border-radius:9999px;${glass}`,

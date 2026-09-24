@@ -914,6 +914,28 @@ console.log('Testing Phone Type Scale (GQ-23)...')
   assert.ok(!DesignSystemService.readTokensRoot('bento').includes('--od-display-weight'), 'a catalogue system without the token keeps the 700 default')
 }
 
+console.log('Testing Pinned Chrome (GQ-29)...')
+{
+  const { navStyle, buildBottomNav } = await import('./ShellService.ts')
+  const { readFileSync } = await import('node:fs')
+  // A system whose identity is its chrome pins the shape: Lumen is iOS 26, and its first run put a
+  // flat edge-to-edge bar on every screen because the roulette was free to choose one — so not a
+  // single screen showed the material the system exists for.
+  const nav = { tabs: [{ id: 'a', label: 'Home', icon: 'home' }, { id: 'b', label: 'More', icon: 'list' }] }
+  for (const seed of ['a', 'b', 'c', 'd', 'e']) {
+    for (const appType of ['fintech', 'media', undefined]) {
+      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'lumen' }), 'island', 'lumen always floats')
+    }
+  }
+  // Nova still rolls, so pinning one system did not pin them all.
+  assert.ok(new Set(['a', 'b', 'c', 'd', 'e', 'f'].map((s) => navStyle(s, { tabCount: 3, designSystem: 'nova' }))).size > 1, 'an unpinned system still varies')
+  const bar = buildBottomNav(nav as never, 'a', 'island')
+  assert.ok(bar.includes('var(--od-nav-tint, 78%)'), 'how much surface the panel keeps is a token the system can set')
+  assert.ok(bar.includes('var(--od-blur-nav, 18px)'), 'so is the blur')
+  const tokens = readFileSync('design-systems/lumen/tokens.css', 'utf8')
+  for (const t of ['--od-nav-tint', '--od-blur-nav']) assert.ok(tokens.includes(t), `lumen sets ${t}`)
+}
+
 console.log('Testing Stickers (GQ-21)...')
 {
   const { renderStickers, stickerSvg, STICKER_NAMES } = await import('../../lib/stickers.ts')
@@ -936,6 +958,28 @@ console.log('Testing Stickers (GQ-21)...')
   assert.ok(fix(page).includes('data-od-sticker-rendered'), 'autofix draws stickers, next to charts and maps')
   assert.ok(!lint(fix(page)).some((f) => f.rule === 'hand-drawn-icon'), 'a drawn sticker is not reported as a hand-drawn icon')
   assert.ok(readFileSync('src/app/Services/PromptComposer.ts', 'utf8').includes('data-od-sticker="fire"'), 'the model is told the slot exists')
+
+  // GQ-27: a paragraph in the system prompt is not enough. One run put the same flame on two
+  // screens and nothing on the stats screen, so the name now travels in the screen's own spec —
+  // the same lesson as the hue: a sampler acts on what its specific brief says, not on a general
+  // permission. Only heroes that are a figure or a moment get one; a detail, a player and a
+  // profile lead with a photo or an avatar, where a glyph would compete with the subject.
+  const { BlueprintService } = await import('./BlueprintService.ts')
+  const withSticker = ['dashboard', 'stats', 'result', 'onboarding', 'paywall']
+  for (const id of withSticker) {
+    const bp = BlueprintService.find(id)!
+    assert.ok(bp.hero?.sticker && STICKER_NAMES.includes(bp.hero.sticker), `${id}: its hero names a real sticker`)
+    const brief = BlueprintService.brief(id)
+    assert.ok(brief.includes(`data-od-sticker="${bp.hero!.sticker}"`), `${id}: the name reaches the screen's spec`)
+    assert.ok(brief.indexOf('HERO MOMENT') < brief.indexOf('data-od-sticker'), `${id}: the sticker sits with the hero, not loose`)
+  }
+  for (const id of ['detail', 'player', 'profile']) assert.ok(!BlueprintService.find(id)?.hero?.sticker, `${id}: a photo-led hero takes no sticker`)
+  assert.ok(!BlueprintService.brief('list').includes('data-od-sticker'), 'an archetype with no hero offers no sticker')
+  // Every suggestion is distinct, so two screens of one app never ask for the same glyph.
+  const names = withSticker.map((id) => BlueprintService.find(id)!.hero!.sticker)
+  assert.equal(new Set(names).size, names.length, 'no two archetypes suggest the same sticker')
+  assert.ok(BlueprintService.find('result')!.kit!.includes('data-od-sticker="trophy"'), "result's kit sketch draws the same sticker its hero names")
+  assert.ok(readFileSync('src/app/Services/PromptComposer.ts', 'utf8').includes('when the screen\'s brief names one'), 'the general paragraph defers to the spec')
 }
 
 console.log('Testing Large-Title Header (GQ-19)...')

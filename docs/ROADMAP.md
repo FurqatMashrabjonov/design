@@ -91,6 +91,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10 | hueDirection kodda tanlaydi; 5 loyihada ≥3 oila 82%; haqiqiy yugurish teal berdi |
 | GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | MVP | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
 | GQ-28 | Jamlanma raqamlar ekranlar orasida mos bo'lsin (streak, bugungi soni, jami) — APP DATA'ga | Generatsiya / Izchillik | Keyin | Rejada | Kichik | GQ-16 | Hakam bir yugurishda raqam ziddiyati topmaydi |
+| GQ-29 | Lumen — iOS 26 Liquid Glass tizimi; tizim o'z chrome'ini qotira olsin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-13, NAV-01 | audit 0.45 → 0.65, overflow 13 → 2, panel 20/20 island |
+| GQ-31 | Qahramon raqam ekranga sig'sin — o'lcham belgilar soniga bog'lansin | Generatsiya / Sifat | MVP | Tayyor | Kichik | GQ-29 | brauzerda o'lchandi: $4,218.40 100px da 469px, 350px ga sig'maydi |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
