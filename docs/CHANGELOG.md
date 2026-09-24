@@ -5,6 +5,25 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Har amalning kredit narxi (BIL-05)
+
+`CreditService` — narxlar bitta jadvalda, model bo'yicha (DeepSeek Flash): plan 1, chizish 14
+(ilova = 15), ekran (yangi, tahrir, qayta chizish) 2, element tahriri 1. `kindOf` so'rovning
+yo'li va tanasidan amal turini aniqlaydi.
+
+Test narxni **haqiqiy xarajatning eng yomon holatiga** bog'laydi. Eng yomon holat: DeepSeek band
+soati va jurnaldagi 90-persentil (174 chaqiruv, 2026-09-24):
+- plan $0.0045, ekran $0.0114, ilovani chizish 6.5 × $0.0114.
+- Eng arzon kreditda ($0.008, Pro) har narx bu xarajatning **kamida 1.25 barobari**. Aks holda
+  kreditini to'liq ishlatgan og'ir foydalanuvchi to'laganidan ko'proqqa tushadi.
+- Odatiy (o'rtacha, arzon soat) holatda zaxira 3–5 barobar.
+- Element tahriri jurnalda hali yo'q, uning xarajati taxmin ($0.006). LLM-06 uni o'lchaydi.
+
+Fayllar: `app/Services/CreditService.ts`, `LlmService.ts` (`BILLED_MODEL`),
+`new-features.check.ts`.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza.
+
 ### Kredit daftari (BIL-04)
 
 Kreditlar foydalanuvchida saqlanadigan son emas, **daftar**. Har bir harakat — berish, band

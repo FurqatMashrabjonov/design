@@ -81,6 +81,9 @@ function reportUsage(u: Record<string, number> | undefined, also?: (u: LlmUsage)
 // thinks by default; the legacy `deepseek-chat` alias is this same model with thinking off, but an
 // alias can be re-pointed, so both the id and the mode are pinned here.
 const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-flash'
+/** BIL-05: the model a credit is priced for. The local CLI (testing only) is billed as this too, so
+ * the credit flow can be tried without spending. LLM-07 makes it a setting. */
+export const BILLED_MODEL = MODEL
 // Fail at boot, not after a paid call: a model we cannot price cannot be billed (LLM-05).
 if (!PRICES[MODEL]) throw new Error(`DEEPSEEK_MODEL=${MODEL} has no row in PRICES`)
 
