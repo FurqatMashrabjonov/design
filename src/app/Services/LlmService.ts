@@ -40,7 +40,7 @@ export function costOf(u: LlmUsage, model: string, at: Date = new Date()): numbe
 
 /** One finished model call: how long, whether it worked, what it used. For the spend log (OBS-01). */
 export type LlmCall = { provider: string; model: string; ms: number; ok: boolean; error?: string; usage: LlmUsage }
-let callListener: ((c: LlmCall) => void) | undefined
+let callListener: ((c: LlmCall) => void | Promise<void>) | undefined
 export function onLlmCall(fn: typeof callListener) {
   callListener = fn
 }
@@ -61,7 +61,8 @@ async function* tracked(run: (tally: (u: LlmUsage) => void) => AsyncGenerator<st
     error = e instanceof Error ? e.message : String(e)
     throw e
   } finally {
-    callListener?.({ provider: PROVIDER, model: CALL_MODEL, ms: Date.now() - started, ok: !error, error: error?.slice(0, 300), usage })
+    // Awaited, so a call's row is written before the caller moves on (the credit settle reads it).
+    await callListener?.({ provider: PROVIDER, model: CALL_MODEL, ms: Date.now() - started, ok: !error, error: error?.slice(0, 300), usage })
   }
 }
 

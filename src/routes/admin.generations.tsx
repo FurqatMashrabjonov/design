@@ -36,7 +36,7 @@ function GenerationsPage() {
           { key: 'who', header: 'User', sort: (c) => c.email ?? '', cell: (c) => (c.userId ? <Link to="/admin/users/$userId" params={{ userId: c.userId }} className="hover:underline">{c.email}</Link> : '—') },
           { key: 'project', header: 'Project', sort: (c) => c.project ?? '', cell: (c) => (c.projectId ? <Link to="/admin/projects/$projectId" params={{ projectId: c.projectId }} className="text-muted-foreground hover:underline">{c.project}</Link> : '—') },
           { key: 'model', header: 'Model', sort: (c) => c.model, cell: (c) => <span className="text-xs text-muted-foreground">{c.model || c.provider}</span> },
-          { key: 'result', header: 'Result', sort: (c) => c.ok, cell: (c) => (c.ok ? <Badge tone="good">ok</Badge> : <span title={c.error ?? ''}><Badge tone="bad">{(c.error ?? 'error').slice(0, 40)}</Badge></span>) },
+          { key: 'result', header: 'Result', sort: (c) => Number(c.ok), cell: (c) => (c.ok ? <Badge tone="good">ok</Badge> : <span title={c.error ?? ''}><Badge tone="bad">{(c.error ?? 'error').slice(0, 40)}</Badge></span>) },
           { key: 'tokens', header: 'Tokens in/out', sort: (c) => c.promptTokens + c.completionTokens, cell: (c) => `${c.promptTokens} / ${c.completionTokens}`, className: 'text-right tabular-nums whitespace-nowrap' },
           { key: 'ms', header: 'Time', sort: (c) => c.ms, cell: (c) => secs(c.ms), className: 'text-right tabular-nums' },
           { key: 'cost', header: 'Cost', sort: (c) => c.costUsd, cell: (c) => money(c.costUsd), className: 'text-right tabular-nums' },

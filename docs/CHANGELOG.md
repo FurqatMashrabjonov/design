@@ -5,6 +5,53 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### SQLite → Postgres (INF-10)
+
+Butun ma'lumot qatlami lokal Postgres 17'ga ko'chdi (`DATABASE_URL`, standart
+`postgres://localhost:5432/design`).
+- **Drayver:** `pg` va `drizzle-orm/node-postgres`. Sxema `pgTable`'da.
+  - Ilova yozadigan vaqtlar avvalgidek unix sekund (`bigint`), shuning uchun birorta so'rov yangi
+    birlikni o'rganishi shart bo'lmadi.
+  - Better Auth jadvallarida vaqt `timestamptz`, boolean'lar haqiqiy `boolean`.
+  - SQLite'dagi `rowid` tartibi o'rniga `credit_ledger` va `screen_versions`'da `seq`
+    (`bigserial`) ustuni.
+  - int8 soni endi string emas, number bo'lib qaytadi.
+- **Migratsiyalar:** 23 ta SQLite migratsiyasi o'rniga bitta `0001_initial`. Har migratsiya o'z
+  tranzaksiyasida bir marta ishlaydi. Tarix gitda.
+- **Async:** barcha modellar va ularni chaqiruvchilar async (controllerlar, servislar, guard,
+  server funksiyalari, eval, testlar).
+  - LLM chaqiruvining yozuvi endi kutiladi, shuning uchun kredit hisob-kitobi uni aniq o'qiydi.
+  - Kreditni band qilish, qaytarish va oylik grant bitta tranzaksiyada, foydalanuvchi bo'yicha
+    `pg_advisory_xact_lock` bilan. Bir nechta server jarayonida ham ikki marta yechilmaydi.
+- **AdminStatsService** Postgres SQL'iga o'tdi: `generate_series`, `string_agg`, `to_char`,
+  `FILTER`, `pg_database_size`.
+- **Testlar va eval:** `DB_FRESH=1` har jarayon uchun vaqtinchalik baza yaratadi va chiqishda
+  o'chiradi. Yiqilgan run'dan qolganlari bir soatdan keyin tozalanadi.
+  - Eval `eval.db` o'rniga `projects.json` yozadi; `judge.ts` ikkalasini ham o'qiydi (eski
+    run'lar uchun).
+  - `judge-project.ts` jonli Postgres'dan o'qiydi.
+- **Ma'lumot ko'chirish:** `scripts/sqlite-to-pg.ts` bo'sh bazaga to'ldiradi va jadvallarni
+  sanab solishtiradi. `data.db` zaxira sifatida qoldi. `better-sqlite3` endi faqat devDependency.
+
+Fayllar: `database/{connection,migrate,schema}.ts`, `database/migrations/0001_initial.ts`
+(eski 23 ta o'chirildi), barcha `app/Models/*`, `app/Services/{Credit,Usage,AdminStats,Image,EditPair,Auth}Service.ts`,
+barcha controllerlar, `server/{guard,auth,fns}.ts`, `routes/api/polar-webhook.ts`,
+`routes/admin.generations.tsx`, `eval/{run,judge,judge-project,export-pairs}.ts`,
+`scripts/sqlite-to-pg.ts`, testlar, `package.json`, `.env.example`, CLAUDE.md, HANDOFF.
+
+Tekshiruv:
+- **Ma'lumot:** 15 ta jadvalning hammasi sanaldi, SQLite va Postgres sonlari bir xil (30 loyiha,
+  149 ekran, 88 versiya, 135 xabar, 196 LLM chaqiruvi, 6 kredit yozuvi, 1 obuna va boshqalar).
+  Kredit balansi 2 196 — avvalgidek.
+- **Testlar:** `npm run check` va `npx tsc --noEmit` toza. Test bazasi o'zi yaratiladi va o'chadi,
+  qoldiq qolmaydi.
+- **Brauzerda:** kirish sessiyasi saqlangan; dashboard (loyihalar, kreditlar); admin Overview va
+  foydalanuvchi sahifasi (kredit tarixi to'g'ri tartibda).
+- **Haqiqiy tahrir** ("Log out" → "Sign out"): 2 kredit band qilindi, LLM chaqiruvi `ok` bilan
+  yozildi, xabar va versiya saqlandi (88 → 89), balans 2 194 ga tushdi.
+- **Eval:** 1 briefli run (`pg-smoke`) Postgres'da 6 ta ekran chizdi, `projects.json` yozildi,
+  vaqtinchalik baza o'chirildi.
+
 ### Tarif chegaralari kodda: loyiha soni va eksport (BIL-14)
 
 /pricing'dagi va'dalar endi kod tomonidan bajariladi (`PLAN_LIMITS`):

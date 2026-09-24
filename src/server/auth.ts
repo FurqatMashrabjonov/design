@@ -42,13 +42,13 @@ export async function requireUser(): Promise<SessionUser> {
 /** The project if the signed-in user owns it; a 404 otherwise (never tell a stranger it exists). */
 export async function requireProject(projectId: unknown): Promise<{ user: SessionUser; project: ProjectRow }> {
   const user = await requireUser()
-  const project = typeof projectId === 'string' ? Project.findOwned(projectId, user.id) : undefined
+  const project = typeof projectId === 'string' ? await Project.findOwned(projectId, user.id) : undefined
   if (!project) throw new HttpError(404, 'Project not found')
   return { user, project }
 }
 
 /** For calls that name only a screen: its project must be the user's. */
 export async function requireScreen(screenId: unknown): Promise<{ user: SessionUser; project: ProjectRow }> {
-  const screen = typeof screenId === 'string' ? Screen.find(screenId) : undefined
+  const screen = typeof screenId === 'string' ? await Screen.find(screenId) : undefined
   return requireProject(screen?.projectId)
 }

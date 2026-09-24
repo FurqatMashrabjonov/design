@@ -13,13 +13,13 @@ export const Route = createFileRoute('/api/thumb/$screenId')({
     handlers: {
       GET: async ({ request, params }) => {
         const user = await userFrom(request)
-        const screen = user ? Screen.find(params.screenId) : undefined
+        const screen = user ? await Screen.find(params.screenId) : undefined
         // The owner, or an admin (ADM-05) — the panel shows every project's cover the same way.
-        const project = screen && !screen.deletedAt && screen.html ? (user!.admin ? Project.find(screen.projectId) : Project.findOwned(screen.projectId, user!.id)) : undefined
+        const project = screen && !screen.deletedAt && screen.html ? (user!.admin ? await Project.find(screen.projectId) : await Project.findOwned(screen.projectId, user!.id)) : undefined
         if (!screen || !project) return new Response('Not found', { status: 404 })
         // CHAT-06: ?v=<versionId> is the screen as it was before a change — the "before" thumbnail.
         const v = new URL(request.url).searchParams.get('v')
-        const version = v ? ScreenVersion.findInScreen(v, screen.id) : undefined
+        const version = v ? await ScreenVersion.findInScreen(v, screen.id) : undefined
         if (v && !version) return new Response('Not found', { status: 404 })
         return new Response(applyThemeOverride(version?.html ?? screen.html, parseTheme(project.theme)), {
           headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'private, max-age=60', 'x-content-type-options': 'nosniff',

@@ -27,11 +27,11 @@ async function search(query: string, signal?: AbortSignal): Promise<ResolvedImag
 }
 
 async function lookup(query: string, signal?: AbortSignal): Promise<ResolvedImage | null> {
-  const cached = ImageCache.find(query)
+  const cached = await ImageCache.find(query)
   if (cached) return cached.url ? { url: cached.url, avgColor: cached.avgColor ?? undefined } : null
   const found = await search(query, signal).catch(() => undefined)
   if (found === undefined) return null
-  ImageCache.save(query, found?.url ?? '', found?.avgColor ?? null)
+  await ImageCache.save(query, found?.url ?? '', found?.avgColor ?? null)
   return found
 }
 
@@ -41,7 +41,7 @@ const POOL = 40
 const POOL_QUERY: Record<Gender, string> = { f: 'woman portrait face', m: 'man portrait face' }
 
 async function portraitPool(gender: Gender, signal?: AbortSignal): Promise<string[]> {
-  const cached = Array.from({ length: POOL }, (_, i) => ImageCache.find(`avatar:${gender}:${i}`)?.url).filter((u): u is string => Boolean(u))
+  const cached = (await Promise.all(Array.from({ length: POOL }, (_, i) => ImageCache.find(`avatar:${gender}:${i}`)))).map((r) => r?.url).filter((u): u is string => Boolean(u))
   if (cached.length > 0) return cached
   const key = process.env.PEXELS_API_KEY
   if (!key) return []
@@ -56,7 +56,7 @@ async function portraitPool(gender: Gender, signal?: AbortSignal): Promise<strin
     .filter((u) => u.startsWith(PHOTO_HOST))
     // A square face crop, 2x a 64px avatar.
     .map((u) => `${u.split('?')[0]}?auto=compress&cs=tinysrgb&w=128&h=128&fit=crop`)
-  urls.forEach((url, i) => ImageCache.save(`avatar:${gender}:${i}`, url, null))
+  await Promise.all(urls.map((url, i) => ImageCache.save(`avatar:${gender}:${i}`, url, null)))
   return urls
 }
 

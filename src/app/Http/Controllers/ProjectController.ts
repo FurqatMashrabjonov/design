@@ -16,29 +16,29 @@ import { clampFrameHeight } from '@/lib/frame-height'
 import { frameSize } from '@/canvas'
 
 export const ProjectController = {
-  index(userId: string) {
+  async index(userId: string) {
     return {
-      projects: Project.cardsForUser(userId),
-      credits: Credit.balance(userId),
+      projects: await Project.cardsForUser(userId),
+      credits: await Credit.balance(userId),
       designSystems: DesignSystemService.list(),
     }
   },
 
-  favorite(data: { id: string; favorite: boolean }) {
-    Project.setFavorite(data.id, data.favorite)
+  async favorite(data: { id: string; favorite: boolean }) {
+    await Project.setFavorite(data.id, data.favorite)
   },
 
-  show(id: string) {
-    const project = Project.find(id)
+  async show(id: string) {
+    const project = await Project.find(id)
     if (!project) throw notFound()
     return {
       project,
       // Each screen carries where it stands in its own version timeline, for the ‹ v3 › on the frame.
-      screens: (() => {
-        const ratings = Feedback.ratings(id)
-        return Screen.forProject(id).map((s) => ({ ...s, version: ScreenVersion.position(s), rating: ratings.get(s.id) ?? null }))
+      screens: await (async () => {
+        const ratings = await Feedback.ratings(id)
+        return Promise.all((await Screen.forProject(id)).map(async (s) => ({ ...s, version: await ScreenVersion.position(s), rating: ratings.get(s.id) ?? null })))
       })(),
-      messages: Message.forProject(id),
+      messages: await Message.forProject(id),
       // For the design-system frame on the canvas (lib/ds-sample.ts).
       tokens: { root: DesignSystemService.readTokensRoot(project.designSystem), fonts: DesignSystemService.readFontUrls(project.designSystem) },
       // GQ-07: a planned run still drawing (its page may have closed); the editor refreshes until it ends.
@@ -48,11 +48,11 @@ export const ProjectController = {
   },
 
   // 2026-09-22: the product designs phone apps only; desktop projects made before stay viewable.
-  store(data: { designSystem: string; brief?: string; userId?: string; admin?: boolean }) {
+  async store(data: { designSystem: string; brief?: string; userId?: string; admin?: boolean }) {
     // BIL-14: a plan's project count is checked here, on the server, for every way a project is made.
     if (data.userId) {
-      const { projects } = CreditService.limitsFor(data.userId, data.admin)
-      if (projects !== null && Project.forUser(data.userId).length >= projects) throw new Error(`${PLAN_LIMIT_ERROR}projects:${projects}`)
+      const { projects } = await CreditService.limitsFor(data.userId, data.admin)
+      if (projects !== null && (await Project.forUser(data.userId)).length >= projects) throw new Error(`${PLAN_LIMIT_ERROR}projects:${projects}`)
     }
     // GQ-03: "auto" means the brief chooses (its named style, else its app type). DS-01: the id is
     // minted first so it can seed the pick — two people typing the same brief get different systems.
@@ -60,21 +60,21 @@ export const ProjectController = {
     const designSystem =
       data.designSystem === AUTO ? DesignSystemService.autoFor(data.brief ?? '', AppPatternService.classify(data.brief ?? '')?.id, id) : data.designSystem
     DesignSystemService.assertExists(designSystem)
-    return Project.create({ id, name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null, designSystemAuto: data.designSystem === AUTO })
+    return await Project.create({ id, name: 'Untitled', designSystem, device: 'mobile', userId: data.userId ?? null, designSystemAuto: data.designSystem === AUTO })
   },
 
-  moveScreen(data: { id: string; x: number; y: number }) {
-    Screen.move(data.id, data.x, data.y)
+  async moveScreen(data: { id: string; x: number; y: number }) {
+    await Screen.move(data.id, data.x, data.y)
   },
 
   // The number comes from a sandboxed page, so it is clamped here rather than trusted.
-  saveScreenHeight(data: { id: string; height: number }) {
-    const screen = Screen.find(data.id)
+  async saveScreenHeight(data: { id: string; height: number }) {
+    const screen = await Screen.find(data.id)
     if (!screen) throw notFound()
-    const project = Project.find(screen.projectId)
+    const project = await Project.find(screen.projectId)
     const height = clampFrameHeight(data.height, frameSize(project?.device ?? 'desktop').height)
     if (height === null) throw new Error('Height must be a number')
-    Screen.saveHeight(data.id, height)
+    await Screen.saveHeight(data.id, height)
     return height
   },
 
@@ -84,8 +84,8 @@ export const ProjectController = {
    * trusted from the browser; anything that is not clearly a theme change returns applied: false
    * and goes to generation as before.
    */
-  themeFromChat(data: { projectId: string; prompt: string }) {
-    const project = Project.find(data.projectId)
+  async themeFromChat(data: { projectId: string; prompt: string }) {
+    const project = await Project.find(data.projectId)
     if (!project) throw notFound()
     const prompt = typeof data.prompt === 'string' ? data.prompt.trim().slice(0, 500) : ''
     const intent = routeIntent(prompt, { elementSelected: false })
@@ -94,9 +94,9 @@ export const ProjectController = {
     const next = { ...previous, ...intent.theme }
     if (intent.theme.radius) delete next.radiusPx // "rounder corners" must not stay hidden behind the slider
     const theme = sanitizeTheme(next)
-    Project.saveTheme(project.id, theme)
-    Message.add({ projectId: project.id, role: 'user', kind: 'theme', text: prompt })
-    Message.add({
+    await Project.saveTheme(project.id, theme)
+    await Message.add({ projectId: project.id, role: 'user', kind: 'theme', text: prompt })
+    await Message.add({
       projectId: project.id,
       role: 'agent',
       kind: 'theme',
@@ -106,23 +106,23 @@ export const ProjectController = {
     return { applied: true as const, theme }
   },
 
-  saveTheme(data: { projectId: string; theme: unknown }) {
-    if (!Project.find(data.projectId)) throw notFound()
+  async saveTheme(data: { projectId: string; theme: unknown }) {
+    if (!await Project.find(data.projectId)) throw notFound()
     const theme = sanitizeTheme(data.theme)
-    Project.saveTheme(data.projectId, theme)
+    await Project.saveTheme(data.projectId, theme)
     return theme
   },
 
   // The name in the top bar, edited in place. Later screens are generated under the new name.
-  rename(data: { id: string; name: string }) {
+  async rename(data: { id: string; name: string }) {
     const name = data.name.trim().slice(0, 80)
     if (!name) throw new Error('Name cannot be empty')
-    if (!Project.find(data.id)) throw notFound()
-    Project.rename(data.id, name)
+    if (!await Project.find(data.id)) throw notFound()
+    await Project.rename(data.id, name)
   },
 
-  destroy(id: string) {
-    if (!Project.find(id)) throw notFound()
-    Project.delete(id)
+  async destroy(id: string) {
+    if (!await Project.find(id)) throw notFound()
+    await Project.delete(id)
   },
 }

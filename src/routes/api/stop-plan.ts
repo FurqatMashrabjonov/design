@@ -14,7 +14,7 @@ export const Route = createFileRoute('/api/stop-plan')({
         const user = await userFrom(request)
         if (!user) return new Response('Sign in to continue', { status: 401 })
         const body = (await request.json().catch(() => ({}))) as { projectId?: unknown }
-        if (!(typeof body.projectId === 'string' && Project.findOwned(body.projectId, user.id))) return new Response('Project not found', { status: 404 })
+        if (!(typeof body.projectId === 'string' && await Project.findOwned(body.projectId, user.id))) return new Response('Project not found', { status: 404 })
         return Response.json({ stopped: PlanRuns.stop(body.projectId) })
       },
     },

@@ -3,12 +3,12 @@ import { db } from '@/database/connection'
 import { imageCache } from '@/database/schema'
 
 export const ImageCache = {
-  find(query: string) {
-    return db.select().from(imageCache).where(eq(imageCache.query, query)).get()
+  async find(query: string) {
+    return (await db.select().from(imageCache).where(eq(imageCache.query, query)))[0]
   },
 
   // Two screens of one app are generated in parallel and often want the same photo.
-  save(query: string, url: string, avgColor: string | null) {
-    db.insert(imageCache).values({ query, url, avgColor }).onConflictDoNothing().run()
+  async save(query: string, url: string, avgColor: string | null) {
+    await db.insert(imageCache).values({ query, url, avgColor }).onConflictDoNothing()
   },
 }

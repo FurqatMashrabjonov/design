@@ -17,9 +17,10 @@ let listening = false
 function listen() {
   if (listening) return
   listening = true
-  onLlmCall((c) => {
+  onLlmCall(async (c) => {
     const who = ctx.getStore()
-    db.insert(llmCalls)
+    await db
+      .insert(llmCalls)
       .values({
         id: crypto.randomUUID(),
         userId: who?.userId ?? null,
@@ -37,7 +38,7 @@ function listen() {
         ok: c.ok,
         error: c.error ?? null,
       })
-      .run()
+      .catch((e) => console.error('[usage] could not log a model call:', e))
   })
 }
 
@@ -60,16 +61,17 @@ export const UsageService = {
   },
 
   /** ADM-08: the limits in force — an admin's setting wins over the env/code default. */
-  limits(userId?: string) {
-    const num = (key: string, fallback: number) => {
-      const v = Number(Setting.get(key))
-      return Setting.get(key) !== null && Number.isFinite(v) && v >= 0 ? v : fallback
+  async limits(userId?: string) {
+    const num = async (key: string, fallback: number) => {
+      const raw = await Setting.get(key)
+      const v = Number(raw)
+      return raw !== null && Number.isFinite(v) && v >= 0 ? v : fallback
     }
-    const callsPerDay = num('limits.callsPerDay', LIMITS.callsPerDay)
+    const callsPerDay = await num('limits.callsPerDay', LIMITS.callsPerDay)
     return {
-      callsPerDay: userId ? num(`limits.user.${userId}`, callsPerDay) : callsPerDay,
-      dailyBudgetUsd: num('limits.dailyBudgetUsd', LIMITS.dailyBudgetUsd),
-      paused: process.env.GENERATION_PAUSED === '1' || Setting.get('generation.paused') === '1',
+      callsPerDay: userId ? await num(`limits.user.${userId}`, callsPerDay) : callsPerDay,
+      dailyBudgetUsd: await num('limits.dailyBudgetUsd', LIMITS.dailyBudgetUsd),
+      paused: process.env.GENERATION_PAUSED === '1' || (await Setting.get('generation.paused')) === '1',
     }
   },
 
@@ -79,21 +81,21 @@ export const UsageService = {
   },
 
   /** Why this user may not start a generation now, or null. */
-  refusal(userId: string): { status: number; message: string } | null {
-    const limits = UsageService.limits(userId)
+  async refusal(userId: string): Promise<{ status: number; message: string } | null> {
+    const limits = await UsageService.limits(userId)
     if (limits.paused) return { status: 503, message: 'Generation is paused for maintenance. Try again later.' }
     if (running.has(userId)) return { status: 429, message: 'A generation is already running. Wait for it to finish or stop it.' }
-    if (UsageService.callsToday(userId) >= limits.callsPerDay) return { status: 429, message: 'You have reached today’s generation limit. It resets within 24 hours.' }
+    if ((await UsageService.callsToday(userId)) >= limits.callsPerDay) return { status: 429, message: 'You have reached today’s generation limit. It resets within 24 hours.' }
     const midnight = Math.floor(new Date().setUTCHours(0, 0, 0, 0) / 1000)
-    const spent = db.select({ usd: sql<number>`coalesce(sum(cost_usd), 0)` }).from(llmCalls).where(gte(llmCalls.createdAt, midnight)).get()?.usd ?? 0
+    const spent = (await db.select({ usd: sql<number>`coalesce(sum(cost_usd), 0)`.mapWith(Number) }).from(llmCalls).where(gte(llmCalls.createdAt, midnight)))[0]?.usd ?? 0
     if (spent >= limits.dailyBudgetUsd) return { status: 503, message: 'Generation is paused for today — the service reached its daily limit. Try again tomorrow.' }
     return null
   },
 
   /** Model calls this user made in the last 24 hours — what the daily limit counts (DSH-12 shows it). */
-  callsToday(userId: string): number {
+  async callsToday(userId: string): Promise<number> {
     const dayAgo = Math.floor(Date.now() / 1000) - 86400
-    return db.select({ n: sql<number>`count(*)` }).from(llmCalls).where(and(eq(llmCalls.userId, userId), gte(llmCalls.createdAt, dayAgo))).get()?.n ?? 0
+    return (await db.select({ n: sql<number>`count(*)`.mapWith(Number) }).from(llmCalls).where(and(eq(llmCalls.userId, userId), gte(llmCalls.createdAt, dayAgo))))[0]?.n ?? 0
   },
 
   begin(userId: string) {
@@ -104,12 +106,13 @@ export const UsageService = {
   },
 
   /** LLM-05: what one action really cost — every call it made, priced by its own model. */
-  actionCost(actionId: string): { calls: number; ok: number; usd: number } {
-    const r = db
-      .select({ calls: sql<number>`count(*)`, ok: sql<number>`coalesce(sum(ok), 0)`, usd: sql<number>`coalesce(sum(cost_usd), 0)` })
-      .from(llmCalls)
-      .where(eq(llmCalls.actionId, actionId))
-      .get()
+  async actionCost(actionId: string): Promise<{ calls: number; ok: number; usd: number }> {
+    const r = (
+      await db
+        .select({ calls: sql<number>`count(*)`.mapWith(Number), ok: sql<number>`count(*) FILTER (WHERE ok)`.mapWith(Number), usd: sql<number>`coalesce(sum(cost_usd), 0)`.mapWith(Number) })
+        .from(llmCalls)
+        .where(eq(llmCalls.actionId, actionId))
+    )[0]
     return { calls: r?.calls ?? 0, ok: r?.ok ?? 0, usd: r?.usd ?? 0 }
   },
 
@@ -118,13 +121,4 @@ export const UsageService = {
     return ctx.getStore()
   },
 
-  /** OBS-05 groundwork: spend per user over a window. */
-  spendByUser(sinceUnix: number) {
-    return db
-      .select({ userId: llmCalls.userId, calls: sql<number>`count(*)`, usd: sql<number>`sum(cost_usd)` })
-      .from(llmCalls)
-      .where(gte(llmCalls.createdAt, sinceUnix))
-      .groupBy(llmCalls.userId)
-      .all()
-  },
 }

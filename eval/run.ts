@@ -47,8 +47,9 @@ const label = args.from ?? (args.label ? `${stamp}-${args.label.replace(/[^\w-]/
 const outDir = join(OUT_ROOT, label)
 mkdirSync(join(outDir, 'screens'), { recursive: true })
 
-// Must be set before the first import of database/connection.
-process.env.DB_PATH = join(outDir, 'eval.db')
+// Must be set before the first import of database/connection: a throwaway Postgres database for this
+// run, dropped when it ends (INF-10). What later tools read from it is written to projects.json.
+process.env.DB_FRESH = '1'
 const { Project } = await import('@/app/Models/Project')
 const { Screen } = await import('@/app/Models/Screen')
 const { PlanController } = await import('@/app/Http/Controllers/PlanController')
@@ -81,7 +82,7 @@ async function runBrief(b: Brief): Promise<BriefResult> {
   // "auto" briefs go through the same choice the product makes (GQ-03).
   const designSystem = b.designSystem === 'auto' ? DesignSystemService.autoFor(b.brief, AppPatternService.classify(b.brief)?.id, projectId) : b.designSystem
   b.designSystem = designSystem
-  Project.create({ id: projectId, name: b.id, designSystem, device: 'mobile' })
+  await Project.create({ id: projectId, name: b.id, designSystem, device: 'mobile' })
 
   const res = await PlanController.stream(
     new Request('http://eval/api/generate-plan', { method: 'POST', body: JSON.stringify({ projectId, brief: b.brief }) }),
@@ -120,7 +121,7 @@ async function runBrief(b: Brief): Promise<BriefResult> {
   }
 
   // The second way screens are made: a vague follow-up in the chat. It used to lose the app entirely.
-  const planned = new Set(Screen.forProject(projectId).map((s) => s.id))
+  const planned = new Set((await Screen.forProject(projectId)).map((s) => s.id))
   if (planned.size > 0 && !args['no-add']) {
     const t0 = Date.now()
     const add = await GenerateController.stream(
@@ -129,12 +130,12 @@ async function runBrief(b: Brief): Promise<BriefResult> {
     const text = await add.text()
     const failed = text.match(/<!--GEN_ERROR:([\s\S]*?)-->/)?.[1] ?? (add.ok ? '' : text)
     if (failed) result.errors.push(`added: ${failed.trim().slice(0, 200)}`)
-    for (const s of Screen.forProject(projectId)) if (!planned.has(s.id)) tookMs.set(s.id, Date.now() - t0)
+    for (const s of await Screen.forProject(projectId)) if (!planned.has(s.id)) tookMs.set(s.id, Date.now() - t0)
   }
 
   // x is assigned by plan order, so it restores the planner's sequence; an added screen lands last.
   // A failed screen keeps a row (so the app can retry it) but has nothing to show or measure.
-  const rows = Screen.forProject(projectId).filter((s) => s.html).sort((a, z) => a.x - z.x)
+  const rows = (await Screen.forProject(projectId)).filter((s) => s.html).sort((a, z) => a.x - z.x)
   rows.forEach((s, i) => {
     const file = `screens/${b.id}-${i}.html`
     writeFileSync(join(outDir, file), s.html)
@@ -159,6 +160,8 @@ if (args.from) {
 } else {
   results = await mapLimit(briefs, Number(args.concurrency), runBrief)
   writeFileSync(join(outDir, 'results.json'), JSON.stringify(results, null, 2))
+  // The run's database is dropped when the process ends; what the judge reads from it stays here.
+  writeFileSync(join(outDir, 'projects.json'), JSON.stringify((await Project.all()).map((p) => ({ id: p.id, name: p.name, designSystem: p.designSystem, theme: p.theme, palette: p.palette })), null, 2))
 }
 
 const loadRun = (d: string): BriefResult[] => JSON.parse(readFileSync(join(OUT_ROOT, d, 'results.json'), 'utf8'))

@@ -7,20 +7,20 @@ export type FeedbackRow = typeof feedback.$inferSelect
 
 export const Feedback = {
   /** Up/down replaces the screen's earlier up/down (null clears it); regenerate always appends. */
-  record(data: { projectId: string; screenId: string; value: FeedbackValue | null; designSystem: string; archetype: string | null; variant: string | null }) {
-    if (data.value !== 'regenerate') db.delete(feedback).where(and(eq(feedback.screenId, data.screenId), inArray(feedback.value, ['up', 'down']))).run()
+  async record(data: { projectId: string; screenId: string; value: FeedbackValue | null; designSystem: string; archetype: string | null; variant: string | null }) {
+    if (data.value !== 'regenerate') await db.delete(feedback).where(and(eq(feedback.screenId, data.screenId), inArray(feedback.value, ['up', 'down'])))
     if (!data.value) return
     const { value, ...rest } = data
-    db.insert(feedback).values({ id: crypto.randomUUID(), value, ...rest }).run()
+    await db.insert(feedback).values({ id: crypto.randomUUID(), value, ...rest })
   },
 
   /** The current up/down per screen of a project. */
-  ratings(projectId: string): Map<string, 'up' | 'down'> {
-    const rows = db.select().from(feedback).where(and(eq(feedback.projectId, projectId), inArray(feedback.value, ['up', 'down']))).all()
+  async ratings(projectId: string): Promise<Map<string, 'up' | 'down'>> {
+    const rows = await db.select().from(feedback).where(and(eq(feedback.projectId, projectId), inArray(feedback.value, ['up', 'down'])))
     return new Map(rows.map((r) => [r.screenId, r.value as 'up' | 'down']))
   },
 
-  forProject(projectId: string): FeedbackRow[] {
-    return db.select().from(feedback).where(eq(feedback.projectId, projectId)).all()
+  forProject(projectId: string): Promise<FeedbackRow[]> {
+    return db.select().from(feedback).where(eq(feedback.projectId, projectId))
   },
 }

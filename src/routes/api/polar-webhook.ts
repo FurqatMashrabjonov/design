@@ -18,7 +18,7 @@ export const Route = createFileRoute('/api/polar-webhook')({
         } catch {
           return new Response('Invalid body', { status: 400 })
         }
-        const did = BillingController.webhook(event)
+        const did = await BillingController.webhook(event)
         console.log(`[polar] ${event.type}: ${did}`)
         return new Response(did, { status: 202 })
       },

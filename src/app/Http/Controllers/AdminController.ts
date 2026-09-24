@@ -22,70 +22,70 @@ export type AdminSettingKey = keyof typeof ADMIN_SETTINGS
 export const AdminController = {
   overview: (days: 1 | 7 | 30) => AdminStatsService.overview(days),
   // An admin by ADMIN_EMAILS shows as one, though their stored role may still be 'user'.
-  users: () => AdminStatsService.users().map((u) => ({ ...u, role: isAdmin(u) ? 'admin' : u.role })),
-  user(id: string) {
-    const u = AdminStatsService.user(id)
+  users: async () => (await AdminStatsService.users()).map((u) => ({ ...u, role: isAdmin(u) ? 'admin' : u.role })),
+  async user(id: string) {
+    const u = await AdminStatsService.user(id)
     if (!u) throw notFound()
     return { ...u, user: { ...u.user, role: isAdmin(u.user) ? 'admin' : u.user.role } }
   },
-  project(id: string) {
-    const p = Project.find(id)
+  async project(id: string) {
+    const p = await Project.find(id)
     if (!p) throw notFound()
-    const show = ProjectController.show(id)
+    const show = await ProjectController.show(id)
     // Screens are shown through /api/thumb, so their HTML does not travel with the page.
     return {
       project: show.project,
       screens: show.screens.map(({ html, ...s }) => ({ id: s.id, name: s.name, screenType: s.screenType, error: s.error, deletedAt: s.deletedAt, createdAt: s.createdAt, rating: s.rating, drawn: html !== '' })),
       messages: show.messages,
-      owner: p.userId ? { id: p.userId, email: User.find(p.userId)?.email ?? null } : null,
+      owner: p.userId ? { id: p.userId, email: (await User.find(p.userId))?.email ?? null } : null,
     }
   },
-  generations: (f: { onlyErrors?: boolean }) => ({ calls: AdminStatsService.calls(f), ...AdminStatsService.quality() }),
+  generations: async (f: { onlyErrors?: boolean }) => ({ calls: await AdminStatsService.calls(f), ...(await AdminStatsService.quality()) }),
   controls: () => AdminStatsService.controls(),
 
-  ban(adminId: string, d: { userId: string; reason: string }) {
-    const target = User.find(d.userId)
+  async ban(adminId: string, d: { userId: string; reason: string }) {
+    const target = await User.find(d.userId)
     if (!target) throw notFound()
     if (d.userId === adminId) throw new Error('You cannot ban yourself')
-    User.setBan(d.userId, true, d.reason || null)
-    AdminAction.log(adminId, 'ban', target.email, d.reason || null)
+    await User.setBan(d.userId, true, d.reason || null)
+    await AdminAction.log(adminId, 'ban', target.email, d.reason || null)
   },
-  unban(adminId: string, userId: string) {
-    const target = User.find(userId)
+  async unban(adminId: string, userId: string) {
+    const target = await User.find(userId)
     if (!target) throw notFound()
-    User.setBan(userId, false)
-    AdminAction.log(adminId, 'unban', target.email)
+    await User.setBan(userId, false)
+    await AdminAction.log(adminId, 'unban', target.email)
   },
-  revokeSessions(adminId: string, userId: string) {
-    const target = User.find(userId)
+  async revokeSessions(adminId: string, userId: string) {
+    const target = await User.find(userId)
     if (!target) throw notFound()
-    User.revokeSessions(userId)
-    AdminAction.log(adminId, 'revoke-sessions', target.email)
+    await User.revokeSessions(userId)
+    await AdminAction.log(adminId, 'revoke-sessions', target.email)
   },
-  setRole(adminId: string, d: { userId: string; role: 'admin' | 'user' }) {
-    const target = User.find(d.userId)
+  async setRole(adminId: string, d: { userId: string; role: 'admin' | 'user' }) {
+    const target = await User.find(d.userId)
     if (!target) throw notFound()
     if (d.userId === adminId && d.role !== 'admin') throw new Error('You cannot remove your own admin role')
-    User.setRole(d.userId, d.role)
-    AdminAction.log(adminId, 'set-role', target.email, d.role)
+    await User.setRole(d.userId, d.role)
+    await AdminAction.log(adminId, 'set-role', target.email, d.role)
   },
-  setUserLimit(adminId: string, d: { userId: string; limit: number | null }) {
-    const target = User.find(d.userId)
+  async setUserLimit(adminId: string, d: { userId: string; limit: number | null }) {
+    const target = await User.find(d.userId)
     if (!target) throw notFound()
-    Setting.set(`limits.user.${d.userId}`, d.limit === null ? null : String(d.limit))
-    AdminAction.log(adminId, 'set-user-limit', target.email, d.limit === null ? 'default' : String(d.limit))
+    await Setting.set(`limits.user.${d.userId}`, d.limit === null ? null : String(d.limit))
+    await AdminAction.log(adminId, 'set-user-limit', target.email, d.limit === null ? 'default' : String(d.limit))
   },
   /** BIL-04: credits by hand (a refund, a gift, a correction) — a ledger row, and a log line. */
-  grantCredits(adminId: string, d: { userId: string; amount: number; note: string }) {
-    const target = User.find(d.userId)
+  async grantCredits(adminId: string, d: { userId: string; amount: number; note: string }) {
+    const target = await User.find(d.userId)
     if (!target) throw notFound()
-    Credit.add({ userId: d.userId, delta: d.amount, kind: 'admin', note: d.note || undefined })
-    AdminAction.log(adminId, 'grant-credits', target.email, `${d.amount > 0 ? '+' : ''}${d.amount}${d.note ? ` · ${d.note}` : ''}`)
+    await Credit.add({ userId: d.userId, delta: d.amount, kind: 'admin', note: d.note || undefined })
+    await AdminAction.log(adminId, 'grant-credits', target.email, `${d.amount > 0 ? '+' : ''}${d.amount}${d.note ? ` · ${d.note}` : ''}`)
   },
-  setSetting(adminId: string, d: { key: AdminSettingKey; value: string | null }) {
+  async setSetting(adminId: string, d: { key: AdminSettingKey; value: string | null }) {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')
-    Setting.set(d.key, d.value)
-    AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
+    await Setting.set(d.key, d.value)
+    await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
   },
 
 }

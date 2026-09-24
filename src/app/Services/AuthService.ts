@@ -24,7 +24,7 @@ const google =
 export const devMail: { lastLink?: { email: string; url: string } } = {}
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: 'sqlite', schema: { user, session, account, verification } }),
+  database: drizzleAdapter(db, { provider: 'pg', schema: { user, session, account, verification } }),
   secret: process.env.BETTER_AUTH_SECRET || (process.env.NODE_ENV === 'production' ? undefined : 'dev-only-secret-change-me-in-production'),
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:3000',
   socialProviders: google,
@@ -34,9 +34,9 @@ export const auth = betterAuth({
       create: {
         // OWN-05: projects made before accounts existed belong to the first person who signs in.
         after: async (created) => {
-          Project.adoptOrphans(created.id)
+          await Project.adoptOrphans(created.id)
           // BIL-07: every new account starts with free credits.
-          CreditService.signupGrant(created.id)
+          await CreditService.signupGrant(created.id)
         },
       },
     },

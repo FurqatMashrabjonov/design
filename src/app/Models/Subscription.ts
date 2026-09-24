@@ -7,20 +7,19 @@ export type SubscriptionRow = typeof subscriptions.$inferSelect
 const LIVE = ['active', 'trialing']
 
 export const Subscription = {
-  upsert(s: Omit<SubscriptionRow, 'updatedAt'>) {
+  async upsert(s: Omit<SubscriptionRow, 'updatedAt'>) {
     const row = { ...s, updatedAt: Math.floor(Date.now() / 1000) }
-    db.insert(subscriptions).values(row).onConflictDoUpdate({ target: subscriptions.id, set: row }).run()
+    await db.insert(subscriptions).values(row).onConflictDoUpdate({ target: subscriptions.id, set: row })
   },
 
   /** The plan in force now: live, and not past its paid period. A cancelled plan stays until its period ends. */
-  activeFor(userId: string, nowSec = Math.floor(Date.now() / 1000)): SubscriptionRow | undefined {
-    return db
+  async activeFor(userId: string, nowSec = Math.floor(Date.now() / 1000)): Promise<SubscriptionRow | undefined> {
+    const rows = await db
       .select()
       .from(subscriptions)
       .where(and(eq(subscriptions.userId, userId), inArray(subscriptions.status, LIVE)))
       .orderBy(desc(subscriptions.startedAt))
-      .all()
-      .find((s) => s.currentPeriodEnd === null || s.currentPeriodEnd > nowSec)
+    return rows.find((s) => s.currentPeriodEnd === null || s.currentPeriodEnd > nowSec)
   },
 }
 

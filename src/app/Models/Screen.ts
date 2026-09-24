@@ -9,34 +9,30 @@ export type ScreenRow = typeof screens.$inferSelect
 const live = (projectId: string) => and(eq(screens.projectId, projectId), isNull(screens.deletedAt))
 
 export const Screen = {
-  forProject(projectId: string): ScreenRow[] {
-    return db.select().from(screens).where(live(projectId)).orderBy(desc(screens.createdAt)).all()
+  forProject(projectId: string): Promise<ScreenRow[]> {
+    return db.select().from(screens).where(live(projectId)).orderBy(desc(screens.createdAt))
   },
 
-  find(id: string): ScreenRow | undefined {
-    return db.select().from(screens).where(eq(screens.id, id)).get()
+  async find(id: string): Promise<ScreenRow | undefined> {
+    return (await db.select().from(screens).where(eq(screens.id, id)))[0]
   },
 
   // Scoped by project so an id from another project can never be read or edited.
-  findInProject(id: string, projectId: string): ScreenRow | undefined {
-    return db
-      .select()
-      .from(screens)
-      .where(and(eq(screens.id, id), eq(screens.projectId, projectId)))
-      .get()
+  async findInProject(id: string, projectId: string): Promise<ScreenRow | undefined> {
+    return (await db.select().from(screens).where(and(eq(screens.id, id), eq(screens.projectId, projectId))))[0]
   },
 
   // For auto-placing a new frame to the right of the rest — only x/y are needed.
-  positions(projectId: string): { x: number; y: number }[] {
-    return db.select({ x: screens.x, y: screens.y }).from(screens).where(live(projectId)).all()
+  positions(projectId: string): Promise<{ x: number; y: number }[]> {
+    return db.select({ x: screens.x, y: screens.y }).from(screens).where(live(projectId))
   },
 
   // Measured by the frame itself once it has rendered; see lib/frame-height.ts.
-  saveHeight(id: string, height: number) {
-    db.update(screens).set({ height }).where(eq(screens.id, id)).run()
+  async saveHeight(id: string, height: number) {
+    await db.update(screens).set({ height }).where(eq(screens.id, id))
   },
 
-  create(data: {
+  async create(data: {
     id: string
     projectId: string
     name: string
@@ -49,36 +45,35 @@ export const Screen = {
     parentScreenName?: string | null
     spec?: string | null
     error?: string | null
-  }): ScreenRow {
-    db.insert(screens).values(data).run()
-    return Screen.findInProject(data.id, data.projectId)!
+  }): Promise<ScreenRow> {
+    return (await db.insert(screens).values(data).returning())[0]!
   },
 
   // Content only — never touches position, so an edit can't jump the frame on the canvas.
   // A failed attempt leaves the previous design (if any) in place and only records why.
-  markFailed(id: string, error: string) {
-    db.update(screens).set({ error: error.slice(0, 500) }).where(eq(screens.id, id)).run()
+  async markFailed(id: string, error: string) {
+    await db.update(screens).set({ error: error.slice(0, 500) }).where(eq(screens.id, id))
   },
 
   // A successful draw always clears the failure note, and any new content is the newest work: the
   // screen stops pointing at an older version unless the caller is the one stepping to it.
-  updateContent(id: string, data: { name: string; prompt: string; html: string; versionId?: string | null }) {
-    db.update(screens).set({ versionId: null, ...data, error: null }).where(eq(screens.id, id)).run()
+  async updateContent(id: string, data: { name: string; prompt: string; html: string; versionId?: string | null }) {
+    await db.update(screens).set({ versionId: null, ...data, error: null }).where(eq(screens.id, id))
   },
 
-  move(id: string, x: number, y: number) {
-    db.update(screens).set({ x, y }).where(eq(screens.id, id)).run()
+  async move(id: string, x: number, y: number) {
+    await db.update(screens).set({ x, y }).where(eq(screens.id, id))
   },
 
-  rename(id: string, name: string) {
-    db.update(screens).set({ name }).where(eq(screens.id, id)).run()
+  async rename(id: string, name: string) {
+    await db.update(screens).set({ name }).where(eq(screens.id, id))
   },
 
-  delete(id: string) {
-    db.update(screens).set({ deletedAt: Math.floor(Date.now() / 1000) }).where(eq(screens.id, id)).run()
+  async delete(id: string) {
+    await db.update(screens).set({ deletedAt: Math.floor(Date.now() / 1000) }).where(eq(screens.id, id))
   },
 
-  restore(id: string) {
-    db.update(screens).set({ deletedAt: null }).where(eq(screens.id, id)).run()
+  async restore(id: string) {
+    await db.update(screens).set({ deletedAt: null }).where(eq(screens.id, id))
   },
 }

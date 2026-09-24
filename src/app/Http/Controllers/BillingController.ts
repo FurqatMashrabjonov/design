@@ -12,11 +12,11 @@ type Obj = Record<string, any>
 const sec = (iso: unknown) => (typeof iso === 'string' ? Math.floor(Date.parse(iso) / 1000) : null)
 const userOf = (o: Obj): string | undefined => o.customer?.external_id ?? o.metadata?.user_id ?? undefined
 
-function saveSubscription(s: Obj, product: Obj | undefined) {
+async function saveSubscription(s: Obj, product: Obj | undefined) {
   const userId = userOf(s)
   const key = (product ?? s.product)?.metadata?.od
   if (!userId || !productOf(key)?.plan || !s.id) return null
-  Subscription.upsert({
+  await Subscription.upsert({
     id: s.id,
     userId,
     productKey: key,
@@ -25,7 +25,7 @@ function saveSubscription(s: Obj, product: Obj | undefined) {
     currentPeriodEnd: sec(s.current_period_end),
     cancelAtPeriodEnd: s.cancel_at_period_end === true,
   })
-  CreditService.refresh(userId)
+  await CreditService.refresh(userId)
   return userId
 }
 
@@ -33,7 +33,7 @@ export const BillingController = {
   async checkout(user: { id: string; email: string }, key: ProductKey, origin: string) {
     const product = productOf(key)
     if (!product) throw new Error('Unknown product')
-    if (!product.plan && !Subscription.activeFor(user.id)) throw new Error('Credit packs are for Starter and Pro subscribers')
+    if (!product.plan && !await Subscription.activeFor(user.id)) throw new Error('Credit packs are for Starter and Pro subscribers')
     return { url: await PolarService.checkout({ userId: user.id, email: user.email, key, successUrl: `${origin}/?checkout=success` }) }
   },
 
@@ -42,19 +42,19 @@ export const BillingController = {
   },
 
   /** One verified webhook event. Returns what it did, for the log and the tests. */
-  webhook(event: { type?: string; data?: Obj }): string {
+  async webhook(event: { type?: string; data?: Obj }): Promise<string> {
     const d = event.data ?? {}
-    if (event.type?.startsWith('subscription.')) return saveSubscription(d, undefined) ? 'subscription saved' : 'ignored'
+    if (event.type?.startsWith('subscription.')) return (await saveSubscription(d, undefined)) ? 'subscription saved' : 'ignored'
     if (event.type === 'order.paid') {
       const product = productOf(d.product?.metadata?.od)
       const userId = userOf(d)
       if (!product || !userId || !d.id) return 'ignored'
       if (!product.plan) {
-        return Credit.add({ userId, delta: product.credits, kind: 'purchase', ref: `order:${d.id}`, note: product.name }) ? 'pack granted' : 'duplicate'
+        return (await Credit.add({ userId, delta: product.credits, kind: 'purchase', ref: `order:${d.id}`, note: product.name })) ? 'pack granted' : 'duplicate'
       }
       // A plan's order: its credits follow the subscription (monthly, once each).
-      if (d.subscription) saveSubscription(d.subscription, d.product)
-      else CreditService.refresh(userId)
+      if (d.subscription) await saveSubscription(d.subscription, d.product)
+      else await CreditService.refresh(userId)
       return 'plan order'
     }
     return 'ignored'

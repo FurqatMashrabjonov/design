@@ -11,16 +11,16 @@ export function patternOf(spec: string | null): { archetype: string | null; vari
 
 export const FeedbackController = {
   // FB-01. The value comes from the browser: only the three known values are accepted.
-  rate(data: { projectId: string; screenId: string; value: unknown }) {
+  async rate(data: { projectId: string; screenId: string; value: unknown }) {
     const value = data.value === 'up' || data.value === 'down' ? data.value : data.value === null ? null : undefined
     if (value === undefined) throw new Error('Rating must be up, down or null')
-    FeedbackController.record(data.projectId, data.screenId, value)
+    await FeedbackController.record(data.projectId, data.screenId, value)
   },
 
-  record(projectId: string, screenId: string, value: FeedbackValue | null) {
-    const project = Project.find(projectId)
-    const screen = Screen.findInProject(screenId, projectId)
+  async record(projectId: string, screenId: string, value: FeedbackValue | null) {
+    const project = await Project.find(projectId)
+    const screen = await Screen.findInProject(screenId, projectId)
     if (!project || !screen) throw notFound()
-    Feedback.record({ projectId, screenId, value, designSystem: project.designSystem, ...patternOf(screen.spec) })
+    await Feedback.record({ projectId, screenId, value, designSystem: project.designSystem, ...patternOf(screen.spec) })
   },
 }

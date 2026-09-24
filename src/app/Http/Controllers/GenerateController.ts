@@ -42,7 +42,7 @@ export const GenerateController = {
     let project: (Pick<ProjectRow, 'id' | 'designSystem' | 'device'> & Partial<Pick<ProjectRow, 'name' | 'navigation' | 'plan'>>) | undefined
     let isNew = false
     if (body.projectId) {
-      project = Project.find(String(body.projectId))
+      project = await Project.find(String(body.projectId))
       if (!project) return new Response('Project not found', { status: 404 })
     } else {
       const designSystem = String(body.designSystem ?? 'minimal')
@@ -53,14 +53,14 @@ export const GenerateController = {
 
     let editScreen: ScreenRow | undefined
     if (body.editScreenId) {
-      editScreen = Screen.findInProject(String(body.editScreenId), project.id)
+      editScreen = await Screen.findInProject(String(body.editScreenId), project.id)
       if (!editScreen) return new Response('Screen not found', { status: 404 })
     }
 
     // Regenerating is "draw this screen again from what it was planned to be", in the same slot.
     let redraw: ScreenRow | undefined
     if (regenerateId) {
-      redraw = Screen.findInProject(regenerateId, project.id)
+      redraw = await Screen.findInProject(regenerateId, project.id)
       if (!redraw) return new Response('Screen not found', { status: 404 })
       prompt = redraw.spec || redraw.prompt
     }
@@ -101,7 +101,7 @@ export const GenerateController = {
       const nav = isNew ? null : parseNavigation(project.navigation)
       // Screens that were drawn: a failed one has nothing to anchor a style on, and the screen being
       // redrawn must not be listed as its own sibling.
-      const siblings = nav ? Screen.forProject(project.id).filter((s) => s.html && s.id !== redraw?.id).sort((a, z) => a.x - z.x) : []
+      const siblings = nav ? (await Screen.forProject(project.id)).filter((s) => s.html && s.id !== redraw?.id).sort((a, z) => a.x - z.x) : []
       if (nav && (siblings.length > 0 || redraw)) {
         const slot: ScreenSlot = redraw
           ? { name: redraw.name, screenType: redraw.screenType as ScreenSlot['screenType'], activeTabId: redraw.activeTabId ?? undefined, parentScreen: redraw.parentScreenName ?? undefined }
@@ -134,9 +134,9 @@ export const GenerateController = {
     const kind: MessageKind = redraw ? 'regenerate' : editScreen && editElementId ? 'element' : editScreen ? 'edit' : 'add'
     const ask = redraw ? `Regenerate “${redraw.name}”` : String(body.prompt).trim()
     const target = redraw ?? editScreen
-    if (!isNew) Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    if (!isNew) await Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
     // Asking for a drawn screen again is a signal about it (FB-01); retrying a failed one is not.
-    if (redraw?.html) FeedbackController.record(project.id, redraw.id, 'regenerate')
+    if (redraw?.html) await FeedbackController.record(project.id, redraw.id, 'regenerate')
     const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
     const fail = (raw: string) =>
       Message.add({ projectId: projectRef.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { screens: target ? [{ id: target.id, name: target.name }] : [], log: [raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
@@ -152,8 +152,8 @@ export const GenerateController = {
     } catch (e) {
       // The provider refused before sending a byte (no balance, rate limit, outage).
       const message = e instanceof Error ? e.message : String(e)
-      if (redraw) Screen.markFailed(redraw.id, message)
-      if (!isNew) fail(message)
+      if (redraw) await Screen.markFailed(redraw.id, message)
+      if (!isNew) await fail(message)
       return new Response(friendlyError(message), { status: 502 })
     }
 
@@ -226,7 +226,7 @@ export const GenerateController = {
           }
 
           if (isNew) {
-            Project.create({
+            await Project.create({
               id: projectRef.id,
               name: title,
               designSystem: projectRef.designSystem,
@@ -238,19 +238,19 @@ export const GenerateController = {
           let changed: { id: string; name: string; versionId?: string; created?: boolean }
           if (redraw) {
             // A screen that failed has no design worth keeping as a version.
-            const versionId = redraw.html ? ScreenVersion.captureFrom(redraw) : undefined
+            const versionId = redraw.html ? await ScreenVersion.captureFrom(redraw) : undefined
             const name = title === 'Untitled' ? redraw.name : title
-            Screen.updateContent(redraw.id, { name, prompt: redraw.prompt, html: finalHtml })
+            await Screen.updateContent(redraw.id, { name, prompt: redraw.prompt, html: finalHtml })
             changed = { id: redraw.id, name, versionId }
           } else if (editScreen) {
-            const versionId = ScreenVersion.captureFrom(editScreen)
-            Screen.updateContent(editScreen.id, { name: title, prompt, html: finalHtml })
+            const versionId = await ScreenVersion.captureFrom(editScreen)
+            await Screen.updateContent(editScreen.id, { name: title, prompt, html: finalHtml })
             changed = { id: editScreen.id, name: title, versionId }
           } else {
-            const pos = nextFramePosition(Screen.positions(projectRef.id), projectRef.device)
+            const pos = nextFramePosition(await Screen.positions(projectRef.id), projectRef.device)
             const id = crypto.randomUUID()
             changed = { id, name: title, created: true }
-            Screen.create({
+            await Screen.create({
               id,
               projectId: projectRef.id,
               name: title,
@@ -265,14 +265,14 @@ export const GenerateController = {
             })
           }
 
-          if (isNew) Message.add({ projectId: projectRef.id, role: 'user', kind, text: ask })
+          if (isNew) await Message.add({ projectId: projectRef.id, role: 'user', kind, text: ask })
           const slot = addTo && (addTo.slot.screenType === 'root-tab' ? `as the ${addTo.nav.tabs.find((t) => t.id === addTo!.slot.activeTabId)?.label ?? ''} tab` : addTo.slot.parentScreen ? `under “${addTo.slot.parentScreen}”` : '')
           const photos = (finalHtml.match(/data-od-(img|avatar)-resolved/g) ?? []).length
-          Message.add({
+          await Message.add({
             projectId: projectRef.id,
             role: 'agent',
             kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: elementLabel ?? editElementId, parts: patchNote?.parts, version: changed.created ? undefined : await ScreenVersion.count(changed.id) + 1, slot: slot || undefined }),
             meta: {
               screens: [changed],
               log: [...(patchNote?.log ?? []), `${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${Math.round(finalHtml.length / 1024)} KB${photos ? `, ${photos} photo${photos === 1 ? '' : 's'}` : ''}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])],
@@ -281,11 +281,11 @@ export const GenerateController = {
           })
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e)
-          if (redraw && !abort.signal.aborted) Screen.markFailed(redraw.id, message)
+          if (redraw && !abort.signal.aborted) await Screen.markFailed(redraw.id, message)
           if (abort.signal.aborted) {
             // Stop (or a closed tab): nothing was saved, and the conversation says so.
-            if (!isNew) Message.add({ projectId: projectRef.id, role: 'agent', kind, text: 'Stopped — nothing was changed.', meta: { stopped: true, durationMs: Date.now() - startedAt } })
-          } else if (!isNew || Project.find(projectRef.id)) fail(message)
+            if (!isNew) await Message.add({ projectId: projectRef.id, role: 'agent', kind, text: 'Stopped — nothing was changed.', meta: { stopped: true, durationMs: Date.now() - startedAt } })
+          } else if (!isNew || (await Project.find(projectRef.id))) await fail(message)
           send(`${ERROR_MARK}${friendlyError(message)}-->`)
         }
         try {

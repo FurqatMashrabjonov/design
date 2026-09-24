@@ -36,7 +36,7 @@ import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/li
 export const PlanController = {
   async stream(request: Request, opts: { onFinish?: () => void } = {}): Promise<Response> {
     const body = await request.json().catch(() => ({}))
-    const project = Project.find(String(body.projectId ?? ''))
+    const project = await Project.find(String(body.projectId ?? ''))
     if (!project) return new Response('Project not found', { status: 404 })
     // CHAT-08: either a brief to plan (and, with `gate`, wait for approval), or an approval of the
     // plan waiting for this project, with the person's edits.
@@ -72,7 +72,7 @@ export const PlanController = {
         // The conversation is written as the work happens: the ask first, then what was done about it.
         const startedAt = Date.now()
         // The ask is written once, when the plan is first asked for — not again on approval.
-        if (!pendingPlan) Message.add({ projectId: project.id, role: 'user', kind: 'plan', text: brief })
+        if (!pendingPlan) await Message.add({ projectId: project.id, role: 'user', kind: 'plan', text: brief })
         const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
         const tally = (u: typeof usage) => {
           usage.promptTokens += u.promptTokens
@@ -87,7 +87,7 @@ export const PlanController = {
         // project's theme, which every screen renders with. A theme set by hand is never replaced.
         const style = briefStyle(brief)
         if (Object.keys(style.theme).length && isEmptyTheme(parseTheme(project.theme))) {
-          Project.saveTheme(project.id, sanitizeTheme(style.theme))
+          await Project.saveTheme(project.id, sanitizeTheme(style.theme))
           log.push(`From the brief: ${style.said.join(', ')}`)
         }
         // IMG-02: read the picture before anything else, because it decides the look. The design
@@ -100,13 +100,13 @@ export const PlanController = {
             reference = await readReference(refImages, abort.signal)
             const match = reference.accent || reference.background ? matchSystem(reference) : null
             if (match && match.id !== project.designSystem) {
-              Project.saveDesignSystem(project.id, match.id)
+              await Project.saveDesignSystem(project.id, match.id)
               project.designSystem = match.id
               log.push(`The reference image looks like the ${match.id} system — using it instead of ${project.designSystem}`)
             }
             const refTheme = themeFromReference(reference)
-            if (Object.keys(refTheme).length && isEmptyTheme(parseTheme(Project.find(project.id)?.theme))) {
-              Project.saveTheme(project.id, sanitizeTheme(refTheme))
+            if (Object.keys(refTheme).length && isEmptyTheme(parseTheme((await Project.find(project.id))?.theme))) {
+              await Project.saveTheme(project.id, sanitizeTheme(refTheme))
               log.push(`From the reference image: accent ${refTheme.accent ?? '—'}, ${refTheme.radius ?? 'default'} corners`)
             }
           }
@@ -132,9 +132,9 @@ export const PlanController = {
             `Planned ${plan.screens.length} screens (${plan.screens.map((s) => s.archetype).join(', ')}), ${plan.navigation.tabs.length} tabs, ${plan.entities.reduce((n, e) => n + e.items.length, 0)} data items — ${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
           )
           if (plan.requested.length) log.push(`The brief asked for ${plan.requested.length} screens; ${plan.uncovered.length === 0 ? 'all are covered' : `not covered: ${plan.uncovered.join('; ')}`}${plan.repaired ? ' (after one repair round)' : ''}`)
-          Project.rename(project.id, plan.appName)
-          Project.saveNavigation(project.id, plan.navigation)
-          Project.savePlan(project.id, { summary: plan.summary, appType: plan.appType, entities: plan.entities, reference })
+          await Project.rename(project.id, plan.appName)
+          await Project.saveNavigation(project.id, plan.navigation)
+          await Project.savePlan(project.id, { summary: plan.summary, appType: plan.appType, entities: plan.entities, reference })
           send({ type: 'plan', ...plan, screenIds })
           if (gate) {
             // CHAT-08: stop here. The plan waits for the person; the ask is answered when they approve.
@@ -220,7 +220,7 @@ export const PlanController = {
               if (findings.length > 0) {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))
               }
-              const screen = Screen.create({
+              const screen = await Screen.create({
                 id: screenIds[i]!,
                 projectId: project.id,
                 // The model titles its page "Streakly — Today"; the app's name stays off the screen's.
@@ -247,7 +247,7 @@ export const PlanController = {
               // The screen keeps its slot: it shows up on the canvas as a failed frame that can be
               // retried in place, instead of a six-screen plan quietly becoming five.
               if (!abort.signal.aborted) {
-                Screen.create({
+                await Screen.create({
                   id: screenIds[i]!,
                   projectId: project.id,
                   name: s.name,
@@ -277,10 +277,10 @@ export const PlanController = {
 
           const stopped = abort.signal.aborted
           // BIL-06: a screen that failed or was stopped before it was drawn is not paid for.
-          CreditService.refundScreens(plan.screens.length - drawnScreens.length)
+          await CreditService.refundScreens(plan.screens.length - drawnScreens.length)
           drawnScreens.sort((a, z) => (planIndex.get(a.id) ?? 0) - (planIndex.get(z.id) ?? 0))
           if (usage.promptTokens) log.push(formatTokens(usage))
-          Message.add({
+          await Message.add({
             projectId: project.id,
             role: 'agent',
             kind: 'plan',
@@ -298,7 +298,7 @@ export const PlanController = {
           send({ type: 'done' })
         } catch (e) {
           const raw = e instanceof Error ? e.message : String(e)
-          Message.add({ projectId: project.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { log: [...log, raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
+          await Message.add({ projectId: project.id, role: 'agent', kind: 'error', text: friendlyError(raw), meta: { log: [...log, raw.slice(0, 500)], durationMs: Date.now() - startedAt } })
           send({ type: 'error', message: friendlyError(raw) })
         }
         PlanRuns.finish(project.id, abort)

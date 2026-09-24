@@ -1,5 +1,5 @@
 // GQ-08: the visual judge, pointed at canvas projects instead of an eval run. The "make habit
-// tracker" iterations live in data.db as ordinary projects, and a before/after on them is the
+// tracker" iterations live in the database (DATABASE_URL) as ordinary projects, and a before/after on them is the
 // question the whole craft layer was built to answer — so the same rubric scores them, and
 // --vs asks which of two projects is the better app, in random order so the judge cannot favour
 // a side.
@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import Database from 'better-sqlite3'
+import { pool } from '../src/database/connection.ts'
 import { applyThemeOverride, parseTheme } from '../src/lib/theme-override.ts'
 import { normalizeScreen } from '../src/lib/screen-normalizer.ts'
 import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
@@ -27,10 +27,11 @@ import { RUBRIC, PAIRWISE, ask, parseJudgement } from './judge.ts'
 const FREEZE = '<style data-od-judge>*,*::before,*::after{animation-duration:0s!important;animation-delay:0s!important;transition:none!important}</style>'
 
 /** Today's shell, kit and tokens re-applied over the stored screen, so a craft fix can be judged without regenerating. */
-function renormalize(p: Row, s: ScreenRow & { screen_type: string; active_tab_id: string | null; parent_screen_name: string | null }): string {
-  const nav = parseNavigation((db.prepare('SELECT navigation, plan FROM projects WHERE id = ?').get(p.id) as { navigation: string | null }).navigation)
+async function renormalize(p: Row, s: ScreenRow & { screen_type: string; active_tab_id: string | null; parent_screen_name: string | null }): Promise<string> {
+  const row = (await q<{ navigation: string | null; plan: string | null }>('SELECT navigation, plan FROM projects WHERE id = $1', [p.id]))[0]
+  const nav = parseNavigation(row?.navigation ?? null)
   if (!nav) return s.html
-  const plan = JSON.parse((db.prepare('SELECT plan FROM projects WHERE id = ?').get(p.id) as { plan: string | null }).plan ?? '{}')
+  const plan = JSON.parse(row?.plan ?? '{}')
   const bar = navStyleFor(p.name, nav, { appType: plan.appType, designSystem: p.design_system })
   const slot: ScreenSlot = { name: s.name, screenType: s.screen_type as ScreenSlot['screenType'], activeTabId: s.active_tab_id ?? undefined, parentScreen: s.parent_screen_name ?? undefined }
   return normalizeScreen(s.html, { tokensCss: DesignSystemService.readTokensRoot(p.design_system), fontUrls: DesignSystemService.readFontUrls(p.design_system), iconStroke: DesignSystemService.readIconStroke(p.design_system), shell: shellPartsFor(slot, nav, s.name, bar), navClearance: navClearance(bar), kitCss: KitService.css() })
@@ -38,30 +39,33 @@ function renormalize(p: Row, s: ScreenRow & { screen_type: string; active_tab_id
 
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const OUT = resolve('eval/out/projects')
-const db = new Database(process.env.DB_PATH || 'data.db', { readonly: true })
+// The live database (DATABASE_URL), read only.
+const q = async <T>(text: string, params: unknown[]) => (await pool.query(text, params)).rows as T[]
 
 type Row = { id: string; name: string; design_system: string; theme: string | null; palette: string | null }
 type ScreenRow = { name: string; html: string }
 type Score = { file: string; hierarchy: number; spacing: number; polish: number; fidelity: number; overall: number; issues: string[] }
 type Verdict = { screens: Score[]; coherence: number; app_overall: number }
 
-function shoot(p: Row, renorm = false): string[] {
+async function shoot(p: Row, renorm = false): Promise<string[]> {
   const dir = join(OUT, renorm ? `${p.id}-rn` : p.id)
   mkdirSync(dir, { recursive: true })
   const theme = parseTheme(p.theme)
-  const screens = db.prepare('SELECT name, html, screen_type, active_tab_id, parent_screen_name FROM screens WHERE project_id = ? AND deleted_at IS NULL ORDER BY x').all(p.id) as (ScreenRow & { screen_type: string; active_tab_id: string | null; parent_screen_name: string | null })[]
-  return screens.map((s, i) => {
+  const screens = await q<ScreenRow & { screen_type: string; active_tab_id: string | null; parent_screen_name: string | null }>('SELECT name, html, screen_type, active_tab_id, parent_screen_name FROM screens WHERE project_id = $1 AND deleted_at IS NULL ORDER BY x', [p.id])
+  const pngs: string[] = []
+  for (const [i, s] of screens.entries()) {
     const base = `screen-${i}`
     const png = join(dir, `${base}.png`)
     if (!existsSync(png)) {
-      const html = applyThemeOverride(renorm ? renormalize(p, s) : s.html, theme)
+      const html = applyThemeOverride(renorm ? await renormalize(p, s) : s.html, theme)
       writeFileSync(join(dir, `${base}.html`), /<\/head>/i.test(html) ? html.replace(/<\/head>/i, `${FREEZE}</head>`) : FREEZE + html)
       // Headless Chrome on macOS will not open a window narrower than 500px: frame the 390px screen.
       writeFileSync(join(dir, `${base}.frame.html`), `<body style="margin:0;background:#d9d9de"><iframe src="${base}.html" sandbox="allow-scripts" style="display:block;margin:0 auto;width:390px;height:844px;border:0;background:#fff"></iframe></body>`)
       execFileSync(CHROME, ['--headless=new', '--hide-scrollbars', '--window-size=500,844', '--virtual-time-budget=10000', `--screenshot=${png}`, pathToFileURL(join(dir, `${base}.frame.html`)).href], { stdio: 'ignore', timeout: 60000 })
     }
-    return png
-  })
+    pngs.push(png)
+  }
+  return pngs
 }
 
 const mean = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : 0)
@@ -80,10 +84,10 @@ async function judge(p: Row, shots: string[]) {
 async function main() {
   const { values: args, positionals } = parseArgs({ allowPositionals: true, options: { vs: { type: 'string' }, concurrency: { type: 'string', default: '2' }, renormalize: { type: 'boolean', default: false } } })
   const ids = positionals
-  const rows = ids.map((id) => db.prepare('SELECT id, name, design_system, theme, palette FROM projects WHERE id = ?').get(id) as Row | undefined).filter((r): r is Row => !!r)
+  const rows = (await Promise.all(ids.map(async (id) => (await q<Row>('SELECT id, name, design_system, theme, palette FROM projects WHERE id = $1', [id]))[0]))).filter((r): r is Row => !!r)
   // With --renormalize each project is judged as today's shell/kit/tokens would render it; its
   // report goes to <id>-rn so the stored-HTML score stays beside it for comparison.
-  const taken = rows.map((r) => [r.id, shoot(r, args.renormalize)] as const)
+  const taken = await Promise.all(rows.map(async (r) => [r.id, await shoot(r, args.renormalize)] as const))
   if (args.renormalize) for (const r of rows) r.id = `${r.id}-rn`
   const shots = new Map(taken.map(([id, s]) => [args.renormalize ? `${id}-rn` : id, s]))
   // --vs may name a project judged earlier (its shots are on disk), so a renormalised run can be

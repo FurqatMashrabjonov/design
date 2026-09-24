@@ -85,11 +85,13 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
 function shoot(label: string): { brief: BriefResult; shots: string[] }[] {
   const dir = join(OUT_ROOT, label)
   const results: BriefResult[] = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'))
-  const db = existsSync(join(dir, 'eval.db')) ? new Database(join(dir, 'eval.db'), { readonly: true }) : null
+  // projects.json since INF-10 (Postgres); runs before it kept an SQLite eval.db.
+  const saved: { name: string; theme: string | null }[] | null = existsSync(join(dir, 'projects.json')) ? JSON.parse(readFileSync(join(dir, 'projects.json'), 'utf8')) : null
+  const db = !saved && existsSync(join(dir, 'eval.db')) ? new Database(join(dir, 'eval.db'), { readonly: true }) : null
   const shots = join(dir, 'judge')
   mkdirSync(shots, { recursive: true })
   return results.map((r) => {
-    const themeJson = (db?.prepare('SELECT theme FROM projects WHERE name = ?').get(r.appName ?? '') as { theme?: string } | undefined)?.theme
+    const themeJson = saved ? saved.find((p) => p.name === (r.appName ?? ''))?.theme : (db?.prepare('SELECT theme FROM projects WHERE name = ?').get(r.appName ?? '') as { theme?: string } | undefined)?.theme
     const theme = parseTheme(themeJson ?? null)
     const files = r.screens.map((s, i) => {
       const base = `${r.id}-${i}`

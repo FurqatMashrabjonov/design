@@ -6,21 +6,17 @@ import { settings } from '@/database/schema'
 //   generation.paused = '1'          limits.callsPerDay = '150'       limits.dailyBudgetUsd = '5'
 //   limits.user.<userId> = '300'     (a per-user daily call limit)
 export const Setting = {
-  get(key: string): string | null {
-    return db.select({ value: settings.value }).from(settings).where(eq(settings.key, key)).get()?.value ?? null
+  async get(key: string): Promise<string | null> {
+    return (await db.select({ value: settings.value }).from(settings).where(eq(settings.key, key)))[0]?.value ?? null
   },
 
   /** null removes the key, so the default (env or code) applies again. */
-  set(key: string, value: string | null) {
-    if (value === null) db.delete(settings).where(eq(settings.key, key)).run()
-    else
-      db.insert(settings)
-        .values({ key, value })
-        .onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: sql`(unixepoch())` } })
-        .run()
+  async set(key: string, value: string | null) {
+    if (value === null) await db.delete(settings).where(eq(settings.key, key))
+    else await db.insert(settings).values({ key, value }).onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: sql`extract(epoch from now())::bigint` } })
   },
 
   all() {
-    return db.select().from(settings).all()
+    return db.select().from(settings)
   },
 }

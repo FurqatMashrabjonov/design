@@ -30,9 +30,9 @@ export const deleteAccount = createServerFn({ method: 'POST' }).handler(async ()
 /** BIL-08: the signed-in user's credit balance, for the top bar and the dashboard. */
 export const getCredits = createServerFn({ method: 'GET' }).handler(async () => {
   const user = await requireUser()
-  CreditService.refresh(user.id) // a new month of a plan lands the first time it is looked at
-  const limits = CreditService.limitsFor(user.id, user.admin)
-  return { balance: Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export }
+  await CreditService.refresh(user.id) // a new month of a plan lands the first time it is looked at
+  const limits = await CreditService.limitsFor(user.id, user.admin)
+  return { balance: await Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export }
 })
 
 /** BIL-09: a hosted checkout for one product; the page goes to the returned URL. */

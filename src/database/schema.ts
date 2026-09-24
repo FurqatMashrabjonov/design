@@ -1,7 +1,12 @@
-import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core'
+import { pgTable, text, doublePrecision, integer, bigint, bigserial, boolean, timestamp } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
-export const projects = sqliteTable('projects', {
+// INF-10: Postgres. Times the app writes are unix seconds (bigint), as they were in SQLite, so no
+// query had to learn a new unit; Better Auth's own tables keep real timestamps.
+const unix = (name: string) => bigint(name, { mode: 'number' })
+const now = sql`extract(epoch from now())::bigint`
+
+export const projects = pgTable('projects', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   designSystem: text('design_system').notNull().default('minimal'),
@@ -13,17 +18,17 @@ export const projects = sqliteTable('projects', {
   // GQ-10: the AA-repaired palette the planner invented (lib/palette.ts Palette as JSON); null =
   // the catalogue system's own colours. Only set when the system was chosen automatically.
   palette: text('palette'),
-  designSystemAuto: integer('design_system_auto', { mode: 'boolean' }).notNull().default(false),
+  designSystemAuto: boolean('design_system_auto').notNull().default(false),
   // What later screens still need from the plan — summary, app type, data model — as JSON.
   plan: text('plan'),
   // The owner (OWN-01). Null only for projects made before accounts existed (OWN-05).
   userId: text('user_id'),
   // DSH-08: starred on the dashboard.
-  favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  favorite: boolean('favorite').notNull().default(false),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
-export const screens = sqliteTable('screens', {
+export const screens = pgTable('screens', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
     .notNull()
@@ -31,8 +36,8 @@ export const screens = sqliteTable('screens', {
   name: text('name').notNull(),
   prompt: text('prompt').notNull(),
   html: text('html').notNull(),
-  x: real('x').notNull().default(0),
-  y: real('y').notNull().default(0),
+  x: doublePrecision('x').notNull().default(0),
+  y: doublePrecision('y').notNull().default(0),
   // Measured content height in CSS pixels; null until the frame has reported one.
   height: integer('height'),
   screenType: text('screen_type').notNull().default('root-tab'),
@@ -45,11 +50,11 @@ export const screens = sqliteTable('screens', {
   // The snapshot the screen is showing when the user stepped back with ‹ (null = the newest work).
   versionId: text('version_id'),
   // Set when the user deleted the screen; the row stays so Cmd+Z can bring it back (see migration 0014).
-  deletedAt: integer('deleted_at'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  deletedAt: unix('deleted_at'),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
-export const screenVersions = sqliteTable('screen_versions', {
+export const screenVersions = pgTable('screen_versions', {
   id: text('id').primaryKey(),
   screenId: text('screen_id')
     .notNull()
@@ -57,19 +62,21 @@ export const screenVersions = sqliteTable('screen_versions', {
   name: text('name').notNull(),
   prompt: text('prompt').notNull(),
   html: text('html').notNull(),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
+  // Insertion order: two snapshots often share a second (SQLite's rowid did this).
+  seq: bigserial('seq', { mode: 'number' }),
 })
 
 // Stock-photo lookups, keyed by the normalised search text (see lib/image-slots.ts).
-export const imageCache = sqliteTable('image_cache', {
+export const imageCache = pgTable('image_cache', {
   query: text('query').primaryKey(),
   url: text('url').notNull(),
   avgColor: text('avg_color'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
 // The project's conversation (see migration 0012 and lib/agent-messages.ts).
-export const messages = sqliteTable('messages', {
+export const messages = pgTable('messages', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
     .notNull()
@@ -78,10 +85,10 @@ export const messages = sqliteTable('messages', {
   kind: text('kind').notNull(),
   text: text('text').notNull(),
   meta: text('meta'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
-export const feedback = sqliteTable('feedback', {
+export const feedback = pgTable('feedback', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
     .notNull()
@@ -91,26 +98,26 @@ export const feedback = sqliteTable('feedback', {
   designSystem: text('design_system').notNull(),
   archetype: text('archetype'),
   variant: text('variant'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
 // Better Auth's tables (AUTH-02, migration 0016). Field names are the ones its Drizzle adapter expects.
-const ts = (name: string) => integer(name, { mode: 'timestamp_ms' })
-export const user = sqliteTable('user', {
+const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' })
+export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
-  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
   // ADM-01 (Better Auth admin plugin)
   role: text('role').notNull().default('user'),
-  banned: integer('banned', { mode: 'boolean' }).notNull().default(false),
+  banned: boolean('banned').notNull().default(false),
   banReason: text('ban_reason'),
   banExpires: ts('ban_expires'),
 })
-export const session = sqliteTable('session', {
+export const session = pgTable('session', {
   id: text('id').primaryKey(),
   expiresAt: ts('expires_at').notNull(),
   token: text('token').notNull().unique(),
@@ -123,7 +130,7 @@ export const session = sqliteTable('session', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
 })
-export const account = sqliteTable('account', {
+export const account = pgTable('account', {
   id: text('id').primaryKey(),
   accountId: text('account_id').notNull(),
   providerId: text('provider_id').notNull(),
@@ -140,7 +147,7 @@ export const account = sqliteTable('account', {
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 })
-export const verification = sqliteTable('verification', {
+export const verification = pgTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
@@ -149,7 +156,7 @@ export const verification = sqliteTable('verification', {
   updatedAt: ts('updated_at').notNull(),
 })
 
-export const llmCalls = sqliteTable('llm_calls', {
+export const llmCalls = pgTable('llm_calls', {
   id: text('id').primaryKey(),
   userId: text('user_id'),
   projectId: text('project_id'),
@@ -160,16 +167,16 @@ export const llmCalls = sqliteTable('llm_calls', {
   cachedTokens: integer('cached_tokens').notNull().default(0),
   completionTokens: integer('completion_tokens').notNull().default(0),
   cacheWriteTokens: integer('cache_write_tokens').notNull().default(0),
-  costUsd: real('cost_usd').notNull().default(0),
+  costUsd: doublePrecision('cost_usd').notNull().default(0),
   ms: integer('ms').notNull().default(0),
-  ok: integer('ok', { mode: 'boolean' }).notNull(),
+  ok: boolean('ok').notNull(),
   error: text('error'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
 
 // BIL-04: every credit movement; a balance is the sum of `delta`. `ref` is unique when set.
-export const creditLedger = sqliteTable('credit_ledger', {
+export const creditLedger = pgTable('credit_ledger', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
   delta: integer('delta').notNull(),
@@ -177,34 +184,36 @@ export const creditLedger = sqliteTable('credit_ledger', {
   actionId: text('action_id'),
   ref: text('ref'),
   note: text('note'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
+  // Insertion order (SQLite's rowid did this): "since the last plan grant" is counted by it.
+  seq: bigserial('seq', { mode: 'number' }),
 })
 
 // BIL-10: a plan as the payment provider reports it; its credits live in credit_ledger.
-export const subscriptions = sqliteTable('subscriptions', {
+export const subscriptions = pgTable('subscriptions', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull(),
   productKey: text('product_key').notNull(),
   status: text('status').notNull(),
-  startedAt: integer('started_at').notNull(),
-  currentPeriodEnd: integer('current_period_end'),
-  cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
-  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch())`),
+  startedAt: unix('started_at').notNull(),
+  currentPeriodEnd: unix('current_period_end'),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').notNull().default(false),
+  updatedAt: unix('updated_at').notNull().default(now),
 })
 
 // ADM-01: every admin action (ban, pause, limit, role), who did it and when.
-export const adminActions = sqliteTable('admin_actions', {
+export const adminActions = pgTable('admin_actions', {
   id: text('id').primaryKey(),
   adminId: text('admin_id').notNull(),
   action: text('action').notNull(),
   target: text('target'),
   detail: text('detail'),
-  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  createdAt: unix('created_at').notNull().default(now),
 })
 
 // ADM-08: runtime switches (pause, limits, budget, per-user limits) as key/value.
-export const settings = sqliteTable('settings', {
+export const settings = pgTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
-  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch())`),
+  updatedAt: unix('updated_at').notNull().default(now),
 })

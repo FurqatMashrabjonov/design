@@ -19,23 +19,23 @@ export async function guardGeneration(request: Request, run: (req: Request, user
   } catch {
     return new Response('Invalid request', { status: 400 })
   }
-  if (body.projectId !== undefined && !(typeof body.projectId === 'string' && Project.findOwned(body.projectId, user.id))) return new Response('Project not found', { status: 404 })
+  if (body.projectId !== undefined && !(typeof body.projectId === 'string' && await Project.findOwned(body.projectId, user.id))) return new Response('Project not found', { status: 404 })
   // LIM-01/02/03: daily call limit, one generation at a time, the service-wide daily budget.
-  const refused = UsageService.refusal(user.id)
+  const refused = await UsageService.refusal(user.id)
   if (refused) return new Response(refused.message, { status: refused.status })
 
   // LLM-05: one guarded request is one action; every model call inside it carries its id.
   // BIL-06: its price is held before any model runs, and settled when it ends (all back if nothing came of it).
   const actionId = crypto.randomUUID()
   const price = CreditService.priceOf(CreditService.kindOf(new URL(request.url).pathname, body))
-  CreditService.refresh(user.id) // BIL-10: a new month of a plan lands before the price is taken
-  if (!CreditService.hold(user.id, actionId, price)) {
-    return Response.json({ error: 'credits', needed: price, balance: Credit.balance(user.id) }, { status: 402 })
+  await CreditService.refresh(user.id) // BIL-10: a new month of a plan lands before the price is taken
+  if (!await CreditService.hold(user.id, actionId, price)) {
+    return Response.json({ error: 'credits', needed: price, balance: await Credit.balance(user.id) }, { status: 402 })
   }
   UsageService.begin(user.id)
-  const done = () => {
+  const done = async () => {
     UsageService.end(user.id)
-    CreditService.settle(user.id, actionId)
+    await CreditService.settle(user.id, actionId)
   }
   const who = { userId: user.id, projectId: typeof body.projectId === 'string' ? body.projectId : undefined, actionId }
   let res: Response
