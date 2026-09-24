@@ -20,7 +20,7 @@ function Playbook() {
       <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← {BRAND}
       </Link>
-      <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em]">Playbook</h1>
+      <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Playbook</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         What every generated screen is held to. Each rule says where it is enforced, because that is the whole difference: a rule
         in a prompt is a suggestion, a rule in code is a guarantee.
@@ -36,7 +36,7 @@ function Playbook() {
 
       {PLAYBOOK.map((section) => (
         <section key={section.id} id={section.id} className="mt-14 scroll-mt-8">
-          <h2 className="text-2xl font-semibold tracking-[-0.02em]">{section.title}</h2>
+          <h2 className="text-xl font-semibold tracking-[-0.02em]">{section.title}</h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{section.blurb}</p>
           <ul className="mt-6 grid gap-4 sm:grid-cols-2">
             {section.rules.map((r) => (

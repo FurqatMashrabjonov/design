@@ -29,7 +29,7 @@ export function CodeDialog(props: { screen: { name: string; html: string } | nul
               }
             }}
           >
-            {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
             {copied ? 'Copied' : 'Copy'}
           </Button>
         </DialogHeader>

@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowUp, Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { PhoneFrame, PHONE } from '@/components/PhoneFrame'
+import { PromptBox } from './PromptBox'
+import { buttonVariants } from '@/components/ui/button'
 
 // MKT-01: the public page. Everything shown is real output of the pipeline (public/showcase is
 // copied from an eval run), nothing is a mock. The prompt typed here survives sign-in: it is kept
@@ -11,9 +14,6 @@ export const BRAND = 'Design'
 export const PENDING_PROMPT = 'od:pending-prompt'
 /** IMG-01: reference pictures typed alongside that prompt, handed to the project page that starts the run. */
 export const PENDING_IMAGES = 'od:pending-images'
-
-const INK = '#0E0F12'
-const LIME = '#C6F24E'
 
 // One set per design system written for a phone, each real output of today's pipeline. The first
 // screen is the cover, so it is always one the render audit found clean.
@@ -29,22 +29,20 @@ const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery wi
 
 /** One real generated screen, drawn at phone size and scaled into `width` pixels. */
 export function Phone({ src, width, className = '', eager = false }: { src: string; width: number; className?: string; eager?: boolean }) {
-  const scale = width / 390
+  const scale = width / PHONE.width
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-[28px] bg-black p-[5px] shadow-[0_30px_60px_-20px_rgba(14,15,18,.45)] ring-1 ring-black/10 ${className}`} style={{ width: width + 10 }}>
-      <div className="overflow-hidden rounded-[23px] bg-white" style={{ width, height: 844 * scale }}>
-        <iframe
-          src={src}
-          title=""
-          aria-hidden
-          tabIndex={-1}
-          loading={eager ? 'eager' : 'lazy'}
-          sandbox="allow-scripts"
-          className="pointer-events-none origin-top-left border-0"
-          style={{ width: 390, height: 844, transform: `scale(${scale})` }}
-        />
-      </div>
-    </div>
+    <PhoneFrame width={width} className={className}>
+      <iframe
+        src={src}
+        title=""
+        aria-hidden
+        tabIndex={-1}
+        loading={eager ? 'eager' : 'lazy'}
+        sandbox="allow-scripts"
+        className="pointer-events-none origin-top-left border-0"
+        style={{ width: PHONE.width, height: PHONE.height, transform: `scale(${scale})` }}
+      />
+    </PhoneFrame>
   )
 }
 
@@ -52,47 +50,35 @@ export const shot = (set: string, i: number) => `/showcase/${set}-${i}.html`
 
 function HeroPrompt({ big = false }: { big?: boolean }) {
   const navigate = useNavigate()
+  const [fill, setFill] = useState<{ text: string; key: number }>()
   // A style page (MKT-06) can hand the landing a prompt on its way here; it stays in storage so it
   // survives signing in, where index.tsx picks it up and starts the project.
-  const [text, setText] = useState(() => {
+  const [initial] = useState(() => {
     try {
       return sessionStorage.getItem(PENDING_PROMPT) ?? ''
     } catch {
       return ''
     }
   })
-  function go(prompt = text) {
-    if (!prompt.trim()) return
-    try { sessionStorage.setItem(PENDING_PROMPT, prompt.trim().slice(0, 2000)) } catch {}
-    navigate({ to: '/login', search: { next: '/' } })
-  }
   return (
-    <div className="w-full">
-      <form
-        onSubmit={(e) => { e.preventDefault(); go() }}
-        className="group rounded-2xl border border-border bg-card p-2 text-left shadow-[0_1px_0_rgba(0,0,0,.04),0_20px_40px_-24px_rgba(14,15,18,.35)] transition focus-within:border-foreground/30"
-      >
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); go() } }}
-          rows={big ? 3 : 2}
-          maxLength={2000}
-          aria-label="Describe your app"
-          placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
-          className="block w-full resize-none bg-transparent px-3 pt-2 text-[15px] leading-relaxed outline-none placeholder:text-muted-foreground"
-        />
-        <div className="flex items-center justify-between gap-2 px-1 pt-1">
-          <span className="px-2 text-xs text-muted-foreground">iPhone · 3–6 screens · real photos</span>
-          <button type="submit" className="inline-flex h-10 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40" style={{ background: INK }} disabled={!text.trim()}>
-            Design it <ArrowUp className="size-4" />
-          </button>
-        </div>
-      </form>
+    <div className="w-full text-left">
+      <PromptBox
+        variant="hero"
+        submitLabel="Design it"
+        label="Describe your app"
+        placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
+        hint="iPhone · 3–6 screens · real photos"
+        defaultValue={initial}
+        fill={fill}
+        onSubmit={async (prompt) => {
+          try { sessionStorage.setItem(PENDING_PROMPT, prompt.slice(0, 2000)) } catch {}
+          await navigate({ to: '/login', search: { next: '/' } })
+        }}
+      />
       {big && (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {TRY.map((t) => (
-            <button key={t} type="button" onClick={() => setText(t)} className="rounded-full border border-border bg-card/70 px-3 py-1.5 text-xs text-muted-foreground transition hover:border-foreground/30 hover:text-foreground">
+            <button key={t} type="button" onClick={() => setFill((f) => ({ text: t, key: (f?.key ?? 0) + 1 }))} className="h-8 rounded-full border border-border bg-card/70 px-3 text-xs text-muted-foreground transition-colors duration-(--duration-fast) ease-out hover:border-foreground/30 hover:text-foreground">
               {t}
             </button>
           ))}
@@ -106,10 +92,11 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">{children}</p>
 }
 
+/** The one emphasised word of a big heading: Instrument Serif italic over a lime highlighter stroke. */
 function Em({ children }: { children: React.ReactNode }) {
   return (
-    <em className="relative isolate whitespace-nowrap font-normal italic" style={{ fontFamily: '"Instrument Serif", serif' }}>
-      <span className="absolute inset-x-0 bottom-[.08em] -z-10 h-[.32em] rounded-sm" style={{ background: LIME }} />
+    <em className="relative isolate whitespace-nowrap font-serif font-normal italic tracking-normal">
+      <span className="absolute inset-x-0 bottom-[.08em] -z-10 h-[.32em] rounded-xs bg-primary dark:bg-primary/45" />
       {children}
     </em>
   )
@@ -124,8 +111,8 @@ export function Landing() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-lg" style={{ background: INK }}>
-              <span className="size-2.5 rounded-sm" style={{ background: LIME }} />
+            <span className="grid size-7 place-items-center rounded-sm bg-primary shadow-1">
+              <span className="size-2.5 rounded-[3px] bg-brand-ink" />
             </span>
             {BRAND}
           </Link>
@@ -137,19 +124,19 @@ export function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <Link to="/login" className="hidden h-9 items-center px-3 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">Sign in</Link>
-            <Link to="/login" className="inline-flex h-9 items-center rounded-lg px-3.5 text-sm font-semibold text-white" style={{ background: INK }}>Start free</Link>
+            <Link to="/login" className={buttonVariants({ className: 'font-semibold' })}>Start free</Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
       <section className="relative">
-        <div className="pointer-events-none absolute inset-0 -z-0 opacity-[.5] [background-image:radial-gradient(rgba(14,15,18,.12)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
+        <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:pt-24">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Sparkles className="size-3.5" /> Free during beta · no card needed
           </span>
-          <h1 className="text-[40px] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[64px]">
+          <h1 className="text-3xl sm:text-5xl">
             One prompt. <br className="sm:hidden" />A <Em>whole app</Em>,<br />not a pile of screens.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
@@ -162,8 +149,8 @@ export function Landing() {
 
         {/* Phones, linked the way the app's screens link */}
         <div className="relative mx-auto mt-16 flex max-w-6xl items-end justify-center gap-4 px-4 pb-6 sm:gap-8">
-          <svg className="pointer-events-none absolute inset-x-0 top-1/2 -z-0 hidden h-24 w-full -translate-y-1/2 sm:block" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden>
-            <path d="M120 60 C 300 0, 400 100, 500 50 S 760 0, 880 60" fill="none" stroke={INK} strokeOpacity=".25" strokeWidth="1.5" strokeDasharray="6 8" className="animate-[dash_12s_linear_infinite]" />
+          <svg className="pointer-events-none absolute inset-x-0 top-1/2 -z-0 hidden h-24 w-full -translate-y-1/2 sm:block text-foreground" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden>
+            <path d="M120 60 C 300 0, 400 100, 500 50 S 760 0, 880 60" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1.5" strokeDasharray="6 8" className="animate-[dash_12s_linear_infinite]" />
           </svg>
           <Phone src={shot(SETS[1].id, SETS[1].screens[0]!)} width={210} eager className="hidden -rotate-6 md:block translate-y-6" />
           <Phone src={shot(SETS[0].id, SETS[0].screens[0]!)} width={250} eager className="z-10" />
@@ -175,7 +162,7 @@ export function Landing() {
       <section className="mx-auto max-w-6xl px-4 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>Why it looks like one app</Eyebrow>
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">Every screen <Em>agrees</Em> with the others.</h2>
+          <h2 className="text-2xl sm:text-4xl">Every screen <Em>agrees</Em> with the others.</h2>
           <p className="mt-4 text-muted-foreground">Other tools draw each screen on its own, so the tab bar moves, prices change and the style drifts. Here the app is planned first and consistency is enforced in code after generation.</p>
         </div>
         <div className="mt-4 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] sm:justify-center">
@@ -188,7 +175,7 @@ export function Landing() {
             ['Real photos', 'Every image slot is filled with a matching photo, never a grey box.'],
             ['One design system', 'Systems built for a phone, each with its own type, colour and component personality.'],
           ].map(([t, d]) => (
-            <div key={t} className="rounded-2xl border border-border bg-card p-5">
+            <div key={t} className="rounded-lg border border-border bg-card p-5 shadow-1">
               <p className="font-semibold">{t}</p>
               <p className="mt-1.5 text-sm text-muted-foreground">{d}</p>
             </div>
@@ -197,12 +184,12 @@ export function Landing() {
       </section>
 
       {/* Examples */}
-      <section id="examples" className="py-24 text-white" style={{ background: INK }}>
+      <section id="examples" className="bg-inverse py-24 text-inverse-foreground">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
             <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-white/45">Made from a single prompt</p>
-              <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">Real output. <span className="text-white/40">No retouching.</span></h2>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-inverse-foreground/55">Made from a single prompt</p>
+              <h2 className="text-2xl sm:text-4xl">Real output. <span className="text-inverse-foreground/50">No retouching.</span></h2>
             </div>
             <div className="flex flex-wrap gap-2" role="tablist">
               {SETS.map((s, i) => (
@@ -211,17 +198,16 @@ export function Landing() {
                   role="tab"
                   aria-selected={i === set}
                   onClick={() => setSet(i)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm transition ${i === set ? 'font-semibold text-black' : 'text-white/60 ring-1 ring-white/15 hover:text-white'}`}
-                  style={i === set ? { background: LIME } : undefined}
+                  className={`rounded-full px-3.5 py-1.5 text-sm transition-colors duration-(--duration-fast) ease-out ${i === set ? 'bg-primary font-semibold text-primary-foreground' : 'text-inverse-foreground/70 ring-1 ring-inverse-foreground/15 hover:text-inverse-foreground'}`}
                 >
                   {s.name}
                 </button>
               ))}
             </div>
           </div>
-          <p className="mt-8 max-w-3xl rounded-xl bg-white/5 px-4 py-3 font-mono text-[13px] leading-relaxed text-white/70 ring-1 ring-white/10">
-            <span className="text-white/40">prompt ›</span> {active.prompt}
-            <span className="ml-2 whitespace-nowrap text-white/40">· {active.system} system</span>
+          <p className="mt-8 max-w-3xl rounded-md bg-inverse-foreground/5 px-4 py-3 font-mono text-md leading-relaxed text-inverse-foreground/75 ring-1 ring-inverse-foreground/10">
+            <span className="text-inverse-foreground/50">prompt ›</span> {active.prompt}
+            <span className="ml-2 whitespace-nowrap text-inverse-foreground/50">· {active.system} system</span>
           </p>
           <div key={active.id} className="mt-2 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] animate-in fade-in duration-500">
             {active.screens.map((i) => <Phone key={i} src={shot(active.id, i)} width={200} />)}
@@ -233,7 +219,7 @@ export function Landing() {
       <section id="how" className="mx-auto max-w-6xl px-4 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">From idea to prototype in <Em>three steps</Em>.</h2>
+          <h2 className="text-2xl sm:text-4xl">From idea to prototype in <Em>three steps</Em>.</h2>
         </div>
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {[
@@ -241,9 +227,9 @@ export function Landing() {
             ['02', 'Get the whole app', 'A planner scopes the screens, the data and the navigation, then designs every screen in parallel.'],
             ['03', 'Click, edit, export', 'Tap through it as a prototype, change any element by clicking it, undo anything, download a zip.'],
           ].map(([n, t, d]) => (
-            <div key={n} className="rounded-3xl border border-border bg-card p-7">
+            <div key={n} className="rounded-xl border border-border bg-card p-7 shadow-1">
               <span className="font-mono text-sm text-muted-foreground">{n}</span>
-              <p className="mt-6 text-xl font-semibold tracking-tight">{t}</p>
+              <p className="mt-6 text-xl">{t}</p>
               <p className="mt-2 text-muted-foreground">{d}</p>
             </div>
           ))}
@@ -267,9 +253,9 @@ export function Landing() {
       <section id="faq" className="mx-auto max-w-3xl px-4 pb-24">
         <div className="text-center">
           <Eyebrow>FAQ</Eyebrow>
-          <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Questions, answered.</h2>
+          <h2 className="text-2xl sm:text-3xl">Questions, answered.</h2>
         </div>
-        <div className="mt-10 divide-y divide-border rounded-2xl border border-border bg-card">
+        <div className="mt-10 divide-y divide-border rounded-lg border border-border bg-card shadow-1">
           {[
             ['What do I get from one prompt?', 'A planned app: 3–6 screens that share one navigation, one data model and one design system, each one clickable and editable.'],
             ['Is it free?', 'Yes, during the beta, with a daily generation limit. Paid plans come later; beta users will hear first.'],
@@ -291,11 +277,11 @@ export function Landing() {
 
       {/* Final CTA */}
       <section className="px-4 pb-24">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] px-6 py-16 text-center text-white sm:py-20" style={{ background: INK }}>
-          <div className="pointer-events-none absolute -top-32 left-1/2 size-[480px] -translate-x-1/2 rounded-full opacity-25 blur-3xl" style={{ background: LIME }} />
-          <h2 className="relative text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">What are we designing today?</h2>
-          <p className="relative mt-3 text-white/60">Your first app is a minute away.</p>
-          <div className="relative mx-auto mt-8 max-w-2xl text-black">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-xl bg-inverse px-6 py-16 text-center text-inverse-foreground ring-1 ring-border sm:py-20">
+          <div className="pointer-events-none absolute -top-32 left-1/2 size-[480px] -translate-x-1/2 rounded-full bg-primary opacity-25 blur-3xl" />
+          <h2 className="relative text-2xl sm:text-4xl">What are we designing today?</h2>
+          <p className="relative mt-3 text-inverse-foreground/65">Your first app is a minute away.</p>
+          <div className="relative mx-auto mt-8 max-w-2xl">
             <HeroPrompt />
           </div>
         </div>
@@ -319,11 +305,11 @@ export function Landing() {
 
 function Feature({ icon: Icon, title, text, className = '' }: { icon: typeof Layers; title: string; text: string; className?: string }) {
   return (
-    <div className={`group rounded-3xl border border-border bg-card p-7 transition hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-28px_rgba(14,15,18,.4)] ${className}`}>
-      <span className="grid size-10 place-items-center rounded-xl" style={{ background: LIME }}>
+    <div className={`group rounded-xl border border-border bg-card p-7 shadow-1 transition shadow-1 duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${className}`}>
+      <span className="grid size-10 place-items-center rounded-md bg-primary text-primary-foreground">
         <Icon className="size-5" />
       </span>
-      <p className="mt-6 text-lg font-semibold tracking-tight">{title}</p>
+      <p className="mt-6 text-lg font-semibold">{title}</p>
       <p className="mt-1.5 text-muted-foreground">{text}</p>
     </div>
   )

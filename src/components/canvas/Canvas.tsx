@@ -322,7 +322,7 @@ export function Canvas(props: {
           })}
           {marquee && (
             <div
-              className="pointer-events-none absolute border border-primary bg-primary/10"
+              className="pointer-events-none absolute border border-ring/60 bg-primary/15"
               style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h, borderWidth: 1 / view.scale }}
             />
           )}

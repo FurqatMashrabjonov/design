@@ -52,12 +52,12 @@ function Login() {
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-1 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
           <p className="text-sm text-muted-foreground">Design app screens from a description.</p>
         </div>
         {sent ? (
           <div className="rounded-xl border bg-card p-5 text-center text-sm">
-            <Mail className="mx-auto mb-2 size-6 text-primary" />
+            <Mail className="mx-auto mb-2 size-6 text-foreground" />
             <p className="font-medium">Check your email</p>
             <p className="mt-1 text-muted-foreground">We sent a sign-in link to {email}. It works for 15 minutes.</p>
             <button type="button" className="mt-3 text-xs text-muted-foreground underline" onClick={() => setSent(false)}>

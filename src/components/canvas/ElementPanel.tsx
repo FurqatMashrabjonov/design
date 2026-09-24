@@ -49,17 +49,17 @@ export function ElementPanel(props: {
       <div className="flex items-center justify-between gap-2 px-1 pb-1.5">
         <span className="truncate text-xs font-medium text-muted-foreground">{props.info?.label ?? 'Element'}</span>
         <div className="flex shrink-0 items-center">
-          {props.info?.textEditable && tool('Edit text (or double-click it)', <Type className="size-3.5" />, props.onEditText)}
+          {props.info?.textEditable && tool('Edit text (or double-click it)', <Type className="size-4" />, props.onEditText)}
           {props.info?.isPhoto &&
-            tool('Replace photo', <ImageIcon className="size-3.5" />, () => {
+            tool('Replace photo', <ImageIcon className="size-4" />, () => {
               setMode('photo')
               setValue(props.info?.photoQuery ?? '')
               setTimeout(() => input.current?.select(), 0)
             })}
-          {tool('Duplicate', <Copy className="size-3.5" />, () => props.onAction('duplicate'))}
-          {tool('Move up', <ArrowUp className="size-3.5" />, () => props.onAction('up'))}
-          {tool('Move down', <ArrowDown className="size-3.5" />, () => props.onAction('down'))}
-          {tool('Delete', <Trash2 className="size-3.5" />, () => props.onAction('delete'), true)}
+          {tool('Duplicate', <Copy className="size-4" />, () => props.onAction('duplicate'))}
+          {tool('Move up', <ArrowUp className="size-4" />, () => props.onAction('up'))}
+          {tool('Move down', <ArrowDown className="size-4" />, () => props.onAction('down'))}
+          {tool('Delete', <Trash2 className="size-4" />, () => props.onAction('delete'), true)}
         </div>
       </div>
       <form

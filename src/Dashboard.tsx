@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { PhoneFrame } from '@/components/PhoneFrame'
 
 // DSH-03…12: the signed-in home. A sidebar (recent projects, credits, account), the prompt
 // with a visual design-system picker, starting points drawn from real output, and the projects
@@ -23,7 +24,6 @@ type Card = { id: string; name: string; device: string; designSystem: string; fa
 type System = { id: string; name: string; category: string; swatch: { bg: string | null; fg: string | null; accent: string | null; font: string | null } }
 type User = { name: string; email: string }
 
-const LIME = '#C6F24E'
 const VIEW_KEY = 'od:projects-view'
 
 /** The project's first screen, loaded only when the card scrolls into view. */
@@ -68,9 +68,9 @@ function write(key: string, value: string) {
 
 export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size?: number }) {
   return (
-    <span className="inline-flex shrink-0 overflow-hidden rounded-full ring-1 ring-black/10" style={{ width: size, height: size }} aria-hidden>
+    <span className="inline-flex shrink-0 overflow-hidden rounded-full ring-1 ring-foreground/10" style={{ width: size, height: size }} aria-hidden>
       <span className="h-full w-1/2" style={{ background: s?.bg ?? 'var(--card)' }} />
-      <span className="h-full w-1/2" style={{ background: s?.accent ?? '#888' }} />
+      <span className="h-full w-1/2" style={{ background: s?.accent ?? 'var(--muted-foreground)' }} />
     </span>
   )
 }
@@ -161,8 +161,8 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
       {/* Sidebar (DSH-10) */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r bg-background md:flex">
         <Link to="/" className="flex h-14 items-center gap-2 px-4 font-semibold tracking-tight">
-          <span className="grid size-7 place-items-center rounded-lg bg-foreground">
-            <span className="size-2.5 rounded-sm" style={{ background: LIME }} />
+          <span className="grid size-7 place-items-center rounded-sm bg-primary shadow-1">
+            <span className="size-2.5 rounded-[3px] bg-brand-ink" />
           </span>
           {BRAND}
         </Link>
@@ -173,7 +173,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
         </nav>
         {projects.length > 0 && (
           <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-2">
-            <p className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Recent</p>
+            <p className="px-2.5 pb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent</p>
             {projects.slice(0, 6).map((c) => (
               <Link key={c.id} to="/p/$projectId" params={{ projectId: c.id }} className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm hover:bg-muted">
                 <span className="relative h-9 w-7 shrink-0 overflow-hidden rounded-md border bg-muted">
@@ -202,7 +202,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
       <main id="top" className="min-w-0 flex-1">
         <header className="flex h-14 items-center justify-between px-4 md:justify-end md:px-8">
           <Link to="/" className="flex items-center gap-2 font-semibold md:hidden">
-            <span className="grid size-7 place-items-center rounded-lg bg-foreground"><span className="size-2.5 rounded-sm" style={{ background: LIME }} /></span>
+            <span className="grid size-7 place-items-center rounded-sm bg-primary shadow-1"><span className="size-2.5 rounded-[3px] bg-brand-ink" /></span>
             {BRAND}
           </Link>
           <div className="flex items-center gap-1">
@@ -215,7 +215,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
           {/* Prompt */}
           <section className="mx-auto max-w-3xl pt-6 text-center md:pt-12">
             <p className="text-sm text-muted-foreground">{greeting()}{first ? `, ${first}` : ''}</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-[-0.03em] md:text-4xl">What should we design today?</h1>
+            <h1 className="mt-1 text-2xl font-semibold tracking-[-0.03em] md:text-3xl">What should we design today?</h1>
             <div className="mt-6 text-left">
               {/* DS-02: no style to choose before there is anything to look at. The brief decides
                   (a style it names wins; otherwise the app type offers a few and the project picks
@@ -252,12 +252,12 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
               {SETS.map((s, i) => (
                 <button key={s.id} type="button" onClick={() => pickIdea(i)} className="group flex flex-col overflow-hidden rounded-2xl border bg-background text-left transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring">
                   <div className="relative flex h-36 justify-center overflow-hidden bg-muted pt-4">
-                    <Phone src={shot(s.id, s.screens[0]!)} width={104} className="shadow-md transition group-hover:-translate-y-1" />
+                    <Phone src={shot(s.id, s.screens[0]!)} width={104} className="transition duration-(--duration-base) ease-out group-hover:-translate-y-1" />
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-semibold">{s.kind}</p>
                     <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{s.prompt}</p>
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       <Swatch s={systems.get(s.systemId)?.swatch} size={10} /> {s.system}
                     </p>
                   </div>
@@ -300,9 +300,9 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                         <div className="relative h-48 overflow-hidden bg-muted">
                           {c.coverId ? (
                             c.device === 'mobile' ? (
-                              <div className="absolute top-5 left-1/2 -translate-x-1/2 overflow-hidden rounded-[18px] border-4 border-foreground/90 shadow-md" style={{ width: 128, height: 280 }}>
+                              <PhoneFrame width={120} className="absolute top-5 left-1/2 -translate-x-1/2">
                                 <Thumb screenId={c.coverId} device="mobile" width={120} />
-                              </div>
+                              </PhoneFrame>
                             ) : (
                               <div className="absolute inset-3 overflow-hidden rounded-lg border shadow-sm"><Thumb screenId={c.coverId} device="desktop" width={260} /></div>
                             )
@@ -320,7 +320,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                           </p>
                         </div>
                         <button type="button" onClick={() => toggleStar(c)} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={starred(c) ? `Remove ${c.name} from favourites` : `Add ${c.name} to favourites`} aria-pressed={starred(c)}>
-                          <Star className="size-4" fill={starred(c) ? 'currentColor' : 'none'} style={starred(c) ? { color: '#e2a400' } : undefined} />
+                          <Star className={starred(c) ? 'size-4 fill-primary text-foreground' : 'size-4'} />
                         </button>
                         <ProjectMenu card={c} onRename={() => { setDraft(c.name); setRenaming(c) }} onDelete={() => setDeleting(c)} />
                       </div>
@@ -339,7 +339,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                         <span className="w-24 text-right text-xs text-muted-foreground">{ago(c.updatedAt)}</span>
                       </Link>
                       <button type="button" onClick={() => toggleStar(c)} className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={starred(c) ? `Remove ${c.name} from favourites` : `Add ${c.name} to favourites`} aria-pressed={starred(c)}>
-                        <Star className="size-4" fill={starred(c) ? 'currentColor' : 'none'} style={starred(c) ? { color: '#e2a400' } : undefined} />
+                        <Star className={starred(c) ? 'size-4 fill-primary text-foreground' : 'size-4'} />
                       </button>
                       <ProjectMenu card={c} onRename={() => { setDraft(c.name); setRenaming(c) }} onDelete={() => setDeleting(c)} />
                     </div>
@@ -371,7 +371,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={remove} className="bg-destructive text-white hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={remove} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

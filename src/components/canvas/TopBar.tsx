@@ -71,7 +71,7 @@ export function TopBar(props: {
           size={Math.max(4, (draft ?? props.name).length)}
           aria-label="Project name"
           title="Rename the project"
-          className="min-w-0 truncate rounded bg-transparent px-1.5 py-1 font-semibold outline-none hover:bg-muted focus:bg-muted focus:ring-2 focus:ring-primary/30"
+          className="min-w-0 truncate rounded bg-transparent px-1.5 py-1 font-semibold outline-none hover:bg-muted focus:bg-muted focus:ring-2 focus:ring-ring/40"
         />
       </nav>
       <Badge variant="secondary" className="font-normal capitalize">
@@ -140,7 +140,7 @@ export function TopBar(props: {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive"
               disabled={deleting}
               onClick={async (e) => {
                 e.preventDefault()

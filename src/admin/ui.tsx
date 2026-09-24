@@ -17,7 +17,7 @@ export function PageTitle({ title, sub, right }: { title: string; sub?: string; 
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="truncate text-2xl font-semibold tracking-tight" title={title}>{title}</h1>
+        <h1 className="truncate text-xl font-semibold tracking-tight" title={title}>{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
       </div>
       {right}
@@ -46,7 +46,7 @@ export function Kpi({ label, value, now, before, format = String, good = 'up' }:
   return (
     <div className="rounded-2xl border bg-background p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1.5 text-2xl font-semibold tabular-nums tracking-tight">{value ?? format(now)}</p>
+      <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight">{value ?? format(now)}</p>
       <p className="mt-1 h-4 text-xs tabular-nums text-muted-foreground">
         {delta !== null && Math.abs(delta) >= 0.005 ? (
           <span className={better === null ? '' : better ? 'text-emerald-600' : 'text-red-600'}>

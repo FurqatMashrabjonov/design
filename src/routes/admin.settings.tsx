@@ -49,7 +49,7 @@ function ControlsPage() {
           )}
         </Panel>
         <Panel title="Daily call limit per user">
-          <p className="text-2xl font-semibold tabular-nums">{d.limits.callsPerDay}</p>
+          <p className="text-xl font-semibold tabular-nums">{d.limits.callsPerDay}</p>
           <p className="text-xs text-muted-foreground">{saved('limits.callsPerDay') ? 'Set here' : 'Default (LIMIT_CALLS_PER_DAY or 150)'}. A 6-screen app is about 8 calls.</p>
           <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); set('limits.callsPerDay', calls.trim() || null, calls.trim() ? `Limit set to ${calls.trim()}` : 'Limit back to default') }}>
             <Input inputMode="numeric" value={calls} onChange={(e) => setCalls(e.target.value)} placeholder="default" aria-label="Daily call limit" className="h-9" />
@@ -57,7 +57,7 @@ function ControlsPage() {
           </form>
         </Panel>
         <Panel title="Daily budget (all users)">
-          <p className="text-2xl font-semibold tabular-nums">{money(d.limits.dailyBudgetUsd)}</p>
+          <p className="text-xl font-semibold tabular-nums">{money(d.limits.dailyBudgetUsd)}</p>
           <p className="text-xs text-muted-foreground">{saved('limits.dailyBudgetUsd') ? 'Set here' : 'Default (LLM_DAILY_BUDGET_USD or $5)'}. Generation pauses for the day when it is reached.</p>
           <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); set('limits.dailyBudgetUsd', budget.trim() || null, budget.trim() ? `Budget set to $${budget.trim()}` : 'Budget back to default') }}>
             <Input inputMode="decimal" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="default" aria-label="Daily budget in dollars" className="h-9" />

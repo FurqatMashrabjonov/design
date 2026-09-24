@@ -896,6 +896,46 @@ console.log('Testing Frame Height...')
   assert.ok(!/rounded-xl border bg-white/.test(frame), 'UI-02: a screen sits on the canvas, not inside a card')
   const root2 = readFileSync('src/routes/__root.tsx', 'utf8')
   assert.ok(root2.includes("localStorage.getItem('od:theme')") && root2.includes('add(\'dark\')'), 'UI-06: the saved mode is applied before the first paint')
+
+  // UI-10: warm ink + electric lime, checked from the OKLCH values themselves.
+  const block = (sel: string) => css.slice(css.indexOf(`${sel} {`), css.indexOf('}', css.indexOf(`${sel} {`)))
+  const oklch = (b: string, name: string) => {
+    const m = b.match(new RegExp(`${name}:\\s*oklch\\(([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)\\)`))
+    assert.ok(m, `${name} is an oklch() value`)
+    return m!.slice(1).map(Number) as [number, number, number]
+  }
+  // OKLCH -> linear sRGB (Björn Ottosson's matrices), then WCAG relative luminance.
+  const luminance = ([L, C, H]: number[]) => {
+    const a = C * Math.cos((H * Math.PI) / 180), b = C * Math.sin((H * Math.PI) / 180)
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+    const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s].map((v) => Math.min(1, Math.max(0, v)))
+    return 0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!
+  }
+  const contrast = (x: number[], y: number[]) => { const [hi, lo] = [luminance(x), luminance(y)].sort((p, q) => q - p); return (hi! + 0.05) / (lo! + 0.05) }
+  assert.ok(Math.abs(contrast([1, 0.0001, 0], [0.0001, 0.0001, 0]) - 21) < 0.1, 'the converter maps white and black to 21:1')
+  for (const [sel, mode] of [[':root', 'light'], ['.dark', 'dark']] as const) {
+    const b = block(sel)
+    const [pl, pc, ph] = oklch(b, '--primary')
+    assert.ok(pl > 0.85 && pc > 0.15 && ph > 110 && ph < 135, `${mode}: --primary is the lime`)
+    const ink = oklch(b, '--primary-foreground')
+    assert.ok(ink[0] < 0.3 && ink[1] > 0, `${mode}: what sits on lime is a warm ink`)
+    assert.ok(contrast(ink, [pl, pc, ph]) >= 4.5, `${mode}: ink on lime clears 4.5:1`)
+    const bg = oklch(b, '--background'), card = oklch(b, '--card'), muted = oklch(b, '--muted'), fg = oklch(b, '--foreground')
+    for (const [name, surface] of [['background', bg], ['card', card], ['muted', muted]] as const) {
+      assert.ok(contrast(fg, surface) >= 4.5, `${mode}: foreground on ${name} clears 4.5:1`)
+      assert.ok(contrast(oklch(b, '--muted-foreground'), surface) >= 4.5, `${mode}: muted text on ${name} clears 4.5:1`)
+      // The focus ring is never lime (lime on sand is ~1.3:1); it must clear 3:1 on every surface.
+      assert.ok(contrast(oklch(b, '--ring'), surface) >= 3, `${mode}: the focus ring clears 3:1 on ${name}`)
+    }
+    assert.ok(oklch(b, '--ring')[1] < 0.05, `${mode}: the ring is a warm neutral, not the lime`)
+    for (const t of ['--elevation-1', '--elevation-2', '--elevation-3', '--elevation-4', '--elevation-phone']) assert.ok(b.includes(`${t}:`), `${mode}: ${t} is defined`)
+  }
+  for (const t of ['--brand-ink:', '--brand-lime:', '--lime-100:', '--lime-700:', '--phone-radius:', '--ease-spring', '--duration-base:']) assert.ok(css.includes(t), `${t} is defined`)
+  for (const t of ['--radius-sm: 8px', '--radius-md: 12px', '--radius-lg: 16px', '--radius-xl: 24px', '--shadow-1:', '--shadow-4:', '--shadow-phone:', '--text-md: 13px', '--text-5xl: 64px']) assert.ok(css.includes(t), `the theme exposes ${t}`)
+  assert.ok(/prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{\s*--duration-fast: 0ms/.test(css), 'reduced motion zeroes the durations')
+  assert.ok(css.includes("'Instrument Sans Variable'") && !css.includes('Geist'), 'the studio face is Instrument Sans, self-hosted')
+  assert.ok(!readFileSync('src/routes/index.tsx', 'utf8').includes('fonts.googleapis.com'), 'no web-font request from the landing: the serif is self-hosted too')
+  assert.ok(!/const (INK|LIME) =/.test(readFileSync('src/Landing.tsx', 'utf8') + readFileSync('src/Dashboard.tsx', 'utf8')), 'no hard-coded brand colours: the pages use the tokens')
 }
 
 console.log('Testing Judge Regressions (GQ-18/19 follow-ups)...')

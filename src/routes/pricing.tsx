@@ -39,7 +39,7 @@ function Pricing() {
       <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← {BRAND}
       </Link>
-      <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em]">Pricing</h1>
+      <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Pricing</h1>
       <p className="mt-3 max-w-2xl text-muted-foreground">
         Pay for what you generate, in credits. A whole app is {P.plan + P.draw} credits, a new or redrawn screen {P.screen}, an element edit {P.element}. A
         screen that fails or that you stop is given back.
@@ -60,7 +60,7 @@ function Pricing() {
               <h2 className="font-semibold">{t.name}</h2>
               {t.id === 'pro' && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">Most room</span>}
             </div>
-            <p className="mt-3 text-4xl font-semibold tabular-nums">
+            <p className="mt-3 text-3xl font-semibold tabular-nums">
               ${t.price}
               <span className="text-base font-normal text-muted-foreground">{t.id === 'free' ? '' : '/mo'}</span>
             </p>
@@ -96,7 +96,7 @@ function Pricing() {
           {PACKS.map((p) => (
             <div key={p.credits} className="rounded-xl border bg-background px-5 py-4">
               <p className="text-sm font-medium">{p.credits.toLocaleString('en')} credits</p>
-              <p className="text-2xl font-semibold tabular-nums">${p.usd}</p>
+              <p className="text-xl font-semibold tabular-nums">${p.usd}</p>
               <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · never expire</p>
               <button type="button" onClick={() => buy(`pack-${p.credits}` as ProductKey)} className="mt-3 h-8 w-full rounded-lg border text-sm hover:bg-muted">
                 Buy

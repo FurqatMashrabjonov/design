@@ -1,13 +1,19 @@
 @import 'tailwindcss';
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+/* UI-10: the studio's faces, self-hosted. They load in the studio document only: a generated screen
+   is a separate iframe document and gets its fonts from its own design system (tokens.css). */
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource/instrument-serif/400-italic.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    /* The accent face: one emphasised word in a big heading, always italic. */
+    --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -25,6 +31,7 @@
     --color-input: var(--input);
     --color-border: var(--border);
     --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -41,90 +48,198 @@
     --color-background: var(--background);
     --color-canvas: var(--canvas);
     --color-canvas-dot: var(--canvas-dot);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    /* An ink panel in light mode, a lifted warm panel in dark (the examples band, the final CTA). */
+    --color-inverse: var(--inverse);
+    --color-inverse-foreground: var(--inverse-foreground);
+    --color-brand-ink: var(--brand-ink);
+    --color-brand-lime: var(--brand-lime);
+    /* The lime ramp replaces Tailwind's lime: tints for chips and highlights, always with ink text. */
+    --color-lime-50: var(--lime-50);
+    --color-lime-100: var(--lime-100);
+    --color-lime-200: var(--lime-200);
+    --color-lime-300: var(--lime-300);
+    --color-lime-400: var(--lime-400);
+    --color-lime-500: var(--lime-500);
+    --color-lime-600: var(--lime-600);
+    --color-lime-700: var(--lime-700);
+
+    /* UI-10: four radii that are actually used, plus full. The larger shadcn names fold onto them so
+       older classes stay sane (rounded-3xl was 35px), and rounded-4xl is the pill the badge meant. */
+    --radius: 8px;
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 24px;
+    --radius-3xl: 24px;
+    --radius-4xl: 9999px;
+    --radius-phone: var(--phone-radius);
+
+    --shadow-1: var(--elevation-1);
+    --shadow-2: var(--elevation-2);
+    --shadow-3: var(--elevation-3);
+    --shadow-4: var(--elevation-4);
+    --shadow-phone: var(--elevation-phone);
+
+    /* Type scale 12/13/14/16/18/22/28/36/48/64. Tailwind's names keep their order (xl and up moved
+       onto the scale); 13 is `text-md`, the dense-row size (a t-shirt name so `cn` merges it as a size, not a colour). Large sizes carry tighter tracking and weight 600. */
+    --text-xs: 12px;
+    --text-xs--line-height: 16px;
+    --text-md: 13px;
+    --text-md--line-height: 18px;
+    --text-sm: 14px;
+    --text-sm--line-height: 20px;
+    --text-base: 16px;
+    --text-base--line-height: 24px;
+    --text-lg: 18px;
+    --text-lg--line-height: 26px;
+    --text-lg--letter-spacing: -0.005em;
+    --text-xl: 22px;
+    --text-xl--line-height: 28px;
+    --text-xl--letter-spacing: -0.01em;
+    --text-xl--font-weight: 600;
+    --text-2xl: 28px;
+    --text-2xl--line-height: 34px;
+    --text-2xl--letter-spacing: -0.02em;
+    --text-2xl--font-weight: 600;
+    --text-3xl: 36px;
+    --text-3xl--line-height: 40px;
+    --text-3xl--letter-spacing: -0.025em;
+    --text-3xl--font-weight: 600;
+    --text-4xl: 48px;
+    --text-4xl--line-height: 52px;
+    --text-4xl--letter-spacing: -0.03em;
+    --text-4xl--font-weight: 600;
+    --text-5xl: 64px;
+    --text-5xl--line-height: 66px;
+    --text-5xl--letter-spacing: -0.035em;
+    --text-5xl--font-weight: 600;
+
+    --ease-out: var(--motion-ease-out);
+    --ease-spring: var(--motion-ease-spring);
 }
 
 :root {
     /* UI-01: one warm (sand) ramp for light and dark, so no surface is pure white or pure black.
-       #fdfcf8 · #faf8f3 · #f4f1e9 · #eae5da · #ddd7c9 · #8a8177 · #5b534b · #34302c · #211e1b · #100e0c */
-    --background: #fdfcf8;
-    --foreground: #34302c;
-    --card: #ffffff;
-    --card-foreground: #34302c;
-    --popover: #ffffff;
-    --popover-foreground: #34302c;
-    /* Brand: warm sand needs a cool, saturated partner. Used on ~4 controls, never as a surface. */
-    --primary: #0d9d78;
-    --primary-foreground: #ffffff;
-    --secondary: #f4f1e9;
-    --secondary-foreground: #34302c;
-    --muted: #f4f1e9;
-    --muted-foreground: #8a8177;
-    --accent: #eae5da;
-    --accent-foreground: #34302c;
-    --destructive: #d5432f;
-    --border: #e4ded1;
-    --input: #faf8f3;
-    --ring: #0d9d78;
-    --chart-1: #0d9d78;
-    --chart-2: #8a8177;
-    --chart-3: #d98b3a;
-    --chart-4: #5b534b;
-    --chart-5: #ddd7c9;
-    --radius: 1rem;
-    --sidebar: #faf8f3;
-    --sidebar-foreground: #34302c;
-    --sidebar-primary: #0d9d78;
-    --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #eae5da;
-    --sidebar-accent-foreground: #34302c;
-    --sidebar-border: #e4ded1;
-    --sidebar-ring: #0d9d78;
+       UI-10: in OKLCH; new-features.check.ts converts these and checks the contrast pairs. */
+    --background: oklch(0.991 0.005 85);        /* #fefcf8 */
+    --foreground: oklch(0.24 0.012 60);         /* #241e1a */
+    --card: oklch(0.998 0.002 85);              /* #fffefd */
+    --card-foreground: oklch(0.24 0.012 60);
+    --popover: oklch(0.998 0.002 85);
+    --popover-foreground: oklch(0.24 0.012 60);
+    /* Brand: warm ink + electric lime. Lime is a fill (primary buttons, active chips, highlights, the
+       logo chip) with ink on it — never text on a light surface and never a focus ring. */
+    --brand-ink: oklch(0.2 0.012 60);           /* #1a1511 */
+    --brand-lime: oklch(0.91 0.2 124);          /* #c6f648 */
+    --lime-50: oklch(0.98 0.04 120);
+    --lime-100: oklch(0.965 0.075 121);
+    --lime-200: oklch(0.94 0.12 122);
+    --lime-300: oklch(0.925 0.16 123);
+    --lime-400: oklch(0.91 0.2 124);
+    --lime-500: oklch(0.82 0.19 126);
+    --lime-600: oklch(0.68 0.17 128);
+    --lime-700: oklch(0.52 0.13 130);
+    --primary: oklch(0.91 0.2 124);
+    --primary-foreground: oklch(0.2 0.012 60);
+    --secondary: oklch(0.962 0.009 85);
+    --secondary-foreground: oklch(0.24 0.012 60);
+    --muted: oklch(0.962 0.009 85);             /* #f5f2ec */
+    --muted-foreground: oklch(0.53 0.016 65);   /* #736a62 */
+    --accent: oklch(0.93 0.013 83);             /* #ece7de */
+    --accent-foreground: oklch(0.24 0.012 60);
+    --destructive: oklch(0.56 0.19 30);         /* #cc3526 */
+    --destructive-foreground: oklch(0.99 0.004 85);
+    --border: oklch(0.912 0.013 83);            /* #e6e1d8 */
+    --input: oklch(0.975 0.007 85);
+    /* The focus ring is ink, so it clears 3:1 on every surface (lime would not on sand). */
+    --ring: oklch(0.35 0.014 60);               /* #403933 */
+    --inverse: oklch(0.2 0.012 60);
+    --inverse-foreground: oklch(0.95 0.01 85);
+    --chart-1: oklch(0.68 0.17 128);
+    --chart-2: oklch(0.53 0.016 65);
+    --chart-3: oklch(0.7 0.13 60);
+    --chart-4: oklch(0.4 0.014 60);
+    --chart-5: oklch(0.88 0.016 83);
+    --sidebar: oklch(0.98 0.006 85);
+    --sidebar-foreground: oklch(0.24 0.012 60);
+    --sidebar-primary: oklch(0.91 0.2 124);
+    --sidebar-primary-foreground: oklch(0.2 0.012 60);
+    --sidebar-accent: oklch(0.93 0.013 83);
+    --sidebar-accent-foreground: oklch(0.24 0.012 60);
+    --sidebar-border: oklch(0.912 0.013 83);
+    --sidebar-ring: oklch(0.35 0.014 60);
     /* The canvas is a shade below the chrome, so screens sit on it rather than in it (UI-02). */
-    --canvas: #f4f1e9;
-    --canvas-dot: #d5cdbd;
+    --canvas: oklch(0.962 0.009 85);
+    --canvas-dot: oklch(0.84 0.018 83);
+
+    /* Elevation, tinted with the ink hue and layered: a tight contact shadow plus a soft ambient one. */
+    --elevation-1: 0 1px 2px oklch(0.2 0.02 60 / 0.06), 0 1px 1px oklch(0.2 0.02 60 / 0.03);
+    --elevation-2: 0 1px 2px oklch(0.2 0.02 60 / 0.05), 0 4px 12px -2px oklch(0.2 0.02 60 / 0.08);
+    --elevation-3: 0 1px 3px oklch(0.2 0.02 60 / 0.05), 0 12px 28px -8px oklch(0.2 0.02 60 / 0.14);
+    --elevation-4: 0 2px 6px oklch(0.2 0.02 60 / 0.06), 0 24px 56px -12px oklch(0.2 0.02 60 / 0.22);
+    --elevation-phone: 0 1px 2px oklch(0.2 0.02 60 / 0.08), 0 30px 60px -24px oklch(0.2 0.02 60 / 0.45);
+    /* One phone corner for every device frame, at 390px wide; PhoneFrame scales it with its width. */
+    --phone-radius: 44px;
+
+    /* Motion: a spring for things that arrive, ease-out for everything else. */
+    --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --motion-ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+    --duration-fast: 120ms;
+    --duration-base: 200ms;
+    --duration-slow: 320ms;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+    :root {
+        --motion-ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+    }
 }
 
 .dark {
-    --background: #100e0c;
-    --foreground: #eae5da;
-    --card: #211e1b;
-    --card-foreground: #eae5da;
-    --popover: #211e1b;
-    --popover-foreground: #eae5da;
-    --primary: #14b892;
-    --primary-foreground: #06251d;
-    --secondary: #34302c;
-    --secondary-foreground: #eae5da;
-    --muted: #34302c;
-    --muted-foreground: #a79d92;
-    --accent: #34302c;
-    --accent-foreground: #eae5da;
-    --destructive: #f2705b;
-    --border: #3b3631;
-    --input: #2a2723;
-    --ring: #14b892;
-    --chart-1: #14b892;
-    --chart-2: #a79d92;
-    --chart-3: #e0a05a;
-    --chart-4: #ddd7c9;
-    --chart-5: #5b534b;
-    --sidebar: #1a1715;
-    --sidebar-foreground: #eae5da;
-    --sidebar-primary: #14b892;
-    --sidebar-primary-foreground: #06251d;
-    --sidebar-accent: #34302c;
-    --sidebar-accent-foreground: #eae5da;
-    --sidebar-border: #3b3631;
-    --sidebar-ring: #14b892;
-    --canvas: #17140f;
-    --canvas-dot: #35302a;
+    --background: oklch(0.17 0.007 60);         /* #120f0c */
+    --foreground: oklch(0.93 0.012 85);         /* #ebe7df */
+    --card: oklch(0.215 0.008 60);              /* #1c1916 */
+    --card-foreground: oklch(0.93 0.012 85);
+    --popover: oklch(0.215 0.008 60);
+    --popover-foreground: oklch(0.93 0.012 85);
+    /* Lime fills stay lime in the dark, and what sits on them stays ink. */
+    --primary: oklch(0.9 0.2 124);
+    --primary-foreground: oklch(0.2 0.012 60);
+    --secondary: oklch(0.265 0.009 60);
+    --secondary-foreground: oklch(0.93 0.012 85);
+    --muted: oklch(0.265 0.009 60);             /* #292421 */
+    --muted-foreground: oklch(0.72 0.016 70);   /* #aba39a */
+    --accent: oklch(0.29 0.01 60);
+    --accent-foreground: oklch(0.93 0.012 85);
+    --destructive: oklch(0.68 0.17 30);         /* #ef6856 */
+    --destructive-foreground: oklch(0.17 0.007 60);
+    --border: oklch(0.3 0.01 60);               /* #322d29 */
+    --input: oklch(0.24 0.009 60);
+    --ring: oklch(0.86 0.02 80);                /* #d8d0c3 */
+    --inverse: oklch(0.235 0.01 60);
+    --inverse-foreground: oklch(0.93 0.012 85);
+    --chart-1: oklch(0.9 0.2 124);
+    --chart-2: oklch(0.72 0.016 70);
+    --chart-3: oklch(0.75 0.12 65);
+    --chart-4: oklch(0.88 0.016 83);
+    --chart-5: oklch(0.4 0.014 60);
+    --sidebar: oklch(0.195 0.008 60);
+    --sidebar-foreground: oklch(0.93 0.012 85);
+    --sidebar-primary: oklch(0.9 0.2 124);
+    --sidebar-primary-foreground: oklch(0.2 0.012 60);
+    --sidebar-accent: oklch(0.265 0.009 60);
+    --sidebar-accent-foreground: oklch(0.93 0.012 85);
+    --sidebar-border: oklch(0.3 0.01 60);
+    --sidebar-ring: oklch(0.86 0.02 80);
+    --canvas: oklch(0.155 0.007 60);
+    --canvas-dot: oklch(0.32 0.012 65);
+    --elevation-1: 0 1px 2px oklch(0.08 0.01 60 / 0.4);
+    --elevation-2: 0 1px 2px oklch(0.08 0.01 60 / 0.4), 0 4px 12px -2px oklch(0.08 0.01 60 / 0.4);
+    --elevation-3: 0 1px 3px oklch(0.08 0.01 60 / 0.45), 0 12px 28px -8px oklch(0.08 0.01 60 / 0.55);
+    --elevation-4: 0 2px 6px oklch(0.08 0.01 60 / 0.5), 0 24px 56px -12px oklch(0.08 0.01 60 / 0.7);
+    --elevation-phone: 0 1px 2px oklch(0.08 0.01 60 / 0.5), 0 30px 60px -24px oklch(0.08 0.01 60 / 0.8);
 }
 
 @layer base {
@@ -138,6 +253,21 @@
     @apply font-sans;
     }
 }
+
+/* UI-10: one stroke for every studio icon (lucide draws 2px by default; CSS beats the attribute). */
+svg.lucide { stroke-width: 1.75; }
+
+/* The motion tokens go to zero for anyone who asked for less motion, and so does every transition. */
+@media (prefers-reduced-motion: reduce) {
+    :root { --duration-fast: 0ms; --duration-base: 0ms; --duration-slow: 0ms; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 @keyframes dash { to { stroke-dashoffset: -280; } }
 
 /* LP-03: a screen being designed breathes; the ring settles once it is done. */

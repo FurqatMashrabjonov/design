@@ -40,14 +40,14 @@ function Step(props: { state: 'done' | 'running' | 'pending' | 'error'; label: s
       <Icon
         className={cn(
           'size-3.5 shrink-0',
-          props.state === 'done' && 'text-primary',
+          props.state === 'done' && 'text-foreground',
           props.state === 'running' && 'animate-spin text-muted-foreground',
           props.state === 'error' && 'text-destructive',
           props.state === 'pending' && 'text-muted-foreground/40',
         )}
       />
       <span className="min-w-0 flex-1 truncate">{props.label}</span>
-      {props.detail && <span className="shrink-0 font-mono text-[11px] text-muted-foreground tabular-nums">{props.detail}</span>}
+      {props.detail && <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">{props.detail}</span>}
     </Tag>
   )
 }
@@ -114,9 +114,9 @@ export function PlanApproval(props: {
   const [ask, setAsk] = useState(props.askNextTime)
   const keep = props.plan.screens.map((_, i) => i).filter((i) => !removed.has(i))
   return (
-    <div className="space-y-3 rounded-xl border border-primary/30 bg-card p-3.5 text-sm">
+    <div className="space-y-3 rounded-xl border border-lime-500/60 bg-card shadow-1 p-3.5 text-sm">
       <div className="flex gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" />
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-foreground" />
         <div className="min-w-0">
           <p className="font-medium">{props.plan.appName}</p>
           <p className="text-muted-foreground">{props.plan.summary}</p>
@@ -125,7 +125,7 @@ export function PlanApproval(props: {
       <ol className="space-y-1">
         {props.plan.screens.map((s, i) => (
           <li key={i} className={cn('flex items-center gap-1.5', removed.has(i) && 'opacity-40')}>
-            <span className="w-4 shrink-0 text-right font-mono text-[11px] text-muted-foreground">{i + 1}</span>
+            <span className="w-4 shrink-0 text-right font-mono text-xs text-muted-foreground">{i + 1}</span>
             <Input
               value={names[i] ?? s.name}
               disabled={removed.has(i)}
