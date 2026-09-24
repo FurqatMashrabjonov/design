@@ -83,7 +83,7 @@ const BY_SYSTEM: Record<string, NavCharacter> = {
 // edge, because an instrument wears its chrome rather than floating it.
 // Ember's bar is the reference it was drawn from: a wide inset panel with labels, the active tab a
 // tinted pill.
-const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar', ember: 'island' }
+const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar', ember: 'island', volt: 'bar' }
 
 // When the system says nothing, what the app is for does.
 const BY_APP_TYPE: Record<string, NavCharacter> = {

@@ -1,0 +1,11 @@
+[
+  { "id": "volt-run", "appType": "fitness", "designSystem": "volt",
+    "brief": "Running app: a live run screen with duration, distance and pace, a home with weekly volume and a quick-start run, and a run summary with a route map and pace analysis.",
+    "expect": ["dashboard", "detail", "result", "stats"] },
+  { "id": "volt-strength", "appType": "fitness", "designSystem": "volt",
+    "brief": "Strength training app: today's workout in progress with elapsed time and heart rate, a program library, and weekly performance with a consistency grid.",
+    "expect": ["dashboard", "list", "stats"] },
+  { "id": "volt-kicks", "appType": "commerce", "designSystem": "volt",
+    "brief": "Sneaker store: a featured drop on the home, browse by brand and category, and a cart with a promo code and checkout.",
+    "expect": ["feed", "list", "checkout"] }
+]

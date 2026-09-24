@@ -1,0 +1,102 @@
+/* Volt — the dark sport system (GQ-35).
+   The biggest family in the references with nothing of ours to answer it: seven of Sleek's presets
+   are black with a single volt-lime accent and condensed heavy italic headlines — running, strength,
+   sneakers, nightlife. Where Graphite is a quiet instrument (amber, used as a dial marking), Volt is
+   loud on purpose: the lime is a fill — the start card, the continue button, the active tab — with
+   black text on it at 17:1, and the headlines are set condensed, italic and upper-case so a screen
+   reads like a poster before it reads like an app. Depth is the same as Graphite's: stepped
+   surfaces and hairlines, because a shadow on black is invisible. Ink ramp authored at 5%. */
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap");
+
+:root {
+  --bg: #0a0a0b;
+  --surface: #151517;
+  --surface-warm: #1e1f22;
+  --fg: #f5f5f4;
+  --fg-2: #c4c5bf;
+  --muted: #a6a89f;
+  --muted-2: #97998f;
+  --meta: #97998f;
+  --border: #2a2b2e;
+  --border-soft: #1f2023;
+  --accent: #d4ff3a;
+  --accent-on: #0a0a0b;
+  --accent-hover: #e0ff6b;
+  --accent-active: #bde620;
+  --success: #4ade80;
+  --warn: #fbbf24;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  /* A condensed display for headlines and hero figures, its regular sibling for everything else. */
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: Barlow, "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 19px;
+  --text-xl: 26px;
+  --text-2xl: 38px;
+  --text-3xl: 60px;
+  --text-4xl: 88px;
+  --leading-body: 1.45;
+  --leading-tight: 0.9;
+  --tracking-display: -0.01em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --section-y-desktop: 88px;
+  --section-y-tablet: 60px;
+  --section-y-phone: 32px;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 9999px;
+
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px var(--border);
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 55%);
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Sport has snap: a quick overshoot on the press and the active tab. */
+  --ease-spring: cubic-bezier(0.3, 1.5, 0.6, 1);
+  --motion-press: 100ms;
+  --container-max: 1200px;
+  --container-gutter-desktop: 28px;
+  --container-gutter-tablet: 20px;
+  --container-gutter-phone: 16px;
+
+  --icon-stroke: 2;
+
+  --od-display-weight: 800;
+  --od-heading-weight: 700;
+  --od-heading-font: var(--font-display);
+
+  /* kit/od-kit.css reads these. The bar is part of the chassis, like Graphite's. */
+  --od-card-bg: var(--surface);
+  --od-card-border: 1px solid var(--border);
+  --od-card-shadow: var(--elev-raised);
+  --od-blur: blur(14px);
+  --od-control-border: 1px solid var(--border);
+  --od-btn-weight: 700;
+  --od-btn-shadow: none;
+  --od-row-min: 52px;
+  --od-icon-radius: 10px;
+  --od-icon-bg: var(--surface-warm);
+  --od-icon-fg: var(--od-accent-text);
+  --od-accent-text: #d4ff3a;
+  --od-success-text: #4ade80;
+  --od-warn-text: #fbbf24;
+  --od-danger-text: #f87171;
+}

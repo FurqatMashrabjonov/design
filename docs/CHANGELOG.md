@@ -5,6 +5,34 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Volt — qora sport tizimi (GQ-35)
+
+Sleek galereyasidagi ~42 presetni oilalarga ajratganda eng katta javobsiz oila shu chiqdi: 7 ta
+preset (Neon Running, Neon Strength, Neon Sneaker, Neon Nightlife, Pulse Performance…) — qora fon,
+bitta electric-lime aksent, qisiq qalin qiya bosh harfli sarlavhalar.
+
+Volt: qora pog'onali yuzalar (Graphite'dagi kabi — qora ustida soya ko'rinmaydi), lime **fon**
+sifatida — start kartasi, asosiy tugma, faol tab, bitta ajratilgan ustun — ustida qora matn (17:1).
+Sarlavhalar Barlow Condensed 800, qiya va bosh harflar bilan, ekran avval plakat bo'lib o'qiladi.
+Graphite tinch asbob, Volt ataylab baland — lekin bir vaqtda faqat ikki joyda. Panel chetdan
+chetga qotirilgan.
+
+Uslub kartasida "volt" so'zi rang nomi sifatida uchragan edi va brend-sizish testi uni ushladi;
+kartada rang "electric lime" deb ataladi.
+
+Uchta brief (yugurish, kuch, krossovka do'koni): **`cleanShare 0.81`** — beshta tizim ichida eng
+yuqori. `capsEyebrow: 5` — model sport uslubida kichik yorliqlarni ham bosh harf bilan yozgan.
+Foydalanuvchi bahosi: "volt is fantastic".
+
+Avtomatik tanlov: fitness → volt, ember, graphite; media → volt, graphite, lumen; commerce'ga
+qo'shildi.
+
+Tegilgan fayllar: `design-systems/volt/*` (yangi), `src/app/Services/ShellService.ts`,
+`src/app/Services/DesignSystemService.ts`, `src/app/Services/new-features.check.ts`,
+`eval/briefs-volt3.json`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; uchta brief 390px'da ko'z bilan.
+
+
 ### Ember — soft tonal tizimi; o'ylab topilgan palitra endi ixtiyoriy (GQ-33, GQ-34)
 
 **GQ-33 — eng muhimi.** Real ilovada (dashboard → auto) planner o'ylab topgan palitra hali ham

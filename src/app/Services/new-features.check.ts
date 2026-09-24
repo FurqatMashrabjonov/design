@@ -432,7 +432,7 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   const auto = new Set<string>()
   for (const type of ['fintech', 'food-delivery', 'commerce', 'marketplace', 'booking', 'travel', 'fitness', 'health', 'learning', 'media', 'productivity', 'social', 'habits'])
     for (let i = 0; i < 40; i++) auto.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
-  const mobileFirst = ['nova', 'lumen', 'graphite', 'ember']
+  const mobileFirst = ['nova', 'lumen', 'graphite', 'ember', 'volt']
   for (const id of auto) assert.ok(mobileFirst.includes(id), `the automatic choice offered ${id}, which was not authored for a phone`)
   assert.equal(auto.size, mobileFirst.length, 'all three phone systems are reachable automatically')
   for (const type of ['fintech', 'habits', 'travel', 'media']) {
@@ -943,6 +943,7 @@ console.log('Testing Pinned Chrome (GQ-29)...')
       assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'lumen' }), 'island', 'lumen always floats')
       assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'ember' }), 'island', 'so does ember')
       assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'graphite' }), 'bar', 'graphite wears its chrome')
+      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'volt' }), 'bar', 'so does volt')
     }
   }
   // Nova still rolls, so pinning one system did not pin them all.

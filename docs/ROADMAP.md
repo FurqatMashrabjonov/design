@@ -96,6 +96,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-32 | Graphite (engineered dark); avtomatik tanlov telefon tizimlariga | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-29 | 3 tizim turga qarab; brend nomi taqqoslash bilan; audit 0.667 |
 | GQ-33 | O'ylab topilgan palitra ixtiyoriy bo'lsin (OD_INVENT_PALETTE) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10 | real ilova tasdiqlangan tizim ranglarini ko'rsatadi |
 | GQ-34 | Ember — soft tonal tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-32 | habit/fitness/health/learning/food; audit 0.571 |
+| GQ-35 | Volt — qora sport tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-34 | fitness/media/commerce; audit 0.81 |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "volt",
+  "name": "Volt",
+  "category": "Mobile",
+  "description": "Dark sport for phone apps: black stepped surfaces, one volt-lime accent used as a fill with black text on it, condensed heavy italic headlines, big hero figures.",
+  "source": { "type": "bundled", "origin": "Authored in-house, 2026-09-24 (GQ-35)" },
+  "files": { "design": "DESIGN.md", "tokens": "tokens.css" }
+}

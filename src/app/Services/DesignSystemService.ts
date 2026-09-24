@@ -77,19 +77,20 @@ const BY_APP_TYPE: Record<string, string[]> = {
   //   lumen     iOS 26, light and translucent — the one that feels native
   //   graphite  engineered dark, dense, mono figures — the one that feels like an instrument
   //   ember     soft tonal coral, loud and friendly — the one that feels like it is cheering you on
+  //   volt      black and volt-lime, condensed italic headlines — the one that feels like a training poster
   fintech: ['graphite', 'lumen'],
   productivity: ['graphite', 'lumen', 'nova'],
   habits: ['ember', 'nova', 'lumen'],
-  fitness: ['ember', 'graphite', 'lumen'],
+  fitness: ['volt', 'ember', 'graphite'],
   health: ['ember', 'nova', 'lumen'],
   learning: ['ember', 'nova', 'lumen'],
   'food-delivery': ['ember', 'nova', 'lumen'],
   food: ['ember', 'nova', 'lumen'],
-  commerce: ['lumen', 'nova'],
+  commerce: ['lumen', 'nova', 'volt'],
   marketplace: ['lumen', 'nova'],
   booking: ['lumen', 'nova'],
   travel: ['lumen', 'nova'],
-  media: ['graphite', 'lumen', 'nova'],
+  media: ['volt', 'graphite', 'lumen'],
   social: ['lumen', 'nova'],
 }
 
