@@ -1,20 +1,26 @@
 import { spawn } from 'node:child_process'
 import { tmpdir } from 'node:os'
 
-export type LlmUsage = { promptTokens: number; cachedTokens: number; completionTokens: number }
+/** Tokens one call used. `promptTokens` counts every input token; `cachedTokens` (cache reads) and
+ * `cacheWriteTokens` (cache writes — Claude bills them above the base rate) are parts of it. */
+export type LlmUsage = { promptTokens: number; cachedTokens: number; completionTokens: number; cacheWriteTokens?: number }
 
-// DeepSeek list prices for `deepseek-flash`, USD per million tokens (checked 2026-09-23).
-// DeepSeek bills by the clock: peak is twice off-peak, so a call's cost depends on when it ran and
-// a single set of numbers would be wrong half the day. The daily budget guard reads this, so it has
-// to be the real number — the old defaults ($0.27 / $1.10) were roughly double the peak rate.
-export const PRICE_OFF_PEAK = {
-  cached: Number(process.env.LLM_PRICE_IN_CACHED ?? 0.003),
-  input: Number(process.env.LLM_PRICE_IN ?? 0.15),
-  output: Number(process.env.LLM_PRICE_OUT ?? 0.6),
+/**
+ * LLM-05: list prices in USD per million tokens, by model (checked 2026-09-24 on each provider's
+ * pricing page). Credits are priced against these, so a model with no row here cannot be priced
+ * and costOf refuses it rather than calling it free. DeepSeek bills by the clock: every rate doubles
+ * in its peak hours (`peak`). Claude charges a cache write at 1.25× input.
+ */
+type Price = { input: number; cached: number; output: number; cacheWrite?: number; peak?: true }
+export const PRICES: Record<string, Price> = {
+  'deepseek-flash': { input: 0.15, cached: 0.003, output: 0.6, peak: true },
+  'gemini-3.1-flash-lite': { input: 0.25, cached: 0.025, output: 1.5 },
+  'gemini-2.5-flash': { input: 0.3, cached: 0.03, output: 2.5 },
+  'claude-haiku-4-5': { input: 1, cached: 0.1, cacheWrite: 1.25, output: 5 },
+  'claude-sonnet-5': { input: 2, cached: 0.2, cacheWrite: 2.5, output: 10 },
 }
-export const PRICE_PEAK = { cached: PRICE_OFF_PEAK.cached * 2, input: PRICE_OFF_PEAK.input * 2, output: PRICE_OFF_PEAK.output * 2 }
-/** Kept as the name the eval and older code import; the off-peak table is the base rate. */
-export const PRICE = PRICE_OFF_PEAK
+/** The generating model's base (off-peak) rate — what the eval's estimate uses. */
+export const PRICE = PRICES['deepseek-flash']!
 
 /** DeepSeek peak hours: 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday. */
 export function isPeak(at: Date = new Date()): boolean {
@@ -24,13 +30,16 @@ export function isPeak(at: Date = new Date()): boolean {
   return (h >= 1 && h < 4) || (h >= 6 && h < 10)
 }
 
-export function costOf(u: LlmUsage, at: Date = new Date()): number {
-  const p = isPeak(at) ? PRICE_PEAK : PRICE_OFF_PEAK
-  return ((u.promptTokens - u.cachedTokens) * p.input + u.cachedTokens * p.cached + u.completionTokens * p.output) / 1e6
+export function costOf(u: LlmUsage, model: string, at: Date = new Date()): number {
+  const p = PRICES[model]
+  if (!p) throw new Error(`No price for model "${model}" — add it to PRICES before it generates`)
+  const k = p.peak && isPeak(at) ? 2 : 1
+  const writes = u.cacheWriteTokens ?? 0
+  return (k * ((u.promptTokens - u.cachedTokens - writes) * p.input + u.cachedTokens * p.cached + writes * (p.cacheWrite ?? p.input) + u.completionTokens * p.output)) / 1e6
 }
 
 /** One finished model call: how long, whether it worked, what it used. For the spend log (OBS-01). */
-export type LlmCall = { provider: string; ms: number; ok: boolean; error?: string; usage: LlmUsage }
+export type LlmCall = { provider: string; model: string; ms: number; ok: boolean; error?: string; usage: LlmUsage }
 let callListener: ((c: LlmCall) => void) | undefined
 export function onLlmCall(fn: typeof callListener) {
   callListener = fn
@@ -38,11 +47,12 @@ export function onLlmCall(fn: typeof callListener) {
 /** Wraps a call so its duration, outcome and usage are reported once, however it ends. */
 async function* tracked(run: (tally: (u: LlmUsage) => void) => AsyncGenerator<string>): AsyncGenerator<string> {
   const started = Date.now()
-  const usage: LlmUsage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
+  const usage: LlmUsage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0, cacheWriteTokens: 0 }
   const tally = (u: LlmUsage) => {
     usage.promptTokens += u.promptTokens
     usage.cachedTokens += u.cachedTokens
     usage.completionTokens += u.completionTokens
+    usage.cacheWriteTokens! += u.cacheWriteTokens ?? 0
   }
   let error: string | undefined
   try {
@@ -51,7 +61,7 @@ async function* tracked(run: (tally: (u: LlmUsage) => void) => AsyncGenerator<st
     error = e instanceof Error ? e.message : String(e)
     throw e
   } finally {
-    callListener?.({ provider: PROVIDER, ms: Date.now() - started, ok: !error, error: error?.slice(0, 300), usage })
+    callListener?.({ provider: PROVIDER, model: CALL_MODEL, ms: Date.now() - started, ok: !error, error: error?.slice(0, 300), usage })
   }
 }
 
@@ -62,7 +72,7 @@ export function onLlmUsage(fn: typeof usageListener) {
 }
 function reportUsage(u: Record<string, number> | undefined, also?: (u: LlmUsage) => void) {
   if (!u) return
-  const usage = { promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0 }
+  const usage = { promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0, cacheWriteTokens: u.cache_write_tokens ?? 0 }
   also?.(usage) // the caller's own tally (one request's agent log)
   usageListener?.(usage)
 }
@@ -71,6 +81,8 @@ function reportUsage(u: Record<string, number> | undefined, also?: (u: LlmUsage)
 // thinks by default; the legacy `deepseek-chat` alias is this same model with thinking off, but an
 // alias can be re-pointed, so both the id and the mode are pinned here.
 const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-flash'
+// Fail at boot, not after a paid call: a model we cannot price cannot be billed (LLM-05).
+if (!PRICES[MODEL]) throw new Error(`DEEPSEEK_MODEL=${MODEL} has no row in PRICES`)
 
 /**
  * LLM-01: thinking is decided per call site, not once for the process.
@@ -104,6 +116,9 @@ const PLAN_TEMPERATURE = Number(process.env.LLM_TEMPERATURE_PLAN ?? 1.0)
 // Never in production — a subscription is personal and cannot serve other people's requests. Evals
 // may run on it (the user's call, 2026-09-22), tagged by provider and compared only with each other.
 const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? 'claude-cli' : 'deepseek'
+const CLI_MODEL = process.env.CLAUDE_CLI_MODEL || 'claude-haiku-4-5-20251001'
+/** The model every call of this process is logged and priced as. */
+const CALL_MODEL = PROVIDER === 'claude-cli' ? CLI_MODEL : MODEL
 function assertLocalProvider() {
   if (process.env.NODE_ENV === 'production') throw new Error('LLM_PROVIDER=claude-cli is for local testing only; unset it in production')
 }
@@ -249,7 +264,7 @@ async function* claudeCli(system: string, user: string, signal?: AbortSignal, on
   const args = ['-p', '--output-format', 'stream-json', '--include-partial-messages', '--verbose', '--tools', '', '--system-prompt', system, '--setting-sources', '', '--strict-mcp-config', '--no-session-persistence', '--disable-slash-commands']
   // Haiku by default: local testing is about seeing a change land, and a screen that takes a minute
   // to draw is not a test. CLAUDE_CLI_MODEL overrides it when a run needs the bigger model.
-  args.push('--model', process.env.CLAUDE_CLI_MODEL || 'claude-haiku-4-5-20251001')
+  args.push('--model', CLI_MODEL)
   // Without an API key in its environment the CLI uses the logged-in subscription, never API billing.
   // Thinking is off, as it is on DeepSeek: with it on, Haiku spent 8 900 output tokens and 89s on one
   // plan instead of 3 100 and 32s, which reads as a hang. MAX_THINKING_TOKENS from the environment wins.
@@ -285,7 +300,7 @@ async function* claudeCli(system: string, user: string, signal?: AbortSignal, on
         else if (ev.type === 'stream_event' && ev.event?.type === 'message_delta') stopReason = ev.event.delta?.stop_reason ?? stopReason
         else if (ev.type === 'result') {
           const u = ev.usage ?? {}
-          reportUsage({ prompt_tokens: (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), prompt_cache_hit_tokens: u.cache_read_input_tokens ?? 0, completion_tokens: u.output_tokens ?? 0 }, onUsage)
+          reportUsage({ prompt_tokens: (u.input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), prompt_cache_hit_tokens: u.cache_read_input_tokens ?? 0, cache_write_tokens: u.cache_creation_input_tokens ?? 0, completion_tokens: u.output_tokens ?? 0 }, onUsage)
           if (ev.is_error) throw new Error(`Claude CLI: ${String(ev.result ?? ev.subtype).slice(0, 300)}`)
         }
       }

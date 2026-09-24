@@ -9,7 +9,8 @@ import { Setting } from '@/app/Models/Setting'
 // user and project of that request (carried by AsyncLocalStorage, so no controller has to pass
 // them down). The limits are read back from the same table, so they survive a restart.
 
-type Ctx = { userId: string; projectId?: string }
+/** Who a call is for, and the one guarded request (`actionId`) it belongs to. */
+type Ctx = { userId: string; projectId?: string; actionId?: string }
 const ctx = new AsyncLocalStorage<Ctx>()
 
 let listening = false
@@ -23,12 +24,15 @@ function listen() {
         id: crypto.randomUUID(),
         userId: who?.userId ?? null,
         projectId: who?.projectId ?? null,
+        actionId: who?.actionId ?? null,
         provider: c.provider,
+        model: c.model,
         promptTokens: c.usage.promptTokens,
         cachedTokens: c.usage.cachedTokens,
+        cacheWriteTokens: c.usage.cacheWriteTokens ?? 0,
         completionTokens: c.usage.completionTokens,
-        // A subscription run costs nothing on the API bill; only DeepSeek calls are priced.
-        costUsd: c.provider === 'deepseek' ? costOf(c.usage) : 0,
+        // A local subscription run (claude-cli) costs nothing on the API bill.
+        costUsd: c.provider === 'claude-cli' ? 0 : costOf(c.usage, c.model),
         ms: c.ms,
         ok: c.ok,
         error: c.error ?? null,
@@ -97,6 +101,12 @@ export const UsageService = {
   },
   end(userId: string) {
     running.delete(userId)
+  },
+
+  /** LLM-05: what one action really cost — every call it made, priced by its own model. */
+  actionCost(actionId: string): { calls: number; usd: number } {
+    const r = db.select({ calls: sql<number>`count(*)`, usd: sql<number>`coalesce(sum(cost_usd), 0)` }).from(llmCalls).where(eq(llmCalls.actionId, actionId)).get()
+    return { calls: r?.calls ?? 0, usd: r?.usd ?? 0 }
   },
 
   /** OBS-05 groundwork: spend per user over a window. */

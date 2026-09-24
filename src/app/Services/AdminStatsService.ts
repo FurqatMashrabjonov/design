@@ -139,8 +139,8 @@ export const AdminStatsService = {
     const where = [sql`1 = 1`]
     if (f.userId) where.push(sql`c.user_id = ${f.userId}`)
     if (f.onlyErrors) where.push(sql`c.ok = 0`)
-    return all<{ id: string; createdAt: number; provider: string; promptTokens: number; completionTokens: number; costUsd: number; ms: number; ok: number; error: string | null; email: string | null; userId: string | null; project: string | null; projectId: string | null }>(sql`
-      SELECT c.id, c.created_at AS createdAt, c.provider, c.prompt_tokens AS promptTokens, c.completion_tokens AS completionTokens,
+    return all<{ id: string; createdAt: number; provider: string; model: string; promptTokens: number; completionTokens: number; costUsd: number; ms: number; ok: number; error: string | null; email: string | null; userId: string | null; project: string | null; projectId: string | null }>(sql`
+      SELECT c.id, c.created_at AS createdAt, c.provider, c.model, c.prompt_tokens AS promptTokens, c.completion_tokens AS completionTokens,
         c.cost_usd AS costUsd, c.ms, c.ok, c.error, u.email, u.id AS userId, p.name AS project, p.id AS projectId
       FROM llm_calls c LEFT JOIN user u ON u.id = c.user_id LEFT JOIN projects p ON p.id = c.project_id
       WHERE ${sql.join(where, sql` AND `)} ORDER BY c.created_at DESC LIMIT ${f.limit ?? 300}

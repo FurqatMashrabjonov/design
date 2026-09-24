@@ -154,24 +154,29 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   }
 }
 
-// LLM-03: the spend log and the daily budget guard are only as honest as this table. DeepSeek
-// bills peak at twice off-peak, so the clock is part of the price.
+// LLM-03 + LLM-05: the spend log, the daily budget and credit prices are only as honest as this
+// table. DeepSeek bills peak at twice off-peak, so the clock is part of the price.
 {
-  const { PRICE, PRICE_PEAK, costOf, isPeak } = await import('./LlmService.ts')
+  const { PRICE, PRICES, costOf, isPeak } = await import('./LlmService.ts')
   assert.equal(PRICE.input, 0.15, 'off-peak input is the list rate')
   assert.equal(PRICE.output, 0.6, 'off-peak output is the list rate')
   assert.equal(PRICE.cached, 0.003, 'a cache hit is nearly free — which is why the prompt is built to be cacheable')
-  assert.equal(PRICE_PEAK.output, 1.2, 'peak is twice off-peak')
   // Monday 02:00 UTC is peak; Monday 12:00 and Saturday 02:00 are not.
   assert.equal(isPeak(new Date('2026-09-21T02:00:00Z')), true)
   assert.equal(isPeak(new Date('2026-09-21T07:30:00Z')), true)
   assert.equal(isPeak(new Date('2026-09-21T12:00:00Z')), false)
   assert.equal(isPeak(new Date('2026-09-19T02:00:00Z')), false, 'weekends are off-peak')
   const usage = { promptTokens: 100_000, cachedTokens: 60_000, completionTokens: 50_000 }
-  const off = costOf(usage, new Date('2026-09-21T12:00:00Z'))
-  const peak = costOf(usage, new Date('2026-09-21T02:00:00Z'))
+  const monNoon = new Date('2026-09-21T12:00:00Z'), monPeak = new Date('2026-09-21T02:00:00Z')
+  const off = costOf(usage, 'deepseek-flash', monNoon)
   assert.ok(Math.abs(off - (40_000 * 0.15 + 60_000 * 0.003 + 50_000 * 0.6) / 1e6) < 1e-9, 'off-peak cost is the arithmetic')
-  assert.ok(Math.abs(peak - off * 2) < 1e-9, 'the same call costs twice as much at peak')
+  assert.ok(Math.abs(costOf(usage, 'deepseek-flash', monPeak) - off * 2) < 1e-9, 'the same call costs twice as much at peak')
+  // Only DeepSeek has a clock; a cache write is billed at its own rate.
+  assert.equal(costOf(usage, 'gemini-2.5-flash', monPeak), costOf(usage, 'gemini-2.5-flash', monNoon), 'no peak outside DeepSeek')
+  const withWrites = { ...usage, cacheWriteTokens: 10_000 }
+  assert.ok(Math.abs(costOf(withWrites, 'claude-haiku-4-5', monNoon) - (30_000 * 1 + 60_000 * 0.1 + 10_000 * 1.25 + 50_000 * 5) / 1e6) < 1e-9, 'Claude: uncached, cache reads, cache writes and output each at their rate')
+  assert.throws(() => costOf(usage, 'gpt-imaginary', monNoon), /No price/, 'a model with no price is refused, never counted as free')
+  for (const [id, p] of Object.entries(PRICES)) assert.ok(p.cached < p.input && p.input < p.output, `${id}: cache < input < output`)
 }
 
 console.log('Testing Navigation Shell Builder...')

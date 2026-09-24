@@ -24,7 +24,8 @@ export async function guardGeneration(request: Request, run: (req: Request, user
 
   UsageService.begin(user.id)
   const done = () => UsageService.end(user.id)
-  const who = { userId: user.id, projectId: typeof body.projectId === 'string' ? body.projectId : undefined }
+  // LLM-05: one guarded request is one action; every model call inside it carries its id.
+  const who = { userId: user.id, projectId: typeof body.projectId === 'string' ? body.projectId : undefined, actionId: crypto.randomUUID() }
   let res: Response
   try {
     res = await UsageService.run(who, () => run(new Request(request.url, { method: 'POST', headers: request.headers, body: text, signal: request.signal }), user.id, done))

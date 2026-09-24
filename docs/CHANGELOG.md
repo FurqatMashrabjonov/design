@@ -5,6 +5,33 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Aniq xarajat: har chaqiruvda model, narx jadvali model bo'yicha (LLM-05)
+
+Kreditlar haqiqiy xarajatga qarab narxlanadi, shuning uchun har chaqiruv o'zi nimaga tushganini
+biladi:
+- **`PRICES` model bo'yicha** (DeepSeek Flash, Gemini 3.1 Flash-Lite, Gemini 2.5 Flash,
+  Claude Haiku 4.5, Claude Sonnet 5; ro'yxat narxlari 2026-09-24). DeepSeek'ning band soati
+  (2×) faqat DeepSeek'ga qo'llanadi. Claude'ning keshga yozishi o'z narxida hisoblanadi.
+- **Narxi yo'q model rad etiladi**: `costOf` xato beradi, uni tekin deb hisoblamaydi.
+  `DEEPSEEK_MODEL` narxlanmaydigan bo'lsa, server umuman ishga tushmaydi — pulli chaqiruvdan
+  keyin emas, oldin to'xtaydi.
+- **`llm_calls`** jadvaliga yangi ustunlar: `model`, `cache_write_tokens`, `action_id`.
+  Migratsiya 0021 eski qatorlarni to'ldiradi (174 ta `deepseek-flash`, 19 ta `claude-cli`).
+- **Bitta himoyalangan so'rov = bitta amal.** `guardGeneration` amal id'sini yaratadi, amal ichidagi
+  har bir chaqiruv shu id bilan yoziladi. `UsageService.actionCost(id)` amalning haqiqiy $
+  xarajatini beradi — kredit daftari (BIL-04) shunga qarab hisoblaydi.
+- Admin Generations'da "Provider" ustuni o'rniga "Model".
+
+Fayllar: `LlmService.ts`, `UsageService.ts`, `server/guard.ts`, `database/schema.ts`,
+`migrations/0021_add_llm_call_model.ts`, `migrate.ts`, `AdminStatsService.ts`,
+`admin.generations.tsx`, testlar (`new-features.check.ts`, `controllers.check.ts`), CLAUDE.md.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Testlar tekshiradi: har model narxining
+arifmetikasi, band soat faqat DeepSeek'da, keshga yozish narxi, noma'lum model rad etilishi,
+chaqiruvning `model` va `action_id`'si, `actionCost` yig'indisi. Real bazada migratsiya ishladi.
+Brauzerda real tahrir (PennyWise → Home): chaqiruv `deepseek-flash`, o'z `action_id`'si,
+$0.0031 bilan yozildi; admin'da Model ustuni ko'rinadi.
+
 ### Admin panel minimal: 4 bo'lim (ADM-09)
 
 Pul bosqichidan oldin admin kerakli narsaga qisqartirildi. **6 bo'lim → 4:** Overview, Users,

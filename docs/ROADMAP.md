@@ -265,7 +265,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |
 | BIL-03 | Do'kon uchun arizani erta topshirish | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-01, LEG-01 | Do'kon haqiqiy to'lovlar uchun tasdiqlangan |
-| LLM-05 | Aniq xarajat: har chaqiruvda model va uning narx jadvali | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-03, OBS-01 | llm_calls.model; narx jadvali model bo'yicha; har amalning haqiqiy $ xarajati |
+| LLM-05 | Aniq xarajat: har chaqiruvda model va uning narx jadvali | Generatsiya / LLM xarajati | MVP | Tayyor | Kichik | LLM-03, OBS-01 | llm_calls.model; narx jadvali model bo'yicha; har amalning haqiqiy $ xarajati |
 | BIL-04 | Kreditlar daftari (berilgan, sarflangan, qaytarilgan; balans = yig'indi) | To'lov va kreditlar / Kreditlar | MVP | Rejada | O'rta | AUTH-02 | Balans o'zgaruvchan son emas, yozuvlardan hisoblanadi |
 | BIL-05 | Har amal narxi (reja + ekran, tahrir, qism tahriri) | To'lov va kreditlar / Kreditlar | MVP | Rejada | Kichik | BIL-02 | Narxlar bitta sozlamada va testlangan |
 | BIL-06 | Generatsiyadan oldin kreditni band qilish, xatoda qaytarish | To'lov va kreditlar / Kreditlar | MVP | Rejada | O'rta | BIL-04 | Xato yoki to'xtatilgan ekran kreditini qaytaradi; parallel so'rovda ikki marta yechilmaydi |
