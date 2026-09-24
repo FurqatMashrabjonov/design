@@ -4,6 +4,7 @@ import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, Fold
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { AccountMenu } from '@/components/AccountMenu'
+import { CreditsBadge } from '@/credits'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
@@ -126,6 +127,7 @@ export function TopBar(props: {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <CreditsBadge />
         <AccountMenu />
       </div>
 

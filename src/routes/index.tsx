@@ -45,5 +45,5 @@ function Home() {
     )
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <Dashboard projects={data.projects} designSystems={data.designSystems} usage={data.usage} user={user ?? undefined} />
+  return <Dashboard projects={data.projects} designSystems={data.designSystems} credits={data.credits} user={user ?? undefined} />
 }

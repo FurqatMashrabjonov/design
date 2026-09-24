@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { CreditsDialog } from '../credits'
 import css from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -31,6 +32,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       <body className="antialiased">
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster />
+        <CreditsDialog />
         <Scripts />
       </body>
     </html>

@@ -5,6 +5,39 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Balans interfeysda, kredit tugaganda dialog (BIL-08)
+
+- **Balans:**
+  - Canvas'ning yuqori panelida avatar yonida belgi (tooltip: "≈ N ekran").
+  - Dashboard'da "Today 101/150" o'rniga "Credits" kartasi. Balans yangi ilovaga yetmasa,
+    "not enough for a new app" deb yozadi.
+- **Har generatsiyadan keyin yangilanadi.** `generate.ts` / `generatePlan.ts` oqim tugashi
+  bilan `creditsChanged` event'ini yuboradi. Oqim xato bilan tugasa ham yuboradi, chunki
+  kredit qaytarilgan bo'lishi mumkin.
+- **Kredit tugasa, toast emas, dialog chiqadi.** 402 `OutOfCredits`'ga aylanadi (`failFrom`) va
+  root'dagi yagona `CreditsDialog`'ni ochadi. Dialogda nechta kredit kerakligi, qanchasi borligi,
+  "hech narsa yechilmadi" degan yozuv, amallar narxi hamda Starter va Pro tariflari bor.
+  Tarif kartasida "N ta to'liq ilova" ko'rsatiladi (1200 → 80, 3000 → 200). To'lov tugmalari
+  hozircha "Checkout opens soon" holatida, BIL-09 ulaydi (Polar hisobi kutilmoqda).
+- **Narxlar server va brauzer uchun umumiy ma'lumot** (`lib/credit-prices.ts`). `CreditService`
+  ham, dialog ham shu yerdan o'qiydi, shuning uchun ikkalasi hech qachon bir-biriga zid bo'lmaydi.
+- Loyiha sahifasidagi xato toast'lari `reportError`'ga o'tdi (`OutOfCredits` uchun jim).
+  `getCredits` server funksiyasi qo'shildi. `ProjectController.index` kunlik chaqiruvlar o'rniga
+  balansni qaytaradi.
+
+Fayllar: `src/credits.tsx`, `src/lib/credit-prices.ts`, `CreditService.ts`, `generate.ts`,
+`generatePlan.ts`, `routes/__root.tsx`, `components/canvas/TopBar.tsx`, `Dashboard.tsx`,
+`routes/index.tsx`, `routes/p.$projectId.tsx`, `ProjectController.ts`, `server/fns.ts`, CLAUDE.md.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Brauzerda:
+- Balans 1 bo'lganda dashboard "1 · ≈ 0 screens · not enough for a new app" ko'rsatdi.
+- Header belgisi 1 edi. Yangi ekran so'rovi 402 oldi va dialog ochildi ("This needs 2 credits —
+  you have 1. Nothing was charged.", ikki tarif). Toast chiqmadi.
+- Admin'dan +997 berilgandan keyin yangi ekran chizildi, belgi generatsiya tugashi bilan
+  998 → 996 ga o'zgardi.
+
+Qolgan kamchilik: 402 bo'lganda yozilgan xabar kiritish maydonidan o'chib ketadi.
+
 ### Ro'yxatdan o'tganda bepul kredit (BIL-07)
 
 Yangi hisob **60 kredit** bilan boshlanadi (4 ta ilova, BIL-02). Grant better-auth'ning

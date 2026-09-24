@@ -1,4 +1,5 @@
 import { notFound } from '@tanstack/react-router'
+import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
@@ -6,7 +7,6 @@ import { Feedback } from '@/app/Models/Feedback'
 import { Message } from '@/app/Models/Message'
 import { AUTO, DesignSystemService } from '@/app/Services/DesignSystemService'
 import { AppPatternService } from '@/app/Services/AppPatternService'
-import { UsageService } from '@/app/Services/UsageService'
 import { PlanRuns } from '@/app/Services/PlanRuns'
 import { parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { routeIntent } from '@/lib/intent'
@@ -17,7 +17,7 @@ export const ProjectController = {
   index(userId: string) {
     return {
       projects: Project.cardsForUser(userId),
-      usage: { calls: UsageService.callsToday(userId), limit: UsageService.limits(userId).callsPerDay },
+      credits: Credit.balance(userId),
       designSystems: DesignSystemService.list(),
     }
   },

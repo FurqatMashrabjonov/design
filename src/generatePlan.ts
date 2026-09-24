@@ -1,4 +1,5 @@
 import type { Plan } from './app/Services/PlannerService'
+import { creditsChanged, failFrom } from './credits'
 
 export type PlanEvent =
   | ({ type: 'plan'; screenIds: string[] } & Plan)
@@ -26,15 +27,19 @@ export async function generatePlan(projectId: string, request: PlanRequest, onEv
     body: JSON.stringify({ projectId, ...request }),
     signal,
   })
-  if (!res.ok || !res.body) throw new Error(await res.text())
+  if (!res.ok || !res.body) return failFrom(res)
 
   let buf = ''
-  for await (const chunk of res.body.pipeThrough(new TextDecoderStream())) {
-    buf += chunk
-    const lines = buf.split('\n')
-    buf = lines.pop()!
-    for (const line of lines) {
-      if (line.trim()) onEvent(JSON.parse(line))
+  try {
+    for await (const chunk of res.body.pipeThrough(new TextDecoderStream())) {
+      buf += chunk
+      const lines = buf.split('\n')
+      buf = lines.pop()!
+      for (const line of lines) {
+        if (line.trim()) onEvent(JSON.parse(line))
+      }
     }
+  } finally {
+    creditsChanged() // spent, or refunded for what was not drawn
   }
 }

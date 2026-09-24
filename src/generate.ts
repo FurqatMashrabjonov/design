@@ -1,4 +1,5 @@
 import { ERROR_MARK } from './artifact'
+import { creditsChanged, failFrom } from './credits'
 
 export async function generate(
   body: {
@@ -22,12 +23,16 @@ export async function generate(
     body: JSON.stringify(body),
     signal,
   })
-  if (!res.ok || !res.body) throw new Error(await res.text())
+  if (!res.ok || !res.body) return failFrom(res)
 
   let text = ''
-  for await (const chunk of res.body.pipeThrough(new TextDecoderStream())) {
-    text += chunk
-    onText(text)
+  try {
+    for await (const chunk of res.body.pipeThrough(new TextDecoderStream())) {
+      text += chunk
+      onText(text)
+    }
+  } finally {
+    creditsChanged() // spent, or refunded if it failed
   }
   const err = text.indexOf(ERROR_MARK)
   if (err !== -1) throw new Error(text.slice(err + ERROR_MARK.length).replace(/-->$/, ''))

@@ -5,6 +5,8 @@ import { createProject, deleteProject, favoriteProject, renameProject } from './
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
 import { BRAND, PENDING_IMAGES, Phone, SETS, shot } from './Landing'
+import { useCredits } from './credits'
+import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { frameSize } from './canvas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -13,7 +15,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-// DSH-03…12: the signed-in home. A sidebar (recent projects, today's usage, account), the prompt
+// DSH-03…12: the signed-in home. A sidebar (recent projects, credits, account), the prompt
 // with a visual design-system picker, starting points drawn from real output, and the projects
 // as cards that show their own first screen.
 
@@ -74,20 +76,17 @@ export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size
 }
 
 
-/** DSH-12: today's calls against the limit, so the limit is never a surprise. */
-function Usage({ calls, limit }: { calls: number; limit: number }) {
-  const share = Math.min(1, calls / Math.max(1, limit))
-  const color = share >= 1 ? 'var(--destructive)' : share >= 0.8 ? '#e2a400' : 'var(--foreground)'
+/** BIL-08: the credit balance, in credits and in the screens it buys, so running out is never a surprise. */
+function Credits({ initial }: { initial: number }) {
+  const balance = useCredits(initial) ?? initial
+  const low = balance < CREDIT_PRICES['deepseek-flash']!.plan + CREDIT_PRICES['deepseek-flash']!.draw
   return (
     <div className="rounded-xl border bg-background p-3 text-xs">
       <div className="flex items-baseline justify-between">
-        <span className="text-muted-foreground">Today</span>
-        <span className="font-medium tabular-nums">{calls} / {limit}</span>
+        <span className="text-muted-foreground">Credits</span>
+        <span className={`font-medium tabular-nums ${balance <= 0 ? 'text-destructive' : ''}`}>{balance.toLocaleString('en')}</span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Generations used today" aria-valuenow={calls} aria-valuemin={0} aria-valuemax={limit}>
-        <div className="h-full rounded-full transition-all" style={{ width: `${share * 100}%`, background: color }} />
-      </div>
-      {share >= 0.8 && <p className="mt-2 text-muted-foreground">{share >= 1 ? 'Limit reached — it resets within 24 hours.' : 'Close to today’s limit.'}</p>}
+      <p className="mt-1 text-muted-foreground">≈ {screensFor(Math.max(0, balance))} screens{low ? ' · not enough for a new app' : ''}</p>
     </div>
   )
 }
@@ -108,7 +107,7 @@ function ProjectMenu({ card, onRename, onDelete }: { card: Card; onRename: () =>
   )
 }
 
-export function Dashboard({ projects, designSystems, usage, user }: { projects: Card[]; designSystems: System[]; usage: { calls: number; limit: number }; user: User | undefined }) {
+export function Dashboard({ projects, designSystems, credits, user }: { projects: Card[]; designSystems: System[]; credits: number; user: User | undefined }) {
   const navigate = useNavigate()
   const router = useRouter()
   // DS-02: nobody picks a style up front any more. This stays only so an idea card lands on the
@@ -189,7 +188,7 @@ export function Dashboard({ projects, designSystems, usage, user }: { projects: 
           </div>
         )}
         <div className="mt-auto space-y-3 border-t p-3">
-          <Usage {...usage} />
+          <Credits initial={credits} />
           <div className="flex items-center gap-2.5 px-1">
             <AccountMenu />
             <div className="min-w-0 text-xs">

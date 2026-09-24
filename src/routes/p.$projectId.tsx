@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import { reportError } from '../credits'
 import { CircleX, Sparkles, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
@@ -162,7 +163,7 @@ function ProjectPage() {
     try {
       if (!(redo ? await history.current.redo() : await history.current.undo())) return
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e))
+      reportError(e)
     }
     await router.invalidate()
   }
@@ -242,7 +243,7 @@ function ProjectPage() {
       await router.invalidate()
       return true
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e))
+      reportError(e)
       return false
     } finally {
       setHandBusy(false)
@@ -363,7 +364,7 @@ function ProjectPage() {
     }
     generatePlan(project.id, request, (e) => onPlanEvent(e, finish), ctl.signal).catch((err) => {
       // Stop closes the stream: the screens drawn so far are saved, the rest are not started.
-      if (!(err instanceof DOMException && err.name === 'AbortError')) toast.error(err instanceof Error ? err.message : String(err))
+      if (!(err instanceof DOMException && err.name === 'AbortError')) reportError(err)
       finish()
     })
   }
@@ -502,7 +503,7 @@ function ProjectPage() {
       // the streamed text feeds the live card (which parts are being edited).
       const results = await Promise.allSettled(bodies.map((body) => generate(body, body.editScreenId ? (t) => setEditing((e) => (e ? { ...e, text: t } : e)) : setLive, ctl.signal)))
       const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected' && !(r.reason instanceof DOMException && r.reason.name === 'AbortError'))
-      if (failed) toast.error(failed.reason instanceof Error ? failed.reason.message : String(failed.reason))
+      if (failed) reportError(failed.reason)
     } finally {
       inFlight.current = null
       setWorking(false)
@@ -523,7 +524,7 @@ function ProjectPage() {
     if (running || !queued) return
     const text = queued
     setQueued(null)
-    submitPrompt(text).catch((e) => toast.error(e instanceof Error ? e.message : String(e)))
+    submitPrompt(text).catch((e) => reportError(e))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, queued])
   const lastPrompt = [...messages].reverse().find((m) => m.role === 'user')?.text
@@ -643,7 +644,7 @@ function ProjectPage() {
             await deleteProject({ data: project.id })
             navigate({ to: '/' })
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : String(e))
+            reportError(e)
           }
         }}
       />
@@ -661,7 +662,7 @@ function ProjectPage() {
                   await router.invalidate()
                 }}
                 onEdit={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => toast.error(e instanceof Error ? e.message : String(e))))}
+                onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => reportError(e)))}
                 suggestions={!selectedScreen ? nextSteps : undefined}
                 onSuggest={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
                 running={awaiting && plan ? <PlanApproval plan={plan} onDraw={approvePlan} onDiscard={discardPlan} askNextTime={gatePref()} /> : activity ? <ActivityCard activity={activity} /> : undefined}

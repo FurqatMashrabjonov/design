@@ -9,6 +9,7 @@ import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
+import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { getRequest } from '@tanstack/react-start/server'
 import { signInMethods } from '@/app/Services/AuthService'
@@ -22,6 +23,9 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
 export const deleteAccount = createServerFn({ method: 'POST' }).handler(async () => AccountController.destroy((await requireUser()).id))
 
 // --- projects ---
+
+/** BIL-08: the signed-in user's credit balance, for the top bar and the dashboard. */
+export const getCredits = createServerFn({ method: 'GET' }).handler(async () => ({ balance: Credit.balance((await requireUser()).id) }))
 
 export const getHome = createServerFn({ method: 'GET' }).handler(async () => ProjectController.index((await requireUser()).id))
 

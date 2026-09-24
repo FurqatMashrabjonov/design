@@ -1,21 +1,12 @@
 import { Credit } from '@/app/Models/Credit'
 import { BILLED_MODEL } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
+import { CREDIT_PRICES, SIGNUP_CREDITS, type ActionKind } from '@/lib/credit-prices'
 
-// BIL-05: what each action costs in credits. One table, by model, because a model that costs more
-// to run costs more credits (LLM-06 adds a row per model it approves). An app is `plan` + `draw`:
-// the plan is charged when it is made, the drawing when it is approved.
-export type ActionKind = 'plan' | 'draw' | 'app' | 'screen' | 'element'
-type Prices = Record<Exclude<ActionKind, 'app'>, number>
-export const CREDIT_PRICES: Record<string, Prices> = {
-  'deepseek-flash': { plan: 1, draw: 14, screen: 2, element: 1 },
-}
-
-/** BIL-07: a new account starts with these — four apps (BIL-02), once. */
-export const SIGNUP_CREDITS = 60
-
-/** The cheapest a credit is ever sold for (Pro: $24 / 3 000), which every price is checked against. */
-export const CHEAPEST_CREDIT_USD = 24 / 3000
+// BIL-05/06/07: charging credits for actions. The prices themselves live in lib/credit-prices.ts,
+// shared with the browser. An app is `plan` + `draw`: the plan is charged when it is made, the
+// drawing when it is approved.
+export { CREDIT_PRICES, CHEAPEST_CREDIT_USD, SIGNUP_CREDITS, type ActionKind } from '@/lib/credit-prices'
 
 export const CreditService = {
   priceOf(kind: ActionKind, model = BILLED_MODEL): number {
