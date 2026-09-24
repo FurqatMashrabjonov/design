@@ -92,7 +92,7 @@ export const BlueprintService = {
       // The one place the brief says "big" in numbers. Left to taste, the hero was a 14px figure in a
       // row; a floor in px is the difference between a screen and a list.
       b.hero &&
-        `HERO MOMENT: ${b.hero.what}. Draw it as ${b.hero.size}. It is the largest thing on the screen by a clear margin — nothing else comes within two type sizes of it, and everything else on the screen is at least one step quieter.${b.hero.sticker ? ` Put one sticker beside it — \`<div data-od-sticker="${b.hero.sticker}"></div>\`, for ${b.hero.stickerWhy ?? 'this screen\'s moment'} — unless this app's subject calls for a different one from the list.` : ''}`,
+        `HERO MOMENT: ${b.hero.what}. Draw it as ${b.hero.size}. It is the largest thing on the screen by a clear margin — nothing else comes within two type sizes of it, and everything else on the screen is at least one step quieter.${b.hero.sticker ? ` Put one sticker near it — \`<div data-od-sticker="${b.hero.sticker}"></div>\`, for ${b.hero.stickerWhy ?? 'this screen\'s moment'} — unless this app's subject calls for a different one from the list. It goes on the label's line or its own line above the figure, never on the figure's line and never positioned over it: the figure's size is measured for the full width.` : ''}`,
       `Primary action placement: ${b.primaryAction.note}`,
       `Avoid: ${b.avoid.join('; ')}.`,
       BlueprintService.platformNotes(id),

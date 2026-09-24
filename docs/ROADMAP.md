@@ -99,6 +99,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-35 | Volt — qora sport tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-34 | fitness/media/commerce; audit 0.81 |
 | CLN-01 | Tozalash: o'lik kod, DRY, desktop yo'li, o'ylab topilgan palitra | Generatsiya / Sifat | MVP | Tayyor | O'rta | GQ-33 | kod sof −1404, prompt matni −1994; mobil promptlar bayt-bayt bir xil |
 | GQ-36 | Misollar va landing — 5 ta telefon tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | CLN-01 | Dashboard va landing faqat 5 ta telefon tizimidagi haqiqiy ekranlar; misol o'z tizimini tanlaydi |
+| GQ-37 | Sticker hero raqam ustiga tushmaydi | Generatsiya / Sifat | MVP | Tayyor | Kichik | GQ-27, GQ-31 | Sticker figura qatorida emas: 13/29 → 0/6 |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |

@@ -5,6 +5,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Sticker hero raqam ustiga tushmaydi (GQ-37)
+
+Real mahsulot sinovida (PennyWise) sticker `$9,540.40` ustiga tushgan edi. Ikki naqsh topildi:
+figura bilan bir flex-qatorda (figura `nowrap`, 64px sticker joyini yeydi va figura uning ostiga
+toshadi) yoki `position:absolute` bilan figura qatorining burchagida. Ikkalasining ildizi bitta:
+GQ-31 figura o'lchamini **to'liq kenglik** uchun hisoblaydi, sticker esa shu qatordan joy oladi.
+
+Tuzatish kirishda (arxitektura qoidasi: kod qayta joylashtirmaydi): blueprint'ning HERO MOMENT
+jumlasi endi stickerni label qatoriga yoki figuradan yuqoridagi alohida qatorga qo'yadi, "hech qachon
+figura qatorida va uning ustida emas", sababi bilan.
+
+Fayllar: `src/app/Services/BlueprintService.ts`.
+
+Tekshiruv: bir martalik brauzer o'lchovi (390px iframe, sticker va eng katta raqamli matnning
+to'rtburchaklari). Oldingi 5 run: sticker'li 29 ekrandan **13 tasi figura qatorida**, 2 tasi
+figuraga tegadi. Tuzatishdan keyin graphite3 + lumen3: **0/6**, tegish 0. Audit cleanShare
+graphite 0.667 → 0.75, lumen 0.65 → 0.579 — lumen'dagi yangi overflow'lar gorizontal
+scroller va detal qatorlarida, sticker yoki hero bilan bog'liq emas (±0.2 variance).
+`npm run check`, `npx tsc --noEmit` toza.
+
 ### Misollar va landing — 5 ta telefon tizimi (GQ-36)
 
 Dashboard'dagi "Need a start?" va landing hali eski brend tizimlarini (Nike, Stripe, Midnight...)
