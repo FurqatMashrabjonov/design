@@ -5,6 +5,33 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Kreditni oldindan band qilish, xatoda qaytarish (BIL-06)
+
+- **Oldindan band qilish.** `guardGeneration` so'rovni narxlaydi va narxni **model chaqirilishidan
+  oldin** band qiladi. Balans yetmasa 402 qaytadi (`{ error: 'credits', needed, balance }`) va
+  hech narsa yozilmaydi.
+- **Hisob-kitob.** Amal tugaganda (`settle`) birorta chaqiruvi muvaffaqiyatli bo'lmagan bo'lsa,
+  hamma kredit qaytadi.
+- **Chizilmagan ekranlar.** Rejali run'da xato bergan yoki to'xtatilgan har bir ekran uchun ekran
+  narxi (2) qaytariladi.
+- **Qaytarish amal band qilganidan oshmaydi.** Shuning uchun ikki marta hisob-kitob zararsiz.
+- **Ikki marta yechilmaydi.** Balans tekshiruvi va yozuv bitta sinxron qadam, bitta ulanishda.
+  Parallel so'rov bir kreditni ikki marta sarflay olmaydi. Bir nechta server jarayoni bo'lsa,
+  bu tranzaksiyaga aylanadi.
+- `UsageService.actionCost` endi muvaffaqiyatli chaqiruvlar sonini ham beradi; `UsageService.who()`
+  qo'shildi.
+- BIL-05 testi alias'li `controllers.check.ts`'ga ko'chdi.
+
+Fayllar: `CreditService.ts`, `UsageService.ts`, `server/guard.ts`, `PlanController.ts`,
+`controllers.check.ts`, `new-features.check.ts`, CLAUDE.md.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Testlar: yetmagan balansda band qilish rad
+etiladi va hech narsa yozmaydi; natijasiz amal hammasini bir marta qaytaradi; chizilmagan ekranlar
+qaytariladi, lekin band qilinganidan ko'p emas; amaldan tashqarida (eval) qaytarish yo'q.
+Brauzerda: ekran tahriri 2 kredit oldi (1000 → 998), chaqiruv muvaffaqiyatli. Balans 1 bo'lganda
+yangi ekran so'rovi 402 oldi va hech narsa yechilmadi. Hozir UI xom JSON toast ko'rsatadi —
+to'g'ri dialog BIL-08'da.
+
 ### Har amalning kredit narxi (BIL-05)
 
 `CreditService` — narxlar bitta jadvalda, model bo'yicha (DeepSeek Flash): plan 1, chizish 14

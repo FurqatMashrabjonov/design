@@ -7,6 +7,7 @@ import { streamCompletion } from '@/app/Services/LlmService'
 import { composeSystemPrompt } from '@/app/Services/PromptComposer'
 import { editPlan, planScreensWithRetry, screenTitle, type Plan, type PlannedScreen } from '@/app/Services/PlannerService'
 import { PendingPlans } from '@/app/Services/PendingPlans'
+import { CreditService } from '@/app/Services/CreditService'
 import { readReference, referenceBlock, type ReferenceStyle } from '@/app/Services/ReferenceService'
 import { parseRefImages } from '@/lib/ref-images'
 import { mapLimit } from '@/app/Services/Pool'
@@ -275,6 +276,8 @@ export const PlanController = {
           await mapLimit(plan.screens.map((s, i) => ({ s, i })), 3, ({ s, i }) => renderScreen(s, i))
 
           const stopped = abort.signal.aborted
+          // BIL-06: a screen that failed or was stopped before it was drawn is not paid for.
+          CreditService.refundScreens(plan.screens.length - drawnScreens.length)
           drawnScreens.sort((a, z) => (planIndex.get(a.id) ?? 0) - (planIndex.get(z.id) ?? 0))
           if (usage.promptTokens) log.push(formatTokens(usage))
           Message.add({

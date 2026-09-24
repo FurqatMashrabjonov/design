@@ -3,6 +3,8 @@
 import { Project } from '@/app/Models/Project'
 import { userFrom } from './auth'
 import { UsageService } from '@/app/Services/UsageService'
+import { CreditService } from '@/app/Services/CreditService'
+import { Credit } from '@/app/Models/Credit'
 
 export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>): Promise<Response> {
   // SEC-01: a state-changing POST must come from this site, not from a page elsewhere.
@@ -22,10 +24,19 @@ export async function guardGeneration(request: Request, run: (req: Request, user
   const refused = UsageService.refusal(user.id)
   if (refused) return new Response(refused.message, { status: refused.status })
 
-  UsageService.begin(user.id)
-  const done = () => UsageService.end(user.id)
   // LLM-05: one guarded request is one action; every model call inside it carries its id.
-  const who = { userId: user.id, projectId: typeof body.projectId === 'string' ? body.projectId : undefined, actionId: crypto.randomUUID() }
+  // BIL-06: its price is held before any model runs, and settled when it ends (all back if nothing came of it).
+  const actionId = crypto.randomUUID()
+  const price = CreditService.priceOf(CreditService.kindOf(new URL(request.url).pathname, body))
+  if (!CreditService.hold(user.id, actionId, price)) {
+    return Response.json({ error: 'credits', needed: price, balance: Credit.balance(user.id) }, { status: 402 })
+  }
+  UsageService.begin(user.id)
+  const done = () => {
+    UsageService.end(user.id)
+    CreditService.settle(user.id, actionId)
+  }
+  const who = { userId: user.id, projectId: typeof body.projectId === 'string' ? body.projectId : undefined, actionId }
   let res: Response
   try {
     res = await UsageService.run(who, () => run(new Request(request.url, { method: 'POST', headers: request.headers, body: text, signal: request.signal }), user.id, done))

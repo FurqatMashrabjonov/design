@@ -104,9 +104,18 @@ export const UsageService = {
   },
 
   /** LLM-05: what one action really cost — every call it made, priced by its own model. */
-  actionCost(actionId: string): { calls: number; usd: number } {
-    const r = db.select({ calls: sql<number>`count(*)`, usd: sql<number>`coalesce(sum(cost_usd), 0)` }).from(llmCalls).where(eq(llmCalls.actionId, actionId)).get()
-    return { calls: r?.calls ?? 0, usd: r?.usd ?? 0 }
+  actionCost(actionId: string): { calls: number; ok: number; usd: number } {
+    const r = db
+      .select({ calls: sql<number>`count(*)`, ok: sql<number>`coalesce(sum(ok), 0)`, usd: sql<number>`coalesce(sum(cost_usd), 0)` })
+      .from(llmCalls)
+      .where(eq(llmCalls.actionId, actionId))
+      .get()
+    return { calls: r?.calls ?? 0, ok: r?.ok ?? 0, usd: r?.usd ?? 0 }
+  },
+
+  /** The user, project and action the current code runs for, if any (the eval and tests have none). */
+  who(): Ctx | undefined {
+    return ctx.getStore()
   },
 
   /** OBS-05 groundwork: spend per user over a window. */

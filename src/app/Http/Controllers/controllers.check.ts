@@ -493,6 +493,55 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(AdminStatsService.user('u2')!.credits[0]!.note, 'beta tester', 'newest movement first')
 }
 
+// BIL-05: every action's credit price, at the cheapest a credit is sold, covers what the action
+// really costs at its worst: DeepSeek's peak hours and the 90th percentile of logged calls
+// (llm_calls, 174 calls, measured 2026-09-24, off-peak p90 doubled). Under peak-p90 × 1.25 a heavy
+// user would cost more than they pay. Element edits are not yet in the log; theirs is an estimate
+// (a whole-screen prompt, a few hundred tokens out) until LLM-06 measures it.
+{
+  const { CreditService, CREDIT_PRICES, CHEAPEST_CREDIT_USD } = await import('../../Services/CreditService.ts')
+  const PEAK_P90_USD = { plan: 0.0045, screen: 0.0114, element: 0.006 }
+  const worst = { plan: PEAK_P90_USD.plan, draw: 6.5 * PEAK_P90_USD.screen, screen: PEAK_P90_USD.screen, element: PEAK_P90_USD.element }
+  for (const kind of ['plan', 'draw', 'screen', 'element'] as const) {
+    const usd = CreditService.priceOf(kind) * CHEAPEST_CREDIT_USD
+    assert.ok(usd >= worst[kind] * 1.25, `${kind}: ${CreditService.priceOf(kind)} credits = $${usd.toFixed(4)}, under 1.25 × its worst cost $${worst[kind]}`)
+  }
+  assert.equal(CreditService.priceOf('app'), 15, 'an app is 15 credits: the plan and its drawing (BIL-02)')
+  assert.deepEqual(CREDIT_PRICES['deepseek-flash'], { plan: 1, draw: 14, screen: 2, element: 1 })
+  assert.throws(() => CreditService.priceOf('screen', 'gpt-imaginary'), /No credit price/)
+  const { PRICES } = await import('../../Services/LlmService.ts')
+  for (const m of Object.keys(CREDIT_PRICES)) assert.ok(PRICES[m], `${m} has credit prices, so it needs a token price too`)
+  // Which action a request is.
+  assert.equal(CreditService.kindOf('/api/generate-plan', { brief: 'x', gate: true }), 'plan')
+  assert.equal(CreditService.kindOf('/api/generate-plan', { approve: {} }), 'draw')
+  assert.equal(CreditService.kindOf('/api/generate-plan', { brief: 'x' }), 'app')
+  assert.equal(CreditService.kindOf('/api/generate', { prompt: 'x' }), 'screen')
+  assert.equal(CreditService.kindOf('/api/generate', { editScreenId: 's', prompt: 'x' }), 'screen')
+  assert.equal(CreditService.kindOf('/api/generate', { editScreenId: 's', editElementId: 'button-3', prompt: 'x' }), 'element')
+}
+
+// BIL-06: the price is held before the model runs; an action that produced nothing gives it all
+// back, a planned run pays back its undrawn screens, and no action returns more than it took.
+{
+  const { CreditService } = await import('../../Services/CreditService.ts')
+  const { UsageService } = await import('../../Services/UsageService.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  Credit.add({ userId: 'buyer', delta: 20, kind: 'admin' })
+  assert.equal(CreditService.hold('buyer', 'act-a', 15), true)
+  assert.equal(CreditService.hold('buyer', 'act-b', 15), false, 'a hold the balance cannot cover is refused')
+  assert.equal(Credit.balance('buyer'), 5, 'a refused hold writes nothing')
+  // act-a made no successful call (none at all): settling gives all 15 back, and a second settle nothing.
+  CreditService.settle('buyer', 'act-a')
+  CreditService.settle('buyer', 'act-a')
+  assert.equal(Credit.balance('buyer'), 20, 'nothing generated, nothing paid — once')
+  // A planned run inside an action: 2 of its screens undrawn come back at 2 each, capped by the hold.
+  CreditService.hold('buyer', 'act-c', 14)
+  assert.equal(UsageService.run({ userId: 'buyer', actionId: 'act-c' }, () => CreditService.refundScreens(2)), 4)
+  assert.equal(UsageService.run({ userId: 'buyer', actionId: 'act-c' }, () => CreditService.refundScreens(50)), 10, 'never more than the action still holds')
+  assert.equal(Credit.ofAction('buyer', 'act-c'), 0)
+  assert.equal(CreditService.refundScreens(3), 0, 'outside an action (the eval) there is nothing to refund')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')
@@ -547,8 +596,8 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   )
   // LLM-05: the call knows its model and its action, and the action's real cost is their sum.
   assert.deepEqual([rows[0].model, rows[0].actionId], ['deepseek-flash', 'act-1'])
-  assert.deepEqual(UsageService.actionCost('act-1'), { calls: 1, usd: rows[0].costUsd })
-  assert.deepEqual(UsageService.actionCost('no-such-action'), { calls: 0, usd: 0 })
+  assert.deepEqual(UsageService.actionCost('act-1'), { calls: 1, ok: 1, usd: rows[0].costUsd })
+  assert.deepEqual(UsageService.actionCost('no-such-action'), { calls: 0, ok: 0, usd: 0 })
   reply = () => new Response('down', { status: 500 })
   await UsageService.run({ userId: 'user-9' }, () => post(GenerateController, { projectId: 'p-usage', prompt: 'again' }))
   const failed = db.select().from(llmCalls).all().filter((r) => r.userId === 'user-9' && !r.ok)

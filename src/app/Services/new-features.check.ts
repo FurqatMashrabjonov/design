@@ -179,33 +179,6 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   for (const [id, p] of Object.entries(PRICES)) assert.ok(p.cached < p.input && p.input < p.output, `${id}: cache < input < output`)
 }
 
-// BIL-05: every action's credit price, at the cheapest a credit is sold, covers what the action
-// really costs at its worst: DeepSeek's peak hours and the 90th percentile of logged calls
-// (llm_calls, 174 calls, measured 2026-09-24, off-peak p90 doubled). Under peak-p90 × 1.25 a heavy
-// user would cost more than they pay. Element edits are not yet in the log; theirs is an estimate
-// (a whole-screen prompt, a few hundred tokens out) until LLM-06 measures it.
-{
-  const { CreditService, CREDIT_PRICES, CHEAPEST_CREDIT_USD } = await import('./CreditService.ts')
-  const PEAK_P90_USD = { plan: 0.0045, screen: 0.0114, element: 0.006 }
-  const worst = { plan: PEAK_P90_USD.plan, draw: 6.5 * PEAK_P90_USD.screen, screen: PEAK_P90_USD.screen, element: PEAK_P90_USD.element }
-  for (const kind of ['plan', 'draw', 'screen', 'element'] as const) {
-    const usd = CreditService.priceOf(kind) * CHEAPEST_CREDIT_USD
-    assert.ok(usd >= worst[kind] * 1.25, `${kind}: ${CreditService.priceOf(kind)} credits = $${usd.toFixed(4)}, under 1.25 × its worst cost $${worst[kind]}`)
-  }
-  assert.equal(CreditService.priceOf('app'), 15, 'an app is 15 credits: the plan and its drawing (BIL-02)')
-  assert.deepEqual(CREDIT_PRICES['deepseek-flash'], { plan: 1, draw: 14, screen: 2, element: 1 })
-  assert.throws(() => CreditService.priceOf('screen', 'gpt-imaginary'), /No credit price/)
-  const { PRICES } = await import('./LlmService.ts')
-  for (const m of Object.keys(CREDIT_PRICES)) assert.ok(PRICES[m], `${m} has credit prices, so it needs a token price too`)
-  // Which action a request is.
-  assert.equal(CreditService.kindOf('/api/generate-plan', { brief: 'x', gate: true }), 'plan')
-  assert.equal(CreditService.kindOf('/api/generate-plan', { approve: {} }), 'draw')
-  assert.equal(CreditService.kindOf('/api/generate-plan', { brief: 'x' }), 'app')
-  assert.equal(CreditService.kindOf('/api/generate', { prompt: 'x' }), 'screen')
-  assert.equal(CreditService.kindOf('/api/generate', { editScreenId: 's', prompt: 'x' }), 'screen')
-  assert.equal(CreditService.kindOf('/api/generate', { editScreenId: 's', editElementId: 'button-3', prompt: 'x' }), 'element')
-}
-
 console.log('Testing Navigation Shell Builder...')
 const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE, navStyle, navClearance } = await import('./ShellService.ts')
 const navA = buildBottomNav(multiPlan.navigation, 'home')
