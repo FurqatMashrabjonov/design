@@ -24,6 +24,21 @@ export const PACKS = [
   { credits: 1500, usd: 15 },
 ] as const
 
+/**
+ * BIL-09: everything sold, keyed as the payment provider's products are tagged (`metadata.od`), so a
+ * paid order is traced back to what it grants without a hand-kept list of provider ids.
+ */
+export type ProductKey = 'starter-month' | 'starter-year' | 'pro-month' | 'pro-year' | 'pack-500' | 'pack-1500'
+export type Product = { key: ProductKey; name: string; cents: number; interval: 'month' | 'year' | null; credits: number; plan: 'starter' | 'pro' | null }
+export const PRODUCTS: Product[] = [
+  ...PLANS.flatMap((p) => [
+    { key: `${p.id}-month` as ProductKey, name: `${p.name} (monthly)`, cents: p.monthly * 100, interval: 'month' as const, credits: p.credits, plan: p.id },
+    { key: `${p.id}-year` as ProductKey, name: `${p.name} (yearly)`, cents: p.yearly * 12 * 100, interval: 'year' as const, credits: p.credits, plan: p.id },
+  ]),
+  ...PACKS.map((k) => ({ key: `pack-${k.credits}` as ProductKey, name: `${k.credits} credits`, cents: k.usd * 100, interval: null, credits: k.credits, plan: null })),
+]
+export const productOf = (key: string | undefined) => PRODUCTS.find((p) => p.key === key)
+
 /** The cheapest a credit is ever sold for (Pro: $24 / 3 000), which every price is checked against. */
 export const CHEAPEST_CREDIT_USD = 24 / 3000
 

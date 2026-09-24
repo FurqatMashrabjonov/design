@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
 import { BRAND } from '../Landing'
-import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS } from '@/lib/credit-prices'
+import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS, type ProductKey } from '@/lib/credit-prices'
+import { buy } from '../credits'
 
 // BIL-12: the plans and what a credit buys, in public. Every number comes from lib/credit-prices.ts,
 // the same table the server charges from, so this page cannot promise a price the product does not keep.
@@ -79,9 +80,8 @@ function Pricing() {
                   Start free
                 </Link>
               ) : (
-                // BIL-09 wires checkout; until the payment provider is live the button says so.
-                <button type="button" disabled className="h-10 w-full rounded-lg bg-foreground text-sm font-medium text-background opacity-50">
-                  Checkout opens soon
+                <button type="button" onClick={() => buy(`${t.id}-${yearly ? 'year' : 'month'}` as ProductKey)} className="h-10 w-full rounded-lg bg-foreground text-sm font-medium text-background hover:opacity-90">
+                  Get {t.name}
                 </button>
               )}
             </div>
@@ -91,13 +91,16 @@ function Pricing() {
 
       <section className="mt-12">
         <h2 className="text-xl font-semibold tracking-[-0.02em]">Need more?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Starter and Pro can add a pack when they run low.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Starter and Pro can add a pack when they run low. Plan credits renew each month and unused ones do not carry over; pack credits never expire.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           {PACKS.map((p) => (
             <div key={p.credits} className="rounded-xl border bg-background px-5 py-4">
               <p className="text-sm font-medium">{p.credits.toLocaleString('en')} credits</p>
               <p className="text-2xl font-semibold tabular-nums">${p.usd}</p>
-              <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps</p>
+              <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · never expire</p>
+              <button type="button" onClick={() => buy(`pack-${p.credits}` as ProductKey)} className="mt-3 h-8 w-full rounded-lg border text-sm hover:bg-muted">
+                Buy
+              </button>
             </div>
           ))}
         </div>

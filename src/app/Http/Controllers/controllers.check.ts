@@ -548,6 +548,49 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(SIGNUP_CREDITS, 4 * CreditService.priceOf('app'), 'the free start is four apps (BIL-02)')
 }
 
+// BIL-09/10: plans grant monthly (a yearly plan too), once per month; unused plan credits lapse at the
+// next month, packs never do; every webhook may arrive twice and grants once.
+{
+  const { BillingController } = await import('./BillingController.ts')
+  const { CreditService } = await import('../../Services/CreditService.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  const { Subscription, monthIndex } = await import('../../Models/Subscription.ts')
+  const t = (iso: string) => Math.floor(Date.parse(iso) / 1000)
+  assert.equal(monthIndex(t('2026-01-31T10:00:00Z'), t('2026-02-27T10:00:00Z')), 0)
+  assert.equal(monthIndex(t('2026-01-31T10:00:00Z'), t('2026-02-28T10:00:00Z')), 1, 'Jan 31 renews on Feb 28')
+  assert.equal(monthIndex(t('2026-01-15T10:00:00Z'), t('2027-01-15T09:59:59Z')), 11)
+
+  await assert.rejects(BillingController.checkout({ id: 'payer', email: 'p@x.uz' }, 'pack-500', 'http://x'), /subscribers/, 'packs are for subscribers only')
+
+  const sub = (status: string, extra: Record<string, unknown> = {}) => ({
+    type: 'subscription.updated',
+    data: { id: 'sub_1', status, started_at: new Date().toISOString(), current_period_end: new Date(Date.now() + 365 * 864e5).toISOString(), customer: { external_id: 'payer' }, product: { metadata: { od: 'starter-year' } }, ...extra },
+  })
+  assert.equal(BillingController.webhook(sub('active')), 'subscription saved')
+  BillingController.webhook(sub('active'))
+  assert.equal(Credit.balance('payer'), 1200, 'the first month lands once, however often the event comes')
+  assert.equal(BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'pack granted')
+  assert.equal(BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'duplicate')
+  assert.equal(Credit.balance('payer'), 1700)
+  assert.equal(BillingController.webhook({ type: 'order.paid', data: { id: 'ord_x', product: { metadata: { od: 'something-else' } }, customer: { external_id: 'payer' } } }), 'ignored')
+
+  // Spend 200 of the plan's 1 200, then a month passes: 1 000 unused lapse, the 500 pack stays, 1 200 arrive.
+  CreditService.hold('payer', 'act-p', 200)
+  const nextMonth = Math.floor(Date.now() / 1000) + 31 * 86400
+  CreditService.refresh('payer', nextMonth)
+  CreditService.refresh('payer', nextMonth)
+  assert.equal(Credit.balance('payer'), 500 + 1200, 'unused plan credits lapse, the pack does not, the new month lands once')
+
+  // Cancelled at period end: still the plan until the period ends; revoked: nothing more.
+  BillingController.webhook(sub('active', { cancel_at_period_end: true }))
+  assert.ok(Subscription.activeFor('payer'), 'a cancelled plan runs to the end of its period')
+  BillingController.webhook(sub('revoked'))
+  assert.equal(Subscription.activeFor('payer'), undefined)
+  const before = Credit.balance('payer')
+  CreditService.refresh('payer', nextMonth + 31 * 86400)
+  assert.equal(Credit.balance('payer'), before, 'a revoked plan grants nothing more')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

@@ -180,6 +180,18 @@ export const creditLedger = sqliteTable('credit_ledger', {
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
 })
 
+// BIL-10: a plan as the payment provider reports it; its credits live in credit_ledger.
+export const subscriptions = sqliteTable('subscriptions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  productKey: text('product_key').notNull(),
+  status: text('status').notNull(),
+  startedAt: integer('started_at').notNull(),
+  currentPeriodEnd: integer('current_period_end'),
+  cancelAtPeriodEnd: integer('cancel_at_period_end', { mode: 'boolean' }).notNull().default(false),
+  updatedAt: integer('updated_at').notNull().default(sql`(unixepoch())`),
+})
+
 // ADM-01: every admin action (ban, pause, limit, role), who did it and when.
 export const adminActions = sqliteTable('admin_actions', {
   id: text('id').primaryKey(),

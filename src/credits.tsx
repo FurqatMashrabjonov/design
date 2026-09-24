@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { toast } from 'sonner'
-import { getCredits } from './server/fns'
-import { appsFor, CREDIT_PRICES, PLANS, screensFor } from './lib/credit-prices'
+import { getCredits, openBillingPortal, startCheckout } from './server/fns'
+import { appsFor, CREDIT_PRICES, PACKS, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -47,23 +47,46 @@ export function reportError(e: unknown) {
   toast.error(e instanceof Error ? e.message : String(e))
 }
 
-export function useCredits(initial?: number): number | undefined {
-  const [balance, setBalance] = useState(initial)
+type CreditState = { balance: number; plan: 'starter' | 'pro' | null }
+
+export function useCredits(initial?: number): CreditState | undefined {
+  const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null })
   useEffect(() => {
     let live = true
-    const load = () => getCredits().then((r) => live && setBalance(r.balance)).catch(() => {})
-    if (initial === undefined) load()
+    const load = () => getCredits().then((r) => live && setState(r)).catch(() => {})
+    load()
     window.addEventListener(CHANGED, load)
     return () => {
       live = false
       window.removeEventListener(CHANGED, load)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  return balance
+  }, [])
+  return state
+}
+
+/** BIL-09: off to the provider's hosted checkout. A signed-out visitor signs in first. */
+export async function buy(key: ProductKey) {
+  try {
+    const { url } = await startCheckout({ data: { key } })
+    window.location.href = url
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e)
+    if (/sign in|unauthori/i.test(m)) window.location.href = '/login'
+    else toast.error(m)
+  }
+}
+
+/** BIL-11: the provider's billing portal — cards, invoices, cancelling. */
+export async function manageBilling() {
+  try {
+    window.location.href = (await openBillingPortal()).url
+  } catch {
+    toast.error('No billing yet — it appears after your first purchase.')
+  }
 }
 
 export function CreditsBadge() {
-  const balance = useCredits()
+  const balance = useCredits()?.balance
   if (balance === undefined) return null
   return (
     <span className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium tabular-nums ${balance <= 0 ? 'border-destructive/40 text-destructive' : ''}`} title={`${balance} credits · about ${screensFor(Math.max(0, balance))} screens`}>
@@ -76,6 +99,7 @@ export function CreditsBadge() {
 /** Mounted once (root): opens when a generation is refused for credits. */
 export function CreditsDialog() {
   const [out, setOut] = useState<OutOfCredits | null>(null)
+  const plan = useCredits()?.plan
   useEffect(() => {
     const on = (e: Event) => setOut((e as CustomEvent<OutOfCredits>).detail)
     window.addEventListener(OUT, on)
@@ -91,23 +115,38 @@ export function CreditsDialog() {
             {out?.message} Nothing was charged. A whole app is {p.plan + p.draw} credits, a screen {p.screen}, an element edit {p.element}.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {PLANS.map((plan) => (
-            <div key={plan.id} className={`rounded-xl border p-4 ${plan.id === 'pro' ? 'border-foreground' : ''}`}>
-              <p className="text-sm font-semibold">{plan.name}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">
-                ${plan.monthly}
-                <span className="text-sm font-normal text-muted-foreground">/mo</span>
-              </p>
-              <p className="mt-2 text-sm">{plan.credits.toLocaleString('en')} credits a month</p>
-              <p className="text-xs text-muted-foreground">{appsFor(plan.credits)} whole apps · {plan.projects}</p>
-              {/* BIL-09 wires checkout; until the payment provider is live the button says so. */}
-              <Button className="mt-3 w-full" variant={plan.id === 'pro' ? 'default' : 'outline'} disabled>
-                Checkout opens soon
-              </Button>
-            </div>
-          ))}
-        </div>
+        {plan ? (
+          // A subscriber tops up with a pack (BIL-02: packs are for subscribers only).
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PACKS.map((k) => (
+              <div key={k.credits} className="rounded-xl border p-4">
+                <p className="text-sm font-semibold">{k.credits.toLocaleString('en')} credits</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">${k.usd}</p>
+                <p className="text-xs text-muted-foreground">{appsFor(k.credits)} whole apps · never expire</p>
+                <Button className="mt-3 w-full" variant="outline" onClick={() => buy(`pack-${k.credits}` as ProductKey)}>
+                  Buy
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PLANS.map((p) => (
+              <div key={p.id} className={`rounded-xl border p-4 ${p.id === 'pro' ? 'border-foreground' : ''}`}>
+                <p className="text-sm font-semibold">{p.name}</p>
+                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                  ${p.monthly}
+                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                </p>
+                <p className="mt-2 text-sm">{p.credits.toLocaleString('en')} credits a month</p>
+                <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · {p.projects}</p>
+                <Button className="mt-3 w-full" variant={p.id === 'pro' ? 'default' : 'outline'} onClick={() => buy(`${p.id}-month` as ProductKey)}>
+                  Get {p.name}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         <a href="/pricing" className="text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
           Compare plans and credit packs
         </a>

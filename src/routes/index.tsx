@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { getHome, createProject, getSession } from '../server/fns'
 import { Landing, PENDING_PROMPT, BRAND } from '../Landing'
 import { Dashboard } from '../Dashboard'
+import { creditsChanged } from '../credits'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/')({
   // A guest gets the landing page, a signed-in user the dashboard, on the same URL.
@@ -44,6 +46,15 @@ function Home() {
       navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }),
     )
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // BIL-09: back from checkout. The credits come by webhook a moment later, so the balance reloads a few times.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('checkout') !== 'success') return
+    history.replaceState(null, '', '/')
+    toast.success('Payment received — your credits arrive in a few seconds.')
+    const timers = [2000, 5000, 10000].map((ms) => setTimeout(creditsChanged, ms))
+    return () => timers.forEach(clearTimeout)
+  }, [])
 
   return <Dashboard projects={data.projects} designSystems={data.designSystems} credits={data.credits} user={user ?? undefined} />
 }

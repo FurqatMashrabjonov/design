@@ -78,7 +78,7 @@ export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size
 
 /** BIL-08: the credit balance, in credits and in the screens it buys, so running out is never a surprise. */
 function Credits({ initial }: { initial: number }) {
-  const balance = useCredits(initial) ?? initial
+  const balance = useCredits(initial)?.balance ?? initial
   const low = balance < CREDIT_PRICES['deepseek-flash']!.plan + CREDIT_PRICES['deepseek-flash']!.draw
   return (
     <div className="rounded-xl border bg-background p-3 text-xs">

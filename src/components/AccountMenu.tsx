@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { LogOut, Shield, Trash2 } from 'lucide-react'
+import { CreditCard, LogOut, Shield, Trash2 } from 'lucide-react'
+import { manageBilling } from '@/credits'
 import { authClient } from '@/lib/auth-client'
 import { deleteAccount } from '@/server/fns'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -38,6 +39,9 @@ export function AccountMenu() {
               <Shield /> Admin panel
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onSelect={() => manageBilling()}>
+            <CreditCard /> Billing
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={signOut}>
             <LogOut /> Sign out
           </DropdownMenuItem>

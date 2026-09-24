@@ -179,6 +179,23 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   for (const [id, p] of Object.entries(PRICES)) assert.ok(p.cached < p.input && p.input < p.output, `${id}: cache < input < output`)
 }
 
+// BIL-10: a webhook is believed only with a valid Standard Webhooks signature, fresh, for this body.
+{
+  const { sign, verify } = await import('../../lib/standard-webhooks.ts')
+  const secret = 'whsec_' + Buffer.from('a test secret of some length').toString('base64')
+  const now = Date.parse('2026-09-24T12:00:00Z')
+  const ts = String(now / 1000)
+  const body = '{"type":"order.paid"}'
+  const good = { id: 'msg_1', timestamp: ts, signature: `v1,${sign(secret, 'msg_1', ts, body)}` }
+  assert.equal(verify(secret, good, body, now), true)
+  assert.equal(verify(secret, { ...good, signature: `v1,bogus v1,${sign(secret, 'msg_1', ts, body)}` }, body, now), true, 'any listed signature may match (rotation)')
+  assert.equal(verify(secret, good, body.replace('paid', 'refunded'), now), false, 'a changed body fails')
+  assert.equal(verify('whsec_' + Buffer.from('another').toString('base64'), good, body, now), false, 'another secret fails')
+  assert.equal(verify(secret, good, body, now + 10 * 60_000), false, 'a replay ten minutes later fails')
+  assert.equal(verify(secret, { ...good, signature: null }, body, now), false)
+  assert.equal(verify('', good, body, now), false, 'no secret configured, nothing is believed')
+}
+
 console.log('Testing Navigation Shell Builder...')
 const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE, navStyle, navClearance } = await import('./ShellService.ts')
 const navA = buildBottomNav(multiPlan.navigation, 'home')

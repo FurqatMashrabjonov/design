@@ -5,6 +5,68 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### To'lovlar: Polar checkout, webhook, oylik kreditlar, portal (BIL-01, 09, 10, 11, 12)
+
+**Provayder — Polar.** Stripe O'zbekistonda hisob ochmaydi. Polar Stripe ustida ishlaydi,
+O'zbekistonga pul chiqaradi va Merchant of Record: VAT va sales tax ular zimmasida. Hozir
+sandbox'da; production hisobi alohida ochiladi (BIL-03).
+
+- **Mahsulotlar** `lib/credit-prices.ts`'dagi `PRODUCTS` jadvalidan olinadi: Starter va Pro
+  (oylik/yillik), 500 va 1500 kreditlik paketlar.
+  - `scripts/polar-products.ts` ularni provayderda yaratadi. Qayta ishga tushirsa ham takror
+    yaratmaydi.
+  - Provayderdagi mahsulot `metadata.od` bo'yicha topiladi, id qo'lda yozilmaydi.
+- **Checkout (BIL-09).** `startCheckout` → Polar'ning hosted checkout sahifasi, bizning user
+  `external_customer_id` sifatida ketadi. Paketni faqat obunachi oladi (serverda tekshiriladi).
+  To'lovdan keyin dashboard'ga qaytadi, xabar chiqadi va balans bir necha marta qayta yuklanadi.
+- **Webhook (BIL-10).** `/api/polar-webhook` Standard Webhooks imzosini tekshiradi (5 daqiqalik
+  oyna); imzo noto'g'ri yoki eski bo'lsa 403.
+  - `order.paid` kelsa paket `order:<id>` ref'i bilan beriladi.
+  - Har bir `subscription.*` hodisasi `subscriptions` qatorini qayta yozadi.
+- **Oylik kreditlar.** Obunaning har oyi uchun bitta grant, yillik tarifda ham har oy
+  (`CreditService.refresh`, ref `sub:<id>:<oy>:<mahsulot>`).
+  - Yangi oyda o'tgan oyning ishlatilmagan tarif kreditlari kuyadi; paket kreditlari kuymaydi
+    (1-variant).
+  - `refresh` balans kerak bo'lgan har joyda chaqiriladi (guard, `getCredits`, webhook), shuning
+    uchun alohida rejalashtiruvchi (cron) kerak emas.
+- **Portal (BIL-11).** Account menyusida "Billing" → Polar customer portal (karta, invoyslar,
+  bekor qilish).
+- **/pricing va kredit dialogi (BIL-12).** Tugmalar endi checkout'ni ochadi. Obunachiga dialogda
+  tariflar o'rniga paketlar ko'rsatiladi.
+- Dev: `vite.config.ts`'da `.ngrok-free.app` ruxsat etildi (webhook tunnel orqali keladi).
+  `.env.example` va HANDOFF'da sozlash yozildi.
+
+Fayllar: `lib/credit-prices.ts`, `lib/standard-webhooks.ts`, `app/Models/Subscription.ts`,
+`app/Models/Credit.ts`, `app/Services/PolarService.ts`, `app/Services/CreditService.ts`,
+`app/Http/Controllers/BillingController.ts`, `routes/api/polar-webhook.ts`, `server/fns.ts`,
+`server/guard.ts`, `credits.tsx`, `components/AccountMenu.tsx`, `routes/pricing.tsx`,
+`routes/index.tsx`, `Dashboard.tsx`, migratsiya 0023, `scripts/polar-products.ts`,
+`vite.config.ts`, `.env.example`, CLAUDE.md, HANDOFF.
+
+Tekshiruv:
+- `npm run check`, `npx tsc --noEmit` toza. Testlar:
+  - imzo: to'g'ri, rotatsiya, o'zgartirilgan tana, boshqa secret, 10 daqiqalik takror, secret yo'q;
+  - oy hisobi: 31-yanvar → 28-fevral;
+  - obunachi bo'lmaganga paket rad etiladi;
+  - bir hodisa ikki marta kelsa, bitta grant;
+  - paket bir marta beriladi;
+  - noma'lum mahsulot e'tiborsiz qoldiriladi;
+  - oy o'tganda 1000 ishlatilmagan kuyadi, paket qoladi, yangi 1200 bir marta keladi;
+  - bekor qilingan obuna davr oxirigacha amal qiladi; revoked bo'lgach grant yo'q.
+- Haqiqiy sandbox oqimi (foydalanuvchi test karta bilan to'ladi):
+  - /pricing → Get Starter → Polar checkout;
+  - 4 ta webhook keldi (`subscription.created`, `active`, `updated`, `order.paid`), hammasi 202;
+  - obuna yozildi, 1 200 kredit **bir marta** tushdi (996 → 2 196), dashboard 2 196 ko'rsatdi;
+  - Billing → Polar portal ochildi;
+  - obunachi uchun paket checkout'i ochildi (to'lanmadi);
+  - imzosiz so'rovlar 403 oldi.
+
+Qolgan:
+- Production hisobi va token (BIL-03).
+- Production webhook URL'i deploy bilan (INF-05/06).
+- Tarif chegaralari (BIL-14).
+- Dev'da sahifa hydrate bo'lguncha bosilgan tugma javobsiz qoladi.
+
 ### Narxlar sahifasi /pricing (BIL-12 — sahifa tayyor, checkout kutilmoqda)
 
 Ochiq sahifa, kirish shart emas:

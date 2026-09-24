@@ -28,6 +28,7 @@ export async function guardGeneration(request: Request, run: (req: Request, user
   // BIL-06: its price is held before any model runs, and settled when it ends (all back if nothing came of it).
   const actionId = crypto.randomUUID()
   const price = CreditService.priceOf(CreditService.kindOf(new URL(request.url).pathname, body))
+  CreditService.refresh(user.id) // BIL-10: a new month of a plan lands before the price is taken
   if (!CreditService.hold(user.id, actionId, price)) {
     return Response.json({ error: 'credits', needed: price, balance: Credit.balance(user.id) }, { status: 402 })
   }

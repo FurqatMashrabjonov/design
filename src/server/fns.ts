@@ -9,6 +9,10 @@ import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
+import { Subscription } from '@/app/Models/Subscription'
+import { CreditService } from '@/app/Services/CreditService'
+import { BillingController } from '@/app/Http/Controllers/BillingController'
+import { PRODUCTS, productOf } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { getRequest } from '@tanstack/react-start/server'
@@ -25,7 +29,22 @@ export const deleteAccount = createServerFn({ method: 'POST' }).handler(async ()
 // --- projects ---
 
 /** BIL-08: the signed-in user's credit balance, for the top bar and the dashboard. */
-export const getCredits = createServerFn({ method: 'GET' }).handler(async () => ({ balance: Credit.balance((await requireUser()).id) }))
+export const getCredits = createServerFn({ method: 'GET' }).handler(async () => {
+  const id = (await requireUser()).id
+  CreditService.refresh(id) // a new month of a plan lands the first time it is looked at
+  return { balance: Credit.balance(id), plan: productOf(Subscription.activeFor(id)?.productKey)?.plan ?? null }
+})
+
+/** BIL-09: a hosted checkout for one product; the page goes to the returned URL. */
+export const startCheckout = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ key: oneOf(obj(d).key, PRODUCTS.map((p) => p.key)) }))
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    return BillingController.checkout(user, data.key, new URL(getRequest().url).origin)
+  })
+
+/** BIL-11: the provider's billing portal for the signed-in user. */
+export const openBillingPortal = createServerFn({ method: 'POST' }).handler(async () => BillingController.portal((await requireUser()).id, new URL(getRequest().url).origin))
 
 export const getHome = createServerFn({ method: 'GET' }).handler(async () => ProjectController.index((await requireUser()).id))
 

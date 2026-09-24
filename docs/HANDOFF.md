@@ -19,6 +19,7 @@ npm run dev                         # http://localhost:3000
 - **Push**: `gh auth refresh -h github.com -s workflow` (workflow scope kerak, `.github/` bor), va macOS keychain eski tokenni qaytarsa: `git -c credential.helper= -c credential.helper='!gh auth git-credential' push origin canvas-planner`. **CI (INF-08) GitHub billing qulfi tufayli ishlamayapti** — Bloklangan.
 - **`data.db`** (sening loyihalaring) ham gitda yo'q — yangi kompyuterda bo'sh baza bilan boshlanadi. Eski loyihalar kerak bo'lsa `data.db` faylini qo'lda ko'chir (server o'chiq paytda).
 - **Push:** `gh auth login` qil, keyin `git -c credential.helper='!gh auth git-credential' push origin generation-quality`. Eski kompyuterda `gh` agent shell PATH'ida yo'q edi, shuning uchun to'liq yo'l ishlatilgan: `!/opt/homebrew/bin/gh auth git-credential`.
+- **To'lovlar (Polar, sandbox)**: `.env`'da `POLAR_ACCESS_TOKEN`, `POLAR_SERVER=sandbox`, `POLAR_WEBHOOK_SECRET`. Mahsulotlar sandbox'da yaratilgan; yangi muhitda `node --env-file=.env --import ./eval/alias-hook.mjs scripts/polar-products.ts`. Webhook localhost'ga **ngrok** orqali keladi: `ngrok http 3000`, keyin Polar'da (Settings → Webhooks yoki API `POST /v1/webhooks/endpoints`) URL'ni `https://<ngrok>/api/polar-webhook` ga yangilang — ngrok URL'i har ishga tushganda o'zgaradi, secret esa endpoint'ga bog'liq. Test karta: `4242 4242 4242 4242`. Production uchun alohida hisob va token (BIL-03).
 - **Notion MCP** (Claude Code uchun): `claude mcp add --transport http notion https://mcp.notion.com/mcp`, keyin `/mcp` da login.
 
 ## 2. Hozirgi holat

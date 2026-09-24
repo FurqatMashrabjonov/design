@@ -8,7 +8,8 @@ export default defineConfig(({ mode }) => {
   // Server-only secrets (no VITE_ prefix) into process.env for dev
   Object.assign(process.env, loadEnv(mode, process.cwd(), ''))
   return {
-    server: { port: 3000 },
+    // BIL-10: the payment provider's webhooks reach the dev server through an ngrok tunnel.
+    server: { port: 3000, allowedHosts: ['.ngrok-free.app'] },
     plugins: [tanstackStart(), viteReact(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   }

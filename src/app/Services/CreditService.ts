@@ -1,7 +1,8 @@
 import { Credit } from '@/app/Models/Credit'
 import { BILLED_MODEL } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
-import { CREDIT_PRICES, SIGNUP_CREDITS, type ActionKind } from '@/lib/credit-prices'
+import { CREDIT_PRICES, SIGNUP_CREDITS, productOf, type ActionKind } from '@/lib/credit-prices'
+import { monthIndex, Subscription } from '@/app/Models/Subscription'
 
 // BIL-05/06/07: charging credits for actions. The prices themselves live in lib/credit-prices.ts,
 // shared with the browser. An app is `plan` + `draw`: the plan is charged when it is made, the
@@ -19,6 +20,25 @@ export const CreditService = {
   kindOf(path: string, body: Record<string, unknown>): ActionKind {
     if (path.endsWith('/generate-plan')) return body.approve ? 'draw' : body.gate === true ? 'plan' : 'app'
     return typeof body.editElementId === 'string' && body.editElementId ? 'element' : 'screen'
+  },
+
+  /**
+   * BIL-10: a plan's credits, one grant per month of the plan (a yearly plan too), each at most once
+   * (its ref names the subscription, the month and the product). Before a new month's grant, what is
+   * left of the last one lapses — plan credits do not pile up; bought packs never lapse (BIL-02).
+   * Plan credits are spent first, so "left" is the last grant minus what generation used since.
+   * ponytail: an upgrade mid-month grants the new plan in full on top; prorating waits for a real case.
+   */
+  refresh(userId: string, nowSec = Math.floor(Date.now() / 1000)) {
+    const sub = Subscription.activeFor(userId, nowSec)
+    const product = productOf(sub?.productKey)
+    if (!sub || !product?.plan) return
+    const ref = `sub:${sub.id}:${monthIndex(sub.startedAt, nowSec)}:${sub.productKey}`
+    if (Credit.hasRef(ref)) return
+    const last = Credit.lastPlanGrant(userId)
+    const lapse = last ? Math.min(Math.max(0, last.delta - last.usedSince), Credit.balance(userId)) : 0
+    if (lapse > 0) Credit.add({ userId, delta: -lapse, kind: 'expire', ref: `expire:${ref}`, note: 'unused plan credits from last month' })
+    Credit.add({ userId, delta: product.credits, kind: 'subscription', ref, note: product.name })
   },
 
   /** BIL-07: the free start. Keyed by the user, so it is granted once however often it is called. */

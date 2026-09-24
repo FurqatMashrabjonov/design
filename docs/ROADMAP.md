@@ -261,7 +261,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
-| BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Bloklangan | Kichik |  | Provayder tanlangan, hisob ochilgan |
+| BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik |  | Provayder tanlangan, hisob ochilgan |
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |
 | BIL-03 | Do'kon uchun arizani erta topshirish | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-01, LEG-01 | Do'kon haqiqiy to'lovlar uchun tasdiqlangan |
@@ -271,11 +271,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | BIL-06 | Generatsiyadan oldin kreditni band qilish, xatoda qaytarish | To'lov va kreditlar / Kreditlar | MVP | Tayyor | O'rta | BIL-04 | Xato yoki to'xtatilgan ekran kreditini qaytaradi; parallel so'rovda ikki marta yechilmaydi |
 | BIL-07 | Ro'yxatdan o'tganda bepul kredit | To'lov va kreditlar / Kreditlar | MVP | Tayyor | Kichik | BIL-04 | Yangi hisob bepul balans bilan boshlanadi |
 | BIL-08 | Yuqori panelda kredit balansi va kredit tugaganda dialog | To'lov va kreditlar / Kredit interfeysi | MVP | Tayyor | Kichik | BIL-04 | Har generatsiyadan keyin yangilanadi; nol bo'lsa tarif dialogi ochiladi |
-| BIL-09 | Har foydalanuvchi uchun checkout | To'lov va kreditlar / To'lovlar | MVP | Rejada | O'rta | BIL-03 | Checkout foydalanuvchi ID sini olib boradi, webhook to'g'ri hisobga yozadi |
-| BIL-10 | To'lov webhook: imzoni tekshirish, kreditni bir marta berish | To'lov va kreditlar / To'lovlar | MVP | Rejada | O'rta | BIL-09 | Qayta kelgan hodisa kreditni ikkinchi marta bermaydi; noto'g'ri imzo rad etiladi |
-| BIL-11 | To'lovni boshqarish portali havolasi | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-09 | Havola foydalanuvchining provayder portalini ochadi |
+| BIL-09 | Har foydalanuvchi uchun checkout | To'lov va kreditlar / To'lovlar | MVP | Tayyor | O'rta | BIL-03 | Checkout foydalanuvchi ID sini olib boradi, webhook to'g'ri hisobga yozadi |
+| BIL-10 | To'lov webhook: imzoni tekshirish, kreditni bir marta berish | To'lov va kreditlar / To'lovlar | MVP | Tayyor | O'rta | BIL-09 | Qayta kelgan hodisa kreditni ikkinchi marta bermaydi; noto'g'ri imzo rad etiladi |
+| BIL-11 | To'lovni boshqarish portali havolasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-09 | Havola foydalanuvchining provayder portalini ochadi |
 | BIL-14 | Tarif chegaralari kodda: loyiha soni va eksport | To'lov va kreditlar / Kreditlar | Keyin | Rejada | Kichik | BIL-02, BIL-10 | /pricing va'da qilgan chegaralar serverda tekshiriladi |
-| BIL-12 | Narxlar sahifasi | To'lov va kreditlar / To'lovlar | MVP | Bloklangan | Kichik | BIL-02 | Tariflar va kredit narxlari ko'rinadi; tugmalar checkout'ni ochadi |
+| BIL-12 | Narxlar sahifasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-02 | Tariflar va kredit narxlari ko'rinadi; tugmalar checkout'ni ochadi |
 | LLM-04 | Provayder adapterlari: DeepSeek, Gemini, Claude | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | LLM-05 | Bitta interfeys; OpenAI-mos va Anthropic adapteri; kalitlar serverda |
 | LLM-06 | Har model eval'dan o'tadi: sifat va $/ilova o'lchanadi | Generatsiya / Sifat | MVP | Rejada | Kichik | LLM-04 | Faqat o'tgan model tanlanadi; kredit narxi o'lchovdan |
 | LLM-07 | Modelni almashtirish: admin sozlamasi va zaxira provayder | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-06, ADM-08 | Admin tanlaydi; xatoda zaxiraga o'tadi |
