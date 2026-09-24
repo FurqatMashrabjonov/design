@@ -245,9 +245,9 @@ export function Dashboard({ projects, designSystems, usage, user }: { projects: 
               <h2 className="text-sm font-semibold">{projects.length ? 'Need a start?' : 'New here? Start from one of these'}</h2>
               <span className="hidden text-xs text-muted-foreground sm:inline">Real output from one prompt</span>
             </div>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {SETS.map((s, i) => (
-                <button key={s.id} type="button" onClick={() => pickIdea(i)} className="group overflow-hidden rounded-2xl border bg-background text-left transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring">
+                <button key={s.id} type="button" onClick={() => pickIdea(i)} className="group flex flex-col overflow-hidden rounded-2xl border bg-background text-left transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring">
                   <div className="relative flex h-36 justify-center overflow-hidden bg-muted pt-4">
                     <Phone src={shot(s.id, s.screens[0]!)} width={104} className="shadow-md transition group-hover:-translate-y-1" />
                   </div>

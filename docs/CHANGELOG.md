@@ -5,6 +5,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Misollar va landing — 5 ta telefon tizimi (GQ-36)
+
+Dashboard'dagi "Need a start?" va landing hali eski brend tizimlarini (Nike, Stripe, Midnight...)
+ko'rsatardi — mahsulot endi ularni avtomatik tanlamaydi, ya'ni vitrina va'da qilgan narsani odam
+olmasdi. Endi beshta misol, har biri o'z tizimida bitta promptdan chiqqan haqiqiy ekranlar:
+Stride (Volt), Ripple (Ember), Nestaway (Lumen), Plum Ledger (Graphite), Folio (Nova). Muqovalar
+audit toza ekranlardan tanlandi (sticker/legend ustma-ust tushgan, nav matnni yopgan ekranlar
+chetda qoldi). Misol bosilsa prompt to'ladi va loyiha o'sha tizim bilan yaratiladi.
+
+Yo'l-yo'lakay: misol kartasi `<button>` bo'lgani uchun bir qatorli tavsif kontentni vertikal
+markazlab rasmni pastga surardi — `flex flex-col`. Landing'dagi ikki eskirgan jumla: "33 systems"
+(son eskirgan) va "Pick a design system" (composer'da picker yo'q, DS-01).
+
+Fayllar: `src/Landing.tsx` (SETS, hero va coherence qatori SETS'dan), `src/Dashboard.tsx`,
+`public/showcase/*` (eski 24 fayl o'chirildi, 23 yangi, 940K).
+
+Tekshiruv: `npm run check` (figma fixture'lari yangi showcase'da: 100%), `npx tsc --noEmit` toza;
+brauzerda dashboard — 5 karta, "Expense tracker" bosilganda prompt to'ldi va `graphite` tanlandi;
+landing cookie'siz headless Chrome'da — hero, coherence va 5 tab yangi ekranlarni ko'rsatadi.
+
 ### Tozalash: o'lik kod, takrorlar, desktop yo'li va o'ylab topilgan palitra (CLN-01)
 
 Kun bo'yi ko'p narsa qo'shildi, shuning uchun kod DRY / KISS / YAGNI bo'yicha ko'rib chiqildi. Har bir

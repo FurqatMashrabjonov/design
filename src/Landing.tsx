@@ -15,11 +15,14 @@ export const PENDING_IMAGES = 'od:pending-images'
 const INK = '#0E0F12'
 const LIME = '#C6F24E'
 
+// One set per design system written for a phone, each real output of today's pipeline. The first
+// screen is the cover, so it is always one the render audit found clean.
 export const SETS = [
-  { id: 'fit-tracker', name: 'Stride', kind: 'Running tracker', system: 'Nike', systemId: 'nike', prompt: 'Fitness tracker for runners: today’s run, weekly mileage, training plan, run detail with pace splits and route map, profile with personal records.', screens: [0, 1, 2, 3, 4] },
-  { id: 'bank-neo', name: 'Nova Bank', kind: 'Neobank', system: 'Stripe', systemId: 'stripe', prompt: 'Neobank app: balance and cards overview, transaction list with search, send money flow, transaction detail, spending analytics by category.', screens: [0, 1, 2, 3, 5] },
-  { id: 'crypto-wallet', name: 'Nova Wallet', kind: 'Crypto wallet', system: 'Midnight', systemId: 'midnight', prompt: 'Crypto wallet: portfolio value with chart, asset list, coin detail with price chart and buy/sell, swap form, settings with security options.', screens: [0, 1, 2, 3, 4] },
-  { id: 'habit-quest', name: 'HabitQuest', kind: 'Habit tracker', system: 'Midnight', systemId: 'midnight', prompt: 'Gamified habit tracker: today’s habits with check-in, habit detail with streak calendar, add habit form, achievements and stats.', screens: [0, 1, 3, 5, 2] },
+  { id: 'volt-run', name: 'Stride', kind: 'Running', system: 'Volt', systemId: 'volt', prompt: 'Running app: a live run screen with duration, distance and pace, a home with weekly volume and a quick-start run, and a run summary with a route map and pace analysis.', screens: [0, 1, 3, 4, 6] },
+  { id: 'ember-habit', name: 'Ripple', kind: 'Habit tracker', system: 'Ember', systemId: 'ember', prompt: 'make habit tracker', screens: [0, 1, 2, 3, 6] },
+  { id: 'lumen-stays', name: 'Nestaway', kind: 'Stays', system: 'Lumen', systemId: 'lumen', prompt: 'Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.', screens: [1, 3, 4, 5, 6] },
+  { id: 'graphite-ledger', name: 'Plum Ledger', kind: 'Expense tracker', system: 'Graphite', systemId: 'graphite', prompt: 'Expense tracker for freelancers: this month’s spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.', screens: [1, 2, 3, 5] },
+  { id: 'nova-magazine', name: 'Folio', kind: 'Magazine', system: 'Nova', systemId: 'nova', prompt: 'Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.', screens: [1, 2, 3, 5] },
 ]
 
 const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery with restaurant menus and live order tracking', 'Language learning with lessons and a leaderboard', 'Plant care reminders with a photo journal']
@@ -162,9 +165,9 @@ export function Landing() {
           <svg className="pointer-events-none absolute inset-x-0 top-1/2 -z-0 hidden h-24 w-full -translate-y-1/2 sm:block" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden>
             <path d="M120 60 C 300 0, 400 100, 500 50 S 760 0, 880 60" fill="none" stroke={INK} strokeOpacity=".25" strokeWidth="1.5" strokeDasharray="6 8" className="animate-[dash_12s_linear_infinite]" />
           </svg>
-          <Phone src={shot('bank-neo', 0)} width={210} eager className="hidden -rotate-6 md:block translate-y-6" />
-          <Phone src={shot('fit-tracker', 0)} width={250} eager className="z-10" />
-          <Phone src={shot('crypto-wallet', 0)} width={210} eager className="hidden rotate-6 md:block translate-y-6" />
+          <Phone src={shot(SETS[1].id, SETS[1].screens[0]!)} width={210} eager className="hidden -rotate-6 md:block translate-y-6" />
+          <Phone src={shot(SETS[0].id, SETS[0].screens[0]!)} width={250} eager className="z-10" />
+          <Phone src={shot(SETS[2].id, SETS[2].screens[0]!)} width={210} eager className="hidden rotate-6 md:block translate-y-6" />
         </div>
       </section>
 
@@ -176,14 +179,14 @@ export function Landing() {
           <p className="mt-4 text-muted-foreground">Other tools draw each screen on its own, so the tab bar moves, prices change and the style drifts. Here the app is planned first and consistency is enforced in code after generation.</p>
         </div>
         <div className="mt-4 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] sm:justify-center">
-          {SETS[1].screens.map((i) => <Phone key={i} src={shot('bank-neo', i)} width={190} />)}
+          {SETS[1].screens.map((i) => <Phone key={i} src={shot(SETS[1].id, i)} width={190} />)}
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-4">
           {[
             ['One navigation', 'The same tab bar and back button on every screen, injected by code.'],
             ['One data model', 'A payment of $88.42 is $88.42 on the list, the detail and the receipt.'],
             ['Real photos', 'Every image slot is filled with a matching photo, never a grey box.'],
-            ['One design system', '33 systems, each with its own type, colour and component personality.'],
+            ['One design system', 'Systems built for a phone, each with its own type, colour and component personality.'],
           ].map(([t, d]) => (
             <div key={t} className="rounded-2xl border border-border bg-card p-5">
               <p className="font-semibold">{t}</p>
@@ -234,7 +237,7 @@ export function Landing() {
         </div>
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {[
-            ['01', 'Describe', 'Say what the app does, in a sentence or a page. Pick a design system or let it choose.'],
+            ['01', 'Describe', 'Say what the app does, in a sentence or a page. The style is picked to suit the app; change it after.'],
             ['02', 'Get the whole app', 'A planner scopes the screens, the data and the navigation, then designs every screen in parallel.'],
             ['03', 'Click, edit, export', 'Tap through it as a prototype, change any element by clicking it, undo anything, download a zip.'],
           ].map(([n, t, d]) => (

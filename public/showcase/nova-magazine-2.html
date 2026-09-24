@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head><style data-od-slots>:where([data-od-img-resolved],[data-od-img-fallback]){display:block;width:100%;aspect-ratio:4/3}:where([data-od-avatar-resolved]){width:40px;height:40px}:where([data-od-logo-resolved]){width:56px;height:56px;border-radius:22%}</style><style data-od-kit>.od-page { padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-5, 20px); }
+.od-stack { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
+.od-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3, 12px); }
+.od-carousel { display: flex; gap: var(--space-3, 12px); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--space-4, 16px)); padding: 0 var(--space-4, 16px); scrollbar-width: none; }
+.od-carousel > * { flex: 0 0 auto; scroll-snap-align: start; }
+.od-divider { height: 1px; background: var(--border-soft, var(--border)); border: 0; margin: 0; }
+:where(:root) {
+  --od-card-bg: var(--surface);
+  --od-card-border: 1px solid var(--border-soft, var(--border));
+  --od-card-shadow: var(--elev-raised, none);
+  --od-control-border: 1px solid var(--border);
+  --od-btn-shadow: none;
+  --od-btn-weight: 600;
+  --od-row-min: 56px;
+  --od-blur: none;
+}
+:where(:root) { --od-accent-text: color-mix(in oklab, var(--accent), var(--fg) 38%); --od-success-text: color-mix(in oklab, var(--success), var(--fg) 45%); --od-warn-text: color-mix(in oklab, var(--warn), var(--fg) 50%); --od-danger-text: color-mix(in oklab, var(--danger), var(--fg) 30%); }
+.od-hero__eyebrow { font-size: var(--text-xs, 12px); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.od-hero__title { font-family: var(--font-display); font-size: var(--text-2xl, 28px); line-height: var(--leading-tight, 1.15); letter-spacing: var(--tracking-display, -0.01em); font-weight: var(--od-display-weight, 700); font-optical-sizing: auto; margin: 0; color: var(--fg); }
+.od-hero__sub { font-size: var(--text-base, 16px); color: var(--muted); margin: 4px 0 0; }
+.od-section { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
+.od-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.od-section__title { font-family: var(--od-heading-font, var(--font-display)); font-size: var(--text-lg, 18px); font-weight: var(--od-heading-weight, 650); margin: 0; color: var(--fg); }
+.od-section__link { font-size: var(--text-sm, 14px); font-weight: 600; color: var(--od-accent-text); text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
+.od-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 var(--space-5, 20px); border-radius: var(--radius-md, 12px); border: 1px solid transparent; font: var(--od-btn-weight) var(--text-base, 16px)/1 var(--font-body); background: var(--accent); color: var(--accent-on, #fff); box-shadow: var(--od-btn-shadow); cursor: pointer; text-decoration: none; white-space: nowrap; }
+.od-btn:active { background: var(--accent-active, var(--accent)); }
+.od-btn--secondary { background: var(--surface); color: var(--fg); border: var(--od-control-border); }
+.od-btn--ghost { background: transparent; color: var(--od-accent-text); box-shadow: none; }
+.od-btn--danger { background: var(--danger); color: #fff; }
+.od-btn--sm { min-height: 36px; padding: 0 var(--space-3, 12px); font-size: var(--text-sm, 14px); border-radius: var(--radius-sm, 8px); }
+.od-btn--block { width: 100%; }
+.od-btn i[data-lucide], .od-btn svg { width: 18px; height: 18px; }
+.od-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: var(--od-icon-radius, var(--radius-pill, 999px)); border: 0; background: var(--od-icon-bg, var(--surface-warm, var(--surface))); color: var(--od-icon-fg, var(--fg)); cursor: pointer; flex: none; }
+.od-bento { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3, 12px); }
+.od-bento__wide { grid-column: 1 / -1; }
+.od-card--glass { background: color-mix(in oklab, var(--surface), transparent 30%); backdrop-filter: var(--od-blur, blur(16px)); -webkit-backdrop-filter: var(--od-blur, blur(16px)); }
+.od-icon-btn i[data-lucide], .od-icon-btn svg { width: 20px; height: 20px; }
+.od-card { background: var(--od-card-bg); border: var(--od-card-border); border-radius: var(--radius-lg, 16px); box-shadow: var(--od-card-shadow); backdrop-filter: var(--od-blur); -webkit-backdrop-filter: var(--od-blur); padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-2, 8px); min-width: 0; }
+.od-card--flat { box-shadow: none; }
+.od-card--media { padding: 0; overflow: hidden; }
+.od-card--media > .od-card__body { padding: var(--space-3, 12px) var(--space-4, 16px) var(--space-4, 16px); display: flex; flex-direction: column; gap: 4px; }
+.od-card__title { font-weight: 650; font-size: var(--text-base, 16px); color: var(--fg); margin: 0; }
+.od-card__meta { font-size: var(--text-sm, 14px); color: var(--muted); margin: 0; }
+.od-media { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: var(--surface-warm, var(--surface)); border-radius: inherit; }
+.od-media > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.od-media--wide { aspect-ratio: 16 / 9; }
+.od-media--square { aspect-ratio: 1; }
+.od-banner { display: flex; gap: 12px; align-items: flex-start; padding: var(--space-3, 12px) var(--space-4, 16px); border-radius: var(--radius-md, 12px); background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--fg); font-size: var(--text-sm, 14px); }
+.od-banner--success { background: color-mix(in oklab, var(--success), transparent 86%); }
+.od-banner--warn { background: color-mix(in oklab, var(--warn), transparent 84%); }
+.od-banner--danger { background: color-mix(in oklab, var(--danger), transparent 86%); }
+.od-list { display: flex; flex-direction: column; background: var(--od-card-bg); border: var(--od-card-border); border-radius: var(--radius-lg, 16px); box-shadow: var(--od-card-shadow); overflow: hidden; backdrop-filter: var(--od-blur); -webkit-backdrop-filter: var(--od-blur); }
+.od-list--plain { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+.od-row { display: flex; align-items: center; gap: var(--space-3, 12px); min-height: var(--od-row-min); padding: 10px var(--space-4, 16px); color: var(--fg); text-decoration: none; }
+.od-list > .od-row + .od-row { border-top: 1px solid var(--border-soft, var(--border)); }
+.od-row__lead { flex: none; width: 40px; height: 40px; border-radius: var(--radius-md, 12px); display: flex; align-items: center; justify-content: center; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--od-accent-text); overflow: hidden; }
+.od-row__lead > img { width: 100%; height: 100%; object-fit: cover; }
+.od-row__lead i[data-lucide], .od-row__lead svg { width: 20px; height: 20px; }
+.od-row__lead svg, .od-icon-btn svg, .od-empty__icon svg { fill: color-mix(in oklab, currentColor var(--od-icon-duotone, 14%), transparent); }
+.od-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.od-row__title { font-size: var(--text-base, 16px); font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.od-row__sub { font-size: var(--text-sm, 14px); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.od-row__trail { flex: none; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--fg); }
+.od-row--chevron .od-row__trail::after { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--meta, var(--muted)); border-top: 2px solid var(--meta, var(--muted)); transform: rotate(45deg); margin-left: 4px; }
+.od-kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: var(--text-sm, 14px); color: var(--muted); }
+.od-kv > :last-child { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.od-kv--total { border-top: 1px solid var(--border); padding-top: 12px; font-size: var(--text-base, 16px); color: var(--fg); font-weight: 700; }
+.od-timeline { display: flex; flex-direction: column; }
+.od-timeline__item { position: relative; display: flex; gap: var(--space-3, 12px); padding-bottom: var(--space-4, 16px); }
+.od-timeline__item::before { content: ""; position: absolute; left: 5px; top: 14px; bottom: 0; width: 2px; background: var(--border); }
+.od-timeline__item:last-child::before { display: none; }
+.od-timeline__dot { flex: none; width: 12px; height: 12px; margin-top: 4px; border-radius: 50%; background: var(--border); box-shadow: 0 0 0 3px var(--bg); position: relative; }
+.od-timeline__item.is-done .od-timeline__dot, .od-timeline__item.is-current .od-timeline__dot { background: var(--accent); }
+.od-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: var(--radius-pill, 999px); border: var(--od-control-border); background: var(--surface); color: var(--fg-2, var(--fg)); font: 500 var(--text-sm, 14px)/1 var(--font-body); white-space: nowrap; cursor: pointer; }
+.od-chip.is-active, .od-chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.od-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius-pill, 999px); font-size: var(--text-xs, 12px); font-weight: 600; background: color-mix(in oklab, var(--accent), transparent 86%); color: var(--od-accent-text); white-space: nowrap; }
+.od-tag--neutral { background: var(--surface-warm, var(--surface)); color: var(--fg-2, var(--fg)); }
+.od-tag--success { background: color-mix(in oklab, var(--success), transparent 85%); color: var(--od-success-text); }
+.od-tag--warn { background: color-mix(in oklab, var(--warn), transparent 82%); color: var(--od-warn-text); }
+.od-tag--danger { background: color-mix(in oklab, var(--danger), transparent 85%); color: var(--od-danger-text); }
+.od-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.od-avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex: none; background: var(--surface-warm, var(--surface)); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--fg-2, var(--fg)); }
+.od-avatar > img { width: 100%; height: 100%; object-fit: cover; }
+.od-avatar--sm { width: 28px; height: 28px; font-size: 11px; }
+.od-avatar--lg { width: 72px; height: 72px; font-size: 24px; }
+.od-rating { display: inline-flex; align-items: center; gap: 4px; font-size: var(--text-sm, 14px); font-weight: 600; color: var(--fg); }
+.od-rating i[data-lucide], .od-rating svg { width: 14px; height: 14px; color: var(--warn); fill: currentColor; }
+.od-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.od-stat__label { font-size: var(--text-sm, 14px); color: var(--muted); }
+.od-stat__value { font-family: var(--font-display); font-size: var(--text-2xl, 28px); font-weight: var(--od-display-weight, 700); font-optical-sizing: auto; letter-spacing: var(--tracking-display, -0.01em); font-variant-numeric: tabular-nums; color: var(--fg); line-height: 1.1; }
+.od-stat__delta { font-size: var(--text-sm, 14px); font-weight: 600; color: var(--muted); }
+.od-stat__delta--up { color: var(--od-success-text); }
+.od-stat__delta--down { color: var(--od-danger-text); }
+.od-price { font-family: var(--font-display); font-size: var(--text-xl, 22px); font-weight: var(--od-display-weight, 700); font-variant-numeric: tabular-nums; color: var(--fg); }
+.od-price__unit { font-size: var(--text-sm, 14px); font-weight: 500; color: var(--muted); }
+.od-progress { height: 8px; border-radius: 4px; background: var(--surface-warm, var(--border)); overflow: hidden; }
+.od-progress > span { display: block; height: 100%; width: var(--value, 50%); border-radius: inherit; background: var(--accent); }
+.od-field { display: flex; flex-direction: column; gap: 6px; }
+.od-field__label { font-size: var(--text-sm, 14px); font-weight: 600; color: var(--fg); }
+.od-field__help { font-size: var(--text-xs, 12px); color: var(--muted); }
+.od-field--error .od-input { border-color: var(--danger); }
+.od-field--error .od-field__help { color: var(--od-danger-text); }
+.od-input { width: 100%; min-height: 48px; padding: 0 var(--space-4, 16px); border-radius: var(--radius-md, 12px); border: var(--od-control-border); background: var(--surface); color: var(--fg); font: var(--text-base, 16px) var(--font-body); box-sizing: border-box; }
+textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize: vertical; }
+.od-input:focus { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px color-mix(in oklab, var(--accent), transparent 70%)); border-color: var(--accent); }
+.od-search { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 var(--space-4, 16px); border-radius: var(--radius-pill, 999px); background: var(--surface-warm, var(--surface)); border: 1px solid var(--border-soft, var(--border)); color: var(--muted); }
+.od-search > input { flex: 1; min-width: 0; border: 0; background: transparent; font: var(--text-base, 16px) var(--font-body); color: var(--fg); outline: none; }
+.od-search i[data-lucide], .od-search svg { width: 18px; height: 18px; flex: none; }
+.od-segmented { display: flex; padding: 3px; gap: 3px; border-radius: var(--radius-md, 12px); background: var(--surface-warm, var(--surface)); }
+.od-segmented > button { flex: 1; min-height: 36px; border: 0; border-radius: calc(var(--radius-md, 12px) - 3px); background: transparent; color: var(--muted); font: 600 var(--text-sm, 14px)/1 var(--font-body); cursor: pointer; }
+.od-segmented > button.is-active, .od-segmented > button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--elev-raised, none); }
+.od-switch { appearance: none; -webkit-appearance: none; flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--border); position: relative; cursor: pointer; margin: 0; transition: background var(--motion-fast, 150ms); }
+.od-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform var(--motion-fast, 150ms); }
+.od-switch:checked { background: var(--accent); }
+.od-switch:checked::after { transform: translateX(20px); }
+.od-stepper { display: inline-flex; align-items: center; gap: 4px; border: var(--od-control-border); border-radius: var(--radius-pill, 999px); padding: 2px; }
+.od-stepper > button { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: var(--fg); font-size: 18px; cursor: pointer; }
+.od-stepper > output, .od-stepper > span { min-width: 24px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.od-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2, 8px); padding: var(--space-8, 32px) var(--space-4, 16px); color: var(--muted); }
+.od-empty__icon { width: 56px; height: 56px; border-radius: var(--od-icon-radius, 50%); display: flex; align-items: center; justify-content: center; background: var(--od-icon-bg, var(--surface-warm, var(--surface))); color: var(--od-icon-fg, var(--muted)); margin-bottom: 4px; }
+.od-empty__title { font-weight: 650; color: var(--fg); font-size: var(--text-lg, 18px); margin: 0; }
+.od-bottom-bar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: var(--space-3, 12px); padding: var(--space-3, 12px) var(--space-4, 16px) calc(var(--space-3, 12px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--border-soft, var(--border)); margin-top: auto; }
+.od-bottom-bar > .od-btn { flex: 1; }
+.od-chip, .od-segmented > button, .od-btn--sm, .od-stepper > button, .od-section__link { position: relative; }
+.od-chip::after, .od-segmented > button::after, .od-btn--sm::after, .od-stepper > button::after, .od-section__link::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: no-preference) {
+  .od-btn, .od-icon-btn, .od-chip, .od-segmented > button, .od-stepper > button, .od-section__link { transition: transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)), background-color var(--motion-fast, 150ms) ease, color var(--motion-fast, 150ms) ease, box-shadow var(--motion-fast, 150ms) ease, border-color var(--motion-fast, 150ms) ease; }
+  .od-row { transition: background-color var(--motion-fast, 150ms) ease, transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
+  .od-btn:active, .od-icon-btn:active, .od-chip:active, .od-segmented > button:active, .od-stepper > button:active { transform: scale(.96); }
+  .od-row:active { transform: scale(.985); }
+  .od-switch { transition: background-color var(--motion-base, 220ms) ease; }
+  .od-switch::after { transition: transform var(--motion-base, 220ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
+  .od-progress > span { transition: width var(--motion-base, 220ms) var(--ease-standard, ease-out); }
+}</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root { --bg: #f4f3ef; --surface: #ffffff; --surface-warm: #f3f3f3; --fg: #17161a; --fg-2: #3f3c47; --muted: #595665; --muted-2: #706b7e; --meta: #706b7e; --border: #c3c0ca; --border-soft: #edecef; --accent: #d2451e; --accent-on: #ffffff; --accent-hover: #b73c1a; --accent-active: #a13517; --success: #1f8a5b; --warn: #b7791f; --warning: #b7791f; --danger: #c73a3a; --font-display: "Instrument Serif", Georgia, "Times New Roman", serif; --font-body: Geist, "Helvetica Neue", system-ui, sans-serif; --font-mono: ui-monospace, "SF Mono", Menlo, monospace; --text-xs: 13px; --text-sm: 15px; --text-base: 17px; --text-lg: 20px; --text-xl: 28px; --text-2xl: 40px; --text-3xl: 64px; --text-4xl: 88px; --leading-body: 1.5; --leading-tight: 0.98; --tracking-display: -0.03em; --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --section-y-desktop: 96px; --section-y-tablet: 64px; --section-y-phone: 40px; --radius-sm: 14px; --radius-md: 20px; --radius-lg: 28px; --radius-pill: 9999px; --elev-flat: none; --elev-ring: 0 0 0 1px var(--border-soft); --elev-raised: 0 1px 2px rgba(23, 22, 26, 0.04), 0 12px 32px rgba(23, 22, 26, 0.08); --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 72%); --motion-fast: 140ms; --motion-base: 220ms; --ease-standard: cubic-bezier(0.2, 0, 0, 1); --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1); --motion-press: 120ms; --container-max: 1200px; --container-gutter-desktop: 32px; --container-gutter-tablet: 24px; --container-gutter-phone: 20px; --icon-stroke: 1.75; --od-display-weight: 400; --od-heading-weight: 600; --od-heading-font: var(--font-body); --od-card-bg: var(--surface); --od-card-border: 0; --od-card-shadow: var(--elev-raised); --od-blur: blur(20px); --od-control-border: 1px solid var(--border-soft); --od-btn-weight: 600; --od-btn-shadow: 0 10px 24px color-mix(in oklab, var(--accent), transparent 68%); --od-row-min: 52px; --od-icon-radius: 14px; --od-icon-bg: color-mix(in oklab, var(--accent), var(--surface) 88%); --od-icon-fg: var(--od-accent-text); --od-accent-text: #ae3919; --od-success-text: #19714b; --od-warn-text: #895b17; --od-danger-text: #b03232 }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-wrap {
+  padding: 0 var(--container-gutter-phone) 128px;
+}
+
+/* header */
+.lib-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-6) 0 var(--space-2);
+}
+.lib-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg);
+}
+.lib-head__actions { display: flex; gap: var(--space-2); padding-top: var(--space-2); }
+
+/* hero figure */
+.hero-block { padding: var(--space-6) 0 var(--space-5); }
+.hero-figure {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 84px;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+.hero-label {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 500;
+}
+.hero-sub {
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--meta);
+  font-weight: 500;
+}
+
+/* summary strip */
+.summary-strip {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-4) 0 var(--space-5);
+}
+.summary-item { display: flex; flex-direction: column; gap: 2px; }
+.summary-item__value {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.summary-item__label { font-size: var(--text-xs); color: var(--meta); font-weight: 500; }
+
+/* resume card */
+.resume-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-raised);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+  display: block;
+  text-align: left;
+  width: 100%;
+  transition: transform var(--motion-press) var(--ease-standard);
+}
+.resume-card:active { transform: scale(0.995); }
+.resume-top { display: flex; gap: var(--space-4); align-items: flex-start; }
+.resume-cover {
+  width: 72px;
+  height: 96px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex: none;
+  background: var(--surface-warm);
+}
+.resume-body { flex: 1; min-width: 0; }
+.resume-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--od-accent-text);
+  margin-bottom: var(--space-2);
+}
+.resume-kicker i { width: 14px; height: 14px; }
+.resume-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin-bottom: var(--space-2);
+}
+.resume-meta {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.resume-progress { margin-top: var(--space-4); }
+.rose-bar {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--accent), transparent 88%);
+  overflow: hidden;
+}
+.rose-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+.rose-bar__legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--meta);
+  font-variant-numeric: tabular-nums;
+}
+.resume-cta { margin-top: var(--space-4); }
+
+/* saved rows */
+.essay-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  min-height: 72px;
+  text-decoration: none;
+  color: inherit;
+}
+.essay-thumb {
+  width: 56px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex: none;
+  background: var(--surface-warm);
+}
+.essay-body { flex: 1; min-width: 0; }
+.essay-title {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--fg);
+  line-height: 1.3;
+  margin-bottom: 3px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.essay-sub {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.essay-trail {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.cat-tag {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface-warm);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.row-sep {
+  height: 1px;
+  background: var(--border-soft);
+  margin-left: 72px;
+}
+.row-item { position: relative; }
+
+.swipe-actions {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-base) var(--ease-standard);
+}
+.row-item.is-open .swipe-actions { opacity: 1; pointer-events: auto; }
+.swipe-btn {
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--surface-warm);
+  color: var(--fg-2);
+}
+.swipe-btn--danger { color: var(--od-danger-text); }
+.swipe-btn i { width: 20px; height: 20px; }
+.row-item.is-open .essay-row { background: var(--bg); }
+.row-item .essay-row { transition: background var(--motion-fast) var(--ease-standard); }
+
+.hint-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-warm);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+}
+.hint-row i { width: 18px; height: 18px; color: var(--muted); flex: none; }
+.hint-row p { font-size: var(--text-xs); color: var(--muted); font-weight: 500; line-height: 1.4; }
+
+.empty-note {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-5);
+  background: var(--surface-warm);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-6);
+}
+.empty-note i { width: 20px; height: 20px; color: var(--muted); flex: none; margin-top: 2px; }
+.empty-note p { font-size: var(--text-sm); color: var(--fg-2); line-height: 1.45; }
+.empty-note p strong { display: block; color: var(--fg); font-weight: 600; margin-bottom: 2px; }
+
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .enter { animation: rise var(--motion-base) var(--ease-standard) both; }
+  .enter:nth-child(1) { animation-delay: 0ms; }
+  .enter:nth-child(2) { animation-delay: 80ms; }
+  .enter:nth-child(3) { animation-delay: 160ms; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
+</style>
+<link data-od-font rel="preconnect" href="https://fonts.googleapis.com"><link data-od-font rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link data-od-font rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&display=swap"><style>body { padding-bottom: 128px !important; }</style><style data-od-hit-area>:where(button:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),a[data-od-link]:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),[role="button"]:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),label:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link)){position:relative}:is(button:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),a[data-od-link]:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),[role="button"]:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link),label:not(.od-row--chevron):not(.od-timeline__item):not(.od-switch):not(.od-chip):not(.od-segmented):not(.od-btn--sm):not(.od-stepper):not(.od-section__link))::after{content:"";position:absolute;left:50%;top:50%;width:max(100%,44px);height:max(100%,44px);transform:translate(-50%,-50%)}</style><style data-od-craft>:where(table,tbody,td,th,time,output,data,.price,.stat,.amount,.total,.value,[data-od-chart]){font-variant-numeric:tabular-nums}:where(h1,h2,h3){text-wrap:balance}:where(p,li,figcaption,blockquote){text-wrap:pretty}:where(img[data-od-img-resolved],img[data-od-avatar-resolved]){outline:1px solid color-mix(in oklab, var(--fg) 10%, transparent);outline-offset:-1px}:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}@media (prefers-reduced-motion:no-preference){:where(button,[role="button"],a[data-od-link]){transition:transform 120ms ease-out}:where(button,[role="button"],a[data-od-link]):active{transform:scale(.96)}}</style></head>
+<body>
+<div class="page-wrap" data-od-id="saved-library">
+
+  <!-- header -->
+  <header class="lib-head" data-od-id="header">
+    <h1 class="lib-title">Saved</h1>
+    <div class="lib-head__actions">
+      <button class="od-icon-btn" aria-label="Search library"><i data-lucide="search"></i></button>
+      <button class="od-icon-btn" aria-label="Add essay to library"><i data-lucide="plus"></i></button>
+    </div>
+  </header>
+
+  <!-- hero figure -->
+  <section class="hero-block enter" data-od-id="hero" aria-label="Reading library summary">
+    <span class="hero-figure">4</span>
+    <p class="hero-label">essays waiting for you</p>
+    <p class="hero-sub">1 in progress · 3 bookmarked</p>
+  </section>
+
+  <!-- segmented control -->
+  <div class="od-segmented enter" data-od-id="segmented" role="tablist" aria-label="Library filter">
+    <button class="is-active" role="tab" aria-selected="true" data-seg="progress">In progress</button>
+    <button role="tab" aria-selected="false" data-seg="archived">Archived</button>
+  </div>
+
+  <!-- IN PROGRESS view -->
+  <div data-od-id="in-progress" data-view="progress">
+
+    <!-- resume card -->
+    <a class="resume-card enter" href="#" data-od-link="Article Reader" data-od-id="resume-card">
+      <div class="resume-top">
+        <img class="resume-cover" data-od-img="arctic lighthouse at dusk on rocky shore" alt="The Last Lighthouse Keeper of Vardo cover" src="https://images.pexels.com/photos/31867120/pexels-photo-31867120.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#43586D" loading="lazy" data-od-img-resolved="">
+        <div class="resume-body">
+          <span class="resume-kicker"><i data-lucide="book-open"></i>Resume reading</span>
+          <p class="resume-title">The Last Lighthouse Keeper of Vardo</p>
+          <p class="resume-meta">Ingrid Solheim · 18 min</p>
+        </div>
+      </div>
+      <div class="resume-progress">
+        <div class="rose-bar"><span style="width:62%"></span></div>
+        <div class="rose-bar__legend"><span>62% read</span><span>7 min left</span></div>
+      </div>
+      <span class="od-btn od-btn--block resume-cta">Resume essay</span>
+    </a>
+
+    <!-- saved essays -->
+    <section class="od-section" data-od-id="saved-list">
+      <div class="od-section__head">
+        <h2 class="od-section__title">Bookmarked</h2>
+        <button class="od-section__link">See all</button>
+      </div>
+
+      <div class="od-list" style="padding:0">
+        <div class="row-item">
+          <a class="essay-row" href="#" data-od-link="Article Reader">
+            <img class="essay-thumb" data-od-img="city night shift worker crossing empty street" alt="What We Owe to the Night Shift cover" src="https://images.pexels.com/photos/38390358/pexels-photo-38390358.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#364447" loading="lazy" data-od-img-resolved="">
+            <span class="essay-body">
+              <span class="essay-title">What We Owe to the Night Shift</span>
+              <span class="essay-sub">Marcus Adeyemi · 24 min</span>
+            </span>
+            <span class="essay-trail"><span class="cat-tag">Society</span></span>
+          </a>
+          <div class="swipe-actions" aria-hidden="true">
+            <button class="swipe-btn" aria-label="Archive essay"><i data-lucide="archive"></i></button>
+            <button class="swipe-btn swipe-btn--danger" aria-label="Remove essay"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+        <div class="row-sep"></div>
+
+        <div class="row-item">
+          <a class="essay-row" href="#" data-od-link="Article Reader">
+            <img class="essay-thumb" data-od-img="open book with morning light on desk" alt="Learning to Read Slowly Again cover" src="https://images.pexels.com/photos/19027156/pexels-photo-19027156.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#726B61" loading="lazy" data-od-img-resolved="">
+            <span class="essay-body">
+              <span class="essay-title">Learning to Read Slowly Again</span>
+              <span class="essay-sub">Priya Raghunathan · 12 min</span>
+            </span>
+            <span class="essay-trail"><span class="cat-tag">Culture</span></span>
+          </a>
+          <div class="swipe-actions" aria-hidden="true">
+            <button class="swipe-btn" aria-label="Archive essay"><i data-lucide="archive"></i></button>
+            <button class="swipe-btn swipe-btn--danger" aria-label="Remove essay"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+        <div class="row-sep"></div>
+
+        <div class="row-item">
+          <a class="essay-row" href="#" data-od-link="Article Reader">
+            <img class="essay-thumb" data-od-img="old orchard trees bearing fruit in spring" alt="The Orchard That Refused to Die cover" src="https://images.pexels.com/photos/9679685/pexels-photo-9679685.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#44621C" loading="lazy" data-od-img-resolved="">
+            <span class="essay-body">
+              <span class="essay-title">The Orchard That Refused to Die</span>
+              <span class="essay-sub">Tomas Ferreira · 21 min</span>
+            </span>
+            <span class="essay-trail"><span class="cat-tag">Nature</span></span>
+          </a>
+          <div class="swipe-actions" aria-hidden="true">
+            <button class="swipe-btn" aria-label="Archive essay"><i data-lucide="archive"></i></button>
+            <button class="swipe-btn swipe-btn--danger" aria-label="Remove essay"><i data-lucide="trash-2"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint-row" data-od-id="swipe-hint">
+        <i data-lucide="move-horizontal"></i>
+        <p>Swipe a row to archive or remove. Archived essays stay readable from the Archived tab.</p>
+      </div>
+    </section>
+
+    <div class="empty-note enter" data-od-id="empty-note">
+      <i data-lucide="bookmark"></i>
+      <p><strong>New library?</strong> Bookmark an essay from Home or the reader and it lands here. Nothing disappears until you archive it.</p>
+    </div>
+  </div>
+
+  <!-- ARCHIVED view -->
+  <div data-od-id="archived" data-view="archived" hidden>
+    <section class="od-section" style="padding-top:var(--space-5)" data-od-id="section">
+      <div class="od-section__head">
+        <h2 class="od-section__title">Archived</h2>
+        <span class="od-section__link" style="color:var(--meta);cursor:default">2 essays</span>
+      </div>
+      <div class="od-list" style="padding:0">
+        <div class="row-item">
+          <a class="essay-row" href="#" data-od-link="Article Reader">
+            <img class="essay-thumb" data-od-img="eroding coastline cliffs over grey sea" alt="Notes from a Vanishing Coastline cover" src="https://images.pexels.com/photos/20824027/pexels-photo-20824027.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#8D8C8A" loading="lazy" data-od-img-resolved="">
+            <span class="essay-body">
+              <span class="essay-title">Notes from a Vanishing Coastline</span>
+              <span class="essay-sub">Ingrid Solheim · 16 min</span>
+            </span>
+            <span class="essay-trail"><span class="cat-tag">Place</span></span>
+          </a>
+        </div>
+        <div class="row-sep"></div>
+        <div class="row-item">
+          <a class="essay-row" href="#" data-od-link="Article Reader">
+            <img class="essay-thumb" data-od-img="night city street lamps from above" alt="What We Owe to the Night Shift cover" src="https://images.pexels.com/photos/30716912/pexels-photo-30716912.jpeg?auto=compress&amp;cs=tinysrgb&amp;w=800" style="object-fit:cover;background:#2E2110" loading="lazy" data-od-img-resolved="">
+            <span class="essay-body">
+              <span class="essay-title">What We Owe to the Night Shift</span>
+              <span class="essay-sub">Marcus Adeyemi · 24 min</span>
+            </span>
+            <span class="essay-trail"><span class="cat-tag">Society</span></span>
+          </a>
+        </div>
+      </div>
+      <div class="hint-row">
+        <i data-lucide="rotate-ccw"></i>
+        <p>Swipe left on an archived essay to restore it to your library.</p>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var segBtns = document.querySelectorAll('[data-seg]');
+  var views = document.querySelectorAll('[data-view]');
+  segBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      segBtns.forEach(function (b) {
+        b.classList.toggle('is-active', b === btn);
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      var target = btn.getAttribute('data-seg');
+      views.forEach(function (v) {
+        v.hidden = v.getAttribute('data-view') !== target;
+      });
+    });
+  });
+
+  // swipe actions hint — tap to reveal the archive/remove actions
+  document.querySelectorAll('.row-item').forEach(function (item) {
+    item.querySelector('.essay-row').addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      item.classList.add('is-open');
+    });
+    item.addEventListener('click', function (e) {
+      if (item.classList.contains('is-open') && e.target.closest('.swipe-btn')) return;
+    });
+  });
+})();
+</script>
+<nav data-od-id="bottom-nav" data-od-shell="bottom-nav" data-od-nav="pill" style="position:fixed;z-index:40;display:flex;align-items:stretch;justify-content:space-around;box-sizing:content-box;padding-bottom:env(safe-area-inset-bottom);left:50%;transform:translateX(-50%);bottom:21px;height:58px;padding-left:6px;padding-right:6px;border-radius:9999px;background:color-mix(in oklab, var(--surface) 78%, transparent);backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);-webkit-backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 30px -12px rgba(0,0,0,.38), 0 2px 6px -2px rgba(0,0,0,.12), 0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent)"><a href="#" data-od-tab="home" aria-label="Home" style="padding:0 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:44px;text-decoration:none;color:var(--meta)"><span style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg data-od-icon width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="stroke-width:var(--icon-stroke, 2)" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></svg></span></a><a href="#" data-od-tab="saved" aria-current="page" aria-label="Saved" style="padding:0 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:44px;text-decoration:none;color:var(--accent)"><span style="display:flex;flex-direction:column;align-items:center;gap:4px"><svg data-od-icon width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" style="stroke-width:var(--icon-stroke, 2)" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg></span><span style="width:4px;height:4px;border-radius:9999px;background:var(--accent)"></span></a><style data-od-shell="nav-icons">[data-od-id="bottom-nav"] [aria-current=page] svg{fill:color-mix(in oklab, currentColor var(--od-icon-duotone, 14%), transparent)}@media (prefers-reduced-motion: no-preference){[data-od-id="bottom-nav"] [aria-current=page] svg path,[data-od-id="bottom-nav"] [aria-current=page] svg circle,[data-od-id="bottom-nav"] [aria-current=page] svg polyline,[data-od-id="bottom-nav"] [aria-current=page] svg line{stroke-dasharray:60;stroke-dashoffset:60;animation:od-draw 260ms ease-out forwards}@keyframes od-draw{to{stroke-dashoffset:0}}[data-od-id="bottom-nav"] [aria-current=page] > span{animation:od-pop 320ms var(--ease-spring, cubic-bezier(.34,1.3,.64,1)) both}@keyframes od-pop{from{transform:scale(.82)}to{transform:scale(1)}}}</style><script data-od-shell="nav-collapse">(function(){var nav=document.currentScript.parentNode,last=window.scrollY,ticking=false,collapsed=false;var quiet=matchMedia('(prefers-reduced-motion: reduce)').matches;var tabs=[].slice.call(nav.querySelectorAll('[data-od-tab]'));tabs.forEach(function(t){if(!quiet)t.style.transition='opacity 160ms ease, max-width 200ms ease';t.style.overflow='hidden'});function set(c){if(c===collapsed)return;collapsed=c;tabs.forEach(function(t){var active=t.getAttribute('aria-current')==='page'||t.getAttribute('data-od-search')==='1';if(c&&!active){t.style.opacity='0';t.style.maxWidth='0';t.style.padding='0'}else{t.style.opacity='';t.style.maxWidth='';t.style.padding=''}})}addEventListener('scroll',function(){if(ticking)return;ticking=true;requestAnimationFrame(function(){var y=window.scrollY;if(y>last+6&&y>48)set(true);else if(y<last-6||y<=24)set(false);last=y;ticking=false})},{passive:true})})()</script></nav><script src="https://cdn.jsdelivr.net/npm/lucide@1.47.0/dist/umd/lucide.min.js"></script><script>lucide.createIcons({attrs:{'stroke-width':1.75}})</script></body>
+</html>
