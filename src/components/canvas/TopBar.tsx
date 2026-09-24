@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, FolderArchive, ClipboardCopy, PenTool, Moon, Sun } from 'lucide-react'
+import { Download, Play, Trash2, ChevronLeft, Share2, FileCode2, FolderArchive, ClipboardCopy, PenTool, Moon, Sun, Menu, Pencil, Keyboard } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { AccountMenu } from '@/components/AccountMenu'
 import { CreditsBadge } from '@/credits'
-import { THEME_KEY } from '@/components/ThemeToggle'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { applyDark } from '@/components/ThemeToggle'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,7 @@ export function TopBar(props: {
   onPreview: () => void
   /** False until the project has a drawn screen. */
   hasScreens: boolean
+  onShortcuts?: () => void
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -50,21 +52,62 @@ export function TopBar(props: {
   const [dark, setDark] = useState(false)
   useEffect(() => setDark(document.documentElement.classList.contains('dark')), [])
   function toggleDark() {
-    document.documentElement.classList.toggle('dark', !dark)
-    try {
-      localStorage.setItem(THEME_KEY, dark ? 'light' : 'dark')
-    } catch {}
+    applyDark(!dark)
     setDark(!dark)
   }
 
+  const nameRef = useRef<HTMLInputElement>(null)
+  // UI-21: no bar — the project's name and its actions float over the canvas, as in Stitch, so the
+  // screens get the whole window. Project actions live in ☰; the screen's own in its selection bar.
+  const pill = 'pointer-events-auto flex h-11 items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-2'
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b bg-background pr-3 pl-2">
-      <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
-        <Link to="/" className="shrink-0 rounded px-1.5 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
-          Projects
-        </Link>
-        <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+    <header className="pointer-events-none absolute inset-x-3 top-3 z-30 flex items-start justify-between gap-3">
+      <div className={cn(pill, 'min-w-0')}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="shrink-0 rounded-lg" aria-label="Project menu">
+              <Menu />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuItem asChild>
+              <Link to="/">
+                <ChevronLeft /> All projects
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setTimeout(() => nameRef.current?.focus(), 0)}>
+              <Pencil /> Rename project
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onShare}>
+              <Share2 /> Copy preview link
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onDownloadApp}>
+              <FolderArchive /> Download the app (.zip)
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onCopyFigma}>
+              <PenTool /> Copy all screens to Figma
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={toggleDark}>
+              {dark ? <Sun /> : <Moon />} {dark ? 'Light mode' : 'Dark mode'}
+            </DropdownMenuItem>
+            {props.onShortcuts && (
+              <DropdownMenuItem onSelect={props.onShortcuts}>
+                <Keyboard /> Keyboard shortcuts <DropdownMenuShortcut>?</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              <span className="capitalize">{props.designSystem.replace(/-/g, ' ')}</span> · <span className="capitalize">{props.device}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
+              <Trash2 /> Delete project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <input
+          ref={nameRef}
           value={draft ?? props.name}
           onFocus={() => setDraft(props.name)}
           onChange={(e) => setDraft(e.target.value)}
@@ -77,71 +120,52 @@ export function TopBar(props: {
             }
           }}
           maxLength={80}
-          size={Math.max(4, (draft ?? props.name).length)}
+          size={Math.max(4, Math.min(40, (draft ?? props.name).length))}
           aria-label="Project name"
           title="Rename the project"
-          className="min-w-0 truncate rounded bg-transparent px-1.5 py-1 font-semibold outline-none hover:bg-muted focus:bg-muted focus:ring-2 focus:ring-ring/40"
+          className="min-w-0 truncate rounded-md bg-transparent px-2 py-1 text-md font-semibold outline-none hover:bg-muted focus:bg-muted focus:ring-2 focus:ring-ring/40"
         />
-      </nav>
-      {/* UI-13: six controls at most — the rest lives in ⋯ and the account menu. */}
-      <div className="ml-auto flex items-center gap-1.5">
-        <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
-          <Share2 className="size-4" />
-          Share
-        </Button>
-        <Button variant="outline" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
-          <Play className="size-4" />
-          Preview
-        </Button>
-        {/* Works with nothing selected: the whole app is always exportable. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" disabled={!props.hasScreens}>
-              <Download className="size-4" />
-              Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuItem onSelect={props.onDownloadApp}>
-              <FolderArchive /> Whole app (.zip)
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={props.onCopyFigma}>
-              <PenTool /> Copy all screens to Figma
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{props.screenName ?? 'Select a screen for these'}</DropdownMenuLabel>
-            <DropdownMenuItem disabled={!props.screenName} onSelect={props.onDownloadScreen}>
-              <FileCode2 /> This screen (.html)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!props.screenName} onSelect={props.onCopyScreenHtml}>
-              <ClipboardCopy /> Copy HTML
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8" aria-label="More project actions" title="More">
-              <Ellipsis className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              <span className="capitalize">{props.designSystem.replace(/-/g, ' ')}</span> · <span className="capitalize">{props.device}</span>
-            </DropdownMenuLabel>
-            <DropdownMenuItem onSelect={toggleDark}>
-              {dark ? <Sun /> : <Moon />} {dark ? 'Light mode' : 'Dark mode'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
-              <Trash2 /> Delete project
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {/* Visible but quiet: no border, just the count. */}
-        <div className="[&>span]:border-transparent [&>span:not(.text-destructive)]:text-muted-foreground">
-          <CreditsBadge />
+      </div>
+
+      <div className="pointer-events-auto flex shrink-0 items-center gap-1.5">
+        <div className={pill}>
+          <Button variant="ghost" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
+            <Play /> Preview
+          </Button>
+          <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
+            <Share2 /> Share
+          </Button>
+          {/* Works with nothing selected: the whole app is always exportable. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" disabled={!props.hasScreens} className="font-semibold">
+                <Download /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuItem onSelect={props.onDownloadApp}>
+                <FolderArchive /> Whole app (.zip)
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={props.onCopyFigma}>
+                <PenTool /> Copy all screens to Figma
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{props.screenName ?? 'Select a screen for these'}</DropdownMenuLabel>
+              <DropdownMenuItem disabled={!props.screenName} onSelect={props.onDownloadScreen}>
+                <FileCode2 /> This screen (.html)
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={!props.screenName} onSelect={props.onCopyScreenHtml}>
+                <ClipboardCopy /> Copy HTML
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <AccountMenu />
+        <div className={cn(pill, 'gap-1.5 pr-1.5 pl-2.5 [&>div>span]:border-transparent')}>
+          <div className="[&>span:not(.text-destructive)]:text-muted-foreground">
+            <CreditsBadge />
+          </div>
+          <AccountMenu />
+        </div>
       </div>
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

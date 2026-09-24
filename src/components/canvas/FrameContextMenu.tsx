@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2, PenTool } from 'lucide-react'
+import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2, PenTool, Play } from 'lucide-react'
 import type { FrameActions } from './FrameToolbar'
 import {
   ContextMenu,
@@ -20,6 +20,10 @@ export function FrameContextMenu(props: FrameActions & {
     <ContextMenu>
       <ContextMenuTrigger asChild>{props.children}</ContextMenuTrigger>
       <ContextMenuContent className="w-48">
+        <ContextMenuItem onSelect={props.onPreview}>
+          <Play /> Preview
+        </ContextMenuItem>
+        <ContextMenuSeparator />
         <ContextMenuItem onSelect={props.onRename}>
           <Pencil /> Rename
         </ContextMenuItem>

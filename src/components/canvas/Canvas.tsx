@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Minus, Plus, Maximize, MousePointer2, Hand, Keyboard, Undo2, Redo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { framesIn, type Rect } from '@/canvas'
 import {
@@ -45,9 +46,21 @@ export function Canvas(props: {
   onShortcuts?: () => void
   /** UI-13: the page's own undo (redo when true), the same one ⌘Z runs. */
   onUndo?: (redo: boolean) => void
+  /** UI-21: how much of each edge the floating panels cover; fit and focus centre in what is left. */
+  insets?: { top: number; right: number; bottom: number; left: number }
+  /** UI-23: the page's own tools on the right rail, under Select and Hand (screens, theme). */
+  rail?: ReactNode
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
+  // UI-25: a fit, a focus or a zoom button moves the view smoothly; wheel and drag set it directly.
+  const [gliding, setGliding] = useState(false)
+  const glideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  function glide() {
+    setGliding(true)
+    clearTimeout(glideTimer.current)
+    glideTimer.current = setTimeout(() => setGliding(false), 360)
+  }
   // Where a frame was dragged to, ahead of the saved position arriving through props. An entry
   // remembers the props it was dragged from and stops applying once they change (the save landed,
   // or an undo moved the frame back), so props win again without a flicker.
@@ -123,17 +136,28 @@ export function Canvas(props: {
   }
 
   function zoomCentered(nextScale: number) {
+    glide()
     userMoved.current = true
     const el = viewportRef.current
     const rect = el?.getBoundingClientRect()
     zoomAt(nextScale, rect ? rect.width / 2 : 0, rect ? rect.height / 2 : 0)
   }
 
+  // The part of the viewport the floating panels leave free, in viewport coordinates.
+  function freeArea() {
+    const r = viewportRef.current!.getBoundingClientRect()
+    const i = props.insets ?? { top: 0, right: 0, bottom: 0, left: 0 }
+    const width = Math.max(200, r.width - i.left - i.right)
+    const height = Math.max(200, r.height - i.top - i.bottom)
+    return { width, height, cx: i.left + width / 2, cy: i.top + height / 2, top: i.top }
+  }
+
   // `maxScale` lets an automatic fit stop at 100%: one small screen should not be blown up to 200%.
   function fit(maxScale = MAX_SCALE) {
+    glide()
     const el = viewportRef.current
     if (!el || props.frames.length === 0) return
-    const rect = el.getBoundingClientRect()
+    const rect = freeArea()
     const xs = props.frames.map((f) => pos(f).x)
     const ys = props.frames.map((f) => pos(f).y)
     const rights = props.frames.map((f) => pos(f).x + f.width)
@@ -142,8 +166,8 @@ export function Canvas(props: {
     const minY = Math.min(...ys)
     const w = Math.max(...rights) - minX
     const h = Math.max(...bottoms) - minY
-    const next = Math.min(maxScale, Math.max(MIN_SCALE, Math.min(rect.width / w, rect.height / h) * 0.85))
-    setView({ scale: next, x: rect.width / 2 - (minX + w / 2) * next, y: rect.height / 2 - (minY + h / 2) * next })
+    const next = Math.min(maxScale, Math.max(MIN_SCALE, Math.min(rect.width / w, rect.height / h) * 0.9))
+    setView({ scale: next, x: rect.cx - (minX + w / 2) * next, y: rect.cy - (minY + h / 2) * next })
   }
 
   // A project opens with all of its screens in view, and comes back to that whenever the set of
@@ -165,15 +189,17 @@ export function Canvas(props: {
   }, [extent])
 
   function focusOn(id: string | null | undefined) {
+    glide()
     const el = viewportRef.current
     const f = id ? props.frames.find((x) => x.id === id) : undefined
     if (!el || !f) return
-    const rect = el.getBoundingClientRect()
+    const rect = freeArea()
     const p = pos(f)
     // Whole frame in view, never magnified, and never zoomed out so far that it cannot be read.
     const scale = Math.min(1, Math.max(0.35, Math.min((rect.width * 0.9) / f.width, (rect.height * 0.86) / f.height)))
     userMoved.current = true
-    setView({ scale, x: rect.width / 2 - (p.x + f.width / 2) * scale, y: Math.max(24, rect.height / 2 - (p.y + f.height / 2) * scale) })
+    setView({ scale, x: rect.cx - (p.x + f.width / 2) * scale, // room above for the frame's name row and its selection bar (48px on screen)
+      y: Math.max(rect.top + 12, rect.cy - (p.y + f.height / 2) * scale) })
   }
   useEffect(() => {
     focusOn(props.focus?.id)
@@ -181,6 +207,7 @@ export function Canvas(props: {
   }, [props.focus?.key])
 
   function reset() {
+    glide()
     setView({ scale: 1, x: 80, y: 80 })
   }
 
@@ -299,7 +326,7 @@ export function Canvas(props: {
   )
 
   return (
-    <div className="relative size-full select-none overflow-hidden bg-canvas [view-transition-name:od-project]" style={bg}>
+    <div className="relative size-full select-none overflow-hidden bg-canvas [view-transition-name:od-project]" style={gliding ? { ...bg, transition: 'background-position var(--duration-slow) var(--motion-ease-out), background-size var(--duration-slow) var(--motion-ease-out)' } : bg}>
       <div
         ref={viewportRef}
         data-canvas-viewport
@@ -309,17 +336,19 @@ export function Canvas(props: {
         onPointerUp={onPointerUp}
       >
         <div
-          className={cn('absolute left-0 top-0 origin-top-left', hand && 'pointer-events-none')}
+          className={cn('absolute left-0 top-0 origin-top-left', hand && 'pointer-events-none', gliding && 'od-glide')}
           // --canvas-scale lets overlays (the element panel) stay readable at any zoom.
           style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, ['--canvas-scale' as string]: view.scale }}
         >
-          {props.frames.map((f) => {
+          {props.frames.map((f, i) => {
             const p = pos(f)
             return (
               <div
                 key={f.id}
-                className="absolute"
-                style={{ left: p.x, top: p.y }}
+                // UI-25: a frame lands when it first appears (staggered on open); later renders do not replay it.
+                className="od-land absolute"
+                // UI-20: a selected frame's bar and element panel spill over its neighbours; it paints above them.
+                style={{ left: p.x, top: p.y, zIndex: props.selectedIds?.includes(f.id) ? 20 : undefined, ['--i' as string]: Math.min(i, 8) }}
                 onPointerDown={onFramePointerDown(f.id, f)}
               >
                 {props.renderFrame(f.id)}
@@ -335,83 +364,92 @@ export function Canvas(props: {
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
-        <div className="pointer-events-auto flex items-center gap-0.5 rounded-xl border bg-card/95 p-1 shadow-3 backdrop-blur">
-          <ToolButton label="Select (V)" pressed={!hand} onClick={() => setTool('select')}>
-            <MousePointer2 className="size-4" />
-          </ToolButton>
-          <ToolButton label="Hand (H, or hold Space)" pressed={hand} onClick={() => setTool('hand')}>
-            <Hand className="size-4" />
-          </ToolButton>
-          {props.onUndo && (
-            <>
-              <Divider />
-              <ToolButton label="Undo (⌘Z)" onClick={() => props.onUndo!(false)}>
-                <Undo2 className="size-4" />
-              </ToolButton>
-              <ToolButton label="Redo (⇧⌘Z)" onClick={() => props.onUndo!(true)}>
-                <Redo2 className="size-4" />
-              </ToolButton>
-            </>
-          )}
-          <Divider />
-          <ToolButton label="Zoom out" onClick={() => zoomCentered(view.scale - 0.1)}>
-            <Minus className="size-4" />
-          </ToolButton>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 min-w-13 rounded-lg px-1.5 text-xs font-medium tabular-nums" title="Zoom">
-                {Math.round(view.scale * 100)}%
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" side="top" className="min-w-40">
-              <DropdownMenuItem onSelect={() => fit()}>
-                Zoom to fit <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
+      {/* UI-23: tools on a rail at the right edge, as in Stitch; the page adds its own under them. */}
+      <div className="absolute top-1/2 right-3 z-20 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-xl border border-border bg-card p-1 shadow-2">
+        <ToolButton label="Select (V)" pressed={!hand} onClick={() => setTool('select')}>
+          <MousePointer2 />
+        </ToolButton>
+        <ToolButton label="Hand (H, or hold Space)" pressed={hand} onClick={() => setTool('hand')}>
+          <Hand />
+        </ToolButton>
+        {props.rail && (
+          <>
+            <span className="my-0.5 h-px w-5 bg-border" aria-hidden />
+            {props.rail}
+          </>
+        )}
+      </div>
+
+      {/* UI-23: history and zoom in the bottom-right corner, out of the screens' way. */}
+      <div className="absolute right-3 bottom-3 z-20 flex items-center gap-0.5 rounded-xl border border-border bg-card p-1 shadow-2">
+        {props.onUndo && (
+          <>
+            <ToolButton label="Undo (⌘Z)" side="top" onClick={() => props.onUndo!(false)}>
+              <Undo2 />
+            </ToolButton>
+            <ToolButton label="Redo (⇧⌘Z)" side="top" onClick={() => props.onUndo!(true)}>
+              <Redo2 />
+            </ToolButton>
+            <Divider />
+          </>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-9 min-w-14 rounded-lg px-2 text-sm font-medium tabular-nums" aria-label="Zoom">
+              {Math.round(view.scale * 100)}%
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="min-w-44">
+            <DropdownMenuItem onSelect={() => zoomCentered(view.scale + 0.1)}>
+              <Plus /> Zoom in
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => zoomCentered(view.scale - 0.1)}>
+              <Minus /> Zoom out
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => fit()}>
+              <Maximize /> Zoom to fit <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={reset}>Reset view</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {ZOOM_PRESETS.map((p) => (
+              <DropdownMenuItem key={p} onSelect={() => zoomCentered(p / 100)}>
+                {p}%
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={reset}>
-                Reset view
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {ZOOM_PRESETS.map((p) => (
-                <DropdownMenuItem key={p} onSelect={() => zoomCentered(p / 100)}>
-                  {p}%
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ToolButton label="Zoom in" onClick={() => zoomCentered(view.scale + 0.1)}>
-            <Plus className="size-4" />
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {props.onShortcuts && (
+          <ToolButton label="Keyboard shortcuts (?)" side="top" onClick={props.onShortcuts}>
+            <Keyboard />
           </ToolButton>
-          <ToolButton label="Fit to screen (⌘0)" onClick={() => fit()}>
-            <Maximize className="size-4" />
-          </ToolButton>
-          {props.onShortcuts && (
-            <>
-              <Divider />
-              <ToolButton label="Keyboard shortcuts (?)" onClick={props.onShortcuts}>
-                <Keyboard className="size-4" />
-              </ToolButton>
-            </>
-          )}
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
-function ToolButton(props: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode }) {
+/** UI-23: a button on the canvas's right rail, for the page's own tools. */
+export function RailButton(props: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode }) {
+  return <ToolButton {...props} />
+}
+
+function ToolButton(props: { label: string; pressed?: boolean; side?: 'left' | 'top'; onClick: () => void; children: ReactNode }) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={cn('size-8 rounded-lg text-muted-foreground hover:text-foreground', props.pressed && 'bg-muted text-foreground')}
-      onClick={props.onClick}
-      title={props.label}
-      aria-label={props.label}
-      aria-pressed={props.pressed}
-    >
-      {props.children}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('rounded-lg text-muted-foreground hover:text-foreground', props.pressed && 'bg-muted text-foreground')}
+          onClick={props.onClick}
+          aria-label={props.label}
+          aria-pressed={props.pressed}
+        >
+          {props.children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side={props.side ?? 'left'}>{props.label}</TooltipContent>
+    </Tooltip>
   )
 }
 

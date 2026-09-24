@@ -936,6 +936,18 @@ console.log('Testing Frame Height...')
   for (const t of ['--brand-ink:', '--brand-lime:', '--lime-100:', '--lime-700:', '--phone-radius:', '--ease-spring', '--duration-base:']) assert.ok(css.includes(t), `${t} is defined`)
   for (const t of ['--radius-sm: 8px', '--radius-md: 12px', '--radius-lg: 16px', '--radius-xl: 24px', '--shadow-1:', '--shadow-4:', '--shadow-phone:', '--text-md: 13px', '--text-5xl: 64px']) assert.ok(css.includes(t), `the theme exposes ${t}`)
   assert.ok(/prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{\s*--duration-fast: 0ms/.test(css), 'reduced motion zeroes the durations')
+  // UI-25: the studio moves, but only for people who have not asked it not to — every animation and
+  // transition of the canvas motion lives inside a no-preference query, on the studio's own durations.
+  {
+    const block = css.slice(css.indexOf('/* UI-25 motion */'), css.indexOf('/* /UI-25 motion */'))
+    assert.ok(block.length > 0, 'the UI-25 motion block exists')
+    const noPref = block.slice(block.indexOf('@media (prefers-reduced-motion: no-preference)'))
+    for (const cls of ['.od-rise', '.od-land', '.od-pop', '.od-fade', '.od-glide']) {
+      assert.ok(noPref.includes(`${cls} {`), `${cls} animates only with no-preference`)
+      assert.ok(!block.slice(0, block.indexOf('@media')).includes(`${cls} {`), `${cls} has no animation outside the query`)
+    }
+    assert.ok(!/animation:[^;]*\d{3,}ms/.test(noPref) && noPref.includes('var(--duration-'), 'motion uses the duration tokens, which reduced motion zeroes')
+  }
   // UI-18/19: the admin draws on the studio's tokens — no Tailwind palette colour, no hex, no
   // off-scale 10/11px text, no Tailwind default shadow — so a page holds in both themes.
   {

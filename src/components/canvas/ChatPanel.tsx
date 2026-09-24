@@ -152,7 +152,7 @@ function IconAction(props: { title: string; onClick: () => void; children: React
 
 function UserMessage({ message, onEdit }: { message: MessageRow; onEdit: (text: string) => void }) {
   return (
-    <div className="group flex flex-col items-end gap-0.5">
+    <div className="od-rise group flex flex-col items-end gap-0.5">
       <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-sm text-primary-foreground shadow-1">{message.text}</p>
       {/* CHAT-04: the actions every chat has, shown when the pointer is on the message. */}
       <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
@@ -204,7 +204,7 @@ function AgentMessage(props: {
   }
 
   return (
-    <div className={cn('group space-y-2.5 rounded-2xl rounded-bl-md border bg-card p-3.5 text-sm shadow-1', isError && 'border-destructive/40 bg-destructive/5')}>
+    <div className={cn('od-rise group space-y-2.5 rounded-2xl rounded-bl-md border bg-card p-3.5 text-sm shadow-1', isError && 'border-destructive/40 bg-destructive/5')}>
       <div className="flex gap-2">
         {isError && <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />}
         <p className={cn('min-w-0 flex-1 whitespace-pre-wrap break-words', meta.reverted && 'text-muted-foreground line-through')}>{m.text}</p>

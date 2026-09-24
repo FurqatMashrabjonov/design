@@ -38,16 +38,16 @@ export function ElementPanel(props: {
       aria-label={title}
       disabled={props.busy}
       onClick={onClick}
-      className={cn('flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40', danger && 'hover:bg-destructive/10 hover:text-destructive')}
+      className={cn('flex size-8 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors duration-(--duration-fast) hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40', danger && 'hover:bg-destructive/10 hover:text-destructive')}
     >
       {icon}
     </button>
   )
 
   return (
-    <div className="w-[320px] rounded-xl border bg-popover p-2 text-popover-foreground shadow-lg" onKeyDown={(e) => e.stopPropagation()}>
+    <div className="od-rise w-[340px] rounded-lg border border-border bg-popover p-2 text-popover-foreground shadow-3" onKeyDown={(e) => e.stopPropagation()}>
       <div className="flex items-center justify-between gap-2 px-1 pb-1.5">
-        <span className="truncate text-xs font-medium text-muted-foreground">{props.info?.label ?? 'Element'}</span>
+        <span className="truncate rounded-xs bg-selection/12 px-1.5 py-0.5 text-xs font-medium text-selection">{props.info?.label ?? 'Element'}</span>
         <div className="flex shrink-0 items-center">
           {props.info?.textEditable && tool('Edit text (or double-click it)', <Type className="size-4" />, props.onEditText)}
           {props.info?.isPhoto &&
@@ -63,7 +63,7 @@ export function ElementPanel(props: {
         </div>
       </div>
       <form
-        className="flex items-center gap-1.5 rounded-lg border bg-background px-2 py-1"
+        className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 focus-within:border-ring"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
@@ -82,7 +82,7 @@ export function ElementPanel(props: {
             }
           }}
           disabled={props.busy}
-          placeholder={mode === 'photo' ? 'Describe the photo you want…' : 'Ask AI to change this…'}
+          placeholder={mode === 'photo' ? 'Describe the photo you want…' : 'Edit with AI…'}
           className="min-w-0 flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-muted-foreground"
           aria-label={mode === 'photo' ? 'Photo description' : 'Change this element'}
         />

@@ -31,7 +31,8 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body className="antialiased">
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
-        <Toaster />
+        {/* UI-21: top centre — the canvas keeps its corners for tools (bottom-right was the zoom cluster). */}
+        <Toaster position="top-center" offset={16} />
         <CreditsDialog />
         <Scripts />
       </body>

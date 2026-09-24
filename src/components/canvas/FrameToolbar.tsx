@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, PenTool } from 'lucide-react'
+import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, PenTool, Play, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 
@@ -40,6 +41,8 @@ export type FrameActions = {
   onCopyFigma: () => void
   onViewCode: () => void
   onDownload: () => void
+  /** Opens the clickable preview at this screen. */
+  onPreview: () => void
 }
 
 // The name + action row above a real (saved) screen frame: ⠿ drags it, ‹ v3 › walks the screen's
@@ -100,7 +103,8 @@ export function FrameToolbar(props: FrameActions & {
 
   if (props.editing) {
     return (
-      <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
+      // A fixed width: above a selected frame the row is as wide as its content, where w-full is nothing.
+      <div className="od-rise flex h-10 w-72 items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-2" onPointerDown={(e) => e.stopPropagation()}>
         <Input
           autoFocus
           value={draft}
@@ -110,99 +114,100 @@ export function FrameToolbar(props: FrameActions & {
             if (e.key === 'Enter') save()
             if (e.key === 'Escape') props.onCancelRename()
           }}
-          className="h-7 text-sm"
+          className="h-8 min-w-0 flex-1 text-sm"
+          aria-label="Screen name"
         />
-        <Button size="icon" variant="ghost" className="size-7 shrink-0" disabled={busy === 'rename'} onClick={save}>
-          <Check className="size-4" />
+        <Button size="icon-sm" variant="ghost" className="shrink-0" disabled={busy === 'rename'} onClick={save} aria-label="Save name">
+          <Check />
         </Button>
-        <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={props.onCancelRename}>
-          <X className="size-4" />
+        <Button size="icon-sm" variant="ghost" className="shrink-0" onClick={props.onCancelRename} aria-label="Cancel rename">
+          <X />
         </Button>
       </div>
     )
   }
 
   const v = props.version
+  const versions = v.total > 1 && (
+    <span className="flex shrink-0 items-center text-xs tabular-nums text-muted-foreground" title={`Version ${v.position} of ${v.total}`}>
+      <Button size="icon-sm" variant="ghost" className="size-7" aria-label="Previous version" disabled={busy === 'version' || v.position <= 1} onClick={() => guard('version', () => props.onStepVersion(-1))}>
+        <ChevronLeft />
+      </Button>
+      <span className="min-w-6 text-center">v{v.position}</span>
+      <Button size="icon-sm" variant="ghost" className="size-7" aria-label="Next version" disabled={busy === 'version' || v.position >= v.total} onClick={() => guard('version', () => props.onStepVersion(1))}>
+        <ChevronRight />
+      </Button>
+    </span>
+  )
+
+  // Not selected: the name alone, as in Figma — the frame is a thing to click, not a row of buttons.
+  if (!props.selected)
+    return (
+      <div className="flex h-7 items-center gap-1 overflow-hidden" onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}>
+        <Smartphone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <FrameHandle>
+          <span className="truncate text-md font-medium text-muted-foreground group-hover:text-foreground" title={props.hint ? `${props.name}\n\n${props.hint}` : props.name} onDoubleClick={props.onStartRename}>
+            {props.name}
+          </span>
+        </FrameHandle>
+        {v.total > 1 && <span className="ml-auto shrink-0 text-xs tabular-nums text-muted-foreground/80">v{v.position}</span>}
+      </div>
+    )
+
+  // UI-20: selected, the frame gets its actions as a bar kept at screen size above it — whatever the
+  // zoom, every action is one click away and 32px big (before: 24px icons that hid below 220px).
   return (
-    <div className="flex h-7 items-center gap-1 overflow-hidden" onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}>
-      {/* UI-13: the name is the handle, as in Figma, so it can have the whole row when the frame is small on screen. */}
+    <div
+      className="od-rise flex h-10 w-max max-w-[min(640px,90vw)] items-center gap-0.5 rounded-lg border border-border bg-card p-1 text-foreground shadow-2"
+      onPointerDown={(e) => !(e.target instanceof Element && e.target.closest('[data-canvas-handle]')) && e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      <Smartphone className="ml-1.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       <FrameHandle>
-        <span className={cn('truncate text-md font-medium', props.selected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground')} title={props.hint}>
+        <span className="max-w-56 truncate px-1.5 text-md font-medium" title={props.hint ? `${props.name}\n\n${props.hint}` : props.name} onDoubleClick={props.onStartRename}>
           {props.name}
         </span>
       </FrameHandle>
-      {v.total > 1 && (
-        <span className="ml-1 hidden shrink-0 items-center text-xs tabular-nums text-muted-foreground @min-[200px]:flex" title={`Version ${v.position} of ${v.total}`}>
-          <Button size="icon" variant="ghost" className="size-6" title="Previous version" aria-label="Previous version" disabled={busy === 'version' || v.position <= 1} onClick={() => guard('version', () => props.onStepVersion(-1))}>
-            <ChevronLeft className="size-4" />
-          </Button>
-          v{v.position}
-          <Button size="icon" variant="ghost" className="size-6" title="Next version" aria-label="Next version" disabled={busy === 'version' || v.position >= v.total} onClick={() => guard('version', () => props.onStepVersion(1))}>
-            <ChevronRight className="size-4" />
-          </Button>
-        </span>
-      )}
-      <div className={cn('ml-auto hidden items-center gap-0.5 transition-opacity group-hover:opacity-100 has-[[data-state=open]]:opacity-100 @min-[220px]:flex', props.rating || props.selected ? 'opacity-100' : 'opacity-0')}>
-        {(['up', 'down'] as const).map((v) => {
-          const Icon = v === 'up' ? ThumbsUp : ThumbsDown
-          const on = props.rating === v
-          return (
-            <Button
-              key={v}
-              size="icon"
-              variant="ghost"
-              className={cn('size-6 shrink-0', on ? 'text-foreground' : '', props.rating && !on && !props.selected && 'hidden group-hover:inline-flex')}
-              title={v === 'up' ? 'Good design' : 'Not good'}
-              aria-label={v === 'up' ? 'Good design' : 'Not good'}
-              aria-pressed={on}
-              onClick={() => guard('rate', () => props.onRate(on ? null : v))}
-            >
-              <Icon className={cn('size-4', on && 'fill-current')} />
-            </Button>
-          )
-        })}
-        <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Rename" onClick={props.onStartRename}>
-          <Pencil className="size-4" />
-        </Button>
-        <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Duplicate" disabled={busy === 'duplicate'} onClick={() => guard('duplicate', props.onDuplicate)}>
-          <Copy className="size-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="size-6 shrink-0 text-destructive hover:text-destructive"
-          title="Delete"
-          disabled={busy === 'delete'}
-          onClick={props.onRequestDelete}
-        >
-          <Trash2 className="size-4" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="icon" variant="ghost" className="size-6 shrink-0" title="More" aria-label="More actions">
-              <Ellipsis className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onSelect={props.onRegenerate}>
-              <RotateCw /> Regenerate
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={props.onCopyHtml}>
-              <ClipboardCopy /> Copy HTML
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={props.onCopyFigma}>
-              <PenTool /> Copy to Figma
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={props.onViewCode}>
-              <Code2 /> View code
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={props.onDownload}>
-              <Download /> Download HTML
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {versions}
+      <span className="mx-0.5 h-5 w-px shrink-0 bg-border" aria-hidden />
+      <BarButton label="Preview this screen" onClick={props.onPreview}><Play /></BarButton>
+      <BarButton label="View code" onClick={props.onViewCode}><Code2 /></BarButton>
+      <BarButton label="Copy to Figma" onClick={props.onCopyFigma}><PenTool /></BarButton>
+      <BarButton label="Download HTML" onClick={props.onDownload}><Download /></BarButton>
+      <BarButton label="Regenerate" onClick={props.onRegenerate}><RotateCw /></BarButton>
+      <BarButton label="Duplicate" disabled={busy === 'duplicate'} onClick={() => guard('duplicate', props.onDuplicate)}><Copy /></BarButton>
+      <span className="mx-0.5 h-5 w-px shrink-0 bg-border" aria-hidden />
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon-sm" variant="ghost" aria-label="More actions">
+                <Ellipsis />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>More</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onSelect={props.onStartRename}>
+            <Pencil /> Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={props.onCopyHtml}>
+            <ClipboardCopy /> Copy HTML
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => guard('rate', () => props.onRate(props.rating === 'up' ? null : 'up'))}>
+            <ThumbsUp className={cn(props.rating === 'up' && 'fill-current')} /> Good design
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => guard('rate', () => props.onRate(props.rating === 'down' ? null : 'down'))}>
+            <ThumbsDown className={cn(props.rating === 'down' && 'fill-current')} /> Not good
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" disabled={busy === 'delete'} onSelect={props.onRequestDelete}>
+            <Trash2 /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <AlertDialog open={props.deleteConfirming} onOpenChange={(open) => !open && props.onCancelDelete()}>
         <AlertDialogContent>
@@ -226,5 +231,18 @@ export function FrameToolbar(props: FrameActions & {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+function BarButton(props: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button size="icon-sm" variant="ghost" aria-label={props.label} disabled={props.disabled} onClick={props.onClick} className="text-muted-foreground hover:text-foreground">
+          {props.children}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{props.label}</TooltipContent>
+    </Tooltip>
   )
 }

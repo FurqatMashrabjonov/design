@@ -25,8 +25,11 @@ export function PromptBox(props: {
   lastPrompt?: string
   /** Lets a suggestion chip fill the box. Changing `key` re-applies the same text. */
   fill?: { text: string; key: number }
-  /** UI-10: `hero` is the landing's big box — larger type, a labelled lime button, a raised shadow. */
-  variant?: 'default' | 'hero'
+  /** UI-10: `hero` is the landing's big box — larger type, a labelled lime button, a raised shadow.
+   *  UI-22: `dock` is the canvas composer, floating over the screens — raised, rounder, two lines. */
+  variant?: 'default' | 'hero' | 'dock'
+  /** UI-22: what the next message acts on, shown inside the box above the text (chips). */
+  top?: ReactNode
   /** The hero button's words. */
   submitLabel?: string
   /** What the box starts with (the landing restores a prompt kept for after sign-in). */
@@ -110,9 +113,10 @@ export function PromptBox(props: {
       }}
       className={cn(
         'border bg-card text-card-foreground transition-shadow duration-(--duration-base) ease-out focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
-        hero ? 'rounded-xl p-3 shadow-3' : 'rounded-lg p-2.5 shadow-1',
+        hero ? 'rounded-xl p-3 shadow-3' : props.variant === 'dock' ? 'rounded-xl p-2.5 shadow-3' : 'rounded-lg p-2.5 shadow-1',
       )}
     >
+      {props.top}
       {props.queued && (
         <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-muted/70 px-2.5 py-1.5 text-xs">
           <span className="shrink-0 font-medium text-muted-foreground">Queued</span>
@@ -168,7 +172,7 @@ export function PromptBox(props: {
         }}
         placeholder={props.placeholder}
         aria-label={props.label ?? 'Design prompt'}
-        rows={3}
+        rows={props.variant === 'dock' ? 2 : 3}
         maxLength={hero ? 2000 : undefined}
         className={cn('resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 dark:bg-transparent', hero && 'px-2 text-base leading-relaxed md:text-base')}
       />

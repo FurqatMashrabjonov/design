@@ -33,6 +33,8 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
     --color-success: var(--success);
+    --color-selection: var(--selection);
+    --color-selection-foreground: var(--selection-foreground);
     --color-warning: var(--warning);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
@@ -156,6 +158,9 @@
     /* UI-18: status text for the admin's good/slow/at-risk numbers; each clears 4.5:1 on background and card. */
     --success: oklch(0.5 0.12 150);
     --warning: oklch(0.54 0.13 60);
+    /* UI-20: what is selected on the canvas — a violet no design system uses, clear on light and dark screens. */
+    --selection: oklch(0.58 0.22 280);
+    --selection-foreground: oklch(0.99 0.004 85);
     --border: oklch(0.912 0.013 83);            /* #e6e1d8 */
     --input: oklch(0.975 0.007 85);
     /* The focus ring is ink, so it clears 3:1 on every surface (lime would not on sand). */
@@ -222,6 +227,8 @@
     --destructive-foreground: oklch(0.17 0.007 60);
     --success: oklch(0.78 0.14 150);
     --warning: oklch(0.8 0.13 72);
+    --selection: oklch(0.68 0.19 280);
+    --selection-foreground: oklch(0.17 0.007 60);
     --border: oklch(0.3 0.01 60);               /* #322d29 */
     --input: oklch(0.24 0.009 60);
     --ring: oklch(0.86 0.02 80);                /* #d8d0c3 */
@@ -307,16 +314,17 @@ svg.lucide { stroke-width: 1.75; }
 /* /UI-11 landing */
 
 /* UI-13 canvas */
-/* A frame's outline is ink, never lime, and stays the same width on screen at any zoom (Canvas sets --canvas-scale). */
+/* A frame's hover outline is ink, never lime, and stays the same width on screen at any zoom (Canvas sets --canvas-scale). */
 .od-frame {
     outline: calc(1.5px / var(--canvas-scale, 1)) solid transparent;
     outline-offset: calc(4px / var(--canvas-scale, 1));
     transition: outline-color var(--duration-fast, 120ms) ease-out;
 }
-.group:hover > div > .od-frame { outline-color: color-mix(in oklab, var(--ring) 30%, transparent); }
+.group:hover > div > .od-frame:not([data-selected]) { outline-color: color-mix(in oklab, var(--ring) 30%, transparent); }
 /* On the dark canvas the paper shadow disappears; a hairline keeps a dark screen's edge. */
 .dark .od-frame:not(.od-stream-ring) { box-shadow: var(--elevation-phone), 0 0 0 calc(1px / var(--canvas-scale, 1)) var(--border); }
-.od-frame[data-selected] { outline-width: calc(2px / var(--canvas-scale, 1)); outline-color: var(--ring); }
+/* UI-20: selection is one colour on the canvas — the frame, the element, the size badge. */
+.od-frame[data-selected] { outline-width: calc(2px / var(--canvas-scale, 1)); outline-color: var(--selection); }
 /* A screen-shaped placeholder in the studio's own tokens, so a waiting slot is never a blank white phone. */
 .od-skel i {
     display: block;
@@ -330,3 +338,37 @@ svg.lucide { stroke-width: 1.75; }
 .od-progress { height: 3px; border-radius: 999px; background: var(--muted); overflow: hidden; }
 .od-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--duration-base, 200ms) ease-out; }
 /* UI-13 canvas end */
+
+/* UI-25 motion */
+/* Everything that appears on the canvas arrives, and panels leave the way they came. Only transform and
+   opacity move (compositor-only, 60fps), on the studio's own durations and springs, never longer than
+   --duration-slow — nothing waits for an animation. With reduced motion none of this applies: the
+   states below are the resting states, and the keyframes live only inside no-preference. */
+@keyframes od-rise { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+@keyframes od-drop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } }
+@keyframes od-fade { from { opacity: 0; } }
+@keyframes od-land { from { opacity: 0; transform: scale(0.96); } }
+@keyframes od-pop { 0% { transform: scale(0.94); opacity: 0; } 70% { transform: scale(1.015); opacity: 1; } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: no-preference) {
+    /* A thing that appears: a toolbar, a panel under an element, a chip, a message, a step. */
+    .od-rise { animation: od-rise var(--duration-base) var(--motion-ease-spring) both; animation-delay: calc(var(--i, 0) * 35ms); }
+    .od-drop { animation: od-drop var(--duration-base) var(--motion-ease-spring) both; }
+    .od-fade { animation: od-fade var(--duration-base) var(--motion-ease-out) both; }
+    /* A screen landing on the canvas. */
+    .od-land { animation: od-land var(--duration-slow) var(--motion-ease-spring) both; animation-delay: calc(var(--i, 0) * 45ms); }
+    /* The selected element's outline. */
+    .od-pop { animation: od-pop var(--duration-base) var(--motion-ease-spring) both; }
+    /* Panels that slide in from their edge and back out (data-open on the element). */
+    .od-slide { transition: transform var(--duration-base) var(--motion-ease-spring), opacity var(--duration-base) var(--motion-ease-out), visibility 0s linear var(--duration-base); }
+    .od-slide[data-open] { transition: transform var(--duration-base) var(--motion-ease-spring), opacity var(--duration-base) var(--motion-ease-out), visibility 0s; }
+    /* The canvas moving to a fit or a focus glides instead of jumping (wheel and drag stay direct). */
+    .od-glide { transition: transform var(--duration-slow) var(--motion-ease-out); }
+}
+.od-slide:not([data-open]) { opacity: 0; visibility: hidden; pointer-events: none; }
+.od-slide[data-side='left']:not([data-open]) { transform: translateX(-16px); }
+.od-slide[data-side='right']:not([data-open]) { transform: translateX(16px); }
+/* Only while the theme switches (applyDark adds the class for 260ms): colours cross-fade. */
+.od-theme-switch, .od-theme-switch *, .od-theme-switch *::before, .od-theme-switch *::after {
+    transition: background-color 220ms ease-out, border-color 220ms ease-out, color 220ms ease-out, fill 220ms ease-out !important;
+}
+/* /UI-25 motion */

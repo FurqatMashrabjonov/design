@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { askUpgrade, reportError, useCredits } from '../credits'
-import { CircleX, X } from 'lucide-react'
+import { CircleX, Palette, Plus, Smartphone, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
@@ -13,9 +13,9 @@ import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
 import { FrameLabel, ScreenFrame, ScreenSkeleton, serializeScreen } from '../ScreenFrame'
 import { copyTreesToFigma } from '@/lib/figma-copy'
-import { Canvas, type CanvasFrame } from '@/components/canvas/Canvas'
+import { Canvas, RailButton, type CanvasFrame } from '@/components/canvas/Canvas'
 import { TopBar } from '@/components/canvas/TopBar'
-import { Sidebar } from '@/components/canvas/Sidebar'
+import { ChatDock, SidePanel, useChatOpen, CHAT_WIDTH, EDGE, SIDE_WIDTH } from '@/components/canvas/Sidebar'
 import { ChatEmpty, ChatPanel } from '@/components/canvas/ChatPanel'
 import { ActivityCard, PlanApproval, type Activity, type ScreenStatus } from '@/components/canvas/ActivityCard'
 import { parseAffects } from '@/lib/screen-patch'
@@ -29,6 +29,7 @@ import { exportApp } from '@/lib/export-app'
 import { zip } from '@/lib/zip'
 import { designSystemSample } from '@/lib/ds-sample'
 import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
+import { screenTitle } from '@/lib/screen-title'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
 import { ShortcutsDialog } from '@/components/canvas/ShortcutsDialog'
@@ -68,7 +69,9 @@ function ProjectPage() {
   const [elementInfo, setElementInfo] = useState<ElementInfo | null>(null)
   const [editRequest, setEditRequest] = useState<{ elementId: string; key: number } | undefined>(undefined)
   const [handBusy, setHandBusy] = useState(false)
-  const [sidebarTab, setSidebarTab] = useState('chat')
+  // UI-22/23: the chat card at the left (folds to a pill) and the theme panel from the right rail.
+  const [chatOpen, setChatOpen] = useChatOpen()
+  const [themeOpen, setThemeOpen] = useState(false)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [codeScreenId, setCodeScreenId] = useState<string | null>(null)
@@ -616,7 +619,21 @@ function ProjectPage() {
     onCopyFigma: () => copyToFigma(s.id),
     onViewCode: () => setCodeScreenId(s.id),
     onDownload: () => downloadHtml(s),
+    onPreview: () => window.open(`/preview/${project.id}?s=${s.id}`, '_blank', 'noopener'),
   })
+
+  // A plan waiting for approval is in the chat, so the chat shows while it waits.
+  const chatShown = chatOpen || awaiting
+  // What the floating panels cover, so a fit or a focus centres the screens in what is left.
+  // The composer is centred in the window and never moves when the chat folds or opens: it keeps
+  // clear of the widest thing either side can hold (the chat card, the theme panel or the zoom cluster).
+  const composerSide = Math.max(CHAT_WIDTH + EDGE * 2, themeOpen ? 64 + SIDE_WIDTH + EDGE : 212)
+  // What to do next, above the composer — only while nothing runs and nothing is selected.
+  const composerSuggestions = running || awaiting || selectedScreen ? [] : nextSteps.length ? nextSteps : screens.length ? [] : ['Design a welcome screen with sign-in', 'Add an onboarding screen', 'Design a home screen with a summary card']
+
+  // bottom: the composer (150), and the suggestion chips above it when they show.
+  // top: the pills (64) plus the room a selected frame's bar needs above it (48).
+  const canvasInsets = { top: 112, bottom: composerSuggestions.length ? 214 : 150, left: chatShown ? CHAT_WIDTH + EDGE * 2 : EDGE, right: themeOpen ? 64 + SIDE_WIDTH + EDGE : 64 }
 
   function openPreview() {
     const first = [...screens].sort((a, b) => a.x - b.x)[0]
@@ -625,7 +642,7 @@ function ProjectPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="relative h-screen overflow-hidden bg-canvas">
       <TopBar
         // While the plan streams, the project is still "Untitled" on the server; the plan already has the name.
         name={planning && plan ? plan.appName : project.name}
@@ -646,6 +663,7 @@ function ProjectPage() {
         onShare={sharePreview}
         hasScreens={screens.some((s) => s.html)}
         onPreview={openPreview}
+        onShortcuts={() => setShortcutsOpen(true)}
         onDeleteProject={async () => {
           try {
             await deleteProject({ data: project.id })
@@ -655,274 +673,301 @@ function ProjectPage() {
           }
         }}
       />
-      <div className="flex min-h-0 flex-1">
-        <Sidebar
-          chat={
+      {/* UI-21: the canvas is the whole window; everything else floats over it. */}
+      <div className="absolute inset-0">
+        <Canvas
+          insets={canvasInsets}
+          rail={
             <>
-              <ChatPanel
-                messages={messages}
-                screenIds={screenIds}
-                device={project.device}
-                onFocusScreen={focusScreen}
-                onRevert={async (messageId) => {
-                  await revertMessage({ data: { projectId: project.id, messageId } })
-                  await router.invalidate()
-                }}
-                onEdit={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => reportError(e)))}
-                suggestions={!selectedScreen ? nextSteps : undefined}
-                onSuggest={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                running={awaiting && plan ? <PlanApproval plan={plan} onDraw={approvePlan} onDiscard={discardPlan} askNextTime={gatePref()} /> : activity ? <ActivityCard activity={activity} /> : undefined}
-                empty={
-                  <ChatEmpty
-                    // What the canvas is missing when there is something drawn; a few first screens when there is not.
-                    suggestions={nextSteps.length ? nextSteps : ['Design a welcome screen with sign-in', 'Add an onboarding screen', 'Design a home screen with a summary card']}
-                    onPick={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
-                  />
-                }
-              />
-              {selectedScreen && (
-                // What the next message will change: the screens, or one element of one screen.
-                <div className="flex min-w-0 items-center gap-1 text-xs">
-                  <span className="shrink-0 text-muted-foreground">Editing</span>
-                  <button
-                    type="button"
-                    onClick={() => focusScreen(selectedScreen.id)}
-                    className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-ring/40"
-                    title={multi ? screens.filter((s) => selectedIds.includes(s.id)).map((s) => s.name).join(', ') : 'Show on the canvas'}
-                  >
-                    {multi ? `${selectedIds.length} screens` : selectedScreen.name}
-                  </button>
-                  {selectedElementId && (
-                    <>
-                      <span className="text-muted-foreground">›</span>
-                      <span className="min-w-0 truncate rounded-md border border-lime-300 bg-lime-100 px-2 py-0.5 text-brand-ink">{elementInfo?.label ?? 'Element'}</span>
-                    </>
-                  )}
-                  <button type="button" onClick={escape} className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Step out (Esc)" aria-label="Step out">
-                    <X className="size-3.5" />
-                  </button>
-                </div>
-              )}
-              <PromptBox
-                placeholder={
-                  awaiting
-                    ? 'Approve the plan above, or change it…'
-                    : planning
-                      ? 'Designing your screens…'
-                      : selectedElementId
-                        ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
-                        : multi
-                          ? `Describe a change for all ${selectedIds.length} screens…`
-                          : selectedScreen
-                            ? 'Describe the change…'
-                            : 'Add another screen to this project…'
-                }
-                fill={fill}
-                attachments
-                running={running}
-                onStop={stopAll}
-                queued={queued}
-                onQueue={setQueued}
-                lastPrompt={lastPrompt}
-                onSubmit={submitPrompt}
-              />
+              <ScreensList screens={[...screens].sort((a, b) => a.x - b.x || a.y - b.y).map((sc) => ({ id: sc.id, name: screenTitle(sc.name, project.name ?? '') }))} selected={selected} onSelect={focusScreen} />
+              <RailButton label="Theme" pressed={themeOpen} onClick={() => setThemeOpen((o) => !o)}>
+                <Palette />
+              </RailButton>
             </>
           }
-          theme={
-            <div className="space-y-6 text-sm">
-              <ThemePanel theme={theme} baseAccent={baseAccent} base={baseTokens} onChange={changeTheme} onPreview={setThemePreview} />
-              <div>
-                <div className="mb-1 text-muted-foreground">Device</div>
-                <Badge variant="secondary" className="capitalize">
-                  {project.device}
-                </Badge>
-              </div>
-              <div>
-                <div className="mb-1 text-muted-foreground">Design system</div>
-                <Badge variant="secondary" className="capitalize">
-                  {project.designSystem}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Device and design system are fixed per project — start a new project to change them.
-              </p>
-            </div>
-          }
-          tab={sidebarTab}
-          onTabChange={setSidebarTab}
-        />
-        <div className="relative flex-1">
-          <ScreensList screens={screens} selected={selected} onSelect={focusScreen} />
-          <Canvas
-            frames={frames}
-            fitKey={`${screens.length}:${planFrames.length}`}
-            focus={focus}
-            selectedIds={selectedIds}
-            onMarquee={(ids, additive) => selectMany(ids.filter((id) => screenIds.has(id)), additive)}
-            onShortcuts={() => setShortcutsOpen(true)}
-            onUndo={(redo) => undo(redo)}
-            onBackgroundClick={() => selectScreen(null)}
-            onMove={(moves) => {
-              const real = moves.flatMap((m) => {
-                const was = screens.find((s) => s.id === m.id)
-                return !was || (was.x === m.x && was.y === m.y) ? [] : [{ ...m, fromX: was.x, fromY: was.y }]
-              })
-              if (real.length === 0) return
-              const place = (to: 'from' | 'to') => all(real.map((m) => m.id), (id) => {
-                const m = real.find((r) => r.id === id)!
-                return moveScreen({ data: { id, x: to === 'to' ? m.x : m.fromX, y: to === 'to' ? m.y : m.fromY } })
-              })
-              history.current.record(pairStep(() => place('from'), () => place('to')))
-              // Reload once saved, so positions come from the server (and an undo can move them back).
-              place('to').then(() => router.invalidate())
-            }}
-            renderFrame={(id) => {
-              if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={shownTheme} width={DS_FRAME.width} height={DS_FRAME.height} />
-              if (id === '__live__')
-                return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={shownTheme} streaming />
-              const planAt = planIds.indexOf(id)
-              if (id.startsWith('plan-') || (planAt !== -1 && !screenIds.has(id))) {
-                const i = planAt !== -1 ? planAt : Number(id.slice(5))
-                const s = plan!.screens[i]!
-                const st = status[i]
-                if (st === 'pending')
-                  return (
-                    <figure className="relative" style={{ width: f.width }}>
-                      <FrameLabel width={f.width}>
-                        <figcaption className="flex h-7 items-center truncate text-md font-medium text-muted-foreground">{s.name}</figcaption>
-                      </FrameLabel>
-                      <ScreenSkeleton className="overflow-hidden shadow-phone" style={{ width: f.width, height: f.height, borderRadius: 'var(--radius-phone)' }} />
-                    </figure>
-                  )
-                // The same wrapper shape as a saved frame, so React keeps this iframe when the saved
-                // screen takes over (LP-04).
-                const noop = () => {}
+          frames={frames}
+          fitKey={`${screens.length}:${planFrames.length}`}
+          focus={focus}
+          selectedIds={selectedIds}
+          onMarquee={(ids, additive) => selectMany(ids.filter((id) => screenIds.has(id)), additive)}
+          onShortcuts={() => setShortcutsOpen(true)}
+          onUndo={(redo) => undo(redo)}
+          onBackgroundClick={() => selectScreen(null)}
+          onMove={(moves) => {
+            const real = moves.flatMap((m) => {
+              const was = screens.find((s) => s.id === m.id)
+              return !was || (was.x === m.x && was.y === m.y) ? [] : [{ ...m, fromX: was.x, fromY: was.y }]
+            })
+            if (real.length === 0) return
+            const place = (to: 'from' | 'to') => all(real.map((m) => m.id), (id) => {
+              const m = real.find((r) => r.id === id)!
+              return moveScreen({ data: { id, x: to === 'to' ? m.x : m.fromX, y: to === 'to' ? m.y : m.fromY } })
+            })
+            history.current.record(pairStep(() => place('from'), () => place('to')))
+            // Reload once saved, so positions come from the server (and an undo can move them back).
+            place('to').then(() => router.invalidate())
+          }}
+          renderFrame={(id) => {
+            if (id === '__ds__') return <ScreenFrame html={dsSample} title="Design system" icon={<Palette />} hint="Built from the design system's tokens; follows the Theme panel" device={project.device} theme={shownTheme} width={DS_FRAME.width} height={DS_FRAME.height} />
+            if (id === '__live__')
+              return <ScreenFrame html={extractArtifact(live).html} title="Designing…" device={project.device} theme={shownTheme} streaming />
+            const planAt = planIds.indexOf(id)
+            if (id.startsWith('plan-') || (planAt !== -1 && !screenIds.has(id))) {
+              const i = planAt !== -1 ? planAt : Number(id.slice(5))
+              const s = plan!.screens[i]!
+              const st = status[i]
+              if (st === 'pending')
                 return (
-                  <FrameContextMenu onRename={noop} onDuplicate={noop} onDelete={noop} onRegenerate={noop} onCopyHtml={noop} onCopyFigma={noop} onViewCode={noop} onDownload={noop}>
-                    <div>
-                      <ScreenFrame
-                        html={extractArtifact(planTexts[i] ?? '').html}
-                        title={s.name}
-                        device={project.device}
-                        theme={shownTheme}
-                        streaming={st === 'running' || st === 'done'}
-                        photos={planPhotos[i]}
-                        frameId={planAt !== -1 ? id : undefined}
-                        height={planAt !== -1 ? heights[id] : undefined}
-                        // Kept in memory only: the screen is not saved yet. Its saved frame starts from it.
-                        onHeight={(fid, h) => setHeights((prev) => (prev[fid] === h ? prev : { ...prev, [fid]: h }))}
-                      />
-                    </div>
-                  </FrameContextMenu>
+                  <figure className="relative" style={{ width: f.width }}>
+                    <FrameLabel width={f.width}>
+                      <figcaption className="flex h-7 items-center truncate text-md font-medium text-muted-foreground">{s.name}</figcaption>
+                    </FrameLabel>
+                    <ScreenSkeleton className="overflow-hidden shadow-phone" style={{ width: f.width, height: f.height, borderRadius: 'var(--radius-phone)' }} />
+                  </figure>
                 )
-              }
-              const s = screens.find((sc) => sc.id === id)!
-              if (!s.html)
-                return (
-                  <FailedFrame
-                    name={s.name}
-                    error={s.error}
-                    width={f.width}
-                    height={f.height}
-                    onRetry={() => regenerateScreen(s)}
-                    onDelete={() => removeScreen(s.id)}
-                  />
-                )
+              // The same wrapper shape as a saved frame, so React keeps this iframe when the saved
+              // screen takes over (LP-04).
+              const noop = () => {}
               return (
-                <FrameContextMenu
-                  onRename={() => setRenamingId(s.id)}
-                  onDuplicate={() => copyScreen(s.id)}
-                  {...frameActions(s)}
-                  onDelete={() => setDeleteTargetId(s.id)}
-                >
-                  <div
-                    onClick={(e) => {
-                      if (e.shiftKey) toggleScreen(s.id)
-                      else if (multi || s.id !== selected) selectScreen(s.id)
-                    }}
-                  >
+                <FrameContextMenu onRename={noop} onDuplicate={noop} onDelete={noop} onRegenerate={noop} onCopyHtml={noop} onCopyFigma={noop} onViewCode={noop} onDownload={noop} onPreview={noop}>
+                  <div>
                     <ScreenFrame
-                      html={s.html}
+                      html={extractArtifact(planTexts[i] ?? '').html}
                       title={s.name}
-                      hint={s.prompt}
                       device={project.device}
                       theme={shownTheme}
-                      frameId={s.id}
-                      height={frameHeight(s)}
-                      onHeight={reportHeight}
-                      selected={selectedIds.includes(s.id)}
-                      solo={!multi}
-                      selectedElementId={s.id === selected ? selectedElementId : null}
-                      onSelectElement={(elId) => {
-                        if (s.id !== selected) return
-                        setSelectedElementId(elId)
-                        if (elId) setSidebarTab('chat')
-                      }}
-                      onEscape={escape}
-                      onUndo={(redo) => undo(redo)}
-                      editRequest={s.id === selected ? editRequest : undefined}
-                      onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
-                      panel={
-                        s.id === selected && selectedElementId ? (
-                          <ElementPanel
-                            info={elementInfo}
-                            busy={handBusy || working}
-                            onAsk={(instruction) => run({ prompt: instruction, projectId: project.id, editScreenId: s.id, editElementId: selectedElementId })}
-                            onEditText={() => setEditRequest((r) => ({ elementId: selectedElementId, key: (r?.key ?? 0) + 1 }))}
-                            onAction={(action) =>
-                              hand(
-                                () => elementAction({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, action } }),
-                                () => action === 'delete' && setSelectedElementId(null),
-                              )
-                            }
-                            onReplacePhoto={(query) => hand(() => replaceElementPhoto({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, query } }))}
-                          />
-                        ) : undefined
-                      }
-                      label={
-                        <FrameToolbar
-                          name={s.name}
-                          hint={s.prompt}
-                          selected={selectedIds.includes(s.id)}
-                          {...frameActions(s)}
-                          version={s.version}
-                          rating={s.rating}
-                          onRate={async (value) => {
-                            await rateScreen({ data: { projectId: project.id, screenId: s.id, value } })
-                            await router.invalidate()
-                          }}
-                          onStepVersion={async (dir) => {
-                            const step = (d: number) => stepVersion({ data: { projectId: project.id, screenId: s.id, dir: d } })
-                            await step(dir)
-                            history.current.record(pairStep(() => step(-dir), () => step(dir)))
-                            await router.invalidate()
-                          }}
-                          editing={renamingId === s.id}
-                          onStartRename={() => setRenamingId(s.id)}
-                          onCancelRename={() => setRenamingId(null)}
-                          onRename={async (name) => {
-                            await renameScreenTo(s.id, name)
-                            setRenamingId(null)
-                          }}
-                          onDuplicate={() => copyScreen(s.id)}
-                          deleteConfirming={deleteTargetId === s.id}
-                          onRequestDelete={() => setDeleteTargetId(s.id)}
-                          onCancelDelete={() => setDeleteTargetId(null)}
-                          onDelete={async () => {
-                            await removeScreen(s.id)
-                            setDeleteTargetId(null)
-                          }}
-                        />
-                      }
+                      streaming={st === 'running' || st === 'done'}
+                      photos={planPhotos[i]}
+                      frameId={planAt !== -1 ? id : undefined}
+                      height={planAt !== -1 ? heights[id] : undefined}
+                      // Kept in memory only: the screen is not saved yet. Its saved frame starts from it.
+                      onHeight={(fid, h) => setHeights((prev) => (prev[fid] === h ? prev : { ...prev, [fid]: h }))}
                     />
                   </div>
                 </FrameContextMenu>
               )
+            }
+            const s = screens.find((sc) => sc.id === id)!
+            if (!s.html)
+              return (
+                <FailedFrame
+                  name={s.name}
+                  error={s.error}
+                  width={f.width}
+                  height={f.height}
+                  onRetry={() => regenerateScreen(s)}
+                  onDelete={() => removeScreen(s.id)}
+                />
+              )
+            return (
+              <FrameContextMenu
+                onRename={() => setRenamingId(s.id)}
+                onDuplicate={() => copyScreen(s.id)}
+                {...frameActions(s)}
+                onDelete={() => setDeleteTargetId(s.id)}
+              >
+                <div
+                  onClick={(e) => {
+                    if (e.shiftKey) toggleScreen(s.id)
+                    else if (multi || s.id !== selected) selectScreen(s.id)
+                  }}
+                >
+                  <ScreenFrame
+                    html={s.html}
+                    title={s.name}
+                    hint={s.prompt}
+                    device={project.device}
+                    theme={shownTheme}
+                    frameId={s.id}
+                    height={frameHeight(s)}
+                    onHeight={reportHeight}
+                    selected={selectedIds.includes(s.id)}
+                    solo={!multi}
+                    selectedElementId={s.id === selected ? selectedElementId : null}
+                    onSelectElement={(elId) => {
+                      if (s.id !== selected) return
+                      setSelectedElementId(elId)
+                    }}
+                    onEscape={escape}
+                    onUndo={(redo) => undo(redo)}
+                    editRequest={s.id === selected ? editRequest : undefined}
+                    onTextEdit={(elementId, text) => hand(() => editElementText({ data: { projectId: project.id, screenId: s.id, elementId, text } }))}
+                    panel={
+                      s.id === selected && selectedElementId ? (
+                        <ElementPanel
+                          info={elementInfo}
+                          busy={handBusy || working}
+                          onAsk={(instruction) => run({ prompt: instruction, projectId: project.id, editScreenId: s.id, editElementId: selectedElementId })}
+                          onEditText={() => setEditRequest((r) => ({ elementId: selectedElementId, key: (r?.key ?? 0) + 1 }))}
+                          onAction={(action) =>
+                            hand(
+                              () => elementAction({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, action } }),
+                              () => action === 'delete' && setSelectedElementId(null),
+                            )
+                          }
+                          onReplacePhoto={(query) => hand(() => replaceElementPhoto({ data: { projectId: project.id, screenId: s.id, elementId: selectedElementId, query } }))}
+                        />
+                      ) : undefined
+                    }
+                    label={
+                      <FrameToolbar
+                        // UI-24: shown without the app's name — older screens were saved as "Cart — GoBite".
+                        name={screenTitle(s.name, project.name ?? '')}
+                        hint={s.prompt}
+                        selected={selectedIds.includes(s.id)}
+                        {...frameActions(s)}
+                        version={s.version}
+                        rating={s.rating}
+                        onRate={async (value) => {
+                          await rateScreen({ data: { projectId: project.id, screenId: s.id, value } })
+                          await router.invalidate()
+                        }}
+                        onStepVersion={async (dir) => {
+                          const step = (d: number) => stepVersion({ data: { projectId: project.id, screenId: s.id, dir: d } })
+                          await step(dir)
+                          history.current.record(pairStep(() => step(-dir), () => step(dir)))
+                          await router.invalidate()
+                        }}
+                        editing={renamingId === s.id}
+                        onStartRename={() => setRenamingId(s.id)}
+                        onCancelRename={() => setRenamingId(null)}
+                        onRename={async (name) => {
+                          await renameScreenTo(s.id, name)
+                          setRenamingId(null)
+                        }}
+                        onDuplicate={() => copyScreen(s.id)}
+                        deleteConfirming={deleteTargetId === s.id}
+                        onRequestDelete={() => setDeleteTargetId(s.id)}
+                        onCancelDelete={() => setDeleteTargetId(null)}
+                        onDelete={async () => {
+                          await removeScreen(s.id)
+                          setDeleteTargetId(null)
+                        }}
+                      />
+                    }
+                  />
+                </div>
+              </FrameContextMenu>
+            )
+          }}
+        />
+      </div>
+
+      <ChatDock open={chatShown} onOpenChange={setChatOpen} count={messages.length} busy={running}>
+          <ChatPanel
+            messages={messages}
+            screenIds={screenIds}
+            device={project.device}
+            onFocusScreen={focusScreen}
+            onRevert={async (messageId) => {
+              await revertMessage({ data: { projectId: project.id, messageId } })
+              await router.invalidate()
             }}
+            onEdit={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+            onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => reportError(e)))}
+            running={awaiting && plan ? <PlanApproval plan={plan} onDraw={approvePlan} onDiscard={discardPlan} askNextTime={gatePref()} /> : activity ? <ActivityCard activity={activity} /> : undefined}
+            empty={
+              <ChatEmpty
+                // UI-22: what to do next now sits above the composer.
+                suggestions={[]}
+                onPick={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+              />
+            }
+          />
+      </ChatDock>
+
+      {(
+        <SidePanel open={themeOpen} title={`Style · ${project.designSystem.replace(/-/g, ' ')}`} onClose={() => setThemeOpen(false)}>
+        <div className="space-y-6 text-sm">
+          <ThemePanel theme={theme} baseAccent={baseAccent} base={baseTokens} onChange={changeTheme} onPreview={setThemePreview} />
+          <div>
+            <div className="mb-1 text-muted-foreground">Device</div>
+            <Badge variant="secondary" className="capitalize">
+              {project.device}
+            </Badge>
+          </div>
+          <div>
+            <div className="mb-1 text-muted-foreground">Design system</div>
+            <Badge variant="secondary" className="capitalize">
+              {project.designSystem}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Device and design system are fixed per project — start a new project to change them.
+          </p>
+        </div>
+        </SidePanel>
+      )}
+
+      {/* UI-22: the composer at the bottom centre of the free canvas, with what to do next above it. */}
+      <div className="pointer-events-none absolute bottom-3 z-20 flex flex-col items-center gap-2" style={{ left: composerSide, right: composerSide }}>
+        {composerSuggestions.length > 0 && (
+          <div className="pointer-events-auto flex max-w-[760px] flex-wrap justify-center gap-1.5">
+            {composerSuggestions.slice(0, 3).map((text, i) => (
+              <button
+                key={text}
+                style={{ ['--i' as string]: i }}
+                type="button"
+                onClick={() => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+                className="od-rise inline-flex max-w-72 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm text-foreground/85 shadow-1 transition-[color,background-color,transform] active:scale-[0.97] duration-(--duration-fast) hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <Plus className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{text}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="pointer-events-auto w-full max-w-[680px]">
+          <PromptBox
+            variant="dock"
+            top={
+              selectedScreen && (
+                // What the next message will change: the screens, or one element of one screen — as chips inside the box.
+                <div className="od-rise mb-1.5 flex min-w-0 items-center gap-1 px-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => focusScreen(selectedScreen.id)}
+                    className="inline-flex min-w-0 items-center gap-1 rounded-md bg-muted px-2 py-1 font-medium transition-colors hover:bg-accent"
+                    title={multi ? screens.filter((s) => selectedIds.includes(s.id)).map((s) => s.name).join(', ') : 'Show on the canvas'}
+                  >
+                    <Smartphone className="size-3 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{multi ? `${selectedIds.length} screens` : screenTitle(selectedScreen.name, project.name ?? '')}</span>
+                  </button>
+                  {selectedElementId && (
+                    <>
+                      <span className="text-muted-foreground">›</span>
+                      <span className="min-w-0 truncate rounded-md bg-selection/12 px-2 py-1 font-medium text-selection">{elementInfo?.label ?? 'Element'}</span>
+                    </>
+                  )}
+                  <button type="button" onClick={escape} className="ml-auto shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" title="Step out (Esc)" aria-label="Step out">
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              )
+            }
+            placeholder={
+              awaiting
+                ? 'Approve the plan in the chat, or change it…'
+                : planning
+                  ? 'Designing your screens…'
+                  : selectedElementId
+                    ? `Describe a change to ${elementInfo?.label ?? 'this element'}…`
+                    : multi
+                      ? `Describe a change for all ${selectedIds.length} screens…`
+                      : selectedScreen
+                        ? 'Describe the change…'
+                        : 'Add another screen to this project…'
+            }
+            fill={fill}
+            attachments
+            running={running}
+            onStop={stopAll}
+            queued={queued}
+            onQueue={setQueued}
+            lastPrompt={lastPrompt}
+            onSubmit={submitPrompt}
           />
         </div>
-
       </div>
 
       <CodeDialog screen={codeScreen && { name: codeScreen.name, html: applyThemeOverride(codeScreen.html, theme) }} onOpenChange={(open) => !open && setCodeScreenId(null)} />

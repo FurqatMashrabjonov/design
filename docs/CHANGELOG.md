@@ -5,6 +5,100 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Kanvasda harakat: panellar, tanlov, xabarlar va ekranlar animatsiya bilan — UI-25
+
+Foydalanuvchi so'rovi: Stitch'dagidek hamma narsa animatsiyali ochilsin. Menyular, dialoglar va
+tooltip'lar allaqachon animatsiyali edi; qolgani birdan paydo bo'lardi.
+
+- `styles.css` "UI-25 motion": `od-rise` (pastdan ko'tariladi, `--i` bilan ketma-ket), `od-drop`, `od-fade`,
+  `od-land` (ekran kanvasga tushadi), `od-pop` (tanlangan element chegarasi), `od-slide` (panel chetdan
+  suriladi va shu yo'l bilan qaytadi, `data-open`), `od-glide` (fit/fokus/zoom tugmalari silliq; g'ildirak va
+  sudrash to'g'ridan-to'g'ri). Faqat `transform`/`opacity`, `--duration-*` va `--motion-ease-*` tokenlari
+  (120–320ms); hammasi `prefers-reduced-motion: no-preference` ichida — test tekshiradi.
+- Qo'llangan joylar: chat kartasi (chapdan) va tema paneli (o'ngdan) endi doim o'rnatilgan, `inert`
+  bilan; chat pill'i fade; tanlangan kadr paneli, qayta nomlash qatori, element paneli (har element
+  almashganda qaytadan), element chegarasi pop; composer ichidagi chiplar, takliflar (ketma-ket, bosilganda
+  0.97), chat xabarlari, faollik kartasi va qadamlari, reja kartasi; ekranlar ochilishda ketma-ket tushadi;
+  kanvas nuqtali foni ham glide bilan birga siljiydi. Yorug'↔to'q almashishi 220ms ranglarni aralashtiradi
+  (`applyDark`, faqat almashish paytida, reduced-motion'da yo'q).
+- Topilgan va tuzatilgan: element chegarasi va panel bir xil `key` olgan edi → React ogohlantirishi va
+  Esc'dan keyin panel DOM'da yetim qolardi; kalitlar ajratildi.
+
+- Fayllar: `src/styles.css`, `src/components/canvas/{Sidebar,Canvas,FrameToolbar,ElementPanel,ChatPanel,ActivityCard,TopBar}.tsx`, `src/components/ThemeToggle.tsx`, `src/ScreenFrame.tsx`, `src/routes/p.$projectId.tsx`, `src/app/Services/new-features.check.ts`.
+- Tekshirildi: `tsc` toza, `npm run check` toza. Chrome: chat ochish/yopish (o'rta holat skrinshotda ko'rindi, transition 0.2s, yopiq karta bosishni to'smaydi), tema paneli, kadr va element tanlash, elementlarni almashtirib Esc → panel qolmaydi, konsol toza; dark↔light cross-fade (klass 260ms'da olinadi).
+
+### Kanvas: har bir boshqaruv brauzerda bosib tekshirildi, topilganlar tuzatildi — UI-21…23 davomi
+
+Foydalanuvchi: "chatni ochib yopsam pastdagi input surilib ketyapti". Composer endi oynaning markazida,
+ikki tomondan bir xil chegara bilan (`composerSide` — chat kartasi, tema paneli yoki zoom paneli, qaysi
+biri kengroq bo'lsa), chat ochilganda ham, yopilganda ham qimirlamaydi.
+
+Bosib tekshirilgan: ☰ (qayta nomlash → nom maydoniga fokus, preview havolasi, Figma, dark mode,
+tugmalar ro'yxati, o'chirish → bekor), Preview, Share, Export menyusi, rels (Select/Hand bilan surish,
+Screens ro'yxati → ekranga fokus, Tema), zoom menyusi (fit), undo/redo, kadr paneli (Code, Figma,
+Duplicate → undo, ⋯: Rename, baho, Delete → bekor, `‹ v ›`), element (tanlash, Duplicate → undo,
+"Edit with AI" → v4 → chatdagi Undo), to'liq yugurish "make habit tracker" (reja tasdiqlash kartasi chat
+ichida → Draw 6 screens → 35 s, 6 ekran, Stop tugmasi composer'da).
+
+Topilgan va tuzatilgan:
+- Qayta nomlash maydoni tanlangan panel ichida ~30px'ga siqilardi (`max-content` ichida `w-full`) → `w-72`.
+- Xabarlar (toast) pastki o'ngda chiqib zoom panelini yopardi → yuqori markaz.
+- Screens ro'yxati nomlarni ilova nomi bilan va teskari tartibda ko'rsatardi → `screenTitle`, kanvas tartibida.
+- Fokus/fit tanlangan kadr panelini yuqoridagi pill'lar ostiga qo'yardi → yuqoridan 112px; takliflar
+  chiqqanda pastdan 214px (kadrlar chiplar ostida qolardi).
+- Composer matni "Approve the plan above" → "…in the chat".
+
+Kuzatilgan, tuzatilmagan: kanvas ochilganda kadrlar bir necha soniya oq turadi (iframe yuklanishi);
+landing'da hydration'dan oldin yozilgan matn yo'qoladi (HANDOFF'da ma'lum); chat xabarlaridagi ekran
+chiplari eski nomni ilova qo'shimchasi bilan ko'rsatadi.
+
+- Research (subagent): QR preview va qurilma ramkalari → Notion'ga SHR-04, SHR-05, DVC-01…04 (Keyin).
+- Fayllar: `src/routes/p.$projectId.tsx`, `src/routes/__root.tsx`, `src/components/canvas/{Canvas,FrameToolbar}.tsx`.
+- Tekshirildi: `tsc` toza; `npm run check` (TST-01 beqaror testi bundan mustasno); Chrome'da yuqoridagi hamma harakatlar.
+
+### Kanvas Stitch kabi: butun oyna kanvas, suzuvchi yuqori panel, pastda markazda composer, o'ng rels — UI-21, UI-22, UI-23
+
+- **UI-21:** yuqori panel (to'liq kenglikdagi chiziq) o'rniga kanvas ustida suzuvchi ikki pill: chapda
+  ☰ menyu + loyiha nomi (tahrirlanadi), o'ngda Preview, Share, lime Export | kredit, avatar. ☰ ichida:
+  barcha loyihalar, qayta nomlash, preview havolasi, zip, Figma, dark mode, tugmalar ro'yxati, tizim ·
+  qurilma, o'chirish. Kanvas butun oynani egallaydi (`bg-canvas`).
+- **UI-22:** composer pastda markazda (680px, `PromptBox variant="dock"`), tanlangan kadr/element
+  chip bo'lib **input ichida** (`top` slot), "keyingi qadam" takliflari uning ustida (faqat hech narsa
+  ishlamayotganda va tanlanmaganda). Chat — chapda yig'iladigan suzuvchi karta (`ChatDock`, tanlov
+  `localStorage` da), yig'ilganda "Chat" pill (ishlayotganda puls). Reja tasdiq kutayotganda chat
+  majburan ochiq. Running/Stop/Esc/navbat va "Undo this step" o'zgarmadi — faqat joy.
+- **UI-23:** Select/Hand, Screens ro'yxati va Tema — o'ng vertikal relsda (tooltip, 36px). Undo/Redo,
+  zoom (+/−/fit/presetlar menyuda) va tugmalar ro'yxati — pastki o'ng burchakda. Pastki markazdagi eski
+  panel (kadrlarning tab bar'ini yopardi) olib tashlandi. Tema — o'ngdan ochiladigan suzuvchi panel
+  ("Style · Minimal"), zoom panelini yopmaydi. `Canvas` `insets` oladi: fit va focus kadrlarni
+  panellar qoldirgan bo'sh joyning markaziga qo'yadi.
+
+- Topildi (bu ishga aloqasiz): `controllers.check.ts:478` admin overview testi beqaror — oldingi
+  commit'larda ham (8627ee1: 2/8, 3292c47: 1/6). TST-01 (Keyin) sifatida yozildi.
+- Fayllar: `src/routes/p.$projectId.tsx`, `src/components/canvas/{TopBar,Sidebar,Canvas,ScreensList}.tsx`, `src/PromptBox.tsx`, `CLAUDE.md`.
+- Tekshirildi: `tsc` toza, `npm run check` toza (to'liq yugurish; beqaror test yuqorida). Chrome 1512×806: yorug' va to'q; kadr va element tanlash → chiplar composer ichida; chat yig'ish/ochish; tema paneli; ☰ menyu; composer bo'sh joy markazida qoladi.
+
+### Kanvas: tanlangan kadr ustida asboblar paneli, element tanlovi har zoomda ko'rinadi, kadr yorliqlari — UI-20, UI-24
+
+Sleek va Stitch bilan solishtirish (brauzerda, 2026-09-25): bizda tanlangan kadrning harakatlari
+kadr kengligiga bog'langan qatorda edi — 49% zoomda ~190px, versiya va ikonkalar `@container` bilan
+yashirinardi, ikonkalar 24px; Preview, Code, Figma, Download faqat o'ng tugma menyusida. Element
+tanlovi iframe ichida 1.5–2px yashil chiziq edi, 30–50% zoomda deyarli ko'rinmasdi.
+
+- **UI-20:** tanlanmagan kadr ustida faqat nom (va `v2`), Figma kabi. Tanlanganda nom qatori o'rnida
+  ekran o'lchamidagi panel (`FrameLabel free` — kadr kengligiga bog'lanmagan): nom (ikki marta bosish =
+  qayta nomlash), `‹ v2 ›`, Preview (shu ekrandan), Code, Figma, Download, Regenerate, Duplicate, ⋯
+  (Rename, Copy HTML, 👍/👎, Delete) — 32px tugmalar, tooltip bilan. O'ng tugma menyusiga Preview qo'shildi.
+  Tanlangan kadr qo'shnilari ustida chiziladi. Element hover va tanlovi kadr tashqarisida,
+  `calc(2px / --canvas-scale)` qalinlikda; yangi `--selection` tokeni (binafsha, yorug'/to'q) — kadr
+  chegarasi, element, o'lcham belgisi va teg bir rangda. Element paneli: 32px asboblar, "Edit with AI…", `shadow-3`.
+- **UI-24:** kadr nomi oldida tur ikonkasi (telefon; dizayn tizimi — palitra); nom `screenTitle`
+  bilan ilova nomisiz ko'rsatiladi (eski "Home Dashboard — AI Design Studio" → "Home Dashboard"),
+  hover'da to'liq nom va prompt. `screenTitle` `lib/screen-title.ts` ga ko'chdi (brauzer ham ishlatadi).
+
+- Fayllar: `src/components/canvas/FrameToolbar.tsx`, `src/components/canvas/FrameContextMenu.tsx`, `src/components/canvas/ElementPanel.tsx`, `src/components/canvas/Canvas.tsx`, `src/ScreenFrame.tsx`, `src/lib/edit-bridge.ts`, `src/lib/screen-title.ts` (yangi), `src/app/Services/PlannerService.ts`, `src/routes/p.$projectId.tsx`, `src/styles.css`.
+- Tekshirildi: `npm run check` va `tsc` toza. Chrome, 30% zoom: kadr tanlash → panel to'liq, qo'shni nomlar ustida; element bosish → binafsha chegara, `button` tegi, panel; nomlar ilova nomisiz.
+
 ### Server xatolari tekshirildi: dev'da Postgres ulanishi oqishi va landing hydration xatosi tuzatildi
 
 Admin overview "85 server errors in the last hour" ko'rsatdi. `server_logs` fingerprint bo'yicha:

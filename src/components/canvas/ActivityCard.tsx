@@ -36,7 +36,7 @@ function Step(props: { state: StepState; label: string; detail?: string; error?:
       type={props.onClick ? 'button' : undefined}
       onClick={props.onClick}
       className={cn(
-        'flex w-full items-start gap-2 rounded-md px-1 py-0.5 text-left',
+        'od-fade flex w-full items-start gap-2 rounded-md px-1 py-0.5 text-left transition-colors duration-(--duration-base)',
         props.small ? 'text-xs' : 'text-sm',
         props.onClick && 'hover:bg-muted/70',
         props.state === 'running' && 'font-medium text-foreground',
@@ -85,7 +85,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
   useElapsed(activity.startedAt) // re-renders every second, so running steps tick
   const timeOf = useStepClock()
   const total = secs(Date.now() - activity.startedAt)
-  const card = 'space-y-2 rounded-2xl border bg-card p-3 shadow-1'
+  const card = 'od-rise space-y-2 rounded-2xl border bg-card p-3 shadow-1'
   if (activity.kind !== 'drawing')
     return (
       <div className={card} aria-live="polite">
@@ -160,7 +160,7 @@ export function PlanApproval(props: {
   const [ask, setAsk] = useState(props.askNextTime)
   const keep = props.plan.screens.map((_, i) => i).filter((i) => !removed.has(i))
   return (
-    <div className="space-y-3 rounded-xl border border-lime-500/60 bg-card shadow-1 p-3.5 text-sm">
+    <div className="od-rise space-y-3 rounded-xl border border-lime-500/60 bg-card shadow-1 p-3.5 text-sm">
       <div className="flex gap-2">
         <Sparkles className="mt-0.5 size-4 shrink-0 text-foreground" />
         <div className="min-w-0">

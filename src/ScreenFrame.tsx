@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { frameSize } from './canvas'
+import { Smartphone } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { applyThemeOverride, themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
 import { repairPartialHtml } from '@/lib/partial-html'
@@ -38,6 +39,8 @@ export function ScreenFrame(props: {
   photos?: Record<string, string>
   theme?: Theme
   label?: ReactNode
+  /** UI-24: what kind of frame this is, before its name (a palette for the design system). */
+  icon?: ReactNode
   /** Identifies this frame in height messages; omit to keep the frame at the device height. */
   frameId?: string
   /** Last known content height, so the frame opens at the right size instead of jumping. */
@@ -218,10 +221,10 @@ export function ScreenFrame(props: {
 
   return (
     <figure className="group relative" style={{ width: f.width }}>
-      <FrameLabel width={f.width}>
+      <FrameLabel width={f.width} free={Boolean(props.label) && active}>
         {props.label ?? (
           <figcaption className="flex h-7 items-center gap-1.5 text-md font-medium text-muted-foreground" title={props.hint}>
-            {props.streaming && <span className="size-2 shrink-0 animate-pulse rounded-full bg-primary" />}
+            {props.streaming ? <span className="size-2 shrink-0 animate-pulse rounded-full bg-primary" /> : <span className="shrink-0 [&_svg]:size-3.5">{props.icon ?? <Smartphone />}</span>}
             <span className="truncate">{props.title}</span>
           </figcaption>
         )}
@@ -279,6 +282,7 @@ export function ScreenFrame(props: {
 
         {active && rect && props.panel && (
           <div
+            key={`panel:${props.selectedElementId ?? ''}`}
             className="absolute z-20"
             // Kept at screen size whatever the canvas zoom (Canvas sets --canvas-scale).
             style={{ left: Math.max(0, Math.min(rect.x, f.width - 40)), top: rect.y + rect.h + 8, transformOrigin: 'top left', transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
@@ -289,6 +293,23 @@ export function ScreenFrame(props: {
           </div>
         )}
 
+        {/* UI-20: the selected element is outlined out here, at the same width on screen at any zoom
+            (the outline inside the frame shrank to a hairline when zoomed out). */}
+        {active && rect && (
+          <span
+            key={`outline:${props.selectedElementId ?? ''}`}
+            aria-hidden
+            className="od-pop pointer-events-none absolute z-10 rounded-[2px]"
+            style={{ left: rect.x, top: rect.y, width: rect.w, height: rect.h, boxShadow: '0 0 0 calc(2px / var(--canvas-scale, 1)) var(--selection)' }}
+          />
+        )}
+        {active && hover && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute z-10"
+            style={{ left: hover.rect.x, top: hover.rect.y, width: hover.rect.w, height: hover.rect.h, boxShadow: '0 0 0 calc(1px / var(--canvas-scale, 1)) var(--selection)' }}
+          />
+        )}
         {active && hover && (
           // The wrapper is anchored to the element's top-left corner and unscales the canvas; the
           // badge hangs above it, so it never covers the element whatever the zoom.
@@ -296,7 +317,7 @@ export function ScreenFrame(props: {
             className="pointer-events-none absolute z-20"
             style={{ left: hover.rect.x, top: hover.rect.y, transformOrigin: 'top left', transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
           >
-            <span className="absolute bottom-0.5 left-0 rounded-sm bg-primary px-1 py-px text-xs leading-tight font-medium whitespace-nowrap text-primary-foreground">
+            <span className="absolute bottom-0.5 left-0 rounded-xs bg-selection px-1 py-px text-xs leading-tight font-medium whitespace-nowrap text-selection-foreground">
               {hover.tag}
             </span>
           </span>
@@ -305,7 +326,7 @@ export function ScreenFrame(props: {
         {/* UI-03: what a selected frame measures, in canvas-independent pixels. */}
         {props.selected && (
           <span
-            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded bg-primary px-1.5 py-0.5 text-xs font-medium tabular-nums text-primary-foreground"
+            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-xs bg-selection px-1.5 py-0.5 text-xs font-medium tabular-nums text-selection-foreground"
             style={{ top: height + 6, transformOrigin: 'top center', transform: 'translateX(-50%) scale(calc(1 / var(--canvas-scale, 1)))' }}
           >
             {f.width}×{Math.round(height)}
@@ -317,11 +338,12 @@ export function ScreenFrame(props: {
 }
 
 /** UI-13: the name row above a frame, kept at screen size whatever the zoom and never wider than the frame. */
-export function FrameLabel(props: { width: number; children: ReactNode }) {
+export function FrameLabel(props: { width: number; children: ReactNode; free?: boolean }) {
   return (
     <div
-      className="@container absolute bottom-full left-0 origin-bottom-left pb-1.5"
-      style={{ width: `calc(${props.width}px * var(--canvas-scale, 1))`, transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
+      // UI-20: a selected frame's bar is as wide as its buttons, not as the frame looks at this zoom.
+      className={cn('@container absolute bottom-full left-0 origin-bottom-left', props.free ? 'z-30 pb-2' : 'pb-1.5')}
+      style={{ width: props.free ? 'max-content' : `calc(${props.width}px * var(--canvas-scale, 1))`, transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
     >
       {props.children}
     </div>

@@ -267,6 +267,21 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-17 | Preview sahifasi: PhoneFrame, tokenlar, ilova temasi | Interfeys / Ko'rish | MVP | Tayyor | Kichik | UI-10 | Hex yo'q, PhoneFrame, od:theme |
 | UI-18 | Admin poydevori: status tokenlari va ui.tsx primitivlari | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-10 | --success/--warning, bitta Table/FilterBar/Pager, palitra rangi yo'q |
 | UI-19 | Admin sahifalari va shell dashboard bilan bir xil | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-18 | Shell dashboard tokenlarida, log sahifalari umumiy primitivlarda |
+| UI-20 | Kanvas: tanlangan kadr ustida ekran o'lchamidagi asboblar paneli + element tanlash va 'Edit with AI' | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-13 | Har zoomda 32px tugmalar, o'ng tugma menyusi shart emas |
+| UI-21 | Kanvas qobig'i Stitch kabi: to'liq ekran kanvas, suzuvchi yuqori panel | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-20 | Hech bir panel kadrlarni yopmaydi, loyiha amallari menyuda |
+| UI-22 | Pastki markazda suzuvchi composer, takliflar ustida, chat tarixi va agent jurnali yig'iladigan kartalar | Muharrir / Kanvas | MVP | Tayyor | Katta | UI-21 | Running/Stop/navbat va Undo o'zgarmaydi |
+| UI-23 | O'ng vertikal asboblar paneli, pastki o'ngda undo/redo/zoom, tema o'ngdan | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-21 | Eski pastki panel yo'q |
+| UI-24 | Kadr yorlig'i: tur ikonkasi, ekran o'lchamida, to'liq nom hover'da | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-20 | Nomlar kesilmaydi |
+| UI-25 | Kanvas harakati: panellar, chat, tanlov, xabarlar va kontent animatsiya bilan | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-10, UI-20…24 | Tokenlar bilan 120–320ms, reduced-motion'da o'chadi |
+| GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | Keyin | Rejada | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
+| GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | Keyin | Rejada | O'rta |  | 30 ilovada ≥4 xil bar |
+| TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
+| SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |
+| SHR-05 | Telefonda to'liq ekranli prototip pleyeri | Ulashish / Ko'rish | Keyin | Rejada | O'rta | SHR-02, SHR-04 | 360/440 da skroll yo'q, svayp |
+| DVC-01 | O'lcham almashtirgich: 360 / 375 / 402 / 440 | Ko'rish / Ko'rish | Keyin | Rejada | O'rta |  | 4 o'lchamda render-audit toza |
+| DVC-02 | Render vaqtida safe-area va vh almashtirish | Ko'rish / Ko'rish | Keyin | Rejada | Kichik | DVC-01 | Saqlangan HTML o'zgarmaydi |
+| DVC-03 | O'zimiz chizgan bezellar: 12–15 telefon | Ko'rish / Ko'rish | Keyin | Rejada | O'rta | DVC-01, DVC-02 | Apple/Meta asseti yo'q |
+| DVC-04 | Foldable: buklangan va ochiq holat | Ko'rish / Ko'rish | Keyin | Rejada | Katta | GEN-13, DVC-01 | Ochiq holat planshet generatsiyasi bilan |
 
 ## B4 · Pul ishlash
 

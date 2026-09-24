@@ -11,9 +11,9 @@
 
 export const EDIT_BRIDGE = `
 <style id="__od_edit_bridge">
-  html[data-od-active] [data-od-hover] { outline: 1.5px solid #14b892 !important; outline-offset: 1px !important; }
-  html[data-od-active] [data-od-selected] { outline: 2px solid #0d9d78 !important; outline-offset: 2px !important; }
-  html[data-od-active] [data-od-editing] { outline: 2px solid #0d9d78 !important; outline-offset: 2px !important; cursor: text !important; }
+  /* UI-20: hover and selection are drawn by the editor over the frame, at a constant width on screen;
+     only in-place text editing is marked in here, where the caret is. */
+  html[data-od-active] [data-od-editing] { outline: 2px solid #6a5cff !important; outline-offset: 2px !important; cursor: text !important; }
   html[data-od-active], html[data-od-active] * { cursor: default; }
 </style>
 <script id="__od_edit_bridge_js">
