@@ -1114,5 +1114,159 @@ console.log('Testing iOS 26 Bar (GQ-18)...')
 }
 
 
+console.log('Testing Provider Adapters and Per-Site Models (LLM-04, LLM-07)...')
+{
+  const L = await import('./LlmService.ts')
+  // Every model with an adapter can be priced; every priced model has an adapter.
+  for (const id of Object.keys(L.MODELS)) assert.ok(L.PRICES[id], `${id} has an adapter, so it needs a PRICES row`)
+  for (const id of Object.keys(L.PRICES)) assert.ok(L.MODELS[id], `${id} is priced, so it needs an adapter row`)
+  // Usage, normalised: Claude's input_tokens excludes the cache; ours counts every input token.
+  assert.deepEqual(L.usageOf.anthropic({ input_tokens: 100, cache_read_input_tokens: 7000, cache_creation_input_tokens: 2000, output_tokens: 600 }), { promptTokens: 9100, cachedTokens: 7000, cacheWriteTokens: 2000, completionTokens: 600 })
+  assert.deepEqual(L.usageOf.gemini({ prompt_tokens: 900, completion_tokens: 40, prompt_tokens_details: { cached_tokens: 512 } }), { promptTokens: 900, cachedTokens: 512, completionTokens: 40, cacheWriteTokens: 0 })
+  assert.deepEqual(L.usageOf.gemini({ prompt_tokens: 5, completion_tokens: 1 }), { promptTokens: 5, cachedTokens: 0, completionTokens: 1, cacheWriteTokens: 0 }, 'no cache details: nothing cached')
+
+  const realFetch = globalThis.fetch
+  const env = { ...process.env }
+  Object.assign(process.env, { DEEPSEEK_API_KEY: 'ds-key', GEMINI_API_KEY: 'gm-key', ANTHROPIC_API_KEY: 'an-key' })
+  const settings: Record<string, string> = {}
+  L.setSettingSource(async (k) => settings[k])
+  const calls: { provider: string; model: string; ok: boolean; error?: string }[] = []
+  L.onLlmCall((c) => void calls.push({ provider: c.provider, model: c.model, ok: c.ok, error: c.error }))
+  type Hit = { url: string; headers: Record<string, string>; body: any }
+  let hits: Hit[] = []
+  let respond: (h: Hit) => Response = () => new Response('', { status: 500 })
+  globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
+    const h = { url: String(url), headers: init?.headers as Record<string, string>, body: JSON.parse(String(init?.body)) }
+    hits.push(h)
+    return respond(h)
+  }) as typeof fetch
+  const sse = (events: unknown[], named = false) => new Response(events.map((e) => `${named ? 'event: x\n' : ''}data: ${JSON.stringify(e)}\n\n`).join('') + (named ? '' : 'data: [DONE]\n\n'), { status: 200 })
+  const set = (k: string, v: string | undefined) => {
+    if (v === undefined) delete settings[k]
+    else settings[k] = v
+    L.clearLlmSettings()
+  }
+  const collect = async (g: AsyncGenerator<string>) => {
+    let s = ''
+    for await (const d of g) s += d
+    return s
+  }
+  const img = [{ dataUrl: 'data:image/png;base64,AAAA' }]
+  let got: unknown
+  try {
+    // Defaults: every site runs on DeepSeek until an admin says otherwise.
+    for (const site of L.SITES) assert.equal(await L.modelFor(site), 'deepseek-flash')
+    set('llm.model.plan', 'gpt-imaginary')
+    assert.equal(await L.modelFor('plan'), 'deepseek-flash', 'an unknown id in the setting falls back to the default')
+
+    // Gemini, stream: OpenAI-compatible endpoint, Bearer key, usage in the last chunk, thinking turned down.
+    set('llm.model.screen', 'gemini-2.5-flash')
+    respond = () => sse([{ choices: [{ delta: { content: 'he' } }] }, { choices: [{ delta: { content: 'llo' } }] }, { choices: [], usage: { prompt_tokens: 10, completion_tokens: 2, prompt_tokens_details: { cached_tokens: 4 } } }])
+    hits = []
+    assert.equal(await collect(L.streamCompletion('sys', 'usr', undefined, (u) => (got = u), img, 'screen')), 'hello')
+    assert.equal(hits[0]!.url, 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions')
+    assert.equal(hits[0]!.headers.Authorization, 'Bearer gm-key')
+    assert.equal(hits[0]!.body.model, 'gemini-2.5-flash')
+    assert.equal(hits[0]!.body.stream, true)
+    assert.deepEqual(hits[0]!.body.stream_options, { include_usage: true })
+    assert.equal(hits[0]!.body.reasoning_effort, 'none', 'Gemini 2.5 thinks not at all')
+    assert.deepEqual(hits[0]!.body.messages[1].content[1], { type: 'image_url', image_url: { url: img[0]!.dataUrl } })
+    assert.deepEqual(got, { promptTokens: 10, cachedTokens: 4, completionTokens: 2, cacheWriteTokens: 0 })
+    assert.deepEqual(calls.at(-1), { provider: 'gemini', model: 'gemini-2.5-flash', ok: true, error: undefined }, 'the call is logged as the model that ran')
+
+    // Gemini, JSON: json_object mode.
+    set('llm.model.plan', 'gemini-3.1-flash-lite')
+    respond = () => Response.json({ choices: [{ message: { content: '{"a":1}' } }], usage: { prompt_tokens: 3, completion_tokens: 1 } })
+    hits = []
+    assert.equal(await L.completeJSON('sys', 'usr', 900), '{"a":1}')
+    assert.deepEqual(hits[0]!.body.response_format, { type: 'json_object' })
+    assert.equal(hits[0]!.body.max_tokens, 900)
+    assert.equal(hits[0]!.body.reasoning_effort, 'minimal', 'Gemini 3 cannot switch thinking off; it thinks as little as it can')
+    assert.equal(hits[0]!.body.stream, undefined)
+
+    // Anthropic, stream: Messages API, cached system block, thinking off, no temperature, base64 images.
+    set('llm.model.edit', 'claude-sonnet-5')
+    respond = () =>
+      sse(
+        [
+          { type: 'message_start', message: { usage: { input_tokens: 100, cache_read_input_tokens: 7000, cache_creation_input_tokens: 0, output_tokens: 1 } } },
+          { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '<ar' } },
+          { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'tifact>' } },
+          { type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 600 } },
+          { type: 'message_stop' },
+        ],
+        true,
+      )
+    hits = []
+    got = undefined
+    assert.equal(await collect(L.streamCompletion('sys', 'usr', undefined, (u) => (got = u), img, 'edit')), '<artifact>')
+    const a = hits[0]!
+    assert.equal(a.url, 'https://api.anthropic.com/v1/messages')
+    assert.equal(a.headers['x-api-key'], 'an-key')
+    assert.equal(a.headers['anthropic-version'], '2023-06-01')
+    assert.equal(a.headers.Authorization, undefined)
+    assert.equal(a.body.model, 'claude-sonnet-5')
+    assert.equal(a.body.stream, true)
+    assert.equal(a.body.max_tokens, 16000)
+    assert.deepEqual(a.body.thinking, { type: 'disabled' })
+    assert.equal(a.body.temperature, undefined, 'Sonnet 5 refuses a sampling value')
+    assert.deepEqual(a.body.system, [{ type: 'text', text: 'sys', cache_control: { type: 'ephemeral' } }])
+    assert.deepEqual(a.body.messages, [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'AAAA' } }, { type: 'text', text: 'usr' }] }])
+    assert.deepEqual(got, { promptTokens: 7100, cachedTokens: 7000, cacheWriteTokens: 0, completionTokens: 600 })
+    assert.deepEqual(calls.at(-1), { provider: 'anthropic', model: 'claude-sonnet-5', ok: true, error: undefined })
+
+    // Anthropic, JSON: no JSON mode — the object is cut out of the text.
+    set('llm.model.plan', 'claude-haiku-4-5')
+    respond = () => Response.json({ content: [{ type: 'text', text: 'Here it is:\n```json\n{"b":2}\n```' }], stop_reason: 'end_turn', usage: { input_tokens: 5, output_tokens: 9 } })
+    hits = []
+    assert.equal(await L.completeJSON('sys', 'usr', 1200), '{"b":2}')
+    assert.equal(hits[0]!.body.model, 'claude-haiku-4-5-20251001')
+    assert.equal(hits[0]!.body.stream, undefined)
+    assert.equal(hits[0]!.body.max_tokens, 1200)
+
+    // Fallback: the primary fails before any output → one retry on the fallback, both logged.
+    set('llm.model.screen', 'claude-haiku-4-5')
+    set('llm.fallback', 'deepseek-flash')
+    respond = (h) => (h.url.includes('anthropic') ? new Response('overloaded', { status: 503 }) : sse([{ choices: [{ delta: { content: 'ok' } }] }]))
+    calls.length = 0
+    hits = []
+    assert.equal(await collect(L.streamCompletion('sys', 'usr')), 'ok')
+    assert.deepEqual(hits.map((h) => new URL(h.url).host), ['api.anthropic.com', 'api.deepseek.com'])
+    assert.equal(hits[1]!.body.model, 'deepseek-flash')
+    assert.deepEqual(calls.map((c) => [c.model, c.ok]), [['claude-haiku-4-5', false], ['deepseek-flash', true]])
+    assert.match(calls[0]!.error ?? '', /Anthropic 503/)
+
+    // …but never mid-stream: output came, then the stream broke → the error stands, no second call.
+    respond = (h) =>
+      h.url.includes('anthropic')
+        ? new Response(`data: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'half' } })}\n\ndata: ${JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } })}\n\n`, { status: 200 })
+        : sse([{ choices: [{ delta: { content: 'other' } }] }])
+    calls.length = 0
+    hits = []
+    let seen = ''
+    await assert.rejects(async () => {
+      for await (const d of L.streamCompletion('sys', 'usr')) seen += d
+    }, /overloaded_error/)
+    assert.equal(seen, 'half')
+    assert.equal(hits.length, 1, 'no fallback after output')
+    assert.deepEqual(calls.map((c) => [c.model, c.ok]), [['claude-haiku-4-5', false]])
+
+    // A JSON call that fails falls back the same way.
+    set('llm.model.plan', 'gemini-2.5-flash')
+    respond = (h) => (h.url.includes('googleapis') ? new Response('rate', { status: 429 }) : Response.json({ choices: [{ message: { content: '{"c":3}' } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }))
+    calls.length = 0
+    assert.equal(await L.completeJSON('sys', 'usr'), '{"c":3}')
+    assert.deepEqual(calls.map((c) => [c.model, c.ok]), [['gemini-2.5-flash', false], ['deepseek-flash', true]])
+  } finally {
+    globalThis.fetch = realFetch
+    L.onLlmCall(undefined)
+    L.setSettingSource(async () => undefined)
+    for (const k of ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY']) {
+      if (env[k] === undefined) delete process.env[k]
+      else process.env[k] = env[k]
+    }
+  }
+}
+
 console.log('All new features and App Coherence verified successfully! \u2705')
 

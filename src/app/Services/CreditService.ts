@@ -2,7 +2,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { creditLedger } from '@/database/schema'
 import { Credit, type Executor } from '@/app/Models/Credit'
-import { BILLED_MODEL } from './LlmService.ts'
+import { modelFor, type Site } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
 import { CREDIT_PRICES, PLAN_LIMITS, SIGNUP_CREDITS, productOf, type ActionKind, type Limits, type PlanId } from '@/lib/credit-prices'
 import { monthIndex, Subscription } from '@/app/Models/Subscription'
@@ -13,10 +13,23 @@ import { monthIndex, Subscription } from '@/app/Models/Subscription'
 export { CREDIT_PRICES, CHEAPEST_CREDIT_USD, SIGNUP_CREDITS, type ActionKind } from '@/lib/credit-prices'
 
 export const CreditService = {
-  priceOf(kind: ActionKind, model = BILLED_MODEL): number {
-    const p = CREDIT_PRICES[model]
-    if (!p) throw new Error(`No credit price for model "${model}"`)
-    return kind === 'app' ? p.plan + p.draw : p[kind]
+  /**
+   * LLM-07: an action is priced at the model its call site is set to run on — a plan at the plan
+   * model, a drawing and a screen at the screen model, an element at the edit model. A screen request
+   * may be a patch edit (the edit model), so it costs the dearer of the two. `model` pins one model.
+   */
+  async priceOf(kind: ActionKind, model?: string): Promise<number> {
+    const row = (m: string) => {
+      const p = CREDIT_PRICES[m]
+      if (!p) throw new Error(`No credit price for model "${m}"`)
+      return p
+    }
+    const at = async (site: Site) => row(model ?? (await modelFor(site)))
+    if (kind === 'plan') return (await at('plan')).plan
+    if (kind === 'draw') return (await at('screen')).draw
+    if (kind === 'app') return (await at('plan')).plan + (await at('screen')).draw
+    if (kind === 'element') return (await at('edit')).element
+    return Math.max((await at('screen')).screen, (await at('edit')).screen)
   },
 
   /** Which action a guarded request is, from its route and body. */
@@ -89,7 +102,7 @@ export const CreditService = {
   async refundScreens(count: number): Promise<number> {
     const who = UsageService.who()
     if (!who?.actionId || count <= 0) return 0
-    return await CreditService.refund(who.userId, who.actionId, count * CreditService.priceOf('screen'), `${count} screen${count === 1 ? '' : 's'} not drawn`)
+    return await CreditService.refund(who.userId, who.actionId, count * (await CreditService.priceOf('screen', await modelFor('screen'))), `${count} screen${count === 1 ? '' : 's'} not drawn`)
   },
 }
 

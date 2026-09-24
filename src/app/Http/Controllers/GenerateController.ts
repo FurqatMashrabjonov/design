@@ -145,7 +145,8 @@ export const GenerateController = {
     const abort = new AbortController()
     const projectRef = project
     const withRefs = refImages.length ? `${userMessage}\n\n${refImageNote(refImages.length)}` : userMessage
-    const deltas = streamCompletion(systemPrompt, withRefs, abort.signal, (u) => Object.assign(usage, u), refImages)
+    // LLM-07: an edit (a patch or one element) runs on the edit model; drawing a screen on the screen model.
+    const deltas = streamCompletion(systemPrompt, withRefs, abort.signal, (u) => Object.assign(usage, u), refImages, editScreen ? 'edit' : 'screen')
     let first: IteratorResult<string>
     try {
       first = await deltas.next()

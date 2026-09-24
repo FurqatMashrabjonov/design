@@ -87,7 +87,7 @@ export const adminTestSecret = createServerFn({ method: 'POST' })
 export const adminSetSetting = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     const o = obj(d)
-    return { key: oneOf(o.key, Object.keys(ADMIN_SETTINGS) as AdminSettingKey[]), value: o.value === null ? null : str(o.value, 20) }
+    return { key: oneOf(o.key, Object.keys(ADMIN_SETTINGS) as AdminSettingKey[]), value: o.value === null ? null : str(o.value, 40) }
   })
   .handler(async ({ data }) => AdminController.setSetting((await requireAdmin()).id, data))
 

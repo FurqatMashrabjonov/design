@@ -28,7 +28,7 @@ export async function guardGeneration(request: Request, run: (req: Request, user
   // LLM-05: one guarded request is one action; every model call inside it carries its id.
   // BIL-06: its price is held before any model runs, and settled when it ends (all back if nothing came of it).
   const actionId = crypto.randomUUID()
-  const price = CreditService.priceOf(CreditService.kindOf(new URL(request.url).pathname, body))
+  const price = await CreditService.priceOf(CreditService.kindOf(new URL(request.url).pathname, body))
   await CreditService.refresh(user.id) // BIL-10: a new month of a plan lands before the price is taken
   if (!await CreditService.hold(user.id, actionId, price)) {
     return Response.json({ error: 'credits', needed: price, balance: await Credit.balance(user.id) }, { status: 402 })

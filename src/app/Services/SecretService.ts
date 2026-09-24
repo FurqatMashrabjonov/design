@@ -2,7 +2,8 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { secrets } from '@/database/schema'
 import { open, seal } from './secret-box'
-import { setKeySource } from './LlmService'
+import { setKeySource, setSettingSource } from './LlmService'
+import { Setting } from '@/app/Models/Setting'
 
 // ADM-13: the provider keys, entered in the admin panel or, failing that, from the environment. A key
 // saved in the panel wins over .env, so a key is rotated without a deploy; removing it falls back.
@@ -107,3 +108,5 @@ export const SecretService = {
 
 // The model calls read their key through here (LlmService stays free of the database).
 setKeySource((name) => SecretService.get(name))
+// LLM-07: …and the model each call site runs on (llm.model.*, llm.fallback), which an admin sets.
+setSettingSource((key) => Setting.get(key))
