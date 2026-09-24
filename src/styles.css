@@ -282,3 +282,19 @@ svg.lucide { stroke-width: 1.75; }
     ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
 /* /UI-12 dashboard */
+
+/* UI-11 landing */
+/* The app map: each line draws in, then a lime dot travels it and its label fades in. The hidden
+   states apply only when motion is welcome, so reduced motion (or no JS) shows the finished map. */
+@keyframes lm-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes lm-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lm-travel { 0% { offset-distance: 0%; opacity: 0; } 12%, 85% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+.lm-dot { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+    .lm-map:not([data-on]) .lm-edge { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    .lm-map:not([data-on]) .lm-label { opacity: 0; }
+    .lm-map[data-on] .lm-edge { stroke-dasharray: 1; animation: lm-draw 900ms var(--lm-delay) cubic-bezier(.2, .7, .2, 1) both; }
+    .lm-map[data-on] .lm-label { animation: lm-in 400ms var(--lm-delay) ease-out both; }
+    .lm-map[data-on] .lm-dot { display: block; offset-rotate: 0deg; animation: lm-travel 2.8s calc(var(--lm-delay) + 900ms) ease-in-out infinite both; }
+}
+/* /UI-11 landing */
