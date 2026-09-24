@@ -4,6 +4,8 @@ import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye
 import { PhoneFrame, PHONE } from '@/components/PhoneFrame'
 import { PromptBox } from './PromptBox'
 import { buttonVariants } from '@/components/ui/button'
+import { AppMap } from '@/components/landing/AppMap'
+import { CREDIT_PRICES, SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 
 // MKT-01: the public page. Everything shown is real output of the pipeline (public/showcase is
 // copied from an eval run), nothing is a mock. The prompt typed here survives sign-in: it is kept
@@ -17,12 +19,23 @@ export const PENDING_IMAGES = 'od:pending-images'
 
 // One set per design system written for a phone, each real output of today's pipeline. The first
 // screen is the cover, so it is always one the render audit found clean.
+// UI-11: `bg` / `accent` are the system's own `--bg` / `--accent` (design-systems/<id>/tokens.css) and
+// `character` is how DesignSystemService describes it. ponytail: copied, not read — the landing has no loader.
 export const SETS = [
-  { id: 'volt-run', name: 'Stride', kind: 'Running', system: 'Volt', systemId: 'volt', prompt: 'Running app: a live run screen with duration, distance and pace, a home with weekly volume and a quick-start run, and a run summary with a route map and pace analysis.', screens: [0, 1, 3, 4, 6] },
-  { id: 'ember-habit', name: 'Ripple', kind: 'Habit tracker', system: 'Ember', systemId: 'ember', prompt: 'make habit tracker', screens: [0, 1, 2, 3, 6] },
-  { id: 'lumen-stays', name: 'Nestaway', kind: 'Stays', system: 'Lumen', systemId: 'lumen', prompt: 'Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.', screens: [1, 3, 4, 5, 6] },
-  { id: 'graphite-ledger', name: 'Plum Ledger', kind: 'Expense tracker', system: 'Graphite', systemId: 'graphite', prompt: 'Expense tracker for freelancers: this month’s spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.', screens: [1, 2, 3, 5] },
-  { id: 'nova-magazine', name: 'Folio', kind: 'Magazine', system: 'Nova', systemId: 'nova', prompt: 'Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.', screens: [1, 2, 3, 5] },
+  { id: 'volt-run', name: 'Stride', kind: 'Running', system: 'Volt', systemId: 'volt', bg: '#0a0a0b', accent: '#d4ff3a', character: 'Black and volt-lime, condensed italic headlines — a training poster.', prompt: 'Running app: a live run screen with duration, distance and pace, a home with weekly volume and a quick-start run, and a run summary with a route map and pace analysis.', screens: [0, 1, 3, 4, 6] },
+  { id: 'ember-habit', name: 'Ripple', kind: 'Habit tracker', system: 'Ember', systemId: 'ember', bg: '#ffffff', accent: '#e8845a', character: 'Soft coral tints, one heavy sans, big soft corners — it cheers you on.', prompt: 'make habit tracker', screens: [0, 1, 2, 3, 6] },
+  { id: 'lumen-stays', name: 'Nestaway', kind: 'Stays', system: 'Lumen', systemId: 'lumen', bg: '#eff2f7', accent: '#0a6cf0', character: 'Light and translucent, glass controls over content — it feels native.', prompt: 'Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.', screens: [1, 3, 4, 5, 6] },
+  { id: 'graphite-ledger', name: 'Plum Ledger', kind: 'Expense tracker', system: 'Graphite', systemId: 'graphite', bg: '#0b0c0e', accent: '#f6a61e', character: 'Engineered dark, dense, mono figures, one amber signal — an instrument.', prompt: 'Expense tracker for freelancers: this month’s spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.', screens: [1, 2, 3, 5] },
+  { id: 'nova-magazine', name: 'Folio', kind: 'Magazine', system: 'Nova', systemId: 'nova', bg: '#f4f3ef', accent: '#d2451e', character: 'Warm tinted neutrals, a serif hero figure, a floating tab bar — a product.', prompt: 'Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.', screens: [1, 2, 3, 5] },
+]
+
+// UI-11: facts the code keeps, never marketing numbers. MAX_SCREENS is 6 (PlannerService, server-only).
+const APP = CREDIT_PRICES['deepseek-flash']!
+const FACTS = [
+  [String(SETS.length), 'design systems made for a phone'],
+  ['6', 'screens at most, planned as one app'],
+  [String(APP.plan + APP.draw), 'credits for a whole app'],
+  [String(appsFor(SIGNUP_CREDITS)), `apps from the ${SIGNUP_CREDITS} free credits`],
 ]
 
 const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery with restaurant menus and live order tracking', 'Language learning with lessons and a leaderboard', 'Plant care reminders with a photo journal']
@@ -67,24 +80,51 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
         submitLabel="Design it"
         label="Describe your app"
         placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
-        hint="iPhone · 3–6 screens · real photos"
+        hint="Add a picture to match its look"
+        attachments
         defaultValue={initial}
         fill={fill}
-        onSubmit={async (prompt) => {
-          try { sessionStorage.setItem(PENDING_PROMPT, prompt.slice(0, 2000)) } catch {}
+        onSubmit={async (prompt, images) => {
+          // IMG-01: the pictures wait in session storage like the prompt; the project page reads them once.
+          try {
+            sessionStorage.setItem(PENDING_PROMPT, prompt.slice(0, 2000))
+            if (images?.length) sessionStorage.setItem(PENDING_IMAGES, JSON.stringify(images))
+            else sessionStorage.removeItem(PENDING_IMAGES)
+          } catch {}
           await navigate({ to: '/login', search: { next: '/' } })
         }}
       />
       {big && (
-        <div className="mt-3 flex flex-wrap justify-center gap-2">
-          {TRY.map((t) => (
-            <button key={t} type="button" onClick={() => setFill((f) => ({ text: t, key: (f?.key ?? 0) + 1 }))} className="h-8 rounded-full border border-border bg-card/70 px-3 text-xs text-muted-foreground transition-colors duration-(--duration-fast) ease-out hover:border-foreground/30 hover:text-foreground">
-              {t}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {TRY.map((t) => (
+              <button key={t} type="button" onClick={() => setFill((f) => ({ text: t, key: (f?.key ?? 0) + 1 }))} className="h-8 rounded-full border border-border bg-card/70 px-3 text-xs text-muted-foreground transition-colors duration-(--duration-fast) ease-out hover:border-foreground/30 hover:text-foreground">
+                {t}
+              </button>
+            ))}
+          </div>
+          {/* DS-02: no picker before there is anything to look at — these say which systems the app
+              is drawn in (the brief and the app type choose), and each opens its style page. */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2 text-xs text-muted-foreground">
+            <span className="mr-1">Drawn in the style that suits it:</span>
+            {SETS.map((s) => (
+              <Link key={s.systemId} to="/systems/$id" params={{ id: s.systemId }} className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 font-medium text-foreground transition-colors duration-(--duration-fast) ease-out hover:border-foreground/30">
+                <Dot s={s} /> {s.system}
+              </Link>
+            ))}
+          </div>
+        </>
       )}
     </div>
+  )
+}
+
+/** A system's ground with its accent inside: the two colours that tell the systems apart. */
+function Dot({ s, size = 14 }: { s: (typeof SETS)[number]; size?: number }) {
+  return (
+    <span aria-hidden className="grid shrink-0 place-items-center rounded-full ring-1 ring-foreground/15" style={{ width: size, height: size, background: s.bg }}>
+      <span className="rounded-full" style={{ width: size / 2, height: size / 2, background: s.accent }} />
+    </span>
   )
 }
 
@@ -134,46 +174,38 @@ export function Landing() {
         <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:pt-24">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <Sparkles className="size-3.5" /> Free during beta · no card needed
+            <Sparkles className="size-3.5" /> {SIGNUP_CREDITS} free credits · no card needed
           </span>
-          <h1 className="text-3xl sm:text-5xl">
-            One prompt. <br className="sm:hidden" />A <Em>whole app</Em>,<br />not a pile of screens.
+          <h1 className="text-4xl sm:text-6xl">
+            Describe an app. <br />Get <Em>all of it</Em>.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Describe it once. Get every screen in one design language — the same data, the same navigation, real photos — clickable, editable and ready to export.
+            Every screen planned together — one tab bar, one data model, one design system, real photos. Tap through it, edit any element, keep going.
           </p>
           <div className="mx-auto mt-8 max-w-2xl">
             <HeroPrompt big />
           </div>
         </div>
-
-        {/* Phones, linked the way the app's screens link */}
-        <div className="relative mx-auto mt-16 flex max-w-6xl items-end justify-center gap-4 px-4 pb-6 sm:gap-8">
-          <svg className="pointer-events-none absolute inset-x-0 top-1/2 -z-0 hidden h-24 w-full -translate-y-1/2 sm:block text-foreground" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden>
-            <path d="M120 60 C 300 0, 400 100, 500 50 S 760 0, 880 60" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="1.5" strokeDasharray="6 8" className="animate-[dash_12s_linear_infinite]" />
-          </svg>
-          <Phone src={shot(SETS[1].id, SETS[1].screens[0]!)} width={210} eager className="hidden -rotate-6 md:block translate-y-6" />
-          <Phone src={shot(SETS[0].id, SETS[0].screens[0]!)} width={250} eager className="z-10" />
-          <Phone src={shot(SETS[2].id, SETS[2].screens[0]!)} width={210} eager className="hidden rotate-6 md:block translate-y-6" />
-        </div>
       </section>
 
-      {/* Coherence */}
-      <section className="mx-auto max-w-6xl px-4 py-24">
+      {/* UI-11: the whole-app map — the USP, drawn from one real app's own links */}
+      <section className="mx-auto max-w-6xl px-4 pt-20 pb-12 sm:pt-28">
         <div className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Why it looks like one app</Eyebrow>
-          <h2 className="text-2xl sm:text-4xl">Every screen <Em>agrees</Em> with the others.</h2>
-          <p className="mt-4 text-muted-foreground">Other tools draw each screen on its own, so the tab bar moves, prices change and the style drifts. Here the app is planned first and consistency is enforced in code after generation.</p>
+          <Eyebrow>Not a pile of screens</Eyebrow>
+          <h2 className="text-2xl sm:text-4xl">Screens that <Em>know</Em> each other.</h2>
+          <p className="mt-4 text-muted-foreground">
+            The app is planned before a pixel is drawn, so every tab and every button goes somewhere real. This is Ripple, made from the prompt “make habit tracker” — each line is a link in its screens.
+          </p>
         </div>
-        <div className="mt-4 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] sm:justify-center">
-          {SETS[1].screens.map((i) => <Phone key={i} src={shot(SETS[1].id, i)} width={190} />)}
+        <div className="mt-12 sm:mt-16">
+          <AppMap />
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-4">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ['One navigation', 'The same tab bar and back button on every screen, injected by code.'],
             ['One data model', 'A payment of $88.42 is $88.42 on the list, the detail and the receipt.'],
             ['Real photos', 'Every image slot is filled with a matching photo, never a grey box.'],
-            ['One design system', 'Systems built for a phone, each with its own type, colour and component personality.'],
+            ['One design system', 'Tokens, type and components shared by every screen of the app.'],
           ].map(([t, d]) => (
             <div key={t} className="rounded-lg border border-border bg-card p-5 shadow-1">
               <p className="font-semibold">{t}</p>
@@ -181,6 +213,52 @@ export function Landing() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* UI-11: the five phone systems */}
+      <section id="systems" className="mx-auto max-w-6xl px-4 py-24">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="max-w-xl">
+            <Eyebrow>Five systems, made for a phone</Eyebrow>
+            <h2 className="text-2xl sm:text-4xl">A look with a <Em>point of view</Em>.</h2>
+            <p className="mt-4 text-muted-foreground">Your app is drawn in the one that suits it, or in the one your reference picture looks like. Switch it after, in one click.</p>
+          </div>
+          <Link to="/systems" className="shrink-0 text-sm font-medium underline-offset-4 hover:underline">All design systems →</Link>
+        </div>
+        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+          {SETS.map((s, k) => (
+            <Link
+              key={s.systemId}
+              to="/systems/$id"
+              params={{ id: s.systemId }}
+              className={`group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${k < 2 ? 'lg:col-span-3' : 'lg:col-span-2'}`}
+            >
+              <div className="relative flex h-64 items-start justify-center gap-3 overflow-hidden pt-8" style={{ background: s.bg }}>
+                <Phone src={shot(s.id, s.screens[0]!)} width={k < 2 ? 150 : 136} />
+                <Phone src={shot(s.id, s.screens[1]!)} width={k < 2 ? 150 : 136} className="translate-y-8" />
+              </div>
+              <div className="flex flex-1 flex-col gap-1 border-t border-border p-5">
+                <p className="flex items-center gap-2 text-lg font-semibold">
+                  <Dot s={s} size={16} /> {s.system}
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">{s.name} · {s.kind}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">{s.character}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* UI-11: proof — only numbers the code keeps */}
+      <section className="border-y border-border bg-card/60">
+        <dl className="mx-auto grid max-w-6xl grid-cols-2 gap-y-8 px-4 py-12 lg:grid-cols-4">
+          {FACTS.map(([n, t]) => (
+            <div key={t} className="flex flex-col-reverse px-2 text-center">
+              <dt className="mt-1 text-sm text-muted-foreground">{t}</dt>
+              <dd className="font-serif text-5xl italic sm:text-6xl">{n}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* Examples */}
@@ -241,11 +319,11 @@ export function Landing() {
         <div className="grid gap-4 md:grid-cols-6">
           <Feature className="md:col-span-4" icon={MousePointerClick} title="Edit any element" text="Click a button, a card or a headline and say what to change. The rest of the screen stays byte-for-byte the same." />
           <Feature className="md:col-span-2" icon={Undo2} title="Undo everything" text="⌘Z on the canvas, version arrows on every screen, and “undo this step” in the chat." />
-          <Feature className="md:col-span-2" icon={Palette} title="33 design systems" text="From calm minimal to neo-brutalist, each with its own component personality. Retheme at any time." />
-          <Feature className="md:col-span-2" icon={BarChart3} title="Charts drawn from data" text="Bar, line, donut and heatmap charts rendered in code, in the system’s colours." />
-          <Feature className="md:col-span-2" icon={ScanEye} title="Checked like a reviewer" text="Every screen is audited after it renders — tiny tap targets, faint text, overflow — and fixed in one click." />
+          <Feature className="md:col-span-2" icon={Palette} title="Picked to suit the app" text="One of five systems made for a phone, chosen from your brief or your reference picture. Name a brand (“like Notion”) to get its look instead, or retheme at any time." />
+          <Feature className="md:col-span-2" icon={BarChart3} title="Charts drawn from data" text="Bar, line, area, donut, ring and heatmap charts rendered in code, in the system’s colours." />
+          <Feature className="md:col-span-2" icon={ScanEye} title="Craft rules, applied in code" text="Minimum text size, 44px tap areas, focus rings and tabular figures are set on every screen after it is drawn." />
           <Feature className="md:col-span-3" icon={ImageIcon} title="Real photos, locked in place" text="Image slots are filled with matching photos and sized so a picture never breaks the layout." />
-          <Feature className="md:col-span-3" icon={Download} title="Export a working prototype" text="Download the whole app as a zip of clickable HTML — open it offline, share it, build from it." />
+          <Feature className="md:col-span-3" icon={Download} title="Export a working prototype" text="On a paid plan, download the whole app as a zip of clickable HTML — open it offline, build from it — or take it to Figma." />
         </div>
       </section>
 
@@ -257,11 +335,11 @@ export function Landing() {
         </div>
         <div className="mt-10 divide-y divide-border rounded-lg border border-border bg-card shadow-1">
           {[
-            ['What do I get from one prompt?', 'A planned app: 3–6 screens that share one navigation, one data model and one design system, each one clickable and editable.'],
-            ['Is it free?', 'Yes, during the beta, with a daily generation limit. Paid plans come later; beta users will hear first.'],
+            ['What do I get from one prompt?', 'A planned app: up to 6 screens that share one navigation, one data model and one design system, each one clickable and editable.'],
+            ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — ${appsFor(SIGNUP_CREDITS)} whole apps — and one project, no card needed. Plans add monthly credits, more projects and export.`],
             ['Do I need design experience?', 'No. Describe the app in plain words. Designers use it to get past the blank page and iterate faster.'],
             ['Can I change a screen after it is made?', 'Click any element and describe the change, ask the chat for bigger changes, or add a new screen — it will match the rest.'],
-            ['Can I export?', 'Yes — the whole app as a zip of HTML that works offline as a clickable prototype.'],
+            ['Can I export?', 'On a paid plan — the whole app as a zip of HTML that works offline as a clickable prototype, or into Figma.'],
             ['Who owns the designs?', 'You do. Your projects are private to your account and you can delete them, or your account, at any time.'],
           ].map(([q, a]) => (
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
