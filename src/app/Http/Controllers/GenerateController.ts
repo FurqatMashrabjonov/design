@@ -107,7 +107,7 @@ export const GenerateController = {
           ? { name: redraw.name, screenType: redraw.screenType as ScreenSlot['screenType'], activeTabId: redraw.activeTabId ?? undefined, parentScreen: redraw.parentScreenName ?? undefined }
           : slotForAddedScreen(prompt, nav, siblings)
         const anchor = siblings.find((s) => s.screenType === 'root-tab') ?? siblings[0]
-        addTo = { nav, slot, bar: navStyleFor(project.name ?? 'Untitled', nav, { appType: parseStoredPlan(project.plan)?.appType, designSystem: project.designSystem }) }
+        addTo = { nav, slot, bar: navStyleFor(project.id, nav, { appType: parseStoredPlan(project.plan)?.appType, designSystem: project.designSystem }) }
         const stored = parseStoredPlan(project.plan)
         userMessage = screenBrief({
           app: stored?.summary ? `${project.name ?? 'Untitled'} — ${stored.summary}` : (project.name ?? 'Untitled'),

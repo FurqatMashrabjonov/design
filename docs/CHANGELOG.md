@@ -5,6 +5,30 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Bar skrollda yig'ilmaydi; shakl loyiha bo'yicha tanlanadi — GQ-39 tuzatish
+
+Foydalanuvchi: ekran skroll qilinganda faqat aktiv tab qoladi, qolganlari yo'qoladi, va hamma
+ilovada bar bir xil. Ikki sabab: (1) GQ-18 dagi iOS 26 "minimise on scroll" skripti suzuvchi
+barlarda (island, pill, tiles) aktivdan boshqa tablarni yashirardi — prototipda bu buzilgandek
+o'qiladi; (2) bar shakli ilova nomidan seed qilinardi, planer esa har bir odat trekerini
+"Streakly" deb ataydi, shuning uchun bir tizim ichida hammasi bir xil bar olardi.
+
+- `ShellService.ts`: `NAV_COLLAPSE_SCRIPT` olib tashlandi; bar skroll paytida to'liq qoladi.
+- `ScreenContext.navStyleFor` endi loyiha id si bilan seed qilinadi; `PlanController`,
+  `GenerateController` (keyin qo'shilgan/qayta chizilgan ekran ham o'sha barni oladi) va
+  `eval/judge-project.ts` yangilandi.
+- `ShellService.ts`: brauzerda tekshirganda island'ning Search doirasi telefondan tashqarida
+  (381–439px, 390px ekranda) chiqdi — to'liq kenglikdagi island o'ng tomondan unga joy
+  qoldirmas edi. Search alohida bo'lganda island `right:91px` (21 + 58 + 12) oladi.
+- `new-features.check.ts`: suzuvchi bar skript olib yurmasligi va island Search'ga joy
+  qoldirishi tekshiriladi.
+
+Tekshiruv: `npm run check` va `npx tsc --noEmit` toza. Brauzerda 7 shaklning hammasi 390px
+kadrda chizildi va 600px skroll qilindi: har birida 4/4 tab ko'rinib turadi. 200 ta tasodifiy loyiha id si bilan
+taqsimot: lumen island/pill ~50/50, nova underline/island/tiles ~⅓ har biri, ember island/tonal,
+graphite bar/tonal, volt contrast/tiles ~50/50. Eski loyihalar barini saqlangan HTML ichida
+olib yuradi — faqat yangi generatsiya yoki qayta chizish yangi shaklni oladi.
+
 ### Har bir telefon tizimining o'z bar shakllari, uchta yangi shakl — GQ-39
 
 O'lchov: avtomatik tanlanadigan tizimlarda (Lumen, Ember, Nova) bar ~90% island, ~10% pill edi —

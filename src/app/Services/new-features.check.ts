@@ -1176,15 +1176,16 @@ console.log('Testing iOS 26 Bar (GQ-18)...')
     assert.ok(html.includes('bottom:21px'), `${style}: the floating bar sits 21px in from the bottom, as the iOS 26 capsule does`)
     assert.ok(html.includes('inset 0 1px 0 rgba(255,255,255,.45)'), `${style}: glass is blur plus a light along the top edge`)
     assert.ok(html.includes('backdrop-filter:blur('), `${style}: the bar is translucent`)
-    assert.equal((html.match(/<script /g) ?? []).length, 1, `${style}: exactly one collapse script, inside the nav`)
-    assert.ok(html.includes('prefers-reduced-motion'), `${style}: no motion for people who asked for none`)
+    // The bar stays whole while the page scrolls: a bar that dropped every tab but the active one read as broken.
+    assert.ok(!html.includes('<script'), `${style}: the floating bar does not minimise on scroll`)
     assert.ok(/data-od-search="1"[^>]*style="position:absolute;right:-70px/.test(html), `${style}: Search is its own island to the right`)
     assert.ok(html.includes('data-od-tab="search"'), `${style}: the search island is still the search tab`)
   }
-  assert.ok(bar(nav, 'home', 'island').includes('left:21px;right:21px'), 'the island keeps 21px side insets')
+  assert.ok(bar(nav, 'home', 'island').includes('left:21px;right:91px'), 'with Search apart, the island gives its circle room on the right (21 + 58 + 12)')
+  assert.ok(bar({ ...nav, tabs: nav.tabs.filter((t) => t.id !== 'search') }, 'home', 'island').includes('left:21px;right:21px'), 'without Search the island keeps 21px side insets')
   for (const style of ['bar', 'contrast'] as const) {
     const html = bar(nav, 'home', style)
-    assert.ok(!html.includes('<script'), `${style}: an edge-to-edge or filled bar does not minimise`)
+    assert.ok(!html.includes('<script'), `${style}: an edge-to-edge or filled bar carries no script`)
     assert.ok(!html.includes('data-od-search='), `${style}: search stays a normal tab`)
   }
   // (That two root-tab bars differ only in the active tab is already asserted by the Navigation Shell Builder block above.)

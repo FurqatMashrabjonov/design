@@ -32,7 +32,7 @@ async function renormalize(p: Row, s: ScreenRow & { screen_type: string; active_
   const nav = parseNavigation(row?.navigation ?? null)
   if (!nav) return s.html
   const plan = JSON.parse(row?.plan ?? '{}')
-  const bar = navStyleFor(p.name, nav, { appType: plan.appType, designSystem: p.design_system })
+  const bar = navStyleFor(p.id, nav, { appType: plan.appType, designSystem: p.design_system })
   const slot: ScreenSlot = { name: s.name, screenType: s.screen_type as ScreenSlot['screenType'], activeTabId: s.active_tab_id ?? undefined, parentScreen: s.parent_screen_name ?? undefined }
   return normalizeScreen(s.html, { tokensCss: DesignSystemService.readTokensRoot(p.design_system), fontUrls: DesignSystemService.readFontUrls(p.design_system), iconStroke: DesignSystemService.readIconStroke(p.design_system), shell: shellPartsFor(slot, nav, s.name, bar), navClearance: navClearance(bar), kitCss: KitService.css() })
 }

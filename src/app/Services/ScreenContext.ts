@@ -29,9 +29,13 @@ export type ExistingScreen = { name: string; screenType: string; activeTabId: st
 const tabLabels = (nav: AppNavigation) => nav.tabs.map((t) => t.label).join(', ')
 const activeLabel = (slot: ScreenSlot, nav: AppNavigation) => nav.tabs.find((t) => t.id === slot.activeTabId)?.label ?? slot.name ?? ''
 
-/** NAV-01: the bar this app builds — decided once, from its character and name, for every screen. */
-export function navStyleFor(appName: string, nav: AppNavigation, about: { appType?: string; designSystem?: string } = {}): NavStyle {
-  return navStyle(appName || 'app', { tabCount: nav.tabs.length, ...about })
+/**
+ * NAV-01: the bar this app builds — decided once for every screen, from its character and the
+ * project. Seeded by the project id, not the app's name: the planner calls every habit tracker
+ * "Streakly", so a name seed gave every one of them the same bar within a system.
+ */
+export function navStyleFor(projectId: string, nav: AppNavigation, about: { appType?: string; designSystem?: string } = {}): NavStyle {
+  return navStyle(projectId || 'app', { tabCount: nav.tabs.length, ...about })
 }
 
 export function shellContract(slot: ScreenSlot, nav: AppNavigation, style: NavStyle = 'island'): string {

@@ -160,7 +160,7 @@ export const PlanController = {
           const fw = frameSize(project.device).width
           const screenNames = plan.screens.map((s) => s.name)
           // NAV-01: one bar shape for the whole app, decided from its name before anything is drawn.
-          const bar = navStyleFor(plan.appName, plan.navigation, { appType: plan.appType, designSystem: project.designSystem })
+          const bar = navStyleFor(project.id, plan.navigation, { appType: plan.appType, designSystem: project.designSystem })
           const content = contentBlock(contentSeed(project.id, localeOf(brief)))
           const data = dataBlock(plan.entities)
 
