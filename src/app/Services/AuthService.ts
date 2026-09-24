@@ -5,6 +5,7 @@ import { admin } from 'better-auth/plugins/admin'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '@/database/connection'
 import { account, session, user, verification } from '@/database/schema'
+import { CreditService } from './CreditService'
 import { Project } from '@/app/Models/Project'
 
 // Accounts (B1). Sign-in is Google or a magic link sent to your email — no passwords are stored
@@ -34,6 +35,8 @@ export const auth = betterAuth({
         // OWN-05: projects made before accounts existed belong to the first person who signs in.
         after: async (created) => {
           Project.adoptOrphans(created.id)
+          // BIL-07: every new account starts with free credits.
+          CreditService.signupGrant(created.id)
         },
       },
     },

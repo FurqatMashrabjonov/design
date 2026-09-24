@@ -540,6 +540,12 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(UsageService.run({ userId: 'buyer', actionId: 'act-c' }, () => CreditService.refundScreens(50)), 10, 'never more than the action still holds')
   assert.equal(Credit.ofAction('buyer', 'act-c'), 0)
   assert.equal(CreditService.refundScreens(3), 0, 'outside an action (the eval) there is nothing to refund')
+  // BIL-07: a new account's free start, granted once.
+  const { SIGNUP_CREDITS } = await import('../../Services/CreditService.ts')
+  assert.equal(CreditService.signupGrant('newbie'), true)
+  assert.equal(CreditService.signupGrant('newbie'), false, 'the start is granted once')
+  assert.equal(Credit.balance('newbie'), SIGNUP_CREDITS)
+  assert.equal(SIGNUP_CREDITS, 4 * CreditService.priceOf('app'), 'the free start is four apps (BIL-02)')
 }
 
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change

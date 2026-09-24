@@ -11,6 +11,9 @@ export const CREDIT_PRICES: Record<string, Prices> = {
   'deepseek-flash': { plan: 1, draw: 14, screen: 2, element: 1 },
 }
 
+/** BIL-07: a new account starts with these — four apps (BIL-02), once. */
+export const SIGNUP_CREDITS = 60
+
 /** The cheapest a credit is ever sold for (Pro: $24 / 3 000), which every price is checked against. */
 export const CHEAPEST_CREDIT_USD = 24 / 3000
 
@@ -25,6 +28,11 @@ export const CreditService = {
   kindOf(path: string, body: Record<string, unknown>): ActionKind {
     if (path.endsWith('/generate-plan')) return body.approve ? 'draw' : body.gate === true ? 'plan' : 'app'
     return typeof body.editElementId === 'string' && body.editElementId ? 'element' : 'screen'
+  },
+
+  /** BIL-07: the free start. Keyed by the user, so it is granted once however often it is called. */
+  signupGrant(userId: string): boolean {
+    return Credit.add({ userId, delta: SIGNUP_CREDITS, kind: 'signup', ref: `signup:${userId}` })
   },
 
   /**

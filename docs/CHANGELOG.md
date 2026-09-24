@@ -5,6 +5,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Ro'yxatdan o'tganda bepul kredit (BIL-07)
+
+Yangi hisob **60 kredit** bilan boshlanadi (4 ta ilova, BIL-02). Grant better-auth'ning
+`user.create.after` hook'ida — yetim loyihalarni biriktiradigan joyda. Uning `ref`'i
+`signup:<userId>`, shuning uchun qayta chaqirilsa ham bir marta beriladi. Oldin ochilgan hisoblar
+grant olmaydi: ularga kredit admin'dan beriladi.
+
+Fayllar: `CreditService.ts` (`SIGNUP_CREDITS`, `signupGrant`), `AuthService.ts`,
+`controllers.check.ts`.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Test: grant bir marta beriladi, balans 60,
+60 = 4 × ilova narxi. Hook'ning o'zi brauzerda sinalmadi: buning uchun yangi hisob ochish kerak,
+uni esa foydalanuvchi o'zi qilishi kerak. Hook shu callback'dagi `adoptOrphans` bilan bir joyda.
+
 ### Kreditni oldindan band qilish, xatoda qaytarish (BIL-06)
 
 - **Oldindan band qilish.** `guardGeneration` so'rovni narxlaydi va narxni **model chaqirilishidan

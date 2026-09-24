@@ -269,7 +269,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | BIL-04 | Kreditlar daftari (berilgan, sarflangan, qaytarilgan; balans = yig'indi) | To'lov va kreditlar / Kreditlar | MVP | Tayyor | O'rta | AUTH-02 | Balans o'zgaruvchan son emas, yozuvlardan hisoblanadi |
 | BIL-05 | Har amal narxi (reja + ekran, tahrir, qism tahriri) | To'lov va kreditlar / Kreditlar | MVP | Tayyor | Kichik | BIL-02 | Narxlar bitta sozlamada va testlangan |
 | BIL-06 | Generatsiyadan oldin kreditni band qilish, xatoda qaytarish | To'lov va kreditlar / Kreditlar | MVP | Tayyor | O'rta | BIL-04 | Xato yoki to'xtatilgan ekran kreditini qaytaradi; parallel so'rovda ikki marta yechilmaydi |
-| BIL-07 | Ro'yxatdan o'tganda bepul kredit | To'lov va kreditlar / Kreditlar | MVP | Rejada | Kichik | BIL-04 | Yangi hisob bepul balans bilan boshlanadi |
+| BIL-07 | Ro'yxatdan o'tganda bepul kredit | To'lov va kreditlar / Kreditlar | MVP | Tayyor | Kichik | BIL-04 | Yangi hisob bepul balans bilan boshlanadi |
 | BIL-08 | Yuqori panelda kredit balansi va kredit tugaganda dialog | To'lov va kreditlar / Kredit interfeysi | MVP | Rejada | Kichik | BIL-04 | Har generatsiyadan keyin yangilanadi; nol bo'lsa tarif dialogi ochiladi |
 | BIL-09 | Har foydalanuvchi uchun checkout | To'lov va kreditlar / To'lovlar | MVP | Rejada | O'rta | BIL-03 | Checkout foydalanuvchi ID sini olib boradi, webhook to'g'ri hisobga yozadi |
 | BIL-10 | To'lov webhook: imzoni tekshirish, kreditni bir marta berish | To'lov va kreditlar / To'lovlar | MVP | Rejada | O'rta | BIL-09 | Qayta kelgan hodisa kreditni ikkinchi marta bermaydi; noto'g'ri imzo rad etiladi |
