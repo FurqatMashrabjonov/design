@@ -979,6 +979,78 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   await Project.delete('o-p')
 }
 
+// ADM-14: model health from llm_calls (error rate, percentiles, status), and the circuit breaker —
+// a Down primary sends its site to the fallback for 5 minutes, then the primary is tried again.
+// Rows are placed ten days back and read with that clock, so the rest of the file's calls stay out.
+{
+  const { db } = await import('../../../database/connection.ts')
+  const { llmCalls } = await import('../../../database/schema.ts')
+  const { like } = await import('drizzle-orm')
+  const { ProviderStatsService, statusOf } = await import('../../Services/ProviderStatsService.ts')
+  const { effectiveModel, CIRCUIT_MS } = await import('../../Services/LlmService.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const T = Math.floor(Date.now() / 1000) - 10 * 86400
+  let n = 0
+  const row = (model: string, ago: number, ok: boolean, ms: number, extra: { promptTokens?: number; cachedTokens?: number } = {}) =>
+    ({ id: `adm14-${n++}`, provider: 'test', model, ok, ms, createdAt: T - ago, costUsd: 0.01, error: ok ? null : `boom ${n}`, requestId: ok ? null : 'req-adm14', ...extra })
+  await db.insert(llmCalls).values([
+    // Down: 6 calls in the last 15 minutes, 4 failed.
+    ...[true, false, false, true, false, false].map((ok, i) => row('gemini-2.5-flash', 60 + i * 60, ok, 500)),
+    // Healthy: 10 calls this hour at 100…1000 ms, all fine, a quarter of the prompt cached.
+    ...Array.from({ length: 10 }, (_, i) => row('gemini-3.1-flash-lite', 120 + i * 60, true, (i + 1) * 100, { promptTokens: 1000, cachedTokens: 250 })),
+    // Degraded by errors: 2 of 10 failed this hour, spread out (not Down).
+    ...Array.from({ length: 10 }, (_, i) => row('claude-haiku-4-5', 1000 + i * 200, i >= 8 ? false : true, 300)),
+    // Degraded by latency: this hour's p95 is 1 000 ms against a day's p95 of 100.
+    ...Array.from({ length: 20 }, (_, i) => row('claude-sonnet-5', 2 * 3600 + i * 3000, true, 100)),
+    row('claude-sonnet-5', 600, true, 1000),
+    // Idle: nothing in the last hour.
+    row('deepseek-flash', 3 * 3600, true, 200),
+  ])
+  const health = await ProviderStatsService.health(T * 1000)
+  const of = (m: string) => health.find((h) => h.model === m)!
+  const down = of('gemini-2.5-flash')
+  assert.equal(down.status, 'down')
+  assert.equal(down.hour.errorRate, 4 / 6)
+  assert.equal(down.calls15m, 6)
+  assert.equal(down.lastError?.requestId, 'req-adm14')
+  assert.equal(down.lastError?.at, T - 120, 'the newest failure')
+  const ok = of('gemini-3.1-flash-lite')
+  assert.equal(ok.status, 'healthy')
+  assert.equal(ok.hour.calls, 10)
+  assert.equal(ok.hour.errorRate, 0)
+  assert.equal(ok.hour.p50, 550)
+  assert.equal(Math.round(ok.hour.p95!), 955)
+  assert.equal(ok.hour.cacheHit, 0.25)
+  assert.equal(ok.hourly.reduce((s, h) => s + h.calls, 0), 10)
+  assert.equal(ok.hourly[23]!.calls, 10, 'the current hour is the last bucket')
+  assert.equal(of('claude-haiku-4-5').status, 'degraded')
+  assert.equal(of('claude-haiku-4-5').hour.errorRate, 0.2)
+  const slow = of('claude-sonnet-5')
+  assert.equal(slow.day.p95, 100)
+  assert.equal(slow.status, 'degraded', 'p95 over twice the day’s')
+  assert.equal(of('deepseek-flash').status, 'idle')
+  assert.equal(statusOf({ hour: { ...ok.hour, calls: 0 }, day: ok.day, calls15m: 0, fails15m: 0 }), 'idle')
+
+  // The circuit: plan runs on the Down model, the fallback is healthy.
+  const now = T * 1000
+  await AdminController.setSetting('adm', { key: 'llm.model.plan', value: 'gemini-2.5-flash' })
+  await AdminController.setSetting('adm', { key: 'llm.fallback', value: 'gemini-3.1-flash-lite' })
+  try {
+    const open = await effectiveModel('plan', now)
+    assert.equal(open.model, 'gemini-3.1-flash-lite', 'a Down primary goes straight to the fallback')
+    assert.equal(open.circuit?.until, now + CIRCUIT_MS)
+    assert.equal((await effectiveModel('plan', now + 60_000)).model, 'gemini-3.1-flash-lite', 'still open a minute later')
+    assert.equal((await effectiveModel('screen', now)).model, 'deepseek-flash', 'another site is untouched')
+    assert.equal((await effectiveModel('plan', now + CIRCUIT_MS + 1000)).model, 'gemini-2.5-flash', 'after 5 minutes the primary is tried again')
+    await AdminController.setSetting('adm', { key: 'llm.fallback', value: null })
+    assert.equal((await effectiveModel('plan', now + 30_000)).model, 'gemini-2.5-flash', 'with no fallback it stays on the primary')
+  } finally {
+    await AdminController.setSetting('adm', { key: 'llm.model.plan', value: null })
+    await AdminController.setSetting('adm', { key: 'llm.fallback', value: null })
+    await db.delete(llmCalls).where(like(llmCalls.id, 'adm14-%'))
+  }
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

@@ -168,6 +168,47 @@ export async function fallbackModel(): Promise<string | undefined> {
 }
 
 /**
+ * ADM-14: the circuit breaker. A model that is Down (ProviderStatsService: at least 5 calls in the last
+ * 15 minutes, half of them failed) is skipped for 5 minutes: a site whose primary it is runs straight
+ * on the fallback, if one is set and is not Down itself. Then the primary is tried again, and the
+ * circuit re-opens only on a failure after that. The health is a database read, so — like settings —
+ * its source is registered by a server module and cached 15s; without one no model is ever Down.
+ * ponytail: circuit state is in memory, per server process; a shared store if the app runs on several.
+ */
+export type ModelHealth = { down: boolean; lastFailAt: number } // lastFailAt in ms
+let healthSource: (nowMs: number) => Promise<Record<string, ModelHealth>> = async () => ({})
+export function setHealthSource(fn: typeof healthSource) {
+  healthSource = fn
+  healthCache = undefined
+  circuits.clear()
+}
+const HEALTH_TTL_MS = 15_000
+export const CIRCUIT_MS = 5 * 60_000
+let healthCache: { at: number; value: Promise<Record<string, ModelHealth>> } | undefined
+function health(now: number) {
+  if (!healthCache || now - healthCache.at >= HEALTH_TTL_MS || now < healthCache.at) healthCache = { at: now, value: healthSource(now).catch(() => ({})) }
+  return healthCache.value
+}
+/** Open circuits: the model skipped, until when (ms), and what ran instead. */
+const circuits = new Map<string, { until: number; fallback: string }>()
+export const openCircuits = (now = Date.now()) => [...circuits].filter(([, c]) => c.until > now).map(([model, c]) => ({ model, ...c }))
+
+/** The model a site's next call runs on: its primary, or the fallback while the primary's circuit is open. */
+export async function effectiveModel(site: Site, now = Date.now()): Promise<{ model: string; primary: string; circuit?: { until: number } }> {
+  const primary = await modelFor(site)
+  const fallback = await fallbackModel()
+  if (!fallback || fallback === primary) return { model: primary, primary }
+  const h = await health(now)
+  let c = circuits.get(primary)
+  if (!(c && now < c.until) && h[primary]?.down && (!c || h[primary]!.lastFailAt > c.until)) {
+    c = { until: now + CIRCUIT_MS, fallback }
+    circuits.set(primary, c)
+  }
+  if (!c || now >= c.until || h[fallback]?.down) return { model: primary, primary }
+  return { model: fallback, primary, circuit: { until: c.until } }
+}
+
+/**
  * LLM-01: thinking is decided per call site, not once for the process.
  *
  * Reasoning tokens are billed as output, and output is the expensive half of a generated app
@@ -263,7 +304,10 @@ async function* call(site: Site, mode: 'stream' | 'json', o: Omit<CallOpts, 'mod
       const opts: CallOpts = { ...o, model: m.apiModel, reasoningEffort: m.reasoningEffort, onUsage: report(tally) }
       return mode === 'stream' ? adapter.stream(opts) : (async function* () { yield await adapter.json(opts) })()
     })
-  const primary = await modelFor(site)
+  const pick = await effectiveModel(site)
+  const primary = pick.model
+  // The row is logged under the model that ran; the reroute is said in the request's server log.
+  if (pick.circuit) console.warn(`[llm] circuit open: ${pick.primary} is down, ${site} runs on ${primary} until ${new Date(pick.circuit.until).toISOString()}`)
   let yielded = false
   try {
     for await (const d of once(primary)) {

@@ -9,7 +9,8 @@ import { Credit } from '@/app/Models/Credit'
 import { SecretService, type SecretName } from '@/app/Services/SecretService'
 import { isAdmin } from '@/app/Services/AuthService'
 import { CSV_MAX_ROWS, toCsv, type CallsQuery, type UsersQuery } from '@/admin/table-query'
-import { clearLlmSettings, isUsableModel, MODELS, PRICES } from '@/app/Services/LlmService'
+import { clearLlmSettings, fallbackModel, isUsableModel, modelFor, MODELS, openCircuits, PRICES, SITES } from '@/app/Services/LlmService'
+import { ProviderStatsService } from '@/app/Services/ProviderStatsService'
 import { CREDIT_PRICES } from '@/lib/credit-prices'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
@@ -147,5 +148,14 @@ export const AdminController = {
         keySet: !!(await SecretService.get(({ deepseek: 'DEEPSEEK_API_KEY', gemini: 'GEMINI_API_KEY', anthropic: 'ANTHROPIC_API_KEY' } as const)[m.provider])),
       })),
     ),
-
+  /** ADM-14: the Providers page — the models, which one each site runs on, their health, open circuits. */
+  async providers() {
+    const [models, health, sites, fallback] = await Promise.all([
+      AdminController.models(),
+      ProviderStatsService.health(),
+      Promise.all(SITES.map(async (site) => ({ site, model: await modelFor(site) }))),
+      fallbackModel(),
+    ])
+    return { models, health, sites, fallback: fallback ?? null, circuits: openCircuits(), now: Math.floor(Date.now() / 1000) }
+  },
 }
