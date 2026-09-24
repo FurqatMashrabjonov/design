@@ -285,10 +285,10 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ADM-11 | Jadval v2: server tomonda qidiruv, filtr, saralash, URL'da holat | Monitoring / Analitika | MVP | Tayyor | O'rta | ADM-10 | Filtr, qidiruv, sahifalash serverda; yon panel; CSV |
 | OBS-10 | Telescope: HTTP so'rovlar jurnali | Monitoring / Xatolar | MVP | Tayyor | O'rta | ADM-11 | Har so'rov yoziladi, maxfiy narsalar maskalanadi, 7 kun |
 | OBS-11 | Telescope: server loglari va xatolar (guruhlangan) | Monitoring / Xatolar | MVP | Tayyor | O'rta | OBS-10 | console.* va xatolar bazada, izi bo'yicha guruhlangan |
-| ADM-14 | Provayderlar sahifasi: monitoring va bir bosishda almashtirish | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | ADM-13, LLM-04, LLM-07 | Holat, p50/p95, xato, $; chaqiruv joyi bo'yicha model; avtomatik zaxira |
-| ADM-12 | Overview v2: biznes va tizim bir qarashda, ogohlantirishlar | Monitoring / Analitika | MVP | Rejada | O'rta | ADM-14, OBS-10 | MRR, marja, tannarx, p95, ogohlantirishlar |
-| OBS-12 | Telescope: tashqi HTTP va webhook hodisalari | Monitoring / Xatolar | MVP | Rejada | Kichik | OBS-10 | Chiquvchi so'rovlar va Polar webhooklari, qayta yuborish |
-| ADM-15 | Kreditlar va daromad sahifasi | Monitoring / Analitika | MVP | Rejada | Kichik | ADM-11 | Daftar, obunalar, tarif bo'yicha daromad, marja |
+| ADM-14 | Provayderlar sahifasi: monitoring va bir bosishda almashtirish | Generatsiya / LLM xarajati | MVP | Tayyor | O'rta | ADM-13, LLM-04, LLM-07 | Holat, p50/p95, xato, $; chaqiruv joyi bo'yicha model; avtomatik zaxira |
+| ADM-12 | Overview v2: biznes va tizim bir qarashda, ogohlantirishlar | Monitoring / Analitika | MVP | Tayyor | O'rta | ADM-14, OBS-10 | MRR, marja, tannarx, p95, ogohlantirishlar |
+| OBS-12 | Telescope: tashqi HTTP va webhook hodisalari | Monitoring / Xatolar | MVP | Tayyor | Kichik | OBS-10 | Chiquvchi so'rovlar va Polar webhooklari, qayta yuborish |
+| ADM-15 | Kreditlar va daromad sahifasi | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-11 | Daftar, obunalar, tarif bo'yicha daromad, marja |
 
 ## B5 · Serverga chiqarish
 

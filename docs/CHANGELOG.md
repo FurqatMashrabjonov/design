@@ -5,6 +5,50 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### 2-to'lqin, parallel: Overview v2, Providers, tashqi HTTP va webhooklar, kreditlar/daromad (ADM-12, ADM-14, OBS-12, ADM-15)
+
+To'rtta subagent o'z branch'ida parallel ishladi (`adm-12-overview`, `adm-14-providers`,
+`obs-12-outgoing`, `adm-15-credits`). Lead birlashtirdi. To'qnashuvlar: sidebar menyusi, migratsiya
+ro'yxati (0005 va 0006 tartib bilan), sxema, test bloklari — hammasi ikkala tomonni saqlagan holda
+hal qilindi.
+
+- **ADM-12 — Overview v2.** Uch qator:
+  - Biznes: MRR, faol obunalar, yangi to'lovchilar, churn, kreditlar sotilgan/sarflangan,
+    taxminiy yalpi marja.
+  - Mahsulot: aktivatsiya, ilovalar, ilova tannarxi, p95 generatsiya.
+  - Tizim: so'rovlar, 5xx, p95, xatolar, LLM xato ulushi.
+  - Ogohlantirishlar: byudjet ≥80%, model ishlamayapti, xatolar keskin oshgan, muvaffaqiyatsiz
+    ekranlar ≥20%, generatsiya pauzada. Har biri chegarada test qilingan.
+- **ADM-14 — Providers.**
+  - Plan, ekran va tahrir uchun model va zaxira model bir bosishda tanlanadi. Kaliti yo'q
+    model tanlanmaydi.
+  - Har model sog'lig'i: 60 daqiqa va 24 soat — xato ulushi, p50/p95, kesh ulushi, $, oxirgi
+    xato; Down/Degraded/Healthy/Idle holati.
+  - Circuit breaker: model ishlamay qolsa, 5 daqiqa zaxira modelda ishlanadi.
+- **OBS-12 — tashqi HTTP va webhooklar.**
+  - Server `fetch`'i o'ralgan: host, maskalangan yo'l, status, ms va maqsad yoziladi; tana va
+    header'lar yozilmaydi.
+  - Har webhook POST `webhook_events`'ga tushadi (payload faqat imzo to'g'ri bo'lsa). Admin'dan
+    qayta yuborish mumkin.
+  - Outgoing va Webhooks sahifalari; so'rov tafsilotida "Outgoing calls" paneli.
+- **ADM-15 — kreditlar va daromad.**
+  - `orders` jadvali (har `order.paid` bir marta yoziladi).
+  - /admin/credits: kredit daftari (filtrlar, jami, yon panelda amalning LLM chaqiruvlari,
+    CSV), obunalar, daromad (kunlik, tarif bo'yicha, komissiya, sof, foydalanuvchi marjasi).
+  - Foydalanuvchi sahifasida daromad va marja.
+
+Tekshiruv:
+- Birlashtirilgan kodda `npm run check`, `npx tsc --noEmit` toza. Dev server qayta ishga tushirildi
+  (faqat 3000-port PID bo'yicha); 0001–0006 migratsiyalari bazada.
+- Brauzerda:
+  - Overview: ogohlantirish qatori, uchta KPI qatori.
+  - Providers: modellar, sog'lik panellari.
+  - Outgoing: DeepSeek va Pexels test chaqiruvlari, header'larsiz.
+  - Webhooks: lokal imzolangan hodisa 202 "ignored", soxta imzo 403 va payloadsiz; tafsilot
+    va payload; Replay → "Replayed: ignored".
+  - Credits: hold filtri va jamilar; obunalar (Starter faol); `?sort=evil&kind=x` standart
+    ko'rinishga qaytadi.
+
 ### 1-to'lqin, parallel: jadval v2, Telescope, provayder adapterlari (ADM-11, OBS-10, OBS-11, LLM-04, LLM-07)
 
 Uchta subagent o'z branch/worktree'sida parallel ishladi (`adm-11-tables`, `obs-10-telescope`,
