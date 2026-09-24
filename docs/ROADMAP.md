@@ -261,7 +261,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-11 | Landing v2: ishlaydigan prompt, stil yorliqli galereya, jonli 'butun ilova' xaritasi, raqamli isbot | Marketing / Sayt | MVP | Tayyor | O'rta | UI-10 | Hero prompt, flow xaritasi, galereya, video, raqamlar |
 | UI-12 | Dashboard v2: prompt-first, 3 ekranli kollaj kartalar, birinchi kirish, canvas'ga o'tish animatsiyasi | Interfeys / Bosh sahifa | MVP | Tayyor | O'rta | UI-10 | Kollaj kartalar, bo'sh holatlar, View Transition |
 | UI-13 | Canvas v2: toza TopBar, generatsiya tajribasi, hover/tanlash holatlari | Muharrir / Kanvas | MVP | Tayyor | Katta | UI-10 | TopBar ≤6, shimmer skeleton, qadamlar, dark |
-| UI-14 | Vizual QA: light/dark/420px skrinshot solishtiruvi | Interfeys / Sifat | MVP | Rejada | Kichik | UI-11..13 | Oldin/keyin skrinshotlari |
+| UI-14 | Vizual QA: light/dark/420px skrinshot solishtiruvi | Interfeys / Sifat | MVP | Tayyor | Kichik | UI-11..13 | Oldin/keyin skrinshotlari |
 
 ## B4 · Pul ishlash
 

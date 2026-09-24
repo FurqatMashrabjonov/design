@@ -5,6 +5,17 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Vizual QA: o'chiq asosiy tugma neytral, ekranlar soni matni bir xil (UI-14)
+
+UI-10…13 birlashgach lead light/dark, 1440/420 bo'yicha ko'rib chiqdi. Bo'sh prompt'da "Design it"
+lime'ni 50% shaffof qilib, dark'da loyqa zaytun rangga aylanardi — endi o'chiq asosiy tugma `bg-muted` +
+`text-muted-foreground`, soyasiz. Dashboard maslahati "3–6 screens" → "up to 6 screens" (landing bilan bir xil).
+
+Fayllar: `src/components/ui/button.tsx`, `src/Dashboard.tsx`.
+
+Tekshirildi: tsc va check toza; 3000-portda dashboard tepasi (light), agentlarning 420/dark skrinshotlari
+(landing, dashboard, canvas) ko'rib chiqildi; canvas'da PennyWise ochildi, karta → canvas o'tishi ishladi.
+
 ### Canvas v2: toza TopBar, ekran shaklidagi shimmer, qadamlar vaqti bilan, hover/tanlash (UI-13)
 
 Subagent `ui-13-canvas` branch'ida qildi, lead birlashtirdi (`styles.css` bloklari to'qnashuvi — ikkalasi

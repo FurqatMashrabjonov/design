@@ -411,7 +411,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                 variant="hero"
                 submitLabel="Design it"
                 label="Describe your app"
-                hint="iPhone · 3–6 screens · real photos"
+                hint="iPhone · up to 6 screens · real photos"
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
                 fill={fill}
                 attachments
