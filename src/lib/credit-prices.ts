@@ -18,6 +18,12 @@ export const PLANS = [
   { id: 'pro', name: 'Pro', monthly: 24, yearly: 17, credits: 3000, projects: 'Unlimited projects' },
 ] as const
 
+/** Extra credits, for subscribers only — a pack tops a plan up, it does not replace one (BIL-02). */
+export const PACKS = [
+  { credits: 500, usd: 6 },
+  { credits: 1500, usd: 15 },
+] as const
+
 /** The cheapest a credit is ever sold for (Pro: $24 / 3 000), which every price is checked against. */
 export const CHEAPEST_CREDIT_USD = 24 / 3000
 

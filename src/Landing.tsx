@@ -133,7 +133,7 @@ export function Landing() {
             <a href="#examples" className="hover:text-foreground">Examples</a>
             <Link to="/systems" className="hover:text-foreground">Design systems</Link>
             <Link to="/playbook" className="hover:text-foreground">Playbook</Link>
-            <a href="#how" className="hover:text-foreground">How it works</a>
+            <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
           </nav>
           <div className="flex items-center gap-2">
             <Link to="/login" className="hidden h-9 items-center px-3 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">Sign in</Link>
@@ -307,6 +307,7 @@ export function Landing() {
           {/* ponytail: Terms / Privacy links land with LEG-01…04. */}
           <div className="flex gap-6">
             <a href="#examples" className="hover:text-foreground">Examples</a>
+            <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
             <a href="#faq" className="hover:text-foreground">FAQ</a>
             <Link to="/login" className="hover:text-foreground">Sign in</Link>
           </div>

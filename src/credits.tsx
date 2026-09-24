@@ -108,6 +108,9 @@ export function CreditsDialog() {
             </div>
           ))}
         </div>
+        <a href="/pricing" className="text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
+          Compare plans and credit packs
+        </a>
       </DialogContent>
     </Dialog>
   )

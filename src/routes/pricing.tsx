@@ -1,0 +1,125 @@
+import { useState } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { Check } from 'lucide-react'
+import { BRAND } from '../Landing'
+import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS } from '@/lib/credit-prices'
+
+// BIL-12: the plans and what a credit buys, in public. Every number comes from lib/credit-prices.ts,
+// the same table the server charges from, so this page cannot promise a price the product does not keep.
+export const Route = createFileRoute('/pricing')({
+  head: () => ({
+    meta: [
+      { title: `Pricing — ${BRAND}` },
+      { name: 'description', content: 'Start free with four apps. Starter and Pro plans in credits: a whole app is 15, a screen 2, an element edit 1.' },
+    ],
+  }),
+  component: Pricing,
+})
+
+const P = CREDIT_PRICES['deepseek-flash']!
+const bestSaving = Math.max(...PLANS.map((p) => Math.floor((1 - p.yearly / p.monthly) * 100)))
+
+function Pricing() {
+  const [yearly, setYearly] = useState(false)
+  const tiers = [
+    { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', 'Every design system', 'Clickable preview'] },
+    ...PLANS.map((p) => ({
+      id: p.id,
+      name: p.name,
+      price: yearly ? p.yearly : p.monthly,
+      note: yearly ? `billed $${p.yearly * 12} a year` : 'billed monthly',
+      credits: `${p.credits.toLocaleString('en')} credits a month`,
+      apps: appsFor(p.credits),
+      features: [p.projects, 'Figma and code export', 'Share preview links', 'Extra credit packs'],
+    })),
+  ]
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-16">
+      <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+        ← {BRAND}
+      </Link>
+      <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em]">Pricing</h1>
+      <p className="mt-3 max-w-2xl text-muted-foreground">
+        Pay for what you generate, in credits. A whole app is {P.plan + P.draw} credits, a new or redrawn screen {P.screen}, an element edit {P.element}. A
+        screen that fails or that you stop is given back.
+      </p>
+
+      <div className="mt-8 inline-flex rounded-lg border bg-background p-0.5 text-sm" role="group" aria-label="Billing period">
+        {[false, true].map((y) => (
+          <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`h-8 rounded-md px-3.5 ${yearly === y ? 'bg-muted font-medium' : 'text-muted-foreground'}`}>
+            {y ? `Yearly · save up to ${bestSaving}%` : 'Monthly'}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-3">
+        {tiers.map((t) => (
+          <section key={t.id} className={`flex flex-col rounded-2xl border bg-background p-6 ${t.id === 'pro' ? 'border-foreground shadow-sm' : ''}`}>
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-semibold">{t.name}</h2>
+              {t.id === 'pro' && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">Most room</span>}
+            </div>
+            <p className="mt-3 text-4xl font-semibold tabular-nums">
+              ${t.price}
+              <span className="text-base font-normal text-muted-foreground">{t.id === 'free' ? '' : '/mo'}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">{t.note}</p>
+            <p className="mt-5 text-sm font-medium">{t.credits}</p>
+            <p className="text-sm text-muted-foreground">{t.apps} whole apps</p>
+            <ul className="mt-4 space-y-2 text-sm">
+              {t.features.map((f) => (
+                <li key={f} className="flex gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden /> {f}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto pt-6">
+              {t.id === 'free' ? (
+                <Link to="/login" className="inline-flex h-10 w-full items-center justify-center rounded-lg border text-sm font-medium hover:bg-muted">
+                  Start free
+                </Link>
+              ) : (
+                // BIL-09 wires checkout; until the payment provider is live the button says so.
+                <button type="button" disabled className="h-10 w-full rounded-lg bg-foreground text-sm font-medium text-background opacity-50">
+                  Checkout opens soon
+                </button>
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold tracking-[-0.02em]">Need more?</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Starter and Pro can add a pack when they run low.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {PACKS.map((p) => (
+            <div key={p.credits} className="rounded-xl border bg-background px-5 py-4">
+              <p className="text-sm font-medium">{p.credits.toLocaleString('en')} credits</p>
+              <p className="text-2xl font-semibold tabular-nums">${p.usd}</p>
+              <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 overflow-x-auto">
+        <h2 className="text-xl font-semibold tracking-[-0.02em]">What a credit buys</h2>
+        <table className="mt-4 w-full max-w-lg text-sm">
+          <tbody className="divide-y">
+            {[
+              ['A whole app (plan and every screen)', P.plan + P.draw],
+              ['A new, edited or redrawn screen', P.screen],
+              ['An edit to one element', P.element],
+            ].map(([what, n]) => (
+              <tr key={what as string}>
+                <td className="py-2.5">{what}</td>
+                <td className="py-2.5 text-right tabular-nums">{n} credit{n === 1 ? '' : 's'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    </main>
+  )
+}

@@ -5,6 +5,31 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Narxlar sahifasi /pricing (BIL-12 — sahifa tayyor, checkout kutilmoqda)
+
+Ochiq sahifa, kirish shart emas:
+- Free / Starter / Pro tariflari, oylik va yillik almashtirgich ("save up to 29%").
+- Har tarifda kreditlar va "N ta to'liq ilova".
+- Obunachilar uchun qo'shimcha paketlar (500/$6, 1500/$15).
+- "Kredit nima sotib oladi" jadvali.
+
+Sahifadagi har bir son `lib/credit-prices.ts`'dan olinadi — server shu jadval bo'yicha kredit
+yechadi. Shuning uchun sahifa mahsulot bajarmaydigan narxni va'da qila olmaydi. Landing
+header'ida "How it works" o'rniga "Pricing" havolasi, footer'da ham havola; kredit dialogida
+"Compare plans" havolasi qo'shildi.
+
+**Hali qilinmagan:**
+- Tugmalar checkout'ni ochmaydi (BIL-09, Polar hisobi kutilmoqda), shuning uchun qator
+  `Bloklangan`.
+- Sahifa loyiha soni va eksport chegaralarini va'da qiladi, lekin kod ularni hali tekshirmaydi.
+  Bu uchun BIL-14 qatori ochildi (`Keyin`).
+
+Fayllar: `routes/pricing.tsx`, `lib/credit-prices.ts` (`PACKS`), `Landing.tsx`, `credits.tsx`.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Brauzerda: 1500px'da uchta karta, yillikka
+o'tkazilganda $9 va $17 ("billed $108 / $204 a year"); 420px'da kartalar ustma-ust, gorizontal
+scroll yo'q.
+
 ### Balans interfeysda, kredit tugaganda dialog (BIL-08)
 
 - **Balans:**
