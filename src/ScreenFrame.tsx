@@ -232,13 +232,13 @@ export function ScreenFrame(props: {
         <div
           className={cn(
             // UI-02: no card around a design — only the paper shadow that lifts it off the canvas.
-            'relative overflow-hidden bg-card shadow-[0_1px_2px_rgba(0,0,0,.06),0_12px_28px_-18px_rgba(0,0,0,.35)] transition-all',
-            props.selected && 'ring-2 ring-primary',
+            'relative overflow-hidden bg-card shadow-phone transition-shadow duration-(--duration-base) ease-out',
+            props.selected && 'ring-2 ring-ring ring-offset-2 ring-offset-canvas',
             props.streaming && 'od-stream-ring'
           )}
           // The corners a phone actually has, so a screen reads as a device and not as a rectangle
           // of HTML. A frame drawn wider than a device (the design-system card) keeps card corners.
-          style={{ width: f.width, height, borderRadius: props.width ? 16 : 40 }}
+          style={{ width: f.width, height, borderRadius: props.width ? 16 : 'var(--radius-phone)' }}
         >
           {!props.streaming && (
             <iframe
@@ -295,7 +295,7 @@ export function ScreenFrame(props: {
             className="pointer-events-none absolute z-20"
             style={{ left: hover.rect.x, top: hover.rect.y, transformOrigin: 'top left', transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
           >
-            <span className="absolute bottom-0.5 left-0 rounded-sm bg-primary px-1 py-px text-[10px] leading-tight font-medium whitespace-nowrap text-primary-foreground">
+            <span className="absolute bottom-0.5 left-0 rounded-sm bg-primary px-1 py-px text-xs leading-tight font-medium whitespace-nowrap text-primary-foreground">
               {hover.tag}
             </span>
           </span>
@@ -304,7 +304,7 @@ export function ScreenFrame(props: {
         {/* UI-03: what a selected frame measures, in canvas-independent pixels. */}
         {props.selected && (
           <span
-            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-primary-foreground"
+            className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded bg-primary px-1.5 py-0.5 text-xs font-medium tabular-nums text-primary-foreground"
             style={{ top: height + 6, transformOrigin: 'top center', transform: 'translateX(-50%) scale(calc(1 / var(--canvas-scale, 1)))' }}
           >
             {f.width}×{Math.round(height)}

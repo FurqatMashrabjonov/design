@@ -59,7 +59,7 @@ export function AccountMenu() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive"
               onClick={async () => {
                 await deleteAccount()
                 await authClient.signOut().catch(() => {})

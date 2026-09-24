@@ -147,7 +147,7 @@ export function CreditsDialog() {
             {PACKS.map((k) => (
               <div key={k.credits} className="rounded-xl border p-4">
                 <p className="text-sm font-semibold">{k.credits.toLocaleString('en')} credits</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">${k.usd}</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">${k.usd}</p>
                 <p className="text-xs text-muted-foreground">{appsFor(k.credits)} whole apps · never expire</p>
                 <Button className="mt-3 w-full" variant="outline" onClick={() => buy(`pack-${k.credits}` as ProductKey)}>
                   Buy
@@ -160,7 +160,7 @@ export function CreditsDialog() {
             {plans.map((p) => (
               <div key={p.id} className={`rounded-xl border p-4 ${p.id === 'pro' ? 'border-foreground' : ''}`}>
                 <p className="text-sm font-semibold">{p.name}</p>
-                <p className="mt-1 text-2xl font-semibold tabular-nums">
+                <p className="mt-1 text-xl font-semibold tabular-nums">
                   ${p.monthly}
                   <span className="text-sm font-normal text-muted-foreground">/mo</span>
                 </p>

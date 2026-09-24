@@ -21,7 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 export function FrameHandle() {
   return (
     <span data-canvas-handle className="-ml-1 flex size-6 shrink-0 cursor-grab items-center justify-center rounded text-muted-foreground/70 hover:bg-muted hover:text-foreground active:cursor-grabbing" title="Drag to move" aria-label="Drag to move">
-      <GripVertical className="size-3.5" />
+      <GripVertical className="size-4" />
     </span>
   )
 }
@@ -107,10 +107,10 @@ export function FrameToolbar(props: FrameActions & {
           className="h-7 text-sm"
         />
         <Button size="icon" variant="ghost" className="size-7 shrink-0" disabled={busy === 'rename'} onClick={save}>
-          <Check className="size-3.5" />
+          <Check className="size-4" />
         </Button>
         <Button size="icon" variant="ghost" className="size-7 shrink-0" onClick={props.onCancelRename}>
-          <X className="size-3.5" />
+          <X className="size-4" />
         </Button>
       </div>
     )
@@ -126,11 +126,11 @@ export function FrameToolbar(props: FrameActions & {
       {v.total > 1 && (
         <span className="ml-1 flex shrink-0 items-center text-xs tabular-nums text-muted-foreground" title={`Version ${v.position} of ${v.total}`}>
           <Button size="icon" variant="ghost" className="size-6" title="Previous version" aria-label="Previous version" disabled={busy === 'version' || v.position <= 1} onClick={() => guard('version', () => props.onStepVersion(-1))}>
-            <ChevronLeft className="size-3.5" />
+            <ChevronLeft className="size-4" />
           </Button>
           v{v.position}
           <Button size="icon" variant="ghost" className="size-6" title="Next version" aria-label="Next version" disabled={busy === 'version' || v.position >= v.total} onClick={() => guard('version', () => props.onStepVersion(1))}>
-            <ChevronRight className="size-3.5" />
+            <ChevronRight className="size-4" />
           </Button>
         </span>
       )}
@@ -143,21 +143,21 @@ export function FrameToolbar(props: FrameActions & {
               key={v}
               size="icon"
               variant="ghost"
-              className={cn('size-6 shrink-0', on ? 'text-primary' : '', props.rating && !on && !props.selected && 'hidden group-hover:inline-flex')}
+              className={cn('size-6 shrink-0', on ? 'text-foreground' : '', props.rating && !on && !props.selected && 'hidden group-hover:inline-flex')}
               title={v === 'up' ? 'Good design' : 'Not good'}
               aria-label={v === 'up' ? 'Good design' : 'Not good'}
               aria-pressed={on}
               onClick={() => guard('rate', () => props.onRate(on ? null : v))}
             >
-              <Icon className={cn('size-3.5', on && 'fill-current')} />
+              <Icon className={cn('size-4', on && 'fill-current')} />
             </Button>
           )
         })}
         <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Rename" onClick={props.onStartRename}>
-          <Pencil className="size-3.5" />
+          <Pencil className="size-4" />
         </Button>
         <Button size="icon" variant="ghost" className="size-6 shrink-0" title="Duplicate" disabled={busy === 'duplicate'} onClick={() => guard('duplicate', props.onDuplicate)}>
-          <Copy className="size-3.5" />
+          <Copy className="size-4" />
         </Button>
         <Button
           size="icon"
@@ -167,12 +167,12 @@ export function FrameToolbar(props: FrameActions & {
           disabled={busy === 'delete'}
           onClick={props.onRequestDelete}
         >
-          <Trash2 className="size-3.5" />
+          <Trash2 className="size-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="icon" variant="ghost" className="size-6 shrink-0" title="More" aria-label="More actions">
-              <Ellipsis className="size-3.5" />
+              <Ellipsis className="size-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
@@ -205,7 +205,7 @@ export function FrameToolbar(props: FrameActions & {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              variant="destructive"
               onClick={async (e) => {
                 e.preventDefault()
                 await guard('delete', props.onDelete)

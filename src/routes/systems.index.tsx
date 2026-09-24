@@ -22,7 +22,7 @@ function Systems() {
       <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
         ← {BRAND}
       </Link>
-      <h1 className="mt-6 text-4xl font-semibold tracking-[-0.03em]">Design systems</h1>
+      <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Design systems</h1>
       <p className="mt-3 max-w-xl text-muted-foreground">
         An app is generated in one of these, and every screen of it keeps the same tokens, type and spacing. Open one to read its
         style card and see the palette.

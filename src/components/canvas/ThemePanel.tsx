@@ -57,7 +57,7 @@ export function ThemePanel(props: {
         <div className="flex items-center justify-between">
           <h3 className="font-medium">Theme</h3>
           <Button variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" disabled={isEmptyTheme(theme)} onClick={() => props.onChange({})}>
-            <RotateCcw className="size-3" />
+            <RotateCcw className="size-3.5" />
             Reset
           </Button>
         </div>
@@ -112,7 +112,7 @@ export function ThemePanel(props: {
                 </label>
                 <span className="flex min-w-0 flex-1 items-center gap-1 truncate">
                   {label}
-                  <Info className="size-3 shrink-0 text-muted-foreground/70" aria-hidden />
+                  <Info className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
                   <span className="sr-only">{hint}</span>
                 </span>
                 <span className={cn('max-w-24 truncate font-mono text-xs', value ? 'text-foreground' : 'text-muted-foreground')} title={shown}>
@@ -126,7 +126,7 @@ export function ThemePanel(props: {
                   title="Back to the design system's colour"
                   aria-label={`Reset ${label}`}
                 >
-                  <RotateCcw className="size-3" />
+                  <RotateCcw className="size-3.5" />
                 </button>
               </li>
             )

@@ -70,7 +70,7 @@ export function ChatPanel(props: {
                       key={text}
                       type="button"
                       onClick={() => props.onSuggest?.(text)}
-                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-primary/60 hover:text-foreground"
+                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-ring/40 hover:text-foreground"
                     >
                       {text}
                     </button>
@@ -92,7 +92,7 @@ export function ChatPanel(props: {
           }}
           className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border bg-card px-3 py-1 text-xs shadow-md hover:bg-muted"
         >
-          <ArrowDown className="size-3" />
+          <ArrowDown className="size-3.5" />
           {unseen > 0 ? `${unseen} new` : props.running ? 'New activity' : 'Latest'}
         </button>
       )}
@@ -214,7 +214,7 @@ function AgentMessage(props: {
                 key={s.id}
                 type="button"
                 onClick={() => props.onFocusScreen(s.id)}
-                className="max-w-full truncate rounded-md border bg-background px-2 py-0.5 text-xs hover:border-primary/60 hover:text-primary"
+                className="max-w-full truncate rounded-md border bg-background px-2 py-0.5 text-xs hover:border-ring/40 hover:text-foreground"
                 title="Show on the canvas"
               >
                 {s.name}
@@ -233,10 +233,10 @@ function AgentMessage(props: {
           {(meta.log ?? []).length > 0 ? (
             <details className="group/log min-w-0 flex-1 text-xs text-muted-foreground">
               <summary className="flex cursor-pointer list-none items-center gap-1 hover:text-foreground">
-                <ChevronRight className="size-3 transition-transform group-open/log:rotate-90" />
+                <ChevronRight className="size-3.5 transition-transform group-open/log:rotate-90" />
                 Agent log{meta.durationMs ? ` · ${(meta.durationMs / 1000).toFixed(0)}s` : ''}
               </summary>
-              <ul className="mt-1.5 space-y-1 border-l pl-3 font-mono text-[11px] leading-snug">
+              <ul className="mt-1.5 space-y-1 border-l pl-3 font-mono text-xs leading-snug">
                 {meta.log!.map((line, i) => (
                   <li key={i} className="break-words">
                     {line}
@@ -249,7 +249,7 @@ function AgentMessage(props: {
           )}
           {revertible && (
             <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 px-2 text-xs" disabled={reverting} onClick={revert} title="Put the screen back the way it was before this step">
-              {reverting ? <Loader2 className="size-3 animate-spin" /> : <Undo2 className="size-3" />}
+              {reverting ? <Loader2 className="size-3.5 animate-spin" /> : <Undo2 className="size-3.5" />}
               {m.kind === 'revert' ? 'Redo' : 'Undo'}
             </Button>
           )}
@@ -269,7 +269,7 @@ function BeforeAfter(props: { screenId: string; versionId: string; device: strin
       <div className="overflow-hidden rounded-lg border bg-card" style={{ width, height: Math.round(width * 1.6) }}>
         <iframe src={src} title={label} aria-hidden tabIndex={-1} loading="lazy" sandbox="allow-scripts" className="pointer-events-none origin-top-left border-0" style={{ width: 390, height: 390 * 1.6, transform: `scale(${width / 390})` }} />
       </div>
-      <figcaption className="mt-1 text-center text-[11px] text-muted-foreground">{label}</figcaption>
+      <figcaption className="mt-1 text-center text-xs text-muted-foreground">{label}</figcaption>
     </figure>
   )
   return (

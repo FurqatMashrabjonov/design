@@ -18,7 +18,6 @@ export const Route = createFileRoute('/')({
       { title: `${BRAND} — design a whole mobile app from one prompt` },
       { name: 'description', content: 'Describe an app and get every screen in one design language: shared data, one navigation, real photos. Click through it, edit any element, export a prototype.' },
     ],
-    links: [{ rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap' }],
   }),
   component: Index,
 })

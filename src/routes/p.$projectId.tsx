@@ -688,7 +688,7 @@ function ProjectPage() {
                   <button
                     type="button"
                     onClick={() => focusScreen(selectedScreen.id)}
-                    className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-primary/60"
+                    className="min-w-0 truncate rounded-md border bg-background px-2 py-0.5 hover:border-ring/40"
                     title={multi ? screens.filter((s) => selectedIds.includes(s.id)).map((s) => s.name).join(', ') : 'Show on the canvas'}
                   >
                     {multi ? `${selectedIds.length} screens` : selectedScreen.name}
@@ -696,7 +696,7 @@ function ProjectPage() {
                   {selectedElementId && (
                     <>
                       <span className="text-muted-foreground">›</span>
-                      <span className="min-w-0 truncate rounded-md border border-primary/40 bg-primary/5 px-2 py-0.5 text-primary">{elementInfo?.label ?? 'Element'}</span>
+                      <span className="min-w-0 truncate rounded-md border border-lime-300 bg-lime-100 px-2 py-0.5 text-brand-ink">{elementInfo?.label ?? 'Element'}</span>
                     </>
                   )}
                   <button type="button" onClick={escape} className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" title="Step out (Esc)" aria-label="Step out">

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ArrowUp, ImagePlus, Square, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export function PromptBox(props: {
   placeholder: string
@@ -24,8 +25,19 @@ export function PromptBox(props: {
   lastPrompt?: string
   /** Lets a suggestion chip fill the box. Changing `key` re-applies the same text. */
   fill?: { text: string; key: number }
+  /** UI-10: `hero` is the landing's big box — larger type, a labelled lime button, a raised shadow. */
+  variant?: 'default' | 'hero'
+  /** The hero button's words. */
+  submitLabel?: string
+  /** What the box starts with (the landing restores a prompt kept for after sign-in). */
+  defaultValue?: string
+  /** A quiet note beside the send button. */
+  hint?: ReactNode
+  /** Accessible name of the text box. */
+  label?: string
 }) {
-  const [prompt, setPrompt] = useState('')
+  const hero = props.variant === 'hero'
+  const [prompt, setPrompt] = useState(props.defaultValue ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   // LLM-02: reference pictures for the next message, as data URLs. They belong to that one request.
@@ -96,7 +108,10 @@ export function PromptBox(props: {
         e.preventDefault()
         submit()
       }}
-      className="rounded-2xl border bg-card p-2.5 shadow-sm"
+      className={cn(
+        'border bg-card text-card-foreground transition-shadow duration-(--duration-base) ease-out focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
+        hero ? 'rounded-xl p-3 shadow-3' : 'rounded-lg p-2.5 shadow-1',
+      )}
     >
       {props.queued && (
         <div className="mb-1.5 flex items-center gap-2 rounded-lg bg-muted/70 px-2.5 py-1.5 text-xs">
@@ -119,7 +134,7 @@ export function PromptBox(props: {
                 aria-label={`Remove reference ${i + 1}`}
                 title="Remove"
               >
-                <X className="size-3" />
+                <X className="size-3.5" />
               </button>
             </span>
           ))}
@@ -152,9 +167,10 @@ export function PromptBox(props: {
           }
         }}
         placeholder={props.placeholder}
-        aria-label="Design prompt"
+        aria-label={props.label ?? 'Design prompt'}
         rows={3}
-        className="resize-none border-0 p-1 shadow-none focus-visible:ring-0"
+        maxLength={hero ? 2000 : undefined}
+        className={cn('resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0 dark:bg-transparent', hero && 'px-2 text-base leading-relaxed md:text-base')}
       />
       <div className="flex items-center justify-between gap-2 pt-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -174,13 +190,18 @@ export function PromptBox(props: {
             </>
           )}
           {props.extra}
+          {props.hint && <span className="px-1 text-xs text-muted-foreground">{props.hint}</span>}
         </div>
         {running && props.onStop ? (
-          <Button type="button" size="icon" className="size-8 shrink-0 rounded-full" onClick={props.onStop} title="Stop (Esc)" aria-label="Stop generating">
+          <Button type="button" size="icon-sm" className="shrink-0 rounded-full" onClick={props.onStop} title="Stop (Esc)" aria-label="Stop generating">
             <Square className="size-3 fill-current" />
           </Button>
+        ) : hero ? (
+          <Button type="submit" size="lg" className="shrink-0" disabled={!prompt.trim()}>
+            {props.submitLabel ?? 'Send'} <ArrowUp />
+          </Button>
         ) : (
-          <Button type="submit" size="icon" className="size-8 shrink-0 rounded-full" disabled={!prompt.trim()} aria-label={running ? 'Queue' : 'Send'} title={running ? 'Send when the current run ends' : 'Send'}>
+          <Button type="submit" size="icon-sm" className="shrink-0 rounded-full" disabled={!prompt.trim()} aria-label={running ? 'Queue' : 'Send'} title={running ? 'Send when the current run ends' : 'Send'}>
             <ArrowUp className="size-4" />
           </Button>
         )}
