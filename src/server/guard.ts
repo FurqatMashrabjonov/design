@@ -4,6 +4,7 @@ import { Project } from '@/app/Models/Project'
 import { userFrom } from './auth'
 import { UsageService } from '@/app/Services/UsageService'
 import { CreditService } from '@/app/Services/CreditService'
+import '@/app/Services/SecretService' // ADM-13: model calls take their key from the panel, else .env
 import { Credit } from '@/app/Models/Credit'
 
 export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>): Promise<Response> {

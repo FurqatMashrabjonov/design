@@ -1,11 +1,12 @@
 import type { Pool } from 'pg'
 import m0001 from './migrations/0001_initial.ts'
+import m0002 from './migrations/0002_create_secrets.ts'
 
 // INF-10: numbered migrations, each run at most once ever and tracked in _migrations, each in its own
 // transaction — a migration that fails leaves the database as it was. A new one is a new file here.
 export type Migration = { name: string; up: string }
 
-const migrations: Migration[] = [m0001]
+const migrations: Migration[] = [m0001, m0002]
 
 export async function migrate(pool: Pool) {
   await pool.query('CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, run_at BIGINT NOT NULL DEFAULT extract(epoch from now())::bigint)')

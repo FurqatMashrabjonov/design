@@ -1,4 +1,5 @@
 import { PRODUCTS, type ProductKey } from '@/lib/credit-prices'
+import { SecretService } from './SecretService'
 
 // BIL-09/11: the payment provider (Polar, BIL-01). Sandbox until the live account is approved:
 // POLAR_SERVER=production switches the host; the token belongs to one organization, so no org id.
@@ -7,8 +8,8 @@ import { PRODUCTS, type ProductKey } from '@/lib/credit-prices'
 const BASE = () => (process.env.POLAR_SERVER === 'production' ? 'https://api.polar.sh' : 'https://sandbox-api.polar.sh')
 
 async function api<T>(path: string, init?: { method?: string; body?: unknown }): Promise<T> {
-  const token = process.env.POLAR_ACCESS_TOKEN
-  if (!token) throw new Error('Payments are not configured (POLAR_ACCESS_TOKEN is not set)')
+  const token = await SecretService.get('POLAR_ACCESS_TOKEN')
+  if (!token) throw new Error('Payments are not configured — add the Polar token in Admin → Settings → API keys')
   const res = await fetch(`${BASE()}${path}`, {
     method: init?.method ?? 'GET',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

@@ -2,6 +2,7 @@
 // gets a 404, the same as a page that does not exist — and validates its input before the controller.
 import { createServerFn } from '@tanstack/react-start'
 import { AdminController, ADMIN_SETTINGS, type AdminSettingKey } from '@/app/Http/Controllers/AdminController'
+import { SECRET_NAMES } from '@/app/Services/SecretService'
 import { requireAdmin } from './auth'
 import { idOf, num, obj, oneOf, str } from './validate'
 
@@ -63,6 +64,22 @@ export const adminGrantCredits = createServerFn({ method: 'POST' })
     return { userId: idOf(o.userId), amount, note: str(o.note ?? '', 200) }
   })
   .handler(async ({ data }) => AdminController.grantCredits((await requireAdmin()).id, data))
+
+/** ADM-13: provider keys. A value goes in and is never sent back; the panel sees only its last four. */
+export const adminSecrets = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.secrets()))
+
+export const adminSetSecret = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const value = o.value === null ? null : str(o.value, 500).trim()
+    if (value !== null && (value.length < 8 || /\s/.test(value))) throw new Error('That does not look like a key')
+    return { name: oneOf(o.name, [...SECRET_NAMES]), value }
+  })
+  .handler(async ({ data }) => AdminController.setSecret((await requireAdmin()).id, data))
+
+export const adminTestSecret = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => oneOf(obj(d).name, [...SECRET_NAMES]))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.testSecret(data)))
 
 export const adminSetSetting = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {

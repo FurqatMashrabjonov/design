@@ -201,6 +201,15 @@ export const subscriptions = pgTable('subscriptions', {
   updatedAt: unix('updated_at').notNull().default(now),
 })
 
+// ADM-13: API keys entered in the admin panel, sealed (lib/secret-box.ts); only last4 is ever shown.
+export const secrets = pgTable('secrets', {
+  name: text('name').primaryKey(),
+  sealed: text('sealed').notNull(),
+  last4: text('last4').notNull(),
+  updatedBy: text('updated_by'),
+  updatedAt: unix('updated_at').notNull().default(now),
+})
+
 // ADM-01: every admin action (ban, pause, limit, role), who did it and when.
 export const adminActions = pgTable('admin_actions', {
   id: text('id').primaryKey(),

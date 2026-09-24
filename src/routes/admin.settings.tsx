@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { adminControls, adminSetSetting } from '../server/admin-fns'
+import { adminControls, adminSecrets, adminSetSecret, adminSetSetting, adminTestSecret } from '../server/admin-fns'
 import { Badge, date, money, PageTitle, Panel } from '../admin/ui'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 // ADM-08: the switches that used to need a deploy — pause, limits, budget — and the audit trail.
+// ADM-13: the provider keys, entered here instead of .env.
 export const Route = createFileRoute('/admin/settings')({
-  loader: () => adminControls(),
+  loader: async () => ({ ...(await adminControls()), keys: await adminSecrets() }),
   component: ControlsPage,
 })
 
@@ -65,6 +66,8 @@ function ControlsPage() {
         </Panel>
       </div>
 
+      <Keys keys={d.keys} onChange={() => router.invalidate()} />
+
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Panel title="System">
           <dl className="space-y-2 text-sm">
@@ -97,5 +100,80 @@ function ControlsPage() {
         </Panel>
       </div>
     </>
+  )
+}
+
+type KeyRow = Awaited<ReturnType<typeof adminSecrets>>[number]
+
+/** ADM-13: one row per provider key. A key is typed in, saved sealed, and never shown again — only its last four. */
+function Keys({ keys, onChange }: { keys: KeyRow[]; onChange: () => void }) {
+  const [editing, setEditing] = useState<KeyRow['name'] | null>(null)
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const label = (name: KeyRow['name']) => keys.find((k) => k.name === name)?.label ?? name
+
+  async function save(name: KeyRow['name'], v: string | null) {
+    setBusy(name)
+    try {
+      await adminSetSecret({ data: { name, value: v } })
+      toast.success(v === null ? `${label(name)}: back to .env` : `${label(name)} saved`)
+      setEditing(null)
+      setValue('')
+      onChange()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+  async function test(name: KeyRow['name']) {
+    setBusy(name)
+    try {
+      const r = await adminTestSecret({ data: { name } })
+      if (r.ok) toast.success(`${label(name)}: ${r.detail}`)
+      else toast.error(`${label(name)}: ${r.detail}`)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <Panel title="API keys" className="mt-4">
+      <p className="mb-3 text-xs text-muted-foreground">A key saved here wins over .env and is stored encrypted; after saving you only ever see its last four characters. Remove it to fall back to .env.</p>
+      <ul className="divide-y text-sm">
+        {keys.map((k) => (
+          <li key={k.name} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+            <div className="w-48 min-w-0">
+              <p className="font-medium">{k.label}</p>
+              <p className="truncate font-mono text-[11px] text-muted-foreground">{k.name}</p>
+            </div>
+            <div className="w-28">{k.source === 'admin' ? <Badge tone="good">Admin</Badge> : k.source === 'env' ? <Badge>.env</Badge> : <Badge tone="bad">Missing</Badge>}</div>
+            <span className="w-20 font-mono text-xs text-muted-foreground">{k.last4 ? `••••${k.last4}` : '—'}</span>
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{k.updatedAt ? `${date(k.updatedAt)}${k.updatedBy ? ` · ${k.updatedBy}` : ''}` : ''}</span>
+            {editing === k.name ? (
+              <form
+                className="flex w-full gap-2 sm:w-auto"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (value.trim()) save(k.name, value.trim())
+                }}
+              >
+                <Input type="password" autoComplete="off" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="Paste the key" aria-label={`${k.label} key`} className="h-8 sm:w-64" />
+                <Button type="submit" size="sm" disabled={busy === k.name || !value.trim()}>Save</Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => (setEditing(null), setValue(''))}>Cancel</Button>
+              </form>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => (setEditing(k.name), setValue(''))}>{k.source === 'admin' ? 'Replace' : 'Set'}</Button>
+                <Button size="sm" variant="outline" disabled={k.source === 'missing' || busy === k.name} onClick={() => test(k.name)}>Test</Button>
+                {k.source === 'admin' && (
+                  <Button size="sm" variant="ghost" disabled={busy === k.name} onClick={() => save(k.name, null)}>Remove</Button>
+                )}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Panel>
   )
 }

@@ -82,6 +82,20 @@ function reportUsage(u: Record<string, number> | undefined, also?: (u: LlmUsage)
 // thinks by default; the legacy `deepseek-chat` alias is this same model with thinking off, but an
 // alias can be re-pointed, so both the id and the mode are pinned here.
 const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-flash'
+/**
+ * ADM-13: where provider keys come from. SecretService registers itself on import (the admin panel's
+ * key, else .env); until it does — the plain-node tests, which have no database — it is .env alone.
+ */
+let keySource: (name: 'DEEPSEEK_API_KEY') => Promise<string | undefined> = async (name) => process.env[name]
+export function setKeySource(fn: typeof keySource) {
+  keySource = fn
+}
+async function deepseekKey(): Promise<string> {
+  const key = await keySource('DEEPSEEK_API_KEY')
+  if (!key) throw new Error('No DeepSeek API key — add one in Admin → Settings → API keys')
+  return key
+}
+
 /** BIL-05: the model a credit is priced for. The local CLI (testing only) is billed as this too, so
  * the credit flow can be tried without spending. LLM-07 makes it a setting. */
 export const BILLED_MODEL = MODEL
@@ -159,8 +173,7 @@ async function* rawStream(system: string, user: string, signal?: AbortSignal, on
     yield* claudeCli(system, note, signal, onUsage)
     return
   }
-  const key = process.env.DEEPSEEK_API_KEY
-  if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
+  const key = await deepseekKey()
 
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
@@ -222,8 +235,7 @@ async function rawJSON(system: string, user: string, maxTokens = 1024, onUsage?:
     for await (const d of claudeCli(system, user, signal, onUsage)) text += d
     return jsonOnly(text)
   }
-  const key = process.env.DEEPSEEK_API_KEY
-  if (!key) throw new Error('DEEPSEEK_API_KEY is not set in .env')
+  const key = await deepseekKey()
 
   const res = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',

@@ -19,7 +19,9 @@ const sse = (text: string) => new Response(`data: ${JSON.stringify({ choices: [{
 type Sent = { system: string; user: string; json: boolean }
 let sent: Sent[] = []
 let reply: (req: Sent) => Response = () => sse(page('Screen'))
+let lastAuth: string | undefined
 globalThis.fetch = (async (_url: unknown, init?: RequestInit) => {
+  lastAuth = (init?.headers as Record<string, string> | undefined)?.Authorization
   const body = JSON.parse(String(init?.body))
   const req = { system: body.messages[0].content, user: body.messages[1].content, json: Boolean(body.response_format) }
   sent.push(req)
@@ -612,6 +614,50 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   await ProjectController.store({ designSystem: 'nova', userId: 'freebie' })
   assert.equal((await CreditService.limitsFor('freebie')).projects, null, 'Pro is unlimited')
   await ProjectController.store({ designSystem: 'nova' }) // the eval and tests make projects with no user: never limited
+}
+
+// ADM-13: a key saved in the panel wins over .env, is stored sealed, is shown only by its last four,
+// and removing it falls back to .env. The test reports an outcome, never a response body.
+{
+  const { randomBytes } = await import('node:crypto')
+  process.env.SECRETS_KEY = randomBytes(32).toString('base64')
+  const { SecretService } = await import('../../Services/SecretService.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const { AdminStatsService } = await import('../../Services/AdminStatsService.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { secrets } = await import('../../../database/schema.ts')
+  process.env.PEXELS_API_KEY = 'env-pexels-0000'
+  assert.equal(await SecretService.get('PEXELS_API_KEY'), 'env-pexels-0000', 'no saved key: .env')
+  await AdminController.setSecret('adm', { name: 'PEXELS_API_KEY', value: 'panel-pexels-9876' })
+  assert.equal(await SecretService.get('PEXELS_API_KEY'), 'panel-pexels-9876', 'a saved key wins, at once (cache cleared)')
+  const [row] = await db.select().from(secrets)
+  assert.ok(row && !row.sealed.includes('panel-pexels') && row.last4 === '9876', 'stored sealed; only the last four in clear')
+  const st = (await AdminController.secrets()).find((k) => k.name === 'PEXELS_API_KEY')!
+  assert.deepEqual([st.source, st.last4], ['admin', '9876'])
+  assert.ok(!JSON.stringify(await AdminController.secrets()).includes('panel-pexels'), 'the panel never receives a key')
+  assert.equal((await AdminController.secrets()).find((k) => k.name === 'ANTHROPIC_API_KEY')!.source, 'missing')
+  assert.equal((await AdminStatsService.controls()).actions[0]!.detail, '…9876', 'the log keeps the last four only')
+  const llmFetch = globalThis.fetch
+  let probe = { status: 401, headers: {} as Record<string, string> }
+  globalThis.fetch = (async (_url: unknown, init?: RequestInit) => ((probe.headers = init?.headers as Record<string, string>), new Response('{"error":"invalid key sk-echo"}', { status: probe.status }))) as typeof fetch
+  const bad = await AdminController.testSecret('PEXELS_API_KEY')
+  assert.ok(!bad.ok && /Rejected/.test(bad.detail) && !bad.detail.includes('sk-echo'), 'a rejected key says so, without the body')
+  assert.equal(probe.headers.Authorization, 'panel-pexels-9876', 'the test sends the key in force')
+  probe.status = 200
+  assert.equal((await AdminController.testSecret('PEXELS_API_KEY')).ok, true)
+  globalThis.fetch = llmFetch
+  // The model call takes the panel's DeepSeek key over .env (SecretService registers itself with LlmService).
+  process.env.DEEPSEEK_API_KEY = 'env-deepseek-0000'
+  await AdminController.setSecret('adm', { name: 'DEEPSEEK_API_KEY', value: 'panel-deepseek-1111' })
+  await Project.create({ id: 'p-key', name: 'K', designSystem: 'minimal', device: 'mobile' })
+  await post(GenerateController, { projectId: 'p-key', prompt: 'a settings screen' })
+  assert.equal(lastAuth, 'Bearer panel-deepseek-1111', 'generation uses the key saved in the panel')
+  await AdminController.setSecret('adm', { name: 'DEEPSEEK_API_KEY', value: null })
+  await post(GenerateController, { projectId: 'p-key', prompt: 'another screen' })
+  assert.equal(lastAuth, 'Bearer env-deepseek-0000', 'removed from the panel: .env again')
+  await AdminController.setSecret('adm', { name: 'PEXELS_API_KEY', value: null })
+  assert.equal(await SecretService.get('PEXELS_API_KEY'), 'env-pexels-0000', 'removed: back to .env')
+  assert.deepEqual((await AdminController.testSecret('ANTHROPIC_API_KEY')), { ok: false, detail: 'No key set' })
 }
 
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change

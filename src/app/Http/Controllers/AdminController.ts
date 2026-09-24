@@ -6,6 +6,7 @@ import { User } from '@/app/Models/User'
 import { Setting } from '@/app/Models/Setting'
 import { AdminAction } from '@/app/Models/AdminAction'
 import { Credit } from '@/app/Models/Credit'
+import { SecretService, type SecretName } from '@/app/Services/SecretService'
 import { isAdmin } from '@/app/Services/AuthService'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
@@ -75,6 +76,14 @@ export const AdminController = {
     await Setting.set(`limits.user.${d.userId}`, d.limit === null ? null : String(d.limit))
     await AdminAction.log(adminId, 'set-user-limit', target.email, d.limit === null ? 'default' : String(d.limit))
   },
+  /** ADM-13: provider keys — where each comes from and its last four characters, never the key. */
+  secrets: () => SecretService.status(),
+  async setSecret(adminId: string, d: { name: SecretName; value: string | null }) {
+    await SecretService.set(d.name, d.value, adminId)
+    await AdminAction.log(adminId, d.value === null ? 'remove-key' : 'set-key', d.name, d.value === null ? 'back to .env' : `…${d.value.slice(-4)}`)
+  },
+  testSecret: (name: SecretName) => SecretService.test(name),
+
   /** BIL-04: credits by hand (a refund, a gift, a correction) — a ledger row, and a log line. */
   async grantCredits(adminId: string, d: { userId: string; amount: number; note: string }) {
     const target = await User.find(d.userId)

@@ -1,4 +1,5 @@
 import { ImageCache } from '@/app/Models/ImageCache'
+import { SecretService } from './SecretService'
 import { genderOf, type Gender } from '@/lib/content-seed'
 import { applyAvatars, applyImages, applyLogo, avatarNames, imageQueries, type ResolvedImage } from '@/lib/image-slots'
 
@@ -9,7 +10,7 @@ const MAX_SLOTS = 12 // per screen; more than this is a gallery the API budget s
 // Same query, same photo: the first result is the most relevant one and the cache makes it stable.
 // ponytail: one provider, first hit. Rotate through `photos` by slot index if screens start repeating a photo.
 async function search(query: string, signal?: AbortSignal): Promise<ResolvedImage | null | undefined> {
-  const key = process.env.PEXELS_API_KEY
+  const key = await SecretService.get('PEXELS_API_KEY')
   if (!key) return undefined
   const res = await fetch(`${SEARCH}?query=${encodeURIComponent(query)}&per_page=3`, {
     headers: { Authorization: key },
@@ -43,7 +44,7 @@ const POOL_QUERY: Record<Gender, string> = { f: 'woman portrait face', m: 'man p
 async function portraitPool(gender: Gender, signal?: AbortSignal): Promise<string[]> {
   const cached = (await Promise.all(Array.from({ length: POOL }, (_, i) => ImageCache.find(`avatar:${gender}:${i}`)))).map((r) => r?.url).filter((u): u is string => Boolean(u))
   if (cached.length > 0) return cached
-  const key = process.env.PEXELS_API_KEY
+  const key = await SecretService.get('PEXELS_API_KEY')
   if (!key) return []
   const res = await fetch(`${SEARCH}?query=${encodeURIComponent(POOL_QUERY[gender])}&per_page=${POOL}`, {
     headers: { Authorization: key },

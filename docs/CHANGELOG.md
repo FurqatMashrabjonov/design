@@ -5,6 +5,50 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### API kalitlari admin paneldan (ADM-13)
+
+DeepSeek, Gemini, Anthropic, Pexels, Polar token va webhook secret endi **Admin → Settings → API
+keys** bo'limida kiritiladi.
+- **Panelda saqlangan kalit `.env`'dagidan ustun turadi.** Kalit deploy'siz almashtiriladi,
+  "Remove" bosilsa `.env`'dagisiga qaytadi.
+- **Bazada shifrlangan holda saqlanadi.** AES-256-GCM, har safar yangi IV, GCM tegi o'zgartirishni
+  ushlaydi. Master kalit `SECRETS_KEY` faqat `.env`'da: bazaning nusxasi yolg'iz hech narsani
+  o'qiy olmaydi. Boshqa master kalit bilan ochilmagan qator jurnalga yoziladi va `.env`'ga
+  qaytiladi.
+- **Brauzerga faqat oxirgi 4 belgi boradi.** Admin jurnaliga ham faqat `…oxirgi4` yoziladi.
+- **"Test connection".** Har provayderga bitta arzon, autentifikatsiyali o'qish so'rovi. Faqat
+  natija qaytadi (ulandi yoki rad etildi va status kodi), provayder javobining tanasi hech qachon
+  qaytmaydi. Gemini noto'g'ri kalitga 400 qaytaradi — bu ham rad etish deb hisoblanadi.
+- **Kalit o'qiladigan joylar** (LlmService, ImageService, PolarService, webhook route)
+  `SecretService.get` orqali o'qiydi. LlmService `setKeySource` orqali oladi, shuning uchun
+  uning bazasiz testlari o'zgarmadi.
+- **Kesh:** faqat paneldagi qiymat 1 daqiqa keshlanadi, `.env` har safar yangidan o'qiladi.
+- `SECRETS_KEY` yaratildi va `.env`'ga yozildi (qiymati hech qayerda chiqarilmadi).
+  `.env.example` va HANDOFF'da tushuntirildi.
+
+Fayllar: `app/Services/{secret-box,SecretService,LlmService,ImageService,PolarService}.ts`,
+`migrations/0002_create_secrets.ts`, `migrate.ts`, `schema.ts`, `AdminController.ts`,
+`admin-fns.ts`, `routes/admin.settings.tsx`, `routes/api/polar-webhook.ts`, `server/guard.ts`,
+testlar, CLAUDE.md, HANDOFF, `.env.example`.
+
+Tekshiruv:
+- `npm run check`, `npx tsc --noEmit` toza.
+- Testlar:
+  - shifrlangan shaklda ochiq matn yo'q; har safar yangi IV;
+  - boshqa kalit bilan ochilmaydi, o'zgartirilgan qiymat tegdan o'tmaydi;
+  - `.env` → panel → yana `.env` tartibi;
+  - bazada faqat shifrlangan qiymat va oxirgi 4 belgi;
+  - panel javobida kalit yo'q; jurnalda faqat `…9876`;
+  - rad etilgan test javob tanasini qaytarmaydi;
+  - **generatsiya paneldagi DeepSeek kalitini ishlatadi**, o'chirilgach yana `.env`'dagini.
+- Brauzerda:
+  - bo'lim 6 ta kalitni to'g'ri manbasi bilan ko'rsatdi;
+  - DeepSeek, Pexels va Polar'ning haqiqiy kalitlari "Connected (200)";
+  - webhook secret shakli tekshirildi;
+  - "abc" rad etildi ("That does not look like a key");
+  - soxta Gemini kaliti saqlandi (Admin, ••••1234), testda "Rejected by the provider (400)",
+    olib tashlangach yana "Missing".
+
 ### SQLite → Postgres (INF-10)
 
 Butun ma'lumot qatlami lokal Postgres 17'ga ko'chdi (`DATABASE_URL`, standart

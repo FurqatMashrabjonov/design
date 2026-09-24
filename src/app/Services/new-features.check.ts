@@ -196,6 +196,22 @@ for (const id of DesignSystemService.list().map((d) => d.id)) {
   assert.equal(verify('', good, body, now), false, 'no secret configured, nothing is believed')
 }
 
+// ADM-13: a key is sealed with the master key; changed or opened with another key, it fails loudly.
+{
+  const { seal, open, masterKey } = await import('./secret-box.ts')
+  const { randomBytes } = await import('node:crypto')
+  const k1 = randomBytes(32), k2 = randomBytes(32)
+  const sealed = seal('sk-live-abc123', k1)
+  assert.ok(!sealed.includes('sk-live'), 'no plaintext in the sealed form')
+  assert.notEqual(seal('sk-live-abc123', k1), sealed, 'a fresh IV every time')
+  assert.equal(open(sealed, k1), 'sk-live-abc123')
+  assert.throws(() => open(sealed, k2), 'another master key cannot open it')
+  const [v, iv, tag, data] = sealed.split('.')
+  assert.throws(() => open([v, iv, tag, Buffer.from('x' + Buffer.from(data!, 'base64').toString('binary'), 'binary').toString('base64')].join('.'), k1), 'a changed value fails its tag')
+  assert.throws(() => masterKey('too-short'), /32 bytes/)
+  assert.throws(() => masterKey(''), /missing/)
+}
+
 console.log('Testing Navigation Shell Builder...')
 const { buildBottomNav, buildDetailHeader, NAV_CLEARANCE, navStyle, navClearance } = await import('./ShellService.ts')
 const navA = buildBottomNav(multiPlan.navigation, 'home')
