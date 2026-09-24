@@ -1,7 +1,7 @@
 import { AppPatternService } from './AppPatternService.ts'
 import { completeJSON, type LlmUsage } from './LlmService.ts'
 import { ICON_NAMES, isActionIcon, resolveIcon } from './ShellService.ts'
-import { readProposal, type ProposedPalette } from '../../lib/palette.ts'
+import { hueBlock, hueDirection, readProposal, type ProposedPalette } from '../../lib/palette.ts'
 
 // What a screen is *for*. The vocabulary is closed so code can reason about a plan: pick a blueprint,
 // check that the brief's screens are covered, measure plans in the eval.
@@ -17,7 +17,7 @@ Work in this order.
 3. NAVIGATION. Bottom tabs (mobile) or sidebar items (desktop): 2 to 5 destinations, one word each. A tab exists only if one of your screens is its root. Tabs are destinations, never actions.
 4. TYPES. A screen is a "root-tab" (THE one primary view of a tab; give it that tab's activeTabId), a "detail-view" (opened by tapping something inside another screen; names its parentScreen) or a "modal-flow" (a step of a focused task: checkout, compose, onboarding; names its parentScreen). An item's detail, an editor, a form, a result, a confirmation, a tracking view are never root-tab.
 5. SPEC. For each screen: its archetype, the user's goal in one sentence, the ONE primary action, 3 to 6 sections from top to bottom (each a short phrase naming the content, e.g. "Order summary with item thumbnails"), and "linksTo": the other screens a tap on this screen opens.
-6. PALETTE. Invent the colours for THIS app, as hex. "bg" is the page, "surface" is cards on it, "fg" is body text, "accent" is the one brand colour. Choose from the whole spectrum — terracotta, ochre, moss, plum, sand, teal — and let the subject decide: a habit tracker is not a bank. Do not reach for indigo, violet or a generic blue unless the brief asks. "radius" is sharp, soft, round or pill. "character" is three or four words. Pick for character, not for safety: contrast is repaired afterwards in code, so a pale or vivid choice is allowed. If the brief says dark, night, sleep, focus or cinema, make "bg" dark and the accent vivid.
+6. PALETTE. Invent the colours for THIS app, as hex. "bg" is the page, "surface" is cards on it, "fg" is body text, "accent" is the one brand colour. A PALETTE LEAN below names the part of the spectrum to start from; take the exact shades from there and let the subject sharpen them — a habit tracker is not a bank. "radius" is sharp, soft, round or pill. "character" is three or four words. Pick for character, not for safety: contrast is repaired afterwards in code, so a pale or vivid choice is allowed. If the brief says dark, night, sleep, focus or cinema, make "bg" dark and the accent vivid.
 7. DATA. "entities": the real things this app is about — 1 to 3 kinds, 4 to 6 items each, with 2 to 5 short fields. Concrete, specific, mutually consistent (prices, times, counts that make sense together). Every screen will draw from exactly this data, so an item shown in a list is the same item, with the same values, on its detail screen. Write names and values in the brief's language.
 
 Respond with JSON only, exactly this shape:
@@ -28,7 +28,7 @@ Respond with JSON only, exactly this shape:
   "tags": ["3 to 6 short tags"],
   "requested": ["restaurant feed with categories", "dish detail with add-ons", "cart and checkout"],
   "navigation": { "type": "bottom-tabs", "tabs": [ { "id": "home", "label": "Home", "icon": "home" }, { "id": "orders", "label": "Orders", "icon": "receipt" } ] },
-  "palette": { "accent": "#c05e3c", "bg": "#faf6f2", "surface": "#ffffff", "fg": "#2b2422", "radius": "round", "character": "warm, appetising, hand-made" },
+  "palette": { "accent": "#rrggbb", "bg": "#rrggbb", "surface": "#rrggbb", "fg": "#rrggbb", "radius": "round", "character": "three or four words for how this app should feel" },
   "entities": [
     { "kind": "Dish", "items": [ { "name": "Pad Thai", "fields": { "price": "$16.50", "restaurant": "Bangkok Garden", "rating": "4.8", "time": "25 min" } } ] }
   ],
@@ -417,10 +417,13 @@ export function assignScreenSlots(screens: PlannedScreen[], navigation: AppNavig
   return out
 }
 
-export async function planScreens(brief: string, device: string, onUsage?: (u: LlmUsage) => void): Promise<Plan> {
+/** @param seed the project id: picks this app's hue family (GQ-26). Omitted, the brief seeds it. */
+export async function planScreens(brief: string, device: string, onUsage?: (u: LlmUsage) => void, seed?: string): Promise<Plan> {
   // Only the pattern of the one app type the brief matches goes in (UX-02); none when nothing matches.
   const pattern = AppPatternService.classify(brief)
-  const user = `Brief: ${brief}\nPlatform: ${device}${pattern ? `\n\n${AppPatternService.brief(pattern)}` : ''}`
+  // In the request, never the system prompt: the prompt is cached and this differs per project.
+  const hue = hueBlock(hueDirection(seed ?? brief, pattern?.id))
+  const user = `Brief: ${brief}\nPlatform: ${device}${pattern ? `\n\n${AppPatternService.brief(pattern)}` : ''}\n\n${hue}`
   const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS, onUsage)
   const plan = trimToBrief(parsePlan(raw), brief)
   if (plan.uncovered.length === 0) return plan
@@ -446,10 +449,10 @@ Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace scre
 const PLAN_MAX_TOKENS = 4000
 
 // One retry on malformed JSON or an empty screen list — DeepSeek's json_object mode guarantees syntax but not shape.
-export async function planScreensWithRetry(brief: string, device: string, onUsage?: (u: LlmUsage) => void): Promise<Plan> {
+export async function planScreensWithRetry(brief: string, device: string, onUsage?: (u: LlmUsage) => void, seed?: string): Promise<Plan> {
   try {
-    return await planScreens(brief, device, onUsage)
+    return await planScreens(brief, device, onUsage, seed)
   } catch {
-    return await planScreens(brief, device, onUsage)
+    return await planScreens(brief, device, onUsage, seed)
   }
 }

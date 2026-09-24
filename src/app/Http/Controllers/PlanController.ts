@@ -122,7 +122,7 @@ export const PlanController = {
             screenIds = (edits.keep ?? pendingPlan.plan.screens.map((_, k) => k)).filter((i) => i < pendingPlan.screenIds.length).map((i) => pendingPlan.screenIds[i]!)
             log.push(`Approved ${plan.screens.length} of ${pendingPlan.plan.screens.length} planned screens`)
           } else {
-            plan = await planScreensWithRetry(brief, project.device, tally)
+            plan = await planScreensWithRetry(brief, project.device, tally, project.id)
             // Screen ids are decided now (LP-04): the canvas keys each plan frame by the id its screen
             // will be saved under, so the frame that streamed is the frame that stays.
             screenIds = plan.screens.map(() => crypto.randomUUID())

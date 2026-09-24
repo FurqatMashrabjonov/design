@@ -325,3 +325,64 @@ export function contrastReport(p: Palette): { pair: string; ratio: number; targe
 function roleKey(role: string): 'accent' | 'success' | 'warn' | 'danger' {
   return role === '--success' ? 'success' : role === '--warn' ? 'warn' : role === '--danger' ? 'danger' : 'accent'
 }
+
+// GQ-26: which part of the wheel this app leans toward, decided in code before the planner runs.
+//
+// Left to itself the model returns green every time: four generations came back moss, moss,
+// #2e7d32, #7a9e5f. The prompt was the cause, not the model — its JSON sample carried a real hex
+// that the first run copied verbatim, its wording offered "terracotta, ochre, moss, plum, sand,
+// teal" as examples, and it ruled out indigo, violet and blue by name, which leaves the earthy
+// middle as the only unpunished answer. Asking a sampler for variety does not produce variety; the
+// same FNV-1a seed that picks the art direction and the bottom bar picks the hue family here, so
+// two projects differ by construction and one project is stable across a rerun.
+//
+// This steers, it does not decide: the brief still wins ("a pink habit tracker"), and the model
+// still chooses the actual colours, their saturation and lightness, the radius and the character.
+
+export type HueFamily = { id: string; lean: string }
+
+export const HUE_FAMILIES: HueFamily[] = [
+  { id: 'clay', lean: 'earth reds — terracotta, rust, brick, clay' },
+  { id: 'amber', lean: 'warm yellows — amber, ochre, honey, saffron' },
+  { id: 'moss', lean: 'greens — moss, olive, fern, sage' },
+  { id: 'teal', lean: 'blue-greens — teal, sea, jade, petrol' },
+  { id: 'ink', lean: 'deep blues — ink, indigo, slate, denim' },
+  { id: 'plum', lean: 'purples — plum, mulberry, aubergine, iris' },
+  { id: 'rose', lean: 'pinks and corals — rose, coral, raspberry, blush' },
+]
+
+// Three or four per type, spread across the wheel rather than clustered, so the same app type can
+// still land somewhere different next time. A type not listed here draws from all seven.
+const HUES_FOR_TYPE: Record<string, string[]> = {
+  fintech: ['ink', 'teal', 'plum', 'clay'],
+  productivity: ['ink', 'teal', 'clay', 'plum'],
+  habits: ['amber', 'rose', 'teal', 'moss'],
+  fitness: ['clay', 'ink', 'amber', 'rose'],
+  health: ['teal', 'moss', 'rose', 'ink'],
+  learning: ['amber', 'rose', 'teal', 'plum'],
+  'food-delivery': ['clay', 'amber', 'moss', 'rose'],
+  food: ['clay', 'amber', 'moss'],
+  commerce: ['ink', 'rose', 'clay', 'plum'],
+  marketplace: ['teal', 'clay', 'ink', 'amber'],
+  booking: ['teal', 'ink', 'clay', 'plum'],
+  travel: ['teal', 'amber', 'clay', 'ink'],
+  social: ['rose', 'plum', 'amber', 'teal'],
+  media: ['plum', 'ink', 'rose', 'clay'],
+}
+
+function seedHash(s: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193)
+  return h >>> 0
+}
+
+/** @param seed the project id — stable across a rerun, different between projects. */
+export function hueDirection(seed: string, appType?: string): HueFamily {
+  const ids = HUES_FOR_TYPE[appType ?? ''] ?? HUE_FAMILIES.map((f) => f.id)
+  const id = ids[seedHash(`${seed}|hue`) % ids.length]!
+  return HUE_FAMILIES.find((f) => f.id === id)!
+}
+
+/** The line the planner's request carries; the brief overrides it, which is said out loud. */
+export const hueBlock = (f: HueFamily) =>
+  `PALETTE LEAN for this app: ${f.lean}. Start there and pick the exact colours yourself — the shade, how vivid, how light the page is, the radius and the character are all your call. If the brief names a colour or a mood that points elsewhere, the brief wins and you ignore this line.`

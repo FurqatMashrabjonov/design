@@ -5,6 +5,45 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Palitra ottenkasi kodda tanlanadi — GQ-26
+
+To'rt generatsiya ketma-ket yashil qaytargandi: moss, moss, `#2e7d32`, `#7a9e5f`. Sabab modelda
+emas, **promptda** — uchta langar bor edi:
+
+1. JSON namunasi haqiqiy hex olib yurardi (`"accent": "#c05e3c"`), va birinchi yugurish uni
+   **aynan nusxalagan**.
+2. 6-qoida misol sifatida `terracotta, ochre, moss, plum, sand, teal` deb sanardi — ikki yugurish
+   so'zma-so'z `moss` qaytardi.
+3. `"Do not reach for indigo, violet or a generic blue unless the brief asks"` uchta oilani nomi
+   bilan o'chirardi, ya'ni jazolanmagan yagona javob sifatida tuproqli o'rta qismni qoldirardi.
+
+**Tuzatish `artDirection` naqshi bo'yicha:** `lib/palette.ts` da `hueDirection(seed, appType)` —
+yetti ottenka oilasi (clay, amber, moss, teal, ink, plum, rose), har ilova turiga g'ildirak bo'ylab
+tarqatilgan 3–4 nomzod, urug' loyiha id'si. Xuddi `navStyle` va blueprint variantlari kabi: namuna
+oluvchidan xilma-xillik so'rash xilma-xillik bermaydi, shuning uchun u **qurilish bo'yicha**
+ta'minlanadi.
+
+Yo'nalish **so'rov xabariga** qo'shiladi, system promptga emas — prompt keshlangan va bu har
+loyihada boshqacha. Matnning o'zi ustuvorlikni aytadi: *"brief boshqa rang yoki kayfiyat aytsa,
+brief yutadi va sen bu qatorni e'tiborsiz qoldirasan"*. Namunadagi hexlar `#rrggbb` ga, so'z
+ro'yxati va taqiq olib tashlandi.
+
+**O'lchov (2000 UUID, `habits` turi):** moss 25.9% · amber 25.2% · rose 24.8% · teal 24.1%.
+5 ta ketma-ket loyihada kamida 3 xil oila — **82%** holatda. To'liq kafolat uchun oxirgi N loyihaning
+ottenkasini bazadan o'qish kerak bo'lardi; holatsiz deterministik funksiya 82% ga yetadi va u yetarli
+deb baholandi.
+
+**Haqiqiy yugurish** (`"make habit tracker"`): kod `teal` dedi, model `#14b8a6` (173°) qaytardi —
+to'rt yashildan keyin birinchi marta boshqa oila. Ilova: HabitFlow, doodle, character
+"calm, focused, encouraging, vibrant". Audit `cleanShare 0.5` (`covered-text: 1`, `small-target: 2`) —
+FAB hali ochiq (EYE-08). Halol eslatma: bu **bitta namuna**, model yo'nalishga bir marta bo'ysundi.
+
+Tegilgan fayllar: `src/lib/palette.ts`, `src/lib/palette.check.ts`,
+`src/app/Services/PlannerService.ts`, `src/app/Http/Controllers/PlanController.ts`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; brauzerda bitta generatsiya.
+
+## 2026-09-24
+
 ### Komponent varag'i kirish sifatida: uy uslubi CSS emas, markup — GQ-16
 
 Diagnoz avval: uka ekranlar anchor ekranning **birinchi 1200 belgi CSS'ini** olardi — `* {box-sizing}`,

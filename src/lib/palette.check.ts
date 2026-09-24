@@ -155,4 +155,32 @@ console.log('Testing Dark Palette Depth (GQ-25)...')
   assert.ok(readFileSync('src/app/Services/PlannerService.ts', 'utf8').includes('dark, night, sleep, focus or cinema'), 'the planner is told when to choose a dark page')
 }
 
+// GQ-26: the hue family is decided in code, so two projects differ by construction. Four runs came
+// back moss, moss, #2e7d32, #7a9e5f because the prompt anchored the answer — a real hex in its JSON
+// sample, "moss" among its example words, and three families ruled out by name.
+{
+  const { hueDirection, hueBlock, HUE_FAMILIES } = await import('./palette.ts')
+  const { readFileSync } = await import('node:fs')
+  const planner = readFileSync('src/app/Services/PlannerService.ts', 'utf8')
+  assert.ok(!/"accent": "#[0-9a-f]{6}"/i.test(planner), 'the JSON sample carries a placeholder, not a hex a run can copy')
+  assert.ok(!planner.includes('terracotta, ochre, moss, plum, sand, teal'), 'the example word list is gone')
+  assert.ok(!planner.includes('Do not reach for indigo'), 'no family is ruled out by name any more')
+  assert.ok(planner.includes('PALETTE LEAN'), 'the planner is told a lean arrives with the request')
+
+  // Stable for one project, different across projects, and the brief is told it wins.
+  const id = crypto.randomUUID()
+  assert.equal(hueDirection(id, 'habits').id, hueDirection(id, 'habits').id, 'one project keeps its hue across a rerun')
+  assert.ok(hueBlock(HUE_FAMILIES[0]!).includes('the brief wins'), 'the lean says out loud that the brief overrides it')
+
+  // Every family is reachable, and no app type is pinned to one corner of the wheel.
+  const everywhere = new Set<string>()
+  for (let i = 0; i < 400; i++) everywhere.add(hueDirection(crypto.randomUUID()).id)
+  assert.equal(everywhere.size, HUE_FAMILIES.length, 'with no app type, all seven families come up')
+  for (const type of ['habits', 'fintech', 'health', 'media', 'social']) {
+    const seen = new Set<string>()
+    for (let i = 0; i < 400; i++) seen.add(hueDirection(crypto.randomUUID(), type).id)
+    assert.ok(seen.size >= 3, `${type}: offers at least three hue families (got ${seen.size})`)
+  }
+}
+
 console.log('Palette verified ✅')

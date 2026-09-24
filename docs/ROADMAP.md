@@ -88,7 +88,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-23 | Tipografiya shkalasi iOS 26 ga: 34/17/15/13/11, tabular raqamlar, optik o'lcham | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | mobile.md va Nova shu shkalada |
 | GQ-24 | Harakat: prujinali easing tokeni, bosishda 0.98 scale, tab morph, reduced-motion | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | Kit va shell'da, reduced-motion'da o'chadi |
 | GQ-25 | Nova dark varianti va 'tungi/focus' brief'larda dark-first | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10, GQ-13 | To'q palitrada Nova hunari to'g'ri ishlaydi |
-| GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Rejada | Kichik | GQ-10 | 5 chaqiruvda kamida 3 xil ottenka oilasi |
+| GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10 | hueDirection kodda tanlaydi; 5 loyihada ≥3 oila 82%; haqiqiy yugurish teal berdi |
 | GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | MVP | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
 | GQ-28 | Jamlanma raqamlar ekranlar orasida mos bo'lsin (streak, bugungi soni, jami) — APP DATA'ga | Generatsiya / Izchillik | Keyin | Rejada | Kichik | GQ-16 | Hakam bir yugurishda raqam ziddiyati topmaydi |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
