@@ -1,7 +1,7 @@
 import { createCsrfMiddleware, createMiddleware, createStart } from '@tanstack/react-start'
 import { getRequestIP } from '@tanstack/react-start/server'
 import { RequestContext } from '@/app/Services/RequestContext'
-import { installServerLogs, maskQuery, skipPath, TelescopeService } from '@/app/Services/TelescopeService'
+import { installOutgoing, installServerLogs, maskQuery, skipPath, TelescopeService } from '@/app/Services/TelescopeService'
 
 // OBS-10: every request (pages, server functions, API routes) runs inside a RequestContext and is
 // recorded in http_requests after it answers. The recording is fire-and-forget: it never delays
@@ -10,6 +10,7 @@ const telescope = createMiddleware().server(async ({ request, pathname, handlerT
   // ponytail: installed on the first request rather than at boot — this file is also bundled for the
   // browser, so nothing server-only may run at its top level.
   installServerLogs()
+  installOutgoing()
   if (skipPath(pathname)) return next()
   const store = { requestId: crypto.randomUUID() } as { requestId: string; userId?: string }
   const t0 = performance.now()

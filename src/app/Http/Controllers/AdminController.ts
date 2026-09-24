@@ -11,6 +11,8 @@ import { isAdmin } from '@/app/Services/AuthService'
 import { CSV_MAX_ROWS, toCsv, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 import { clearLlmSettings, isUsableModel, MODELS, PRICES } from '@/app/Services/LlmService'
 import { CREDIT_PRICES } from '@/lib/credit-prices'
+import { TelescopeService } from '@/app/Services/TelescopeService'
+import { BillingController } from './BillingController'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
@@ -102,6 +104,15 @@ export const AdminController = {
     if (!target) throw notFound()
     await Credit.add({ userId: d.userId, delta: d.amount, kind: 'admin', note: d.note || undefined })
     await AdminAction.log(adminId, 'grant-credits', target.email, `${d.amount > 0 ? '+' : ''}${d.amount}${d.note ? ` · ${d.note}` : ''}`)
+  },
+  /** OBS-12: a stored, verified webhook run through the handler again. Ledger refs make it grant nothing twice. */
+  async replayWebhook(adminId: string, id: number) {
+    const w = await TelescopeService.webhook(id)
+    if (!w) throw notFound()
+    if (!w.verified || !w.payload) throw new Error('Only a verified event with a stored payload can be replayed')
+    const result = await BillingController.webhook(JSON.parse(w.payload))
+    await AdminAction.log(adminId, 'replay-webhook', `${w.provider} #${w.id}${w.eventType ? ` ${w.eventType}` : ''}`, result)
+    return { result }
   },
   async setSetting(adminId: string, d: { key: AdminSettingKey; value: string | null }) {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')
