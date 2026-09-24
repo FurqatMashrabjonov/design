@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router'
-import { Activity, FolderKanban, Gauge, MessageSquareWarning, SlidersHorizontal, Users } from 'lucide-react'
+import { Activity, Gauge, SlidersHorizontal, Users } from 'lucide-react'
 import { adminCheck } from '../server/admin-fns'
 import { BRAND } from '../Landing'
 
@@ -20,10 +20,8 @@ export const Route = createFileRoute('/admin')({
 const NAV = [
   { to: '/admin', label: 'Overview', icon: Gauge, exact: true },
   { to: '/admin/users', label: 'Users', icon: Users },
-  { to: '/admin/projects', label: 'Projects', icon: FolderKanban },
   { to: '/admin/generations', label: 'Generations', icon: Activity },
-  { to: '/admin/feedback', label: 'Feedback', icon: MessageSquareWarning },
-  { to: '/admin/controls', label: 'Controls', icon: SlidersHorizontal },
+  { to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal },
 ] as const
 
 function AdminShell() {

@@ -261,9 +261,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
-| BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Rejada | Kichik |  | Provayder tanlangan, hisob ochilgan |
-| BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Rejada | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |
+| BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Bloklangan | Kichik |  | Provayder tanlangan, hisob ochilgan |
+| ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
+| BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |
 | BIL-03 | Do'kon uchun arizani erta topshirish | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-01, LEG-01 | Do'kon haqiqiy to'lovlar uchun tasdiqlangan |
+| LLM-05 | Aniq xarajat: har chaqiruvda model va uning narx jadvali | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-03, OBS-01 | llm_calls.model; narx jadvali model bo'yicha; har amalning haqiqiy $ xarajati |
 | BIL-04 | Kreditlar daftari (berilgan, sarflangan, qaytarilgan; balans = yig'indi) | To'lov va kreditlar / Kreditlar | MVP | Rejada | O'rta | AUTH-02 | Balans o'zgaruvchan son emas, yozuvlardan hisoblanadi |
 | BIL-05 | Har amal narxi (reja + ekran, tahrir, qism tahriri) | To'lov va kreditlar / Kreditlar | MVP | Rejada | Kichik | BIL-02 | Narxlar bitta sozlamada va testlangan |
 | BIL-06 | Generatsiyadan oldin kreditni band qilish, xatoda qaytarish | To'lov va kreditlar / Kreditlar | MVP | Rejada | O'rta | BIL-04 | Xato yoki to'xtatilgan ekran kreditini qaytaradi; parallel so'rovda ikki marta yechilmaydi |
@@ -273,6 +275,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | BIL-10 | To'lov webhook: imzoni tekshirish, kreditni bir marta berish | To'lov va kreditlar / To'lovlar | MVP | Rejada | O'rta | BIL-09 | Qayta kelgan hodisa kreditni ikkinchi marta bermaydi; noto'g'ri imzo rad etiladi |
 | BIL-11 | To'lovni boshqarish portali havolasi | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-09 | Havola foydalanuvchining provayder portalini ochadi |
 | BIL-12 | Narxlar sahifasi | To'lov va kreditlar / To'lovlar | MVP | Rejada | Kichik | BIL-02 | Tariflar va kredit narxlari ko'rinadi; tugmalar checkout'ni ochadi |
+| LLM-04 | Provayder adapterlari: DeepSeek, Gemini, Claude | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | LLM-05 | Bitta interfeys; OpenAI-mos va Anthropic adapteri; kalitlar serverda |
+| LLM-06 | Har model eval'dan o'tadi: sifat va $/ilova o'lchanadi | Generatsiya / Sifat | MVP | Rejada | Kichik | LLM-04 | Faqat o'tgan model tanlanadi; kredit narxi o'lchovdan |
+| LLM-07 | Modelni almashtirish: admin sozlamasi va zaxira provayder | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-06, ADM-08 | Admin tanlaydi; xatoda zaxiraga o'tadi |
 
 ## B5 · Serverga chiqarish
 

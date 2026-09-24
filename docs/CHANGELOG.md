@@ -5,6 +5,30 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Admin panel minimal: 4 bo'lim (ADM-09)
+
+Pul bosqichidan oldin admin kerakli narsaga qisqartirildi. **6 bo'lim → 4:** Overview, Users,
+Generations, Settings (Controls endi Settings deb ataladi).
+
+Olib tashlandi:
+- **Feedback sahifasi** va "Export edit pairs" tugmasi. Ular MVP'dan keyingi FB-qatorlariga
+  xizmat qilardi; 👍/👎 ma'lumoti bazada qoladi, juftliklarni `eval/export-pairs.ts` chiqaradi.
+- **Loyihalar ro'yxati**. Loyiha sahifasi qoldi: unga foydalanuvchi, generatsiya va xato
+  sahifalaridan kiriladi, "orqaga" havolasi endi egasining sahifasiga olib boradi.
+- **Overview**: 8 ta KPI → 4 ta (yangi foydalanuvchi, faol foydalanuvchi, ekranlar, LLM xarajati).
+  Xato ulushi "Right now" paneliga ko'chdi; chaqiruvlar grafigi olib tashlandi.
+- **Generations**: provayder filtri va dizayn tizimi / arxetip bo'yicha feedback jadvallari.
+- Server tomonda endi ko'rsatilmaydigan so'rovlar: `projects()`, `feedback()`, `bySystem`,
+  `byArchetype`, feedback KPI'lari, chaqiruvlar seriyasi.
+
+Keyin qo'shiladi: kredit balansi va kredit berish (BIL-04), model tanlovi (LLM-07).
+
+Fayllar: `src/routes/admin*.tsx` (feedback va projects.index o'chirildi, controls → settings),
+`src/server/admin-fns.ts`, `AdminController.ts`, `AdminStatsService.ts`.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Brauzerda: 4 bo'lim, Overview, "Only errors"
+filtri, loyiha sahifasi va egasiga qaytish havolasi, Settings; eski `/admin/feedback` 404 beradi.
+
 ### Sticker hero raqam ustiga tushmaydi (GQ-37)
 
 Real mahsulot sinovida (PennyWise) sticker `$9,540.40` ustiga tushgan edi. Ikki naqsh topildi:

@@ -2,15 +2,11 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { adminGenerations } from '../server/admin-fns'
 import { Badge, DataTable, date, money, PageTitle, Panel, secs } from '../admin/ui'
 
-// ADM-06: where generation goes wrong — the model-call log, failed screens by cause, and quality
-// by design system and archetype.
+// ADM-06: where generation goes wrong — the model-call log and failed screens by cause.
 export const Route = createFileRoute('/admin/generations')({
-  validateSearch: (s: Record<string, unknown>): { errors?: boolean; provider?: 'deepseek' | 'claude-cli' } => ({
-    ...(s.errors === true ? { errors: true } : {}),
-    ...(s.provider === 'deepseek' || s.provider === 'claude-cli' ? { provider: s.provider } : {}),
-  }),
+  validateSearch: (s: Record<string, unknown>): { errors?: boolean } => (s.errors === true ? { errors: true } : {}),
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => adminGenerations({ data: { onlyErrors: deps.errors === true, provider: deps.provider } }),
+  loader: ({ deps }) => adminGenerations({ data: { onlyErrors: deps.errors === true } }),
   component: GenerationsPage,
 })
 
@@ -27,9 +23,6 @@ function GenerationsPage() {
         right={
           <div className="flex flex-wrap gap-2 text-sm">
             <button type="button" onClick={() => navigate({ search: (s) => ({ ...s, errors: s.errors ? undefined : true }) })} className={`h-8 rounded-lg border px-3 ${search.errors ? 'bg-foreground text-background' : 'bg-background'}`}>Only errors</button>
-            {(['deepseek', 'claude-cli'] as const).map((p) => (
-              <button key={p} type="button" onClick={() => navigate({ search: (s) => ({ ...s, provider: s.provider === p ? undefined : p }) })} className={`h-8 rounded-lg border px-3 ${search.provider === p ? 'bg-foreground text-background' : 'bg-background'}`}>{p}</button>
-            ))}
           </div>
         }
       />
@@ -77,34 +70,6 @@ function GenerationsPage() {
             ))}
             {d.failedScreens.length === 0 && <li className="py-4 text-muted-foreground">None.</li>}
           </ul>
-        </Panel>
-        <Panel title="By design system">
-          <DataTable
-            rows={d.bySystem}
-            pageSize={12}
-            initialSort={{ key: 'projects', desc: true }}
-            columns={[
-              { key: 'system', header: 'System', sort: (r) => r.designSystem, cell: (r) => r.designSystem },
-              { key: 'projects', header: 'Projects', sort: (r) => r.projects, cell: (r) => r.projects, className: 'text-right tabular-nums' },
-              { key: 'screens', header: 'Screens', sort: (r) => r.screens, cell: (r) => r.screens, className: 'text-right tabular-nums' },
-              { key: 'up', header: '👍', sort: (r) => r.up, cell: (r) => r.up, className: 'text-right tabular-nums' },
-              { key: 'down', header: '👎', sort: (r) => r.down, cell: (r) => r.down, className: 'text-right tabular-nums' },
-              { key: 'regen', header: 'Redrawn', sort: (r) => r.regenerate, cell: (r) => r.regenerate, className: 'text-right tabular-nums' },
-            ]}
-          />
-        </Panel>
-        <Panel title="By screen archetype (feedback)">
-          <DataTable
-            rows={d.byArchetype}
-            pageSize={12}
-            columns={[
-              { key: 'a', header: 'Archetype', sort: (r) => r.archetype, cell: (r) => r.archetype },
-              { key: 'up', header: '👍', sort: (r) => r.up, cell: (r) => r.up, className: 'text-right tabular-nums' },
-              { key: 'down', header: '👎', sort: (r) => r.down, cell: (r) => r.down, className: 'text-right tabular-nums' },
-              { key: 'regen', header: 'Redrawn', sort: (r) => r.regenerate, cell: (r) => r.regenerate, className: 'text-right tabular-nums' },
-            ]}
-            empty="No feedback yet."
-          />
         </Panel>
       </div>
     </>

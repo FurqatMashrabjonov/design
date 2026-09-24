@@ -34,28 +34,23 @@ function kpisFor(w: Window) {
          SELECT user_id FROM session WHERE updated_at >= ${ms.from} AND updated_at < ${ms.to}
          UNION SELECT user_id FROM llm_calls WHERE user_id IS NOT NULL AND created_at >= ${w.from} AND created_at < ${w.to}
       )) AS activeUsers,
-      (SELECT count(*) FROM projects WHERE created_at >= ${w.from} AND created_at < ${w.to}) AS projects,
       (SELECT count(*) FROM screens WHERE html != '' AND created_at >= ${w.from} AND created_at < ${w.to}) AS screens,
       (SELECT count(*) FROM screens WHERE error IS NOT NULL AND created_at >= ${w.from} AND created_at < ${w.to}) AS failedScreens,
       (SELECT count(*) FROM llm_calls WHERE created_at >= ${w.from} AND created_at < ${w.to}) AS calls,
       (SELECT count(*) FROM llm_calls WHERE ok = 0 AND created_at >= ${w.from} AND created_at < ${w.to}) AS failedCalls,
       (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE created_at >= ${w.from} AND created_at < ${w.to}) AS spend,
-      (SELECT avg(ms) FROM llm_calls WHERE ok = 1 AND created_at >= ${w.from} AND created_at < ${w.to}) AS avgMs,
-      (SELECT count(*) FROM feedback WHERE value = 'up' AND created_at >= ${w.from} AND created_at < ${w.to}) AS up,
-      (SELECT count(*) FROM feedback WHERE value = 'down' AND created_at >= ${w.from} AND created_at < ${w.to}) AS down
+      (SELECT avg(ms) FROM llm_calls WHERE ok = 1 AND created_at >= ${w.from} AND created_at < ${w.to}) AS avgMs
   `)!
   const n = (k: string) => Number(r[k] ?? 0)
   return {
     newUsers: n('newUsers'),
     activeUsers: n('activeUsers'),
-    projects: n('projects'),
     screens: n('screens'),
     failedScreens: n('failedScreens'),
     calls: n('calls'),
     failRate: n('calls') ? n('failedCalls') / n('calls') : 0,
     spend: n('spend'),
     avgMs: n('avgMs'),
-    upShare: n('up') + n('down') ? n('up') / (n('up') + n('down')) : null,
   }
 }
 
@@ -63,12 +58,10 @@ export const AdminStatsService = {
   /** ADM-02: KPIs for a window against the window before it, 30-day series, activation, "now". */
   overview(days: 1 | 7 | 30) {
     const since = now() - DAY * 30
-    const series = all<{ day: string; signups: number; calls: number; failed: number; spend: number; screens: number }>(sql`
+    const series = all<{ day: string; signups: number; spend: number; screens: number }>(sql`
       WITH RECURSIVE d(day) AS (SELECT date(${since}, 'unixepoch') UNION ALL SELECT date(day, '+1 day') FROM d WHERE day < date('now'))
       SELECT d.day AS day,
         (SELECT count(*) FROM user WHERE date(created_at / 1000, 'unixepoch') = d.day) AS signups,
-        (SELECT count(*) FROM llm_calls WHERE ${dayOf(sql`created_at`)} = d.day) AS calls,
-        (SELECT count(*) FROM llm_calls WHERE ok = 0 AND ${dayOf(sql`created_at`)} = d.day) AS failed,
         (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE ${dayOf(sql`created_at`)} = d.day) AS spend,
         (SELECT count(*) FROM screens WHERE html != '' AND ${dayOf(sql`created_at`)} = d.day) AS screens
       FROM d ORDER BY d.day
@@ -141,23 +134,11 @@ export const AdminStatsService = {
     }
   },
 
-  /** ADM-05: every project with its owner. */
-  projects() {
-    return all<{ id: string; name: string; device: string; designSystem: string; createdAt: number; owner: string | null; ownerId: string | null; screens: number; failed: number; coverId: string | null }>(sql`
-      SELECT p.id, p.name, p.device, p.design_system AS designSystem, p.created_at AS createdAt, u.email AS owner, u.id AS ownerId,
-        (SELECT count(*) FROM screens s WHERE s.project_id = p.id AND s.html != '' AND s.deleted_at IS NULL) AS screens,
-        (SELECT count(*) FROM screens s WHERE s.project_id = p.id AND s.error IS NOT NULL AND s.deleted_at IS NULL) AS failed,
-        (SELECT s.id FROM screens s WHERE s.project_id = p.id AND s.html != '' AND s.deleted_at IS NULL ORDER BY s.created_at, s.rowid LIMIT 1) AS coverId
-      FROM projects p LEFT JOIN user u ON u.id = p.user_id ORDER BY p.created_at DESC
-    `)
-  },
-
   /** ADM-06: the model-call log, newest first. */
-  calls(f: { userId?: string; onlyErrors?: boolean; provider?: string; limit?: number } = {}) {
+  calls(f: { userId?: string; onlyErrors?: boolean; limit?: number } = {}) {
     const where = [sql`1 = 1`]
     if (f.userId) where.push(sql`c.user_id = ${f.userId}`)
     if (f.onlyErrors) where.push(sql`c.ok = 0`)
-    if (f.provider) where.push(sql`c.provider = ${f.provider}`)
     return all<{ id: string; createdAt: number; provider: string; promptTokens: number; completionTokens: number; costUsd: number; ms: number; ok: number; error: string | null; email: string | null; userId: string | null; project: string | null; projectId: string | null }>(sql`
       SELECT c.id, c.created_at AS createdAt, c.provider, c.prompt_tokens AS promptTokens, c.completion_tokens AS completionTokens,
         c.cost_usd AS costUsd, c.ms, c.ok, c.error, u.email, u.id AS userId, p.name AS project, p.id AS projectId
@@ -166,7 +147,7 @@ export const AdminStatsService = {
     `)
   },
 
-  /** ADM-06: where generation goes wrong — failed screens by cause, and quality by design system. */
+  /** ADM-06: where generation goes wrong — failed screens by cause. */
   quality() {
     return {
       failures: all<{ cause: string; count: number; last: number }>(sql`
@@ -178,30 +159,7 @@ export const AdminStatsService = {
         FROM screens s JOIN projects p ON p.id = s.project_id LEFT JOIN user u ON u.id = p.user_id
         WHERE s.error IS NOT NULL AND s.deleted_at IS NULL ORDER BY s.created_at DESC LIMIT 50
       `),
-      bySystem: all<{ designSystem: string; projects: number; screens: number; up: number; down: number; regenerate: number }>(sql`
-        SELECT p.design_system AS designSystem, count(DISTINCT p.id) AS projects,
-          (SELECT count(*) FROM screens s JOIN projects q ON q.id = s.project_id WHERE q.design_system = p.design_system AND s.html != '') AS screens,
-          (SELECT count(*) FROM feedback f WHERE f.design_system = p.design_system AND f.value = 'up') AS up,
-          (SELECT count(*) FROM feedback f WHERE f.design_system = p.design_system AND f.value = 'down') AS down,
-          (SELECT count(*) FROM feedback f WHERE f.design_system = p.design_system AND f.value = 'regenerate') AS regenerate
-        FROM projects p GROUP BY p.design_system ORDER BY projects DESC
-      `),
-      byArchetype: all<{ archetype: string; up: number; down: number; regenerate: number }>(sql`
-        SELECT coalesce(archetype, '—') AS archetype, sum(value = 'up') AS up, sum(value = 'down') AS down, sum(value = 'regenerate') AS regenerate
-        FROM feedback GROUP BY archetype ORDER BY (sum(value = 'down') + sum(value = 'regenerate')) DESC
-      `),
     }
-  },
-
-  /** ADM-07: screens people disliked or redrew, newest first. */
-  feedback() {
-    return all<{ id: string; value: string; createdAt: number; designSystem: string; archetype: string | null; variant: string | null; screenId: string; screen: string | null; device: string; project: string; projectId: string; owner: string | null; alive: number }>(sql`
-      SELECT f.id, f.value, f.created_at AS createdAt, f.design_system AS designSystem, f.archetype, f.variant, f.screen_id AS screenId,
-        s.name AS screen, p.device, p.name AS project, p.id AS projectId, u.email AS owner,
-        (s.id IS NOT NULL AND s.html != '' AND s.deleted_at IS NULL) AS alive
-      FROM feedback f JOIN projects p ON p.id = f.project_id LEFT JOIN screens s ON s.id = f.screen_id LEFT JOIN user u ON u.id = p.user_id
-      WHERE f.value IN ('down', 'regenerate') ORDER BY f.created_at DESC LIMIT 120
-    `)
   },
 
   /** ADM-08: the switches in force, where each comes from, and the system at a glance. */

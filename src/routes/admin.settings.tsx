@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 // ADM-08: the switches that used to need a deploy — pause, limits, budget — and the audit trail.
-export const Route = createFileRoute('/admin/controls')({
+export const Route = createFileRoute('/admin/settings')({
   loader: () => adminControls(),
   component: ControlsPage,
 })
@@ -34,7 +34,7 @@ function ControlsPage() {
   const paused = d.limits.paused
   return (
     <>
-      <PageTitle title="Controls" sub="Changes apply to the next request — no deploy. Every change is logged below." />
+      <PageTitle title="Settings" sub="Changes apply to the next request — no deploy. Every change is logged below." />
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel title="Generation">
           <p className="text-sm">{paused ? <Badge tone="bad">Paused</Badge> : <Badge tone="good">Running</Badge>}</p>

@@ -1,6 +1,5 @@
 import { notFound } from '@tanstack/react-router'
 import { AdminStatsService } from '@/app/Services/AdminStatsService'
-import { EditPairService } from '@/app/Services/EditPairService'
 import { ProjectController } from './ProjectController'
 import { Project } from '@/app/Models/Project'
 import { User } from '@/app/Models/User'
@@ -28,7 +27,6 @@ export const AdminController = {
     if (!u) throw notFound()
     return { ...u, user: { ...u.user, role: isAdmin(u.user) ? 'admin' : u.user.role } }
   },
-  projects: () => AdminStatsService.projects(),
   project(id: string) {
     const p = Project.find(id)
     if (!p) throw notFound()
@@ -41,8 +39,7 @@ export const AdminController = {
       owner: p.userId ? { id: p.userId, email: User.find(p.userId)?.email ?? null } : null,
     }
   },
-  generations: (f: { onlyErrors?: boolean; provider?: string }) => ({ calls: AdminStatsService.calls(f), ...AdminStatsService.quality() }),
-  feedback: () => AdminStatsService.feedback(),
+  generations: (f: { onlyErrors?: boolean }) => ({ calls: AdminStatsService.calls(f), ...AdminStatsService.quality() }),
   controls: () => AdminStatsService.controls(),
 
   ban(adminId: string, d: { userId: string; reason: string }) {
@@ -83,10 +80,4 @@ export const AdminController = {
     AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
   },
 
-  /** ADM-07: every before/after edit pair, one JSON object per line (what eval/export-pairs.ts writes). */
-  exportPairs(adminId: string): string {
-    const lines = Project.all().flatMap((p) => EditPairService.forProject(p.id).map((pair) => JSON.stringify(pair)))
-    AdminAction.log(adminId, 'export-pairs', null, `${lines.length} pairs`)
-    return lines.join('\n')
-  },
 }

@@ -20,20 +20,13 @@ export const adminUser = createServerFn({ method: 'GET' })
   .validator((id: unknown) => idOf(id))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.user(data)))
 
-export const adminProjects = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.projects()))
-
 export const adminProject = createServerFn({ method: 'GET' })
   .validator((id: unknown) => idOf(id))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.project(data)))
 
 export const adminGenerations = createServerFn({ method: 'GET' })
-  .validator((d: unknown) => {
-    const o = obj(d)
-    return { onlyErrors: o.onlyErrors === true, provider: o.provider ? oneOf(o.provider, ['deepseek', 'claude-cli'] as const) : undefined }
-  })
+  .validator((d: unknown) => ({ onlyErrors: obj(d).onlyErrors === true }))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.generations(data)))
-
-export const adminFeedback = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.feedback()))
 
 export const adminControls = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.controls()))
 
@@ -68,5 +61,3 @@ export const adminSetSetting = createServerFn({ method: 'POST' })
     return { key: oneOf(o.key, Object.keys(ADMIN_SETTINGS) as AdminSettingKey[]), value: o.value === null ? null : str(o.value, 20) }
   })
   .handler(async ({ data }) => AdminController.setSetting((await requireAdmin()).id, data))
-
-export const adminExportPairs = createServerFn({ method: 'POST' }).handler(async () => AdminController.exportPairs((await requireAdmin()).id))

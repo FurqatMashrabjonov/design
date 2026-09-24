@@ -19,7 +19,7 @@ function ProjectPage() {
   const screens = d.screens.filter((s) => !s.deletedAt)
   return (
     <>
-      <Link to="/admin/projects" className="text-xs text-muted-foreground hover:underline">← Projects</Link>
+      {d.owner && <Link to="/admin/users/$userId" params={{ userId: d.owner.id }} className="text-xs text-muted-foreground hover:underline">← {d.owner.email}</Link>}
       <PageTitle
         title={p.name}
         sub={`${p.designSystem} · ${p.device} · created ${date(p.createdAt)}`}

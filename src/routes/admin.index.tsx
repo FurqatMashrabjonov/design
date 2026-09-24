@@ -38,10 +38,6 @@ function Overview() {
         <Kpi label="Active users" now={c.activeUsers} before={p.activeUsers} />
         <Kpi label="Screens generated" now={c.screens} before={p.screens} />
         <Kpi label="LLM spend" now={c.spend} before={p.spend} format={money} good="down" />
-        <Kpi label="Projects" now={c.projects} before={p.projects} />
-        <Kpi label="Model calls" now={c.calls} before={p.calls} />
-        <Kpi label="Failed calls" now={c.failRate} before={p.failRate} format={pct} good="down" />
-        <Kpi label="👍 share" now={c.upShare ?? 0} value={pct(c.upShare)} before={p.upShare ?? undefined} format={pct} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -52,10 +48,11 @@ function Overview() {
             {o.now.running.length > 0 && <dd className="text-xs text-muted-foreground">{o.now.running.join(', ')}</dd>}
             <div className="flex justify-between"><dt className="text-muted-foreground">Spent today</dt><dd className="tabular-nums">{money(o.now.spentToday)} / {money(budget)}</dd></div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground" style={{ width: `${Math.min(100, (o.now.spentToday / Math.max(budget, 0.0001)) * 100)}%` }} /></div>
+            <div className="flex justify-between"><dt className="text-muted-foreground">Failed calls</dt><dd className="tabular-nums">{pct(c.failRate)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Avg call time</dt><dd className="tabular-nums">{secs(c.avgMs)}</dd></div>
             <div className="flex justify-between"><dt className="text-muted-foreground">Failed screens</dt><dd className="tabular-nums">{c.failedScreens}</dd></div>
           </dl>
-          <Link to="/admin/controls" className="mt-4 inline-block text-xs text-muted-foreground underline-offset-2 hover:underline">Pause or change limits →</Link>
+          <Link to="/admin/settings" className="mt-4 inline-block text-xs text-muted-foreground underline-offset-2 hover:underline">Pause or change limits →</Link>
         </Panel>
         <Panel title="Activation (all time)" className="lg:col-span-2">
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -81,9 +78,6 @@ function Overview() {
         </Panel>
         <Panel title="LLM spend · 30 days">
           <DailyChart rows={o.series} series={[{ key: 'spend', label: 'Spend', color: '#e2a400' }]} format={money} />
-        </Panel>
-        <Panel title="Model calls and failures · 30 days" className="lg:col-span-2">
-          <DailyChart rows={o.series} series={[{ key: 'calls', label: 'Calls', color: '#6b7280' }, { key: 'failed', label: 'Failed', color: '#dc2626' }]} />
         </Panel>
       </div>
 
