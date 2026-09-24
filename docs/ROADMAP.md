@@ -275,6 +275,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-25 | Kanvas harakati: panellar, chat, tanlov, xabarlar va kontent animatsiya bilan | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-10, UI-20…24 | Tokenlar bilan 120–320ms, reduced-motion'da o'chadi |
 | GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | MVP | Tayyor | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
 | GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | 30 ilovada ≥4 xil bar |
+| GQ-40 | Bar hunari: aktiv tab to'ldirilgan ikonka, tizimning o'z bar tokenlari, haqiqiy glass | Generatsiya / Izchillik | Keyin | Rejada | O'rta | GQ-39 | Aktiv tab to'ldirilgan glif; tizim bar tokenlari tokens.css da; bar galereyasi; eval'da bar bahosi o'sadi |
 | UI-26 | Kirgan foydalanuvchida / avval landing bo'lib chiziladi — yozilgan prompt yo'qoladi | Interfeys / Bosh sahifa | Keyin | Rejada | Kichik |  | Landing ko'rinmaydi, matn saqlanadi |
 | TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
 | SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |

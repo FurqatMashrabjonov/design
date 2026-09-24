@@ -5,6 +5,29 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Model A/B uchun asboblar: Gemini 3.8 Flash, ekran thinking kaliti, eval `--model`
+
+Foydalanuvchi so'rovi: bir xil brief'ni DeepSeek (thinking off/on), Gemini 3.8 Flash va Gemini 3.1
+Flash-Lite bilan chizib, yonma-yon solishtirish. Mahsulot xatti-harakati o'zgarmaydi — kalitlar
+faqat eval uchun.
+
+- `LlmService.ts`: `gemini-3.8-flash` (MODELS + PRICES, standart narx $1.5/$7.5 — 2026 oxirigacha
+  $0.75/$3.75; `reasoning_effort: low`, chunki `minimal` bu modelda 400 qaytaradi);
+  `LLM_SCREEN_THINKING=1` — ekran chaqiruvlarida thinking, chiqish cheki 64 000 (32 000 da 12 dan
+  7 ekran max_tokens'ga urildi); `LLM_RETRY_SAME=1` — fallback bo'lmasa, o'sha modelda bir marta
+  qayta urinish (provayderning o'tkinchi 503 i qaysi model yaxshiroq ekanini hal qilmasin).
+- `credit-prices.ts`: `gemini-3.8-flash` kredit narxi.
+- `eval/run.ts`: `--model <id>` har bir chaqiruv joyini shu modelga qo'yadi; `run.json` provayderi
+  model va thinking'ni yozadi, shuning uchun bunday run faqat o'zi kabilar bilan solishtiriladi.
+
+Natija (food-delivery + fit-tracker): DeepSeek off 12/12 ekran, 48s, $0.053, lint toza 25%, audit
+toza 58%; DeepSeek thinking 11/12, 479s, $0.293, lint 82%, audit 100%; Gemini 3.1 Flash-Lite 8/11
+(bepul tarif 503), 38s, $0.036, lint 86%, audit 71%. Gemini 3.8 Flash — bepul tarif limiti (20
+so'rov/kun) tugagani uchun chizilmadi.
+
+Tekshiruv: `npx tsc --noEmit` toza; `npm run check` — narx testlari o'tdi, TST-01 (admin overview)
+ma'lum beqaror test yiqildi, qolgan skriptlar alohida o'tdi.
+
 ### Bar skrollda yig'ilmaydi; shakl loyiha bo'yicha tanlanadi — GQ-39 tuzatish
 
 Foydalanuvchi: ekran skroll qilinganda faqat aktiv tab qoladi, qolganlari yo'qoladi, va hamma

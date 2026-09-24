@@ -13,7 +13,9 @@ import { abHtml, compareHtml, sheetHtml, FRAME, type BriefResult } from './sheet
 // Which model drew the run. A Claude Code run (LLM_PROVIDER=claude-cli, the developer's own
 // subscription) is only ever compared with other Claude runs: its numbers say how a code change
 // moves quality, not what DeepSeek users get, so the result is re-checked on DeepSeek before launch.
-const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? `claude-cli${process.env.CLAUDE_CLI_MODEL ? `:${process.env.CLAUDE_CLI_MODEL}` : ''}` : 'deepseek'
+const modelArg = process.argv.find((a, i) => process.argv[i - 1] === '--model') ?? process.argv.find((a) => a.startsWith('--model='))?.slice(8)
+const thinking = process.env.LLM_SCREEN_THINKING === '1' || process.env.LLM_PLAN_THINKING === '1' ? '+thinking' : ''
+const PROVIDER = process.env.LLM_PROVIDER === 'claude-cli' ? `claude-cli${process.env.CLAUDE_CLI_MODEL ? `:${process.env.CLAUDE_CLI_MODEL}` : ''}` : modelArg && modelArg !== 'deepseek-flash' ? `${modelArg}${thinking}` : `deepseek${thinking}`
 const providerOf = (d: string) => {
   try {
     return (JSON.parse(readFileSync(join(OUT_ROOT, d, 'run.json'), 'utf8')) as { provider: string }).provider
@@ -38,6 +40,8 @@ const { values: args } = parseArgs({
     label: { type: 'string' },
     'no-shot': { type: 'boolean', default: false },
     'no-add': { type: 'boolean', default: false },
+    // Every call site on this model (llm.model.*), for a model A/B; the default is the product's.
+    model: { type: 'string' },
   },
 })
 
@@ -57,7 +61,12 @@ const { GenerateController } = await import('@/app/Http/Controllers/GenerateCont
 const { mapLimit } = await import('@/app/Services/Pool')
 const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
 const { AppPatternService } = await import('@/app/Services/AppPatternService')
-const { onLlmUsage } = await import('@/app/Services/LlmService')
+const { onLlmUsage, setSettingSource, isUsableModel } = await import('@/app/Services/LlmService')
+if (args.model) {
+  if (!isUsableModel(args.model)) throw new Error(`Unknown model ${args.model}`)
+  setSettingSource(async (key) => (key.startsWith('llm.model.') ? args.model : undefined))
+  console.log(`[eval] every call site on ${args.model}`)
+}
 
 let usage: Usage = { calls: 0, promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
 onLlmUsage((u) => {

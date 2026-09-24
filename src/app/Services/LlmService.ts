@@ -15,6 +15,8 @@ type Price = { input: number; cached: number; output: number; cacheWrite?: numbe
 export const PRICES: Record<string, Price> = {
   'deepseek-flash': { input: 0.15, cached: 0.003, output: 0.6, peak: true },
   'gemini-3.1-flash-lite': { input: 0.25, cached: 0.025, output: 1.5 },
+  // Listed at $0.75 / $3.75 until 2026-12-31; priced here at the standard rate that follows.
+  'gemini-3.8-flash': { input: 1.5, cached: 0.15, output: 7.5 },
   'gemini-2.5-flash': { input: 0.3, cached: 0.03, output: 2.5 },
   'claude-haiku-4-5': { input: 1, cached: 0.1, cacheWrite: 1.25, output: 5 },
   'claude-sonnet-5': { input: 2, cached: 0.2, cacheWrite: 2.5, output: 10 },
@@ -48,6 +50,7 @@ export type ModelInfo = { provider: Provider; apiModel: string; label: string; r
 export const MODELS: Record<string, ModelInfo> = {
   'deepseek-flash': { provider: 'deepseek', apiModel: 'deepseek-flash', label: 'DeepSeek V4 Flash' },
   'gemini-3.1-flash-lite': { provider: 'gemini', apiModel: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite', reasoningEffort: 'minimal' },
+  'gemini-3.8-flash': { provider: 'gemini', apiModel: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', reasoningEffort: 'low' },
   'gemini-2.5-flash': { provider: 'gemini', apiModel: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', reasoningEffort: 'none' },
   'claude-haiku-4-5': { provider: 'anthropic', apiModel: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
   'claude-sonnet-5': { provider: 'anthropic', apiModel: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
@@ -227,6 +230,8 @@ const thinkingFor = (on: boolean) => (on ? THINKING_ON : THINKING_OFF)
  * favour. `LLM_PLAN_THINKING=1` is kept so the question can be re-asked when the model changes.
  */
 const PLAN_THINKING = process.env.LLM_PLAN_THINKING === '1'
+/** The same question for the screen calls, for an eval A/B only; the cap grows for the same reason. */
+const SCREEN_THINKING = process.env.LLM_SCREEN_THINKING === '1'
 
 // Sampling temperatures, stated rather than inherited from the provider's default. 1.0 was kept after
 // an eval A/B (4 briefs, 20 screens each): 0.6 and 1.3 moved no metric beyond noise — lint-clean
@@ -315,8 +320,10 @@ async function* call(site: Site, mode: 'stream' | 'json', o: Omit<CallOpts, 'mod
       yield d
     }
   } catch (e) {
-    const fallback = yielded || o.signal?.aborted ? undefined : await fallbackModel()
-    if (!fallback || fallback === primary) throw e
+    // LLM_RETRY_SAME=1 (the eval's model A/B only): a model with no fallback gets one more try on
+    // itself, so a provider's passing 503 does not decide which model looks better.
+    const fallback = yielded || o.signal?.aborted ? undefined : (await fallbackModel()) ?? (process.env.LLM_RETRY_SAME === '1' ? primary : undefined)
+    if (!fallback || (fallback === primary && process.env.LLM_RETRY_SAME !== '1')) throw e
     yield* once(fallback)
   }
 }
@@ -385,9 +392,9 @@ const deepseek: Adapter = {
   async *stream(o) {
     const res = await post(DEEPSEEK_URL, { Authorization: `Bearer ${await providerKey('deepseek')}` }, {
       model: o.model,
-      thinking: THINKING_OFF,
+      thinking: thinkingFor(SCREEN_THINKING),
       // A full HTML screen plus a heavy craft-rules system prompt can run past 8k tokens — DeepSeek allows up to 384k.
-      max_tokens: o.maxTokens,
+      max_tokens: SCREEN_THINKING ? Math.max(o.maxTokens, 64000) : o.maxTokens,
       temperature: o.temperature,
       stream: true,
       stream_options: { include_usage: true }, // usage arrives in a final chunk with no choices

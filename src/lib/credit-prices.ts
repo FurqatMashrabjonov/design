@@ -14,6 +14,7 @@ export type Prices = Record<Exclude<ActionKind, 'app'>, number>
 export const CREDIT_PRICES: Record<string, Prices> = {
   'deepseek-flash': { plan: 1, draw: 14, screen: 2, element: 1 },
   'gemini-3.1-flash-lite': { plan: 1, draw: 20, screen: 3, element: 1 },
+  'gemini-3.8-flash': { plan: 6, draw: 90, screen: 14, element: 6 },
   'gemini-2.5-flash': { plan: 2, draw: 26, screen: 4, element: 2 },
   'claude-haiku-4-5': { plan: 3, draw: 65, screen: 10, element: 4 },
   'claude-sonnet-5': { plan: 8, draw: 156, screen: 24, element: 9 },
