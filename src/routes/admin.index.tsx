@@ -81,7 +81,7 @@ function Overview() {
         </Panel>
       </div>
 
-      <Panel title="Latest errors" className="mt-4" right={<Link to="/admin/generations" search={{ errors: true }} className="text-xs text-muted-foreground hover:underline">All errors →</Link>}>
+      <Panel title="Latest errors" className="mt-4" right={<Link to="/admin/generations" search={{ result: 'error' }} className="text-xs text-muted-foreground hover:underline">All errors →</Link>}>
         {o.now.errors.length === 0 ? (
           <p className="text-sm text-muted-foreground">No failed calls.</p>
         ) : (

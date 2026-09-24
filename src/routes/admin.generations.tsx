@@ -1,46 +1,84 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { adminGenerations } from '../server/admin-fns'
-import { Badge, DataTable, date, money, PageTitle, Panel, secs } from '../admin/ui'
+import { adminCallsCsv, adminCallsPage, adminGenerations } from '../server/admin-fns'
+import { Badge, date, Field, money, PageTitle, Panel, secs, ServerTable, type ServerColumn } from '../admin/ui'
+import { parseCallsQuery } from '../admin/table-query'
 
 // ADM-06: where generation goes wrong — the model-call log and failed screens by cause.
+// ADM-11: the log is paged, sorted and filtered on the server; the view lives in the URL.
 export const Route = createFileRoute('/admin/generations')({
-  validateSearch: (s: Record<string, unknown>): { errors?: boolean } => (s.errors === true ? { errors: true } : {}),
+  validateSearch: parseCallsQuery,
   loaderDeps: ({ search }) => search,
-  loader: ({ deps }) => adminGenerations({ data: { onlyErrors: deps.errors === true } }),
+  loader: async ({ deps }) => {
+    const [calls, quality] = await Promise.all([adminCallsPage({ data: deps }), adminGenerations()])
+    return { calls, ...quality }
+  },
   component: GenerationsPage,
 })
+
+type Call = Awaited<ReturnType<typeof adminCallsPage>>['rows'][number]
+
+const columns: ServerColumn<Call>[] = [
+  { key: 'when', header: 'When', sort: 'when', cell: (c) => <span className="whitespace-nowrap text-xs text-muted-foreground">{date(c.createdAt)}</span> },
+  { key: 'who', header: 'User', cell: (c) => (c.userId ? <Link to="/admin/users/$userId" params={{ userId: c.userId }} onClick={(e) => e.stopPropagation()} className="hover:underline">{c.email}</Link> : '—') },
+  { key: 'project', header: 'Project', cell: (c) => (c.projectId ? <Link to="/admin/projects/$projectId" params={{ projectId: c.projectId }} onClick={(e) => e.stopPropagation()} className="text-muted-foreground hover:underline">{c.project}</Link> : '—') },
+  { key: 'model', header: 'Model', cell: (c) => <span className="text-xs text-muted-foreground">{c.model || c.provider}</span> },
+  { key: 'result', header: 'Result', cell: (c) => (c.ok ? <Badge tone="good">ok</Badge> : <span title={c.error ?? ''}><Badge tone="bad">{(c.error ?? 'error').slice(0, 40)}</Badge></span>) },
+  { key: 'tokens', header: 'Tokens in/out', sort: 'tokens', cell: (c) => `${c.promptTokens} / ${c.completionTokens}`, className: 'text-right tabular-nums whitespace-nowrap' },
+  { key: 'ms', header: 'Time', sort: 'ms', cell: (c) => secs(c.ms), className: 'text-right tabular-nums' },
+  { key: 'cost', header: 'Cost', sort: 'cost', cell: (c) => money(c.costUsd), className: 'text-right tabular-nums' },
+]
+
+function CallDetail({ c }: { c: Call }) {
+  return (
+    <dl>
+      <Field label="Time">{new Date(c.createdAt * 1000).toLocaleString()}</Field>
+      <Field label="Result">{c.ok ? <Badge tone="good">ok</Badge> : <Badge tone="bad">error</Badge>}</Field>
+      <Field label="User">{c.userId ? <Link to="/admin/users/$userId" params={{ userId: c.userId }} className="hover:underline">{c.email}</Link> : '—'}</Field>
+      <Field label="Project">{c.projectId ? <Link to="/admin/projects/$projectId" params={{ projectId: c.projectId }} className="hover:underline">{c.project}</Link> : '—'}</Field>
+      <Field label="Model">{c.model || '—'}</Field>
+      <Field label="Provider">{c.provider}</Field>
+      <Field label="Action">{c.actionId ? <span className="font-mono text-xs">{c.actionId}</span> : '—'}</Field>
+      <Field label="Tokens in">{c.promptTokens}</Field>
+      <Field label="Cached">{c.cachedTokens}</Field>
+      <Field label="Cache write">{c.cacheWriteTokens}</Field>
+      <Field label="Tokens out">{c.completionTokens}</Field>
+      <Field label="Cost">{money(c.costUsd)}</Field>
+      <Field label="Time taken">{secs(c.ms)}</Field>
+      {c.error && (
+        <Field label="Error">
+          <pre className="font-mono text-xs whitespace-pre-wrap text-red-600">{c.error}</pre>
+        </Field>
+      )}
+    </dl>
+  )
+}
 
 function GenerationsPage() {
   const d = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
-  const failed = d.calls.filter((c) => !c.ok).length
   return (
     <>
-      <PageTitle
-        title="Generations"
-        sub={`${d.calls.length} latest model calls · ${failed} failed · ${money(d.calls.reduce((s, c) => s + c.costUsd, 0))}`}
-        right={
-          <div className="flex flex-wrap gap-2 text-sm">
-            <button type="button" onClick={() => navigate({ search: (s) => ({ ...s, errors: s.errors ? undefined : true }) })} className={`h-8 rounded-lg border px-3 ${search.errors ? 'bg-foreground text-background' : 'bg-background'}`}>Only errors</button>
-          </div>
-        }
-      />
+      <PageTitle title="Generations" sub={`${d.calls.total} model calls match`} />
 
-      <DataTable
-        rows={d.calls}
-        search={(c) => `${c.email ?? ''} ${c.project ?? ''} ${c.error ?? ''}`}
-        initialSort={{ key: 'when', desc: true }}
-        columns={[
-          { key: 'when', header: 'When', sort: (c) => c.createdAt, cell: (c) => <span className="whitespace-nowrap text-xs text-muted-foreground">{date(c.createdAt)}</span> },
-          { key: 'who', header: 'User', sort: (c) => c.email ?? '', cell: (c) => (c.userId ? <Link to="/admin/users/$userId" params={{ userId: c.userId }} className="hover:underline">{c.email}</Link> : '—') },
-          { key: 'project', header: 'Project', sort: (c) => c.project ?? '', cell: (c) => (c.projectId ? <Link to="/admin/projects/$projectId" params={{ projectId: c.projectId }} className="text-muted-foreground hover:underline">{c.project}</Link> : '—') },
-          { key: 'model', header: 'Model', sort: (c) => c.model, cell: (c) => <span className="text-xs text-muted-foreground">{c.model || c.provider}</span> },
-          { key: 'result', header: 'Result', sort: (c) => Number(c.ok), cell: (c) => (c.ok ? <Badge tone="good">ok</Badge> : <span title={c.error ?? ''}><Badge tone="bad">{(c.error ?? 'error').slice(0, 40)}</Badge></span>) },
-          { key: 'tokens', header: 'Tokens in/out', sort: (c) => c.promptTokens + c.completionTokens, cell: (c) => `${c.promptTokens} / ${c.completionTokens}`, className: 'text-right tabular-nums whitespace-nowrap' },
-          { key: 'ms', header: 'Time', sort: (c) => c.ms, cell: (c) => secs(c.ms), className: 'text-right tabular-nums' },
-          { key: 'cost', header: 'Cost', sort: (c) => c.costUsd, cell: (c) => money(c.costUsd), className: 'text-right tabular-nums' },
+      <ServerTable
+        rows={d.calls.rows}
+        total={d.calls.total}
+        columns={columns}
+        query={search}
+        defaultSort="when"
+        onQuery={(patch) => navigate({ search: (s) => parseCallsQuery({ ...s, ...patch }), replace: 'q' in patch || 'user' in patch || 'minCost' in patch })}
+        filters={[
+          { type: 'select', key: 'result', label: 'Result', options: [{ value: 'ok', label: 'ok' }, { value: 'error', label: 'error' }] },
+          { type: 'select', key: 'model', label: 'Model', options: d.calls.models.map((m) => ({ value: m, label: m })) },
+          { type: 'dateRange', from: 'from', to: 'to', label: 'Date' },
+          { type: 'text', key: 'user', label: 'User email' },
+          { type: 'number', key: 'minCost', label: 'Min cost $', step: 0.001 },
         ]}
+        detail={(c) => <CallDetail c={c} />}
+        detailTitle={(c) => `${c.model || c.provider} · ${date(c.createdAt)}`}
+        onExport={() => adminCallsCsv({ data: search })}
+        exportName="model-calls"
         empty="No model calls match."
       />
 

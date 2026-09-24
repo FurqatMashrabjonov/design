@@ -1,7 +1,10 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react'
+import { useRouterState } from '@tanstack/react-router'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { PAGE_SIZE, type TableQuery } from './table-query'
 
 // Shared pieces of the admin panel: KPI cards, a sortable/searchable table, a daily chart, formats.
 
@@ -167,4 +170,182 @@ export function DataTable<T>({ rows, columns, search, empty = 'Nothing here yet.
 export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'good' | 'bad' | 'warn' }) {
   const cls = { neutral: 'bg-muted text-muted-foreground', good: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', bad: 'bg-red-500/15 text-red-700 dark:text-red-400', warn: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' }[tone]
   return <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>{children}</span>
+}
+
+/** A panel that slides over the right edge: full height, scrollable; Esc or the overlay closes it. */
+export function Drawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: ReactNode; children: ReactNode }) {
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        aria-describedby={undefined}
+        className="top-0 right-0 left-auto h-dvh max-h-dvh w-full max-w-md translate-x-0 translate-y-0 content-start gap-4 overflow-y-auto rounded-none p-5 sm:max-w-md data-open:slide-in-from-right-10 data-open:zoom-in-100 data-closed:slide-out-to-right-10 data-closed:zoom-out-100"
+      >
+        <DialogTitle className="pr-8 text-base font-semibold">{title}</DialogTitle>
+        {children}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** One label/value line of a detail panel; use inside a <dl>. */
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[8rem_1fr] gap-3 border-b py-2 text-sm last:border-0">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-words">{children}</dd>
+    </div>
+  )
+}
+
+/** A text box that reports its value a moment after typing stops, and follows the URL when it changes. */
+function DebouncedInput({ value, onCommit, ms = 250, ...props }: { value: string; onCommit: (v: string) => void; ms?: number } & Omit<ComponentProps<typeof Input>, 'value' | 'onChange'>) {
+  const [text, setText] = useState(value)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => setText(value), [value])
+  useEffect(() => () => clearTimeout(timer.current), [])
+  return (
+    <Input
+      {...props}
+      value={text}
+      onChange={(e) => {
+        const v = e.target.value
+        setText(v)
+        clearTimeout(timer.current)
+        timer.current = setTimeout(() => onCommit(v), ms)
+      }}
+    />
+  )
+}
+
+export type ServerColumn<T> = { key: string; header: string; cell: (row: T) => ReactNode; sort?: string; className?: string }
+export type TableFilter =
+  | { type: 'select'; key: string; label: string; options: { value: string; label: string }[] }
+  | { type: 'dateRange'; from: string; to: string; label: string }
+  | { type: 'number'; key: string; label: string; step?: number }
+  | { type: 'text'; key: string; label: string }
+
+type Query = TableQuery & Record<string, unknown>
+
+/** ADM-11: a table whose rows come from the server one page at a time. The query lives in the URL; this
+ *  only draws it and asks for a change (`onQuery`, a patch). The old rows stay up while the next page
+ *  loads. A row opens `detail` in a drawer, or runs `onRow`. */
+export function ServerTable<T extends { id: string }>({ rows, total, columns, query, onQuery, filters = [], defaultSort, empty = 'Nothing matches.', detail, detailTitle, onRow, onExport, exportName = 'export' }: {
+  rows: T[]; total: number; columns: ServerColumn<T>[]; query: Query; onQuery: (patch: Query) => void; filters?: TableFilter[]; defaultSort: string
+  empty?: string; detail?: (row: T) => ReactNode; detailTitle?: (row: T) => ReactNode; onRow?: (row: T) => void; onExport?: () => Promise<string>; exportName?: string
+}) {
+  const loading = useRouterState({ select: (s) => s.status === 'pending' })
+  const [open, setOpen] = useState(false)
+  const [row, setRow] = useState<T | null>(null) // kept while the drawer closes, so it does not empty mid-animation
+  const [exporting, setExporting] = useState(false)
+  // Any change but a page turn starts again at the first page.
+  const change = (patch: Query) => onQuery({ ...patch, page: undefined })
+  const sort = query.sort ?? defaultSort
+  const dir = query.dir ?? 'desc'
+  const size = query.size ?? PAGE_SIZE
+  const page = query.page ?? 0
+  const str = (k: string) => (typeof query[k] === 'string' || typeof query[k] === 'number' ? String(query[k]) : '')
+  const set = (k: string, v: string) => change({ [k]: v.trim() === '' ? undefined : v.trim() })
+
+  async function exportCsv() {
+    if (!onExport) return
+    setExporting(true)
+    try {
+      const url = URL.createObjectURL(new Blob([await onExport()], { type: 'text/csv;charset=utf-8' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${exportName}-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const control = 'h-8 rounded-md border bg-background px-2 text-sm text-foreground'
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <label className="relative block w-full max-w-xs">
+          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <DebouncedInput value={str('q')} onCommit={(v) => set('q', v)} placeholder="Search" aria-label="Search" className="h-8 pl-8" />
+        </label>
+        {filters.map((f) => (
+          <label key={f.type === 'dateRange' ? f.from : f.key} className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {f.label}
+            {f.type === 'select' ? (
+              <select value={str(f.key)} onChange={(e) => set(f.key, e.target.value)} className={control}>
+                <option value="">All</option>
+                {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            ) : f.type === 'dateRange' ? (
+              <span className="flex items-center gap-1">
+                <input type="date" aria-label={`${f.label} from`} value={str(f.from)} max={str(f.to) || undefined} onChange={(e) => set(f.from, e.target.value)} className={control} />
+                <span aria-hidden>–</span>
+                <input type="date" aria-label={`${f.label} to`} value={str(f.to)} min={str(f.from) || undefined} onChange={(e) => set(f.to, e.target.value)} className={control} />
+              </span>
+            ) : f.type === 'number' ? (
+              <DebouncedInput type="number" min={0} step={f.step ?? 'any'} value={str(f.key)} onCommit={(v) => set(f.key, v)} className="h-8 w-24" />
+            ) : (
+              <DebouncedInput value={str(f.key)} onCommit={(v) => set(f.key, v)} className="h-8 w-40" />
+            )}
+          </label>
+        ))}
+        <span className="ml-auto flex items-center gap-2">
+          {loading && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Loading" />}
+          {onExport && (
+            <button type="button" onClick={exportCsv} disabled={exporting || total === 0} className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-3 text-sm disabled:opacity-40">
+              <Download className="size-4" /> CSV
+            </button>
+          )}
+        </span>
+      </div>
+      <div className={`overflow-x-auto rounded-xl border transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-xs text-muted-foreground">
+            <tr>
+              {columns.map((c) => (
+                <th key={c.key} className={`px-3 py-2 text-left font-medium whitespace-nowrap ${c.className ?? ''}`} aria-sort={c.sort && sort === c.sort ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
+                  {c.sort ? (
+                    <button type="button" className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => change({ sort: c.sort, dir: sort === c.sort && dir === 'desc' ? 'asc' : 'desc' })}>
+                      {c.header}
+                      {sort === c.sort && (dir === 'desc' ? <ArrowDown className="size-3" /> : <ArrowUp className="size-3" />)}
+                    </button>
+                  ) : (
+                    c.header
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {rows.map((r) => {
+              const click = onRow ? () => onRow(r) : detail ? () => (setRow(r), setOpen(true)) : undefined
+              return (
+                <tr key={r.id} className={click ? 'cursor-pointer hover:bg-muted/40' : ''} onClick={click}>
+                  {columns.map((c) => (
+                    <td key={c.key} className={`px-3 py-2 align-middle ${c.className ?? ''}`}>{c.cell(r)}</td>
+                  ))}
+                </tr>
+              )
+            })}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={columns.length} className="px-3 py-10 text-center text-muted-foreground">{empty}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span className="tabular-nums">{total === 0 ? '0' : `${Math.min(total, page * size + 1)}–${Math.min(total, (page + 1) * size)}`} of {total}</span>
+        <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={page === 0} onClick={() => onQuery({ page: page - 1 || undefined })} aria-label="Previous page"><ChevronLeft className="size-4" /></button>
+        <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={(page + 1) * size >= total} onClick={() => onQuery({ page: page + 1 })} aria-label="Next page"><ChevronRight className="size-4" /></button>
+      </div>
+      {detail && (
+        <Drawer open={open} onClose={() => setOpen(false)} title={row && detailTitle ? detailTitle(row) : 'Details'}>
+          {row && detail(row)}
+        </Drawer>
+      )}
+    </div>
+  )
 }

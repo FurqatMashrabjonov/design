@@ -5,6 +5,7 @@ import { AdminController, ADMIN_SETTINGS, type AdminSettingKey } from '@/app/Htt
 import { SECRET_NAMES } from '@/app/Services/SecretService'
 import { requireAdmin } from './auth'
 import { idOf, num, obj, oneOf, str } from './validate'
+import { parseCallsQuery, parseUsersQuery } from '@/admin/table-query'
 
 export const adminCheck = createServerFn({ method: 'GET' }).handler(async () => {
   const u = await requireAdmin()
@@ -15,7 +16,6 @@ export const adminOverview = createServerFn({ method: 'GET' })
   .validator((d: unknown) => ({ days: Number(oneOf(String(obj(d).days), ['1', '7', '30'] as const)) as 1 | 7 | 30 }))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.overview(data.days)))
 
-export const adminUsers = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.users()))
 
 export const adminUser = createServerFn({ method: 'GET' })
   .validator((id: unknown) => idOf(id))
@@ -25,9 +25,8 @@ export const adminProject = createServerFn({ method: 'GET' })
   .validator((id: unknown) => idOf(id))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.project(data)))
 
-export const adminGenerations = createServerFn({ method: 'GET' })
-  .validator((d: unknown) => ({ onlyErrors: obj(d).onlyErrors === true }))
-  .handler(async ({ data }) => (await requireAdmin(), AdminController.generations(data)))
+/** ADM-06: failed screens by cause; the call log itself is adminCallsPage. */
+export const adminGenerations = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.generations()))
 
 export const adminSearch = createServerFn({ method: 'GET' })
   .validator((d: unknown) => ({ q: str(obj(d).q ?? '', 100) }))
@@ -91,3 +90,21 @@ export const adminSetSetting = createServerFn({ method: 'POST' })
     return { key: oneOf(o.key, Object.keys(ADMIN_SETTINGS) as AdminSettingKey[]), value: o.value === null ? null : str(o.value, 20) }
   })
   .handler(async ({ data }) => AdminController.setSetting((await requireAdmin()).id, data))
+
+/** ADM-11: the users and model-call tables — one page per call, or the whole filter as CSV (capped).
+ *  The parser keeps only whitelisted sorts and filter values; anything else becomes the default. */
+export const adminUsersPage = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => parseUsersQuery(obj(d)))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.usersPage(data)))
+
+export const adminCallsPage = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => parseCallsQuery(obj(d)))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.callsPage(data)))
+
+export const adminUsersCsv = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => parseUsersQuery(obj(d)))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.usersCsv(data)))
+
+export const adminCallsCsv = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => parseCallsQuery(obj(d)))
+  .handler(async ({ data }) => (await requireAdmin(), AdminController.callsCsv(data)))
