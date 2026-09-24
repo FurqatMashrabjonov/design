@@ -172,6 +172,8 @@ export const llmCalls = pgTable('llm_calls', {
   ok: boolean('ok').notNull(),
   error: text('error'),
   createdAt: unix('created_at').notNull().default(now),
+  // OBS-10: the HTTP request that made the call.
+  requestId: text('request_id'),
 })
 
 
@@ -225,4 +227,31 @@ export const settings = pgTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
   updatedAt: unix('updated_at').notNull().default(now),
+})
+
+// OBS-10: one row per HTTP request (static assets and dev internals are not recorded).
+export const httpRequests = pgTable('http_requests', {
+  id: text('id').primaryKey(),
+  method: text('method').notNull(),
+  path: text('path').notNull(),
+  query: text('query'),
+  kind: text('kind').notNull(),
+  status: integer('status').notNull(),
+  ms: integer('ms').notNull(),
+  userId: text('user_id'),
+  ipHash: text('ip_hash'),
+  userAgent: text('user_agent'),
+  size: integer('size'),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+// OBS-11: console output and uncaught errors; errors carry a fingerprint so repeats group.
+export const serverLogs = pgTable('server_logs', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  level: text('level').notNull(),
+  message: text('message').notNull(),
+  stack: text('stack'),
+  fingerprint: text('fingerprint'),
+  requestId: text('request_id'),
+  createdAt: unix('created_at').notNull().default(now),
 })
