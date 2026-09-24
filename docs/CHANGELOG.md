@@ -5,6 +5,37 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Canvas v2: toza TopBar, ekran shaklidagi shimmer, qadamlar vaqti bilan, hover/tanlash (UI-13)
+
+Subagent `ui-13-canvas` branch'ida qildi, lead birlashtirdi (`styles.css` bloklari to'qnashuvi — ikkalasi
+saqlandi). TopBar: Share, Preview, Export, "…", kreditlar, avatar; tizim chiplari va dark rejim "…" ichiga.
+Kutayotgan ekran joyi — telefon shaklidagi shimmer; oqimdagi ekranda shimmer iframe USTIDA birinchi
+kontentgacha turadi, iframe'ga tegilmaydi (stream qoidalari o'zgarmagan). ActivityCard: har qadam vaqti,
+joriy qadam spinner bilan, lime progress chizig'i, xato ekran nomi ostida. Hover/tanlash — siyoh chiziq,
+har zoomda bir xil qalinlik; nomlar har zoomda 13px; ekran nomidan sudraladi. Bo'sh chat: taklif chiplari
+(xabarni to'ldiradi, yubormaydi). Pastki panel: undo/redo, zoom menyusi.
+
+Fayllar: `src/routes/p.$projectId.tsx`, `src/components/canvas/*` (TopBar, Canvas, ChatPanel, ActivityCard,
+toolbar), `src/ScreenFrame.tsx`, `src/styles.css` (`/* UI-13 canvas */`).
+
+Tekshirildi: tsc va check toza. Agent headless Chrome'da 1440 light/dark va 1024, yozib olingan
+`feast-home-deepseek` oqimi bilan shimmer/ActivityCard (vaqtinchalik sahifa, commit'da yo'q), LLM chaqiruvsiz
+(`GENERATION_PAUSED=1`). Lead 3000-portda PennyWise canvas'ini ochdi.
+
+### Landing v2: "butun ilova" xaritasi, 5 tizim galereyasi, haqiqiy raqamlar, eskirgan matn tuzatildi (UI-11)
+
+Subagent `ui-11-landing` branch'ida qildi, lead birlashtirdi. Hero: "Describe an app. Get *all of it*.",
+PromptBox'da referens rasm yoqildi, 5 tizim chiplari (`/systems/$id`ga havola — stil tanlamaydi, DS-01).
+Yangi `src/components/landing/AppMap.tsx`: Ripple misolining 4 ekrani, orasida haqiqiy tab/link
+chiziqlari tugma matni bilan; chiziq chiziladi, lime nuqta yuradi; reduced-motion va JS'siz — tayyor xarita.
+5 tizim galereyasi, raqamlar kod'dan (5 tizim, 6 ekran, 15 kredit ilova, 60 bepul kreditga 4 ilova).
+Noto'g'ri matnlar tuzatildi: "33 design systems", "audit … bir bosishda tuzatiladi" (audit ko'rsatilmaydi),
+"beta davomida bepul" FAQ, export pullik rejalarda, "3–6" → "6 tagacha".
+
+Fayllar: `src/Landing.tsx`, `src/components/landing/AppMap.tsx`, `src/styles.css` (`/* UI-11 landing */`).
+
+Tekshirildi: tsc va check toza; headless Chrome 1440 light/dark, 420 light/dark, 420'da gorizontal scroll yo'q.
+
 ### Dashboard v2: prompt markazda, 3 telefonli kollaj kartalar, bo'sh holatlar, canvas'ga o'tish (UI-12)
 
 Subagent `ui-12-dashboard` branch'ida qildi, lead birlashtirdi. Salom pill + serif italic "design"
