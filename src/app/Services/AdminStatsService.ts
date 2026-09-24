@@ -3,6 +3,7 @@ import { sql, type SQL } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { UsageService } from './UsageService'
 import { Setting } from '@/app/Models/Setting'
+import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 
 // ADM-02…08: what the admin panel reads. Plain aggregate SQL over the tables the product already
@@ -97,7 +98,7 @@ export const AdminStatsService = {
   users() {
     return all<{
       id: string; name: string; email: string; image: string | null; role: string; banned: number; createdAt: number
-      lastSeen: number | null; providers: string | null; projects: number; screens: number; calls24h: number; calls: number; spend: number; up: number; down: number
+      lastSeen: number | null; providers: string | null; projects: number; screens: number; calls24h: number; calls: number; spend: number; credits: number
     }>(sql`
       SELECT u.id, u.name, u.email, u.image, u.role, u.banned, u.created_at / 1000 AS createdAt,
         (SELECT max(updated_at) / 1000 FROM session s WHERE s.user_id = u.id) AS lastSeen,
@@ -107,8 +108,7 @@ export const AdminStatsService = {
         (SELECT count(*) FROM llm_calls c WHERE c.user_id = u.id AND c.created_at >= ${now() - DAY}) AS calls24h,
         (SELECT count(*) FROM llm_calls c WHERE c.user_id = u.id) AS calls,
         (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls c WHERE c.user_id = u.id) AS spend,
-        (SELECT count(*) FROM feedback f JOIN projects p ON p.id = f.project_id WHERE p.user_id = u.id AND f.value = 'up') AS up,
-        (SELECT count(*) FROM feedback f JOIN projects p ON p.id = f.project_id WHERE p.user_id = u.id AND f.value = 'down') AS down
+        (SELECT coalesce(sum(delta), 0) FROM credit_ledger l WHERE l.user_id = u.id) AS credits
       FROM user u ORDER BY u.created_at DESC
     `)
   },
@@ -122,6 +122,7 @@ export const AdminStatsService = {
       user: { ...row, banReason: ban?.banReason ?? null },
       limit: { override: Setting.get(`limits.user.${id}`), effective: UsageService.limits(id).callsPerDay },
       projects: Project.cardsForUser(id),
+      credits: Credit.history(id),
       actions: all<{ id: string; createdAt: number; role: string; kind: string; text: string; project: string; projectId: string }>(sql`
         SELECT m.id, m.created_at AS createdAt, m.role, m.kind, m.text, p.name AS project, p.id AS projectId
         FROM messages m JOIN projects p ON p.id = m.project_id WHERE p.user_id = ${id} ORDER BY m.created_at DESC LIMIT 60

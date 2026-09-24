@@ -36,7 +36,7 @@ const columns: Column<Row>[] = [
   { key: 'screens', header: 'Screens', sort: (r) => r.screens, cell: (r) => r.screens, className: 'text-right tabular-nums' },
   { key: 'calls24h', header: 'Calls 24h', sort: (r) => r.calls24h, cell: (r) => r.calls24h, className: 'text-right tabular-nums' },
   { key: 'spend', header: 'Spend', sort: (r) => r.spend, cell: (r) => money(r.spend), className: 'text-right tabular-nums' },
-  { key: 'fb', header: '👍 / 👎', sort: (r) => r.up - r.down, cell: (r) => `${r.up} / ${r.down}`, className: 'text-right tabular-nums' },
+  { key: 'credits', header: 'Credits', sort: (r) => r.credits, cell: (r) => r.credits, className: 'text-right tabular-nums' },
 ]
 
 function UsersPage() {

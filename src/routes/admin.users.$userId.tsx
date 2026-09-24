@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { adminBan, adminRevokeSessions, adminSetRole, adminSetUserLimit, adminUnban, adminUser } from '../server/admin-fns'
+import { adminBan, adminGrantCredits, adminRevokeSessions, adminSetRole, adminSetUserLimit, adminUnban, adminUser } from '../server/admin-fns'
 import { ago, Thumb } from '../Dashboard'
 import { Badge, DailyChart, DataTable, date, money, PageTitle, Panel, secs } from '../admin/ui'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,8 @@ function UserPage() {
   const [confirm, setConfirm] = useState<null | 'ban' | 'sessions' | 'role'>(null)
   const [reason, setReason] = useState('')
   const [limit, setLimit] = useState(d.limit.override ?? '')
+  const [grant, setGrant] = useState('')
+  const [grantNote, setGrantNote] = useState('')
 
   async function run(label: string, fn: () => Promise<unknown>) {
     try {
@@ -28,8 +30,10 @@ function UserPage() {
       toast.success(label)
       setConfirm(null)
       router.invalidate()
+      return true
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
+      return false
     }
   }
 
@@ -52,7 +56,7 @@ function UserPage() {
           ['Projects', u.projects],
           ['Screens', u.screens],
           ['Calls (24h)', `${u.calls24h} / ${d.limit.effective}`],
-          ['Calls (all)', u.calls],
+          ['Credits', u.credits],
           ['Spend', money(u.spend)],
         ].map(([k, v]) => (
           <div key={k as string} className="rounded-2xl border bg-background p-4">
@@ -89,7 +93,36 @@ function UserPage() {
             </form>
           </div>
         </Panel>
-        <Panel title="Spend and calls · 30 days" className="lg:col-span-2">
+        <Panel title={`Credits · ${u.credits}`} className="lg:col-span-2">
+          <form
+            className="flex flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              const n = Number(grant)
+              if (!Number.isInteger(n) || n === 0) return toast.error('Enter a whole number: positive to give, negative to take')
+              run(`${n > 0 ? 'Gave' : 'Took'} ${Math.abs(n)} credits`, () => adminGrantCredits({ data: { userId: u.id, amount: n, note: grantNote } })).then((ok) => ok && (setGrant(''), setGrantNote('')))
+            }}
+          >
+            <Input inputMode="numeric" value={grant} onChange={(e) => setGrant(e.target.value)} placeholder="+100 or -20" aria-label="Credits to give or take" className="h-9 w-32" />
+            <Input value={grantNote} onChange={(e) => setGrantNote(e.target.value)} maxLength={200} placeholder="Why (kept in the log)" aria-label="Reason" className="h-9 min-w-0 flex-1" />
+            <Button type="submit" variant="outline">Apply</Button>
+          </form>
+          <ul className="mt-3 max-h-64 divide-y overflow-y-auto text-sm">
+            {d.credits.map((c) => (
+              <li key={c.id} className="flex items-baseline gap-3 py-1.5">
+                <span className="w-32 shrink-0 text-xs text-muted-foreground">{date(c.createdAt)}</span>
+                <span className="w-16 shrink-0 text-xs text-muted-foreground">{c.kind}</span>
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{c.note ?? ''}</span>
+                <span className={`tabular-nums ${c.delta > 0 ? 'text-emerald-700' : ''}`}>{c.delta > 0 ? `+${c.delta}` : c.delta}</span>
+              </li>
+            ))}
+            {d.credits.length === 0 && <li className="py-4 text-center text-muted-foreground">No credit movements yet.</li>}
+          </ul>
+        </Panel>
+      </div>
+
+      <div className="mt-4 grid gap-4">
+        <Panel title="Spend and calls · 30 days">
           {d.spendByDay.length ? <DailyChart rows={d.spendByDay} series={[{ key: 'calls', label: 'Calls', color: '#2F6BFF' }]} /> : <p className="text-sm text-muted-foreground">No calls in the last 30 days.</p>}
         </Panel>
       </div>

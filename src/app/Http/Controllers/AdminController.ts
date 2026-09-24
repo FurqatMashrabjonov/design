@@ -5,6 +5,7 @@ import { Project } from '@/app/Models/Project'
 import { User } from '@/app/Models/User'
 import { Setting } from '@/app/Models/Setting'
 import { AdminAction } from '@/app/Models/AdminAction'
+import { Credit } from '@/app/Models/Credit'
 import { isAdmin } from '@/app/Services/AuthService'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
@@ -73,6 +74,13 @@ export const AdminController = {
     if (!target) throw notFound()
     Setting.set(`limits.user.${d.userId}`, d.limit === null ? null : String(d.limit))
     AdminAction.log(adminId, 'set-user-limit', target.email, d.limit === null ? 'default' : String(d.limit))
+  },
+  /** BIL-04: credits by hand (a refund, a gift, a correction) — a ledger row, and a log line. */
+  grantCredits(adminId: string, d: { userId: string; amount: number; note: string }) {
+    const target = User.find(d.userId)
+    if (!target) throw notFound()
+    Credit.add({ userId: d.userId, delta: d.amount, kind: 'admin', note: d.note || undefined })
+    AdminAction.log(adminId, 'grant-credits', target.email, `${d.amount > 0 ? '+' : ''}${d.amount}${d.note ? ` · ${d.note}` : ''}`)
   },
   setSetting(adminId: string, d: { key: AdminSettingKey; value: string | null }) {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')

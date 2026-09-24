@@ -5,6 +5,29 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Kredit daftari (BIL-04)
+
+Kreditlar foydalanuvchida saqlanadigan son emas, **daftar**. Har bir harakat — berish, band
+qilish, qaytarish, sotib olish — butun sonli `delta`'ga ega bitta qator. Balans = qatorlar
+yig'indisi, shuning uchun uni har doim tushuntirish mumkin va u hech qachon "suzib" ketmaydi.
+- `credit_ledger` jadvali (migratsiya 0022) va `Credit` modeli: `balance`, `add`, `ofAction`,
+  `history`.
+- **`ref` unikal.** To'lov hodisasi yoki ro'yxatdan o'tish kabi tashqi sabab ikki marta kelsa ham
+  kredit bir marta beriladi (BIL-10 webhook'i shunga tayanadi).
+- **Admin:**
+  - Foydalanuvchi sahifasida kredit balansi, qo'lda berish yoki olish (sababi bilan,
+    `admin_actions` jurnaliga yoziladi) va harakatlar tarixi.
+  - Foydalanuvchilar jadvalida 👍/👎 o'rniga "Credits" ustuni.
+
+Fayllar: `migrations/0022_create_credit_ledger.ts`, `migrate.ts`, `schema.ts`,
+`app/Models/Credit.ts`, `AdminController.ts`, `admin-fns.ts`, `AdminStatsService.ts`,
+`admin.users.index.tsx`, `admin.users.$userId.tsx`, `controllers.check.ts`, CLAUDE.md.
+
+Tekshiruv: `npm run check`, `npx tsc --noEmit` toza. Testlar: balans = yig'indi, bir xil `ref`
+ikkinchi marta yozilmaydi, amal bo'yicha netto, kasr son rad etiladi, admin berishi jurnalda.
+Brauzerda: "1.5" rad etildi (xabar chiqdi), "+1000 · founder testing" yozildi, balans va tarix
+yangilandi.
+
 ### Aniq xarajat: har chaqiruvda model, narx jadvali model bo'yicha (LLM-05)
 
 Kreditlar haqiqiy xarajatga qarab narxlanadi, shuning uchun har chaqiruv o'zi nimaga tushganini

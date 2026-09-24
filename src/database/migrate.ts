@@ -20,10 +20,11 @@ import m0018 from './migrations/0018_add_favorite_to_projects.ts'
 import m0019 from './migrations/0019_add_admin.ts'
 import m0020 from './migrations/0020_add_project_palette.ts'
 import m0021 from './migrations/0021_add_llm_call_model.ts'
+import m0022 from './migrations/0022_create_credit_ledger.ts'
 
 export type Migration = { name: string; up: (db: Database) => void }
 
-const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011, m0012, m0013, m0014, m0015, m0016, m0017, m0018, m0019, m0020, m0021]
+const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011, m0012, m0013, m0014, m0015, m0016, m0017, m0018, m0019, m0020, m0021, m0022]
 
 // Runs once at boot. Each migration runs at most once ever, tracked in _migrations —
 // unlike the old db.ts, later ones don't re-scan the whole table on every start.

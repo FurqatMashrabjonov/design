@@ -55,6 +55,15 @@ export const adminSetUserLimit = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => AdminController.setUserLimit((await requireAdmin()).id, data))
 
+export const adminGrantCredits = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const amount = num(o.amount)
+    if (!Number.isInteger(amount) || amount === 0 || Math.abs(amount) > 100_000) throw new Error('Invalid number')
+    return { userId: idOf(o.userId), amount, note: str(o.note ?? '', 200) }
+  })
+  .handler(async ({ data }) => AdminController.grantCredits((await requireAdmin()).id, data))
+
 export const adminSetSetting = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     const o = obj(d)

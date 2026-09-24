@@ -475,6 +475,22 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(o.series.length >= 30, true, 'a 30-day series with a row per day')
   assert.ok(o.current.newUsers >= 1 && typeof o.current.failRate === 'number')
   assert.ok(AdminStatsService.users().some((u) => u.email === 'boss@x.uz'))
+
+  // BIL-04: credits are a ledger — the balance is the sum, a ref happens once, an admin grant is logged.
+  const { Credit } = await import('../../Models/Credit.ts')
+  assert.equal(Credit.balance('u2'), 0, 'no rows, no credits')
+  assert.equal(Credit.add({ userId: 'u2', delta: 60, kind: 'signup', ref: 'signup:u2' }), true)
+  assert.equal(Credit.add({ userId: 'u2', delta: 60, kind: 'signup', ref: 'signup:u2' }), false, 'the same ref twice grants once (a webhook delivered twice)')
+  Credit.add({ userId: 'u2', delta: -15, kind: 'hold', actionId: 'a1' })
+  Credit.add({ userId: 'u2', delta: 4, kind: 'refund', actionId: 'a1' })
+  assert.equal(Credit.balance('u2'), 49, 'balance = sum of rows')
+  assert.equal(Credit.ofAction('u2', 'a1'), -11, 'an action nets its hold and refunds')
+  assert.throws(() => Credit.add({ userId: 'u2', delta: 1.5, kind: 'admin' }), /whole/)
+  AdminController.grantCredits('adm', { userId: 'u2', amount: 100, note: 'beta tester' })
+  assert.equal(Credit.balance('u2'), 149)
+  assert.equal(AdminStatsService.controls().actions[0]!.action, 'grant-credits', 'a grant is in the admin log')
+  assert.equal(AdminStatsService.users().find((u) => u.id === 'u2')!.credits, 149, 'the users table shows the balance')
+  assert.equal(AdminStatsService.user('u2')!.credits[0]!.note, 'beta tester', 'newest movement first')
 }
 
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change

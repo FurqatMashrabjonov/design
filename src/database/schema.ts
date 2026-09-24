@@ -168,6 +168,18 @@ export const llmCalls = sqliteTable('llm_calls', {
 })
 
 
+// BIL-04: every credit movement; a balance is the sum of `delta`. `ref` is unique when set.
+export const creditLedger = sqliteTable('credit_ledger', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  delta: integer('delta').notNull(),
+  kind: text('kind').notNull(),
+  actionId: text('action_id'),
+  ref: text('ref'),
+  note: text('note'),
+  createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+})
+
 // ADM-01: every admin action (ban, pause, limit, role), who did it and when.
 export const adminActions = sqliteTable('admin_actions', {
   id: text('id').primaryKey(),
