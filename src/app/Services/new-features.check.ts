@@ -424,11 +424,27 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.equal(DesignSystemService.autoFor('a minimal habit tracker', 'productivity', 'seed-1'), 'minimal')
   assert.equal(DesignSystemService.autoFor('a neon cyberpunk player', 'media', 'seed-1'), 'neon')
   assert.equal(DesignSystemService.autoFor('', null, 'seed-1'), 'minimal', 'nothing to go on falls back')
-  // Reach: how much of the catalogue the product can now choose on its own.
-  const reachable = new Set<string>()
-  for (const type of ['fintech', 'food-delivery', 'commerce', 'marketplace', 'booking', 'travel', 'fitness', 'health', 'learning', 'media', 'productivity', 'social'])
-    for (let i = 0; i < 40; i++) reachable.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
-  assert.ok(reachable.size >= 20, `the automatic choice should reach most of the catalogue (got ${reachable.size})`)
+  // GQ-32: reach used to be the measure — how much of the catalogue the product could choose on its
+  // own — and the answer became the problem. Thirty-one of the thirty-four are brand packages
+  // written for websites, and picking widely among them is what made every app look differently
+  // wrong. The automatic choice now draws only from the systems authored for a phone; the rest stay
+  // reachable when the brief asks for them by name, which is the case this replaces reach with.
+  const auto = new Set<string>()
+  for (const type of ['fintech', 'food-delivery', 'commerce', 'marketplace', 'booking', 'travel', 'fitness', 'health', 'learning', 'media', 'productivity', 'social', 'habits'])
+    for (let i = 0; i < 40; i++) auto.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
+  const mobileFirst = ['nova', 'lumen', 'graphite']
+  for (const id of auto) assert.ok(mobileFirst.includes(id), `the automatic choice offered ${id}, which was not authored for a phone`)
+  assert.equal(auto.size, mobileFirst.length, 'all three phone systems are reachable automatically')
+  for (const type of ['fintech', 'habits', 'travel', 'media']) {
+    const picks = new Set<string>()
+    for (let i = 0; i < 40; i++) picks.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
+    assert.ok(picks.size >= 2, `${type}: two projects of one type can still differ (got ${picks.size})`)
+  }
+  // A brand is reached by naming it as a comparison, and only then: a bare mention must not count.
+  assert.equal(DesignSystemService.autoFor('a notion-like notes app', 'productivity', 's'), 'notion')
+  assert.equal(DesignSystemService.autoFor('stays app, like Airbnb', 'travel', 's'), 'airbnb')
+  assert.equal(DesignSystemService.autoFor('linear-style issue tracker', 'productivity', 's'), 'linear-app')
+  assert.ok(!['apple'].includes(DesignSystemService.autoFor('track my apple intake each day', 'health', 's')), 'a bare mention is not a comparison')
 }
 
 // GQ-09: no app type may be all-restraint. Of the 48 candidate slots only three were a high-energy

@@ -79,7 +79,9 @@ const BY_SYSTEM: Record<string, NavCharacter> = {
 // character set. Lumen is iOS 26: its bar floats, is inset and is glass, and a roulette that can
 // land on the flat edge-to-edge `bar` throws the system away — which is exactly what happened on
 // its first run, where not one screen showed the material the system exists for.
-const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island' }
+// Graphite is the other half of the argument: its bar is part of the chassis, opaque and edge to
+// edge, because an instrument wears its chrome rather than floating it.
+const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar' }
 
 // When the system says nothing, what the app is for does.
 const BY_APP_TYPE: Record<string, NavCharacter> = {

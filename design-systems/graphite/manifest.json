@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "graphite",
+  "name": "Graphite",
+  "category": "Mobile",
+  "description": "Engineered dark for phone apps: stepped neutral surfaces, hairlines instead of shadow, a dense scale, mono figures and one amber signal.",
+  "source": { "type": "bundled", "origin": "Authored in-house, 2026-09-24 (GQ-32)" },
+  "files": { "design": "DESIGN.md", "tokens": "tokens.css" }
+}

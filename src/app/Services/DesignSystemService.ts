@@ -68,23 +68,45 @@ const STYLE_WORDS: [RegExp, string][] = [
 // GQ-13: 'nova' is listed three times on purpose — the flagship is the default look (~60%) for a
 // consumer app, and the character systems remain so the same brief does not always give one system.
 const BY_APP_TYPE: Record<string, string[]> = {
-  fintech: ['stripe', 'linear-app', 'midnight', 'dashboard'],
-  'food-delivery': ['nova', 'nova', 'nova', 'airbnb', 'shopify', 'bento', 'doodle'],
-  commerce: ['nova', 'nova', 'nova', 'shopify', 'airbnb', 'elegant', 'bento'],
-  marketplace: ['nova', 'nova', 'nova', 'airbnb', 'shopify', 'bento', 'intercom'],
-  booking: ['nova', 'nova', 'nova', 'airbnb', 'apple', 'elegant', 'material'],
-  travel: ['nova', 'nova', 'nova', 'airbnb', 'elegant', 'bento', 'apple'],
-  fitness: ['nova', 'nova', 'nova', 'nike', 'midnight', 'bento', 'neon'],
-  health: ['nova', 'nova', 'nova', 'apple', 'claude', 'cal', 'material'],
-  learning: ['nova', 'nova', 'nova', 'duolingo', 'doodle', 'bento', 'retro'],
-  media: ['nova', 'nova', 'nova', 'spotify', 'midnight', 'neon', 'tesla'],
-  productivity: ['nova', 'notion', 'linear-app', 'cal', 'bento'],
-  // A habit tracker is a streak app, not a task manager: its own type (app-patterns/habits.json)
-  // with its own candidates. It used to fall under productivity, where all four candidates are the
-  // greyest systems we have, so every habit tracker this product made was guaranteed to look like
-  // an internal tool — not by an unlucky seed, by the table.
-  habits: ['nova', 'nova', 'nova', 'duolingo', 'bento', 'doodle', 'retro'],
-  social: ['nova', 'nova', 'nova', 'apple', 'bento', 'glassmorphism', 'intercom'],
+  // GQ-32: the automatic choice draws from the three systems authored for a phone, not from the
+  // thirty-one brand packages, which were written for websites and show it. The brand systems stay
+  // reachable by name — a brief that says "like Notion" still gets Notion (STYLE_WORDS), and every
+  // one of them is still listed on /systems — but a brief that says nothing gets a system that was
+  // designed for the device it will be read on.
+  //   nova      warm, consumer, a serif figure — the one that feels like a product
+  //   lumen     iOS 26, light and translucent — the one that feels native
+  //   graphite  engineered dark, dense, mono figures — the one that feels like an instrument
+  fintech: ['graphite', 'lumen'],
+  productivity: ['graphite', 'lumen', 'nova'],
+  habits: ['nova', 'lumen'],
+  fitness: ['graphite', 'nova', 'lumen'],
+  health: ['nova', 'lumen'],
+  learning: ['nova', 'lumen'],
+  'food-delivery': ['nova', 'lumen'],
+  food: ['nova', 'lumen'],
+  commerce: ['lumen', 'nova'],
+  marketplace: ['lumen', 'nova'],
+  booking: ['lumen', 'nova'],
+  travel: ['lumen', 'nova'],
+  media: ['graphite', 'lumen', 'nova'],
+  social: ['lumen', 'nova'],
+}
+
+// GQ-32: "like Notion", "Airbnb-style" — a brief that names a brand means it, and the brand systems
+// are no longer in the automatic rotation, so this is how they are reached. Only an explicit
+// comparison counts: a bare mention would take "track my apple intake" to the Apple system. Ids that
+// are ordinary words (minimal, retro, bento, nova) are left to STYLE_WORDS and the app type.
+const BRAND_IDS = /\b(airbnb|nike|stripe|notion|spotify|shopify|slack|github|vercel|supabase|intercom|duolingo|raycast|tesla|shadcn|openai|linear)\b/i
+const COMPARISON = /\b(like|similar to|inspired by|in the style of|style of|vibe of)\s+$|[-\s](style|like|esque|inspired)\b/i
+function namedSystem(brief: string): string | null {
+  for (const m of brief.matchAll(new RegExp(BRAND_IDS, 'gi'))) {
+    const before = brief.slice(Math.max(0, m.index! - 24), m.index!)
+    const after = brief.slice(m.index! + m[0].length, m.index! + m[0].length + 10)
+    if (!COMPARISON.test(before) && !COMPARISON.test(`x${after}`)) continue
+    const id = m[0].toLowerCase() === 'linear' ? 'linear-app' : m[0].toLowerCase()
+    if (DesignSystemService.exists(id)) return id
+  }
+  return null
 }
 
 // FNV-1a, the same stable pick the blueprints and the bottom bar use.
@@ -102,6 +124,8 @@ export const DesignSystemService = {
    * picks one, so the same brief twice is not the same app twice.
    */
   autoFor(brief: string, appType?: string | null, seed?: string): string {
+    const named = namedSystem(brief)
+    if (named) return named
     const byStyle = STYLE_WORDS.find(([re]) => re.test(brief))?.[1]
     if (byStyle && DesignSystemService.exists(byStyle)) return byStyle
     const candidates = (appType ? BY_APP_TYPE[appType] : undefined)?.filter((id) => DesignSystemService.exists(id)) ?? []

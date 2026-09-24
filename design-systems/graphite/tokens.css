@@ -1,0 +1,106 @@
+/* Graphite — the engineered dark system (GQ-32).
+   The third mobile system, and deliberately the opposite register to the other two: where Nova is
+   warm and Lumen is light and translucent, this is an instrument. Depth comes from stepped neutral
+   surfaces and hairlines, never from shadow — a shadow on a dark canvas is invisible, which is why
+   dark ports of light systems look flat. Density is the point: more on screen, a tighter rhythm,
+   figures in a real mono face. One amber signal, used like a dial marking rather than decoration.
+   The ink ramp is authored near-neutral (hue 220 at 7%), not derived. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600;700&display=swap");
+
+:root {
+  /* Three stepped surfaces, each a measured lift rather than a shadow. */
+  --bg: #0b0c0e;
+  --surface: #131519;
+  --surface-warm: #1a1d22;
+  --fg: #f4f5f6;
+  --fg-2: #c3c6cb;
+  --muted: #a2a6ae;
+  --muted-2: #9297a0;
+  --meta: #9297a0;
+  --border: #2a2e35;
+  --border-soft: #1f232a;
+  --accent: #f6a61e;
+  --accent-on: #0b0c0e;
+  --accent-hover: #ffb733;
+  --accent-active: #d98f14;
+  --success: #34d399;
+  --warn: #fbbf24;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  /* A grotesk with real tabular figures, and a mono that belongs beside it rather than fighting it. */
+  --font-display: "IBM Plex Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* A denser scale than the other two: this system fits more on a screen on purpose. */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --text-3xl: 46px;
+  --text-4xl: 64px;
+  --leading-body: 1.45;
+  --leading-tight: 1.05;
+  --tracking-display: -0.02em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 22px;
+  --space-8: 28px;
+  --space-12: 40px;
+  --section-y-desktop: 80px;
+  --section-y-tablet: 56px;
+  --section-y-phone: 32px;
+
+  /* Precise corners, not squircles: a tool is machined, not moulded. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Depth is a light edge and a step in surface, never a drop shadow. */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border);
+  --elev-raised: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px var(--border);
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--accent), transparent 64%);
+  --motion-fast: 110ms;
+  --motion-base: 180ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Nothing overshoots here; an instrument settles exactly where it was sent. */
+  --ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-press: 90ms;
+  --container-max: 1200px;
+  --container-gutter-desktop: 28px;
+  --container-gutter-tablet: 20px;
+  --container-gutter-phone: 16px;
+
+  --icon-stroke: 1.5;
+
+  --od-display-weight: 600;
+  --od-heading-weight: 600;
+  --od-heading-font: var(--font-body);
+
+  /* kit/od-kit.css reads these. The bar is part of the chassis, so it is opaque and edge to edge;
+     blur belongs to systems whose identity is the material. */
+  --od-card-bg: var(--surface);
+  --od-card-border: 1px solid var(--border);
+  --od-card-shadow: var(--elev-raised);
+  --od-blur: blur(14px);
+  --od-control-border: 1px solid var(--border);
+  --od-btn-weight: 600;
+  --od-btn-shadow: none;
+  --od-row-min: 44px;
+  --od-icon-radius: 8px;
+  --od-icon-bg: var(--surface-warm);
+  --od-icon-fg: var(--od-accent-text);
+  --od-accent-text: #f6a61e;
+  --od-success-text: #34d399;
+  --od-warn-text: #fbbf24;
+  --od-danger-text: #f87171;
+}

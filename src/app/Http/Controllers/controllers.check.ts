@@ -447,11 +447,13 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   // DS-01: the app type offers a few systems that suit it and the project id picks one, so the
   // assertion is about the shortlist, not one fixed answer — two people typing the same brief must
   // not get the same app. A style the brief names still beats all of it.
+  // GQ-32: the shortlist is now the three systems authored for a phone, and which of them suits the
+  // app is the assertion — a consumer app never lands on the instrument, a bank never on the warm one.
   const food = new Set([...Array(12)].map(() => auto('A food delivery app with restaurant menus and live order tracking')))
   assert.ok(food.size > 1, 'the same brief twice is not the same system twice')
-  for (const id of food) assert.ok(['nova', 'airbnb', 'shopify', 'bento', 'doodle'].includes(id), `food delivery should suit the app: got ${id}`) // GQ-13: the flagship suits every consumer app
+  for (const id of food) assert.ok(['nova', 'lumen'].includes(id), `food delivery should suit the app: got ${id}`)
   const bank = new Set([...Array(12)].map(() => auto('Neobank: balance, cards, transfers and spending insights')))
-  for (const id of bank) assert.ok(['stripe', 'linear-app', 'midnight', 'dashboard'].includes(id), `a bank should look like one: got ${id}`)
+  for (const id of bank) assert.ok(['graphite', 'lumen'].includes(id), `a bank should look like one: got ${id}`)
   assert.equal(auto('A neo-brutalist habit tracker'), 'neobrutalism', 'a style the brief names beats the app type')
   assert.equal(auto('Crypto wallet with a dark theme'), 'midnight')
   assert.equal(auto('zzz'), 'minimal', 'nothing to go on: minimal')

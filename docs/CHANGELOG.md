@@ -5,6 +5,45 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Graphite, va avtomatik tanlov telefon uchun yozilgan tizimlarga o'tdi (GQ-32)
+
+Uchinchi mobil tizim va ataylab boshqa registr. Nova iliq, Lumen yorug' va shaffof — **Graphite
+asbob**: to'q neytral pog'onali yuzalar, soya o'rniga nozik chiziq, zich shkala, raqamlar mono
+yuzda, bitta amber signal.
+
+Nega soya emas: to'q fonda drop shadow ko'rinmaydi, shuning uchun yorug' tizimning to'q portlari
+yassi chiqadi. Bu yerda chuqurlik **yuza pog'onasi + bir piksellik yorug' chekka** dan keladi.
+Panel ham boshqacha qotirilgan — Lumen suzadi, Graphite yopishadi: asbob o'z chrome'ini kiyadi.
+
+**Avtomatik tanlov endi ruletka emas.** `BY_APP_TYPE` faqat telefon uchun yozilgan uchta tizimni
+taklif qiladi; 31 ta brend paketi chiqarildi — ular veb-sayt uchun yozilgan va buni ko'rsatib
+turibdi. Har turga 2–3 nomzod qoldi, ya'ni bir turdagi ikki loyiha hamon farq qiladi.
+
+Brend tizimlari yo'qolmadi, lekin ularga yetish yo'li o'zgardi: `namedSystem` brief brendni **aniq
+taqqoslash** bilan atasa ishlaydi — `like Notion`, `Airbnb-style`, `inspired by Stripe`. Shunchaki
+eslatish hisoblanmaydi, aks holda "track my apple intake" Apple tizimini olardi. Avvalgi izohimda
+"brend nomi STYLE_WORDS orqali ishlaydi" deb yozgandim — bu **noto'g'ri** edi, `STYLE_WORDS` da
+faqat uslub sifatlari bor; da'voni to'g'ri qilish o'rniga uni haqiqatga aylantirdim.
+
+Eski `reachable.size >= 20` testi ("avtomatik tanlov katalogning ko'pini qamrasin") aynan tashlab
+yuborilgan strategiyani kodlab qo'ygan edi. Almashtirildi: avtomatik tanlov **faqat** telefon uchun
+yozilgan tizimlarni taklif qilishi, har turda kamida ikkitasi bo'lishi, va brend nomi faqat
+taqqoslash bilan ishlashi tekshiriladi.
+
+**Yo'l-yo'lakay bizning xatomiz:** donut halqaning 4 ta overlap topilmasi — `lib/charts.ts`
+legendani **o'zi chizadi**, model esa yana bittasini yozgan, chunki prompt buni aytmagan edi.
+Arxitektura qoidamiz: *prompt modelga kod qo'yadigan narsani chizmaslikni aytadi.* Tuzatildi.
+
+Uchta brief Graphite'da: `audit cleanShare 0.667`, kit 20/20 ekranda, blok/ekran 6.17, 1 xato.
+
+Tegilgan fayllar: `design-systems/graphite/*` (yangi), `src/app/Services/DesignSystemService.ts`,
+`src/app/Services/ShellService.ts`, `src/app/Services/PromptComposer.ts`,
+`src/app/Services/new-features.check.ts`, `src/app/Http/Controllers/controllers.check.ts`,
+`eval/briefs-graphite3.json`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; uchta brief yugurtirilib 390px'da
+ko'z bilan solishtirildi.
+
+
 ### Lumen — iOS 26 tizimi, va chrome nega tizimga bo'ysunmagani (GQ-29, GQ-31)
 
 Foydalanuvchi so'radi: Nova'ga o'xshagan, o'z qoidalariga ega, 2026 uchun premium tizim yana bormi.
