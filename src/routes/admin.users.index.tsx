@@ -21,7 +21,7 @@ const columns: ServerColumn<Row>[] = [
     header: 'User',
     cell: (r) => (
       <div className="flex items-center gap-2.5">
-        <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-[10px] font-semibold">
+        <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-xs font-semibold">
           {r.image ? <img src={r.image} alt="" className="size-full object-cover" referrerPolicy="no-referrer" /> : r.email.slice(0, 2).toUpperCase()}
         </span>
         <span className="min-w-0">
@@ -31,7 +31,7 @@ const columns: ServerColumn<Row>[] = [
       </div>
     ),
   },
-  { key: 'status', header: 'Status', cell: (r) => (r.banned ? <Badge tone="bad">Banned</Badge> : r.role === 'admin' ? <Badge tone="warn">Admin</Badge> : <Badge>User</Badge>) },
+  { key: 'status', header: 'Status', cell: (r) => (r.banned ? <Badge tone="bad">Banned</Badge> : r.role === 'admin' ? <Badge>Admin</Badge> : <Badge>User</Badge>) },
   { key: 'joined', header: 'Joined', sort: 'joined', cell: (r) => <span className="whitespace-nowrap text-muted-foreground">{ago(r.createdAt)}</span> },
   { key: 'seen', header: 'Last seen', sort: 'seen', cell: (r) => <span className="whitespace-nowrap text-muted-foreground">{r.lastSeen ? ago(r.lastSeen) : '—'}</span> },
   { key: 'via', header: 'Via', cell: (r) => <span className="text-xs text-muted-foreground">{r.providers ?? 'email'}</span> },

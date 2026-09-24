@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { telescopeReplayWebhook, telescopeWebhook } from '../server/telescope-fns'
 import { Badge, date, PageTitle, Panel } from '../admin/ui'
+import { Button } from '@/components/ui/button'
 import { statusTone } from '../admin/telescope-ui'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
@@ -52,20 +53,20 @@ function WebhookPage() {
   return (
     <>
       <PageTitle
+        back={<Link to="/admin/webhooks">← All webhooks</Link>}
         title={w.eventType ?? 'Webhook event'}
         sub={`Event #${w.id}`}
         right={
           <div className="flex items-center gap-3">
-            <Link to="/admin/webhooks" className="text-sm text-muted-foreground hover:underline">← All webhooks</Link>
-            <button type="button" disabled={!canReplay || busy} onClick={() => setConfirm(true)} className="h-8 rounded-lg bg-foreground px-3 text-sm text-background disabled:opacity-40" title={canReplay ? undefined : 'Only a verified event with a stored payload can be replayed'}>
+            <Button size="sm" disabled={!canReplay || busy} onClick={() => setConfirm(true)} title={canReplay ? undefined : 'Only a verified event with a stored payload can be replayed'}>
               Replay
-            </button>
+            </Button>
           </div>
         }
       />
       <div className="grid gap-4">
         {outcome && (
-          <p role="status" className={`rounded-lg border px-3 py-2 text-sm ${outcome.ok ? '' : 'border-red-500/40 text-red-600'}`}>
+          <p role="status" className={`rounded-md border px-3 py-2 text-sm ${outcome.ok ? 'border-border' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
             {outcome.ok ? <>Replayed: <span className="font-medium">{outcome.text}</span></> : <>Replay failed: {outcome.text}</>}
           </p>
         )}
@@ -81,7 +82,7 @@ function WebhookPage() {
         </Panel>
         <Panel title="Payload">
           {w.payload ? (
-            <pre className="max-h-[60vh] overflow-auto rounded-lg bg-muted p-3 text-[11px]">{pretty(w.payload)}</pre>
+            <pre className="max-h-[60vh] overflow-auto rounded-lg bg-muted p-3 text-xs">{pretty(w.payload)}</pre>
           ) : (
             <p className="text-sm text-muted-foreground">{w.verified ? 'Not stored (not JSON, or over 64 KB).' : 'Not stored: the signature did not verify.'}</p>
           )}

@@ -1,7 +1,8 @@
 import type { FormEvent } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { telescopeOutgoing } from '../server/telescope-fns'
-import { date, PageTitle } from '../admin/ui'
+import { control, date, PageTitle, tbl } from '../admin/ui'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { OutgoingStatus, Pager } from '../admin/telescope-ui'
 
 // OBS-12: every HTTP call the server made (model providers, photos, payments), newest first.
@@ -26,7 +27,7 @@ export const Route = createFileRoute('/admin/outgoing')({
   component: OutgoingPage,
 })
 
-const field = 'h-8 rounded-lg border bg-background px-2 text-sm'
+const field = control
 
 function OutgoingPage() {
   const d = Route.useLoaderData()
@@ -55,16 +56,16 @@ function OutgoingPage() {
         <input name="slow" type="number" min={1} defaultValue={s.slow} placeholder="Slow ≥ ms" aria-label="Slower than ms" className={`${field} w-28`} />
         <input name="from" type="date" defaultValue={s.from} aria-label="From" className={field} />
         <input name="to" type="date" defaultValue={s.to} aria-label="To" className={field} />
-        <button type="submit" className="h-8 rounded-lg bg-foreground px-3 text-sm text-background">Filter</button>
-        <Link to="/admin/outgoing" className="text-sm text-muted-foreground hover:underline">Clear</Link>
+        <Button type="submit" size="sm">Filter</Button>
+        <Link to="/admin/outgoing" className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'text-muted-foreground' })}>Clear</Link>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border bg-background">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr>{['Time', 'Purpose', 'Method', 'Host', 'Path', 'Status', 'ms', 'Size', 'Request'].map((h) => <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>)}</tr>
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
+            <tr>{['Time', 'Purpose', 'Method', 'Host', 'Path', 'Status', 'ms', 'Size', 'Request'].map((h) => <th key={h} className={tbl.th}>{h}</th>)}</tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {d.rows.map((r) => (
               <tr key={r.id} className="hover:bg-muted/40">
                 <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">{date(r.createdAt)}</td>
@@ -76,7 +77,7 @@ function OutgoingPage() {
                   {r.query && <span className="text-muted-foreground">?{r.query}</span>}
                 </td>
                 <td className="px-3 py-2"><OutgoingStatus status={r.status} error={r.error} /></td>
-                <td className={`px-3 py-2 text-right tabular-nums ${r.ms >= 1000 ? 'text-amber-600' : ''}`}>{r.ms}</td>
+                <td className={`px-3 py-2 text-right tabular-nums ${r.ms >= 1000 ? 'text-warning' : ''}`}>{r.ms}</td>
                 <td className="px-3 py-2 text-right text-xs tabular-nums text-muted-foreground">{r.size ?? '—'}</td>
                 <td className="px-3 py-2 text-xs">
                   {r.requestId ? <Link to="/admin/requests/$requestId" params={{ requestId: r.requestId }} className="font-mono hover:underline">{r.requestId.slice(0, 8)}</Link> : <span className="text-muted-foreground">—</span>}
@@ -84,7 +85,7 @@ function OutgoingPage() {
               </tr>
             ))}
             {d.rows.length === 0 && (
-              <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">No outgoing calls match.</td></tr>
+              <tr><td colSpan={9} className={tbl.empty}>No outgoing calls match.</td></tr>
             )}
           </tbody>
         </table>

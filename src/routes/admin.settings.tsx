@@ -145,7 +145,7 @@ function Keys({ keys, onChange }: { keys: KeyRow[]; onChange: () => void }) {
           <li key={k.name} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
             <div className="w-48 min-w-0">
               <p className="font-medium">{k.label}</p>
-              <p className="truncate font-mono text-[11px] text-muted-foreground">{k.name}</p>
+              <p className="truncate font-mono text-xs text-muted-foreground">{k.name}</p>
             </div>
             <div className="w-28">{k.source === 'admin' ? <Badge tone="good">Admin</Badge> : k.source === 'env' ? <Badge>.env</Badge> : <Badge tone="bad">Missing</Badge>}</div>
             <span className="w-20 font-mono text-xs text-muted-foreground">{k.last4 ? `••••${k.last4}` : '—'}</span>

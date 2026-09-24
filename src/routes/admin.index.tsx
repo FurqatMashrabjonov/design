@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { adminOverviewV2 } from '../server/overview-fns'
-import { Badge, DailyChart, date, Kpi, money, PageTitle, Panel, pct, secs } from '../admin/ui'
+import { Badge, DailyChart, date, Kpi, money, PageTitle, Panel, pct, secs, Segmented } from '../admin/ui'
 
 // ADM-02 / ADM-12: business, product and system at a glance, with alerts for what is wrong now.
 export const Route = createFileRoute('/admin/')({
@@ -33,13 +33,7 @@ function Overview() {
         title="Overview"
         sub={`Last ${o.days === 1 ? '24 hours' : `${o.days} days`}, against the ${o.days === 1 ? 'day' : `${o.days} days`} before`}
         right={
-          <div className="flex rounded-lg border bg-background p-0.5 text-sm">
-            {([1, 7, 30] as const).map((d) => (
-              <button key={d} type="button" onClick={() => navigate({ search: d === 7 ? {} : { days: d } })} className={`h-7 rounded-md px-3 ${o.days === d ? 'bg-muted font-medium' : 'text-muted-foreground'}`}>
-                {d === 1 ? '24h' : `${d}d`}
-              </button>
-            ))}
-          </div>
+          <Segmented label="Range" value={o.days} options={([1, 7, 30] as const).map((d) => ({ value: d, label: d === 1 ? '24h' : `${d}d` }))} onChange={(d) => navigate({ search: d === 7 ? {} : { days: d } })} />
         }
       />
 
@@ -47,7 +41,7 @@ function Overview() {
         <ul className="space-y-2" aria-label="Alerts">
           {o.alerts.map((a, i) => (
             <li key={i}>
-              <a href={a.href} className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 hover:bg-red-500/15 dark:text-red-400">
+              <a href={a.href} className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive outline-none transition-colors duration-(--duration-fast) hover:bg-destructive/15 focus-visible:ring-2 focus-visible:ring-ring">
                 <Badge tone="bad">{a.key}</Badge>
                 <span className="min-w-0 flex-1">{a.text}</span>
                 <span aria-hidden>→</span>
@@ -83,7 +77,7 @@ function Overview() {
         <Kpi label="p95 latency (no API streams)" now={c.p95ReqMs} before={p.p95ReqMs} format={ms} good="down" />
         <Kpi label="Server errors" now={c.errors} before={p.errors} good="down" value={<>{c.errors} <span className="text-xs font-normal text-muted-foreground">{c.errorKinds} distinct</span></>} />
         <Kpi label="LLM error rate" now={c.llmFailRate} before={p.llmFailRate} format={pct} good="down" />
-        <div className="rounded-2xl border bg-background p-4 text-sm">
+        <div className="rounded-lg border border-border bg-card p-4 text-sm shadow-1">
           <p className="text-xs text-muted-foreground">Right now</p>
           <p className="mt-1.5">{o.now.paused ? <Badge tone="bad">Paused</Badge> : <Badge tone="good">Running</Badge>} <span className="tabular-nums">{o.now.running} busy</span></p>
           <p className="mt-1 text-xs tabular-nums text-muted-foreground">{money(o.now.spentToday)} of {money(o.now.budget)} today</p>
@@ -92,10 +86,10 @@ function Overview() {
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <Panel title="Signups and screens · 30 days">
-          <DailyChart rows={o.series} series={[{ key: 'screens', label: 'Screens', color: '#2F6BFF' }, { key: 'signups', label: 'Signups', color: '#16a34a' }]} />
+          <DailyChart rows={o.series} series={[{ key: 'screens', label: 'Screens' }, { key: 'signups', label: 'Signups' }]} />
         </Panel>
         <Panel title="Revenue (estimate) and LLM spend · 30 days">
-          <DailyChart rows={o.series} series={[{ key: 'revenue', label: 'Revenue (est.)', color: '#16a34a' }, { key: 'spend', label: 'LLM spend', color: '#e2a400' }]} format={money} />
+          <DailyChart rows={o.series} series={[{ key: 'revenue', label: 'Revenue (est.)' }, { key: 'spend', label: 'LLM spend' }]} format={money} />
         </Panel>
       </div>
 

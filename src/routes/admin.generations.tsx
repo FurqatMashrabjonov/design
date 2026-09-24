@@ -46,7 +46,7 @@ function CallDetail({ c }: { c: Call }) {
       <Field label="Time taken">{secs(c.ms)}</Field>
       {c.error && (
         <Field label="Error">
-          <pre className="font-mono text-xs whitespace-pre-wrap text-red-600">{c.error}</pre>
+          <pre className="font-mono text-xs whitespace-pre-wrap text-destructive">{c.error}</pre>
         </Field>
       )}
     </dl>
@@ -102,7 +102,7 @@ function GenerationsPage() {
             {d.failedScreens.map((s) => (
               <li key={s.id} className="py-2">
                 <Link to="/admin/projects/$projectId" params={{ projectId: s.projectId }} className="font-medium hover:underline">{s.project} · {s.name}</Link>
-                <p className="truncate font-mono text-xs text-red-600">{s.error}</p>
+                <p className="truncate font-mono text-xs text-destructive">{s.error}</p>
                 <p className="text-xs text-muted-foreground">{s.owner ?? '—'} · {date(s.createdAt)}</p>
               </li>
             ))}

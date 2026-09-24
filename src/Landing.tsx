@@ -1,18 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye, Image as ImageIcon, Sparkles } from 'lucide-react'
+import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye, Image as ImageIcon, Plus, Sparkles } from 'lucide-react'
 import { PhoneFrame, PHONE } from '@/components/PhoneFrame'
 import { PromptBox } from './PromptBox'
 import { buttonVariants } from '@/components/ui/button'
 import { AppMap } from '@/components/landing/AppMap'
+import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
 import { CREDIT_PRICES, SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 
 // MKT-01: the public page. Everything shown is real output of the pipeline (public/showcase is
 // copied from an eval run), nothing is a mock. The prompt typed here survives sign-in: it is kept
 // in sessionStorage and the dashboard starts the project with it (see PENDING_PROMPT in index.tsx).
 
-// ponytail: brand name is undecided (LND-01); change it here.
-export const BRAND = 'Design'
+// ponytail: brand name is undecided (LND-01); change it in components/SiteChrome.tsx.
+export { BRAND }
 export const PENDING_PROMPT = 'od:pending-prompt'
 /** IMG-01: reference pictures typed alongside that prompt, handed to the project page that starts the run. */
 export const PENDING_IMAGES = 'od:pending-images'
@@ -66,13 +67,14 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
   const [fill, setFill] = useState<{ text: string; key: number }>()
   // A style page (MKT-06) can hand the landing a prompt on its way here; it stays in storage so it
   // survives signing in, where index.tsx picks it up and starts the project.
-  const [initial] = useState(() => {
+  // Read after mount, not during the first render: the server has no sessionStorage, so reading it in
+  // render made the client's first tree differ from the server's (a hydration mismatch on the button).
+  useEffect(() => {
     try {
-      return sessionStorage.getItem(PENDING_PROMPT) ?? ''
-    } catch {
-      return ''
-    }
-  })
+      const text = sessionStorage.getItem(PENDING_PROMPT)
+      if (text) setFill({ text, key: 1 })
+    } catch {}
+  }, [])
   return (
     <div className="w-full text-left">
       <PromptBox
@@ -82,7 +84,6 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
         placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
         hint="Add a picture to match its look"
         attachments
-        defaultValue={initial}
         fill={fill}
         onSubmit={async (prompt, images) => {
           // IMG-01: the pictures wait in session storage like the prompt; the project page reads them once.
@@ -128,46 +129,14 @@ function Dot({ s, size = 14 }: { s: (typeof SETS)[number]; size?: number }) {
   )
 }
 
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">{children}</p>
-}
 
-/** The one emphasised word of a big heading: Instrument Serif italic over a lime highlighter stroke. */
-function Em({ children }: { children: React.ReactNode }) {
-  return (
-    <em className="relative isolate whitespace-nowrap font-serif font-normal italic tracking-normal">
-      <span className="absolute inset-x-0 bottom-[.08em] -z-10 h-[.32em] rounded-xs bg-primary dark:bg-primary/45" />
-      {children}
-    </em>
-  )
-}
 
 export function Landing() {
   const [set, setSet] = useState(0)
   const active = SETS[set]
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
-      {/* Nav */}
-      <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-sm bg-primary shadow-1">
-              <span className="size-2.5 rounded-[3px] bg-brand-ink" />
-            </span>
-            {BRAND}
-          </Link>
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
-            <a href="#examples" className="hover:text-foreground">Examples</a>
-            <Link to="/systems" className="hover:text-foreground">Design systems</Link>
-            <Link to="/playbook" className="hover:text-foreground">Playbook</Link>
-            <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/login" className="hidden h-9 items-center px-3 text-sm text-muted-foreground hover:text-foreground sm:inline-flex">Sign in</Link>
-            <Link to="/login" className={buttonVariants({ className: 'font-semibold' })}>Start free</Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader onLanding />
 
       {/* Hero */}
       <section className="relative">
@@ -262,7 +231,7 @@ export function Landing() {
       </section>
 
       {/* Examples */}
-      <section id="examples" className="bg-inverse py-24 text-inverse-foreground">
+      <section id="examples" className="bg-inverse py-24 text-inverse-foreground [--ring:var(--inverse-foreground)]">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
             <div>
@@ -276,7 +245,7 @@ export function Landing() {
                   role="tab"
                   aria-selected={i === set}
                   onClick={() => setSet(i)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm transition-colors duration-(--duration-fast) ease-out ${i === set ? 'bg-primary font-semibold text-primary-foreground' : 'text-inverse-foreground/70 ring-1 ring-inverse-foreground/15 hover:text-inverse-foreground'}`}
+                  className={`rounded-full px-3.5 py-1.5 text-sm outline-none transition-colors duration-(--duration-fast) ease-out focus-visible:ring-2 focus-visible:ring-ring ${i === set ? 'bg-primary font-semibold text-primary-foreground' : 'text-inverse-foreground/70 ring-1 ring-inverse-foreground/15 hover:text-inverse-foreground'}`}
                 >
                   {s.name}
                 </button>
@@ -345,7 +314,7 @@ export function Landing() {
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
                 {q}
-                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition group-open:rotate-45">+</span>
+                <span className="grid size-6 shrink-0 place-items-center rounded-full border border-border text-muted-foreground transition duration-(--duration-base) group-open:rotate-45"><Plus className="size-3.5" /></span>
               </summary>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{a}</p>
             </details>
@@ -355,7 +324,7 @@ export function Landing() {
 
       {/* Final CTA */}
       <section className="px-4 pb-24">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-xl bg-inverse px-6 py-16 text-center text-inverse-foreground ring-1 ring-border sm:py-20">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-xl bg-inverse [--ring:var(--inverse-foreground)] px-6 py-16 text-center text-inverse-foreground ring-1 ring-border sm:py-20">
           <div className="pointer-events-none absolute -top-32 left-1/2 size-[480px] -translate-x-1/2 rounded-full bg-primary opacity-25 blur-3xl" />
           <h2 className="relative text-2xl sm:text-4xl">What are we designing today?</h2>
           <p className="relative mt-3 text-inverse-foreground/65">Your first app is a minute away.</p>
@@ -365,25 +334,14 @@ export function Landing() {
         </div>
       </section>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
-          <span>© {new Date().getFullYear()} {BRAND}</span>
-          {/* ponytail: Terms / Privacy links land with LEG-01…04. */}
-          <div className="flex gap-6">
-            <a href="#examples" className="hover:text-foreground">Examples</a>
-            <Link to="/pricing" className="hover:text-foreground">Pricing</Link>
-            <a href="#faq" className="hover:text-foreground">FAQ</a>
-            <Link to="/login" className="hover:text-foreground">Sign in</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter onLanding />
     </div>
   )
 }
 
 function Feature({ icon: Icon, title, text, className = '' }: { icon: typeof Layers; title: string; text: string; className?: string }) {
   return (
-    <div className={`group rounded-xl border border-border bg-card p-7 shadow-1 transition shadow-1 duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${className}`}>
+    <div className={`group rounded-xl border border-border bg-card p-7 shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${className}`}>
       <span className="grid size-10 place-items-center rounded-md bg-primary text-primary-foreground">
         <Icon className="size-5" />
       </span>

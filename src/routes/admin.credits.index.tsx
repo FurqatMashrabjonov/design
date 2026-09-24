@@ -22,7 +22,7 @@ const columns: ServerColumn<Row>[] = [
   { key: 'when', header: 'When', sort: 'when', cell: (r) => <span className="whitespace-nowrap text-xs text-muted-foreground">{date(r.createdAt)}</span> },
   { key: 'user', header: 'User', cell: userLink },
   { key: 'kind', header: 'Kind', cell: (r) => <Badge tone={r.kind === 'expire' ? 'warn' : r.kind === 'purchase' || r.kind === 'subscription' ? 'good' : 'neutral'}>{r.kind}</Badge> },
-  { key: 'delta', header: 'Delta', sort: 'delta', cell: (r) => <span className={r.delta < 0 ? 'text-red-600' : 'text-emerald-600'}>{r.delta > 0 ? `+${r.delta}` : r.delta}</span>, className: 'text-right tabular-nums' },
+  { key: 'delta', header: 'Delta', sort: 'delta', cell: (r) => <span className={r.delta < 0 ? 'text-destructive' : 'text-success'}>{r.delta > 0 ? `+${r.delta}` : r.delta}</span>, className: 'text-right tabular-nums' },
   { key: 'note', header: 'Note', cell: (r) => <span className="text-xs text-muted-foreground">{r.note ?? r.ref ?? ''}</span> },
 ]
 

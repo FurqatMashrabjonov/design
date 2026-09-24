@@ -4,7 +4,9 @@ import { Activity, ArrowLeft, ArrowUpRight, Bug, Coins, Cpu, Gauge, Globe, Panel
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { adminCheck } from '../server/admin-fns'
 import { CommandPalette, CommandTrigger } from '../admin/CommandPalette'
-import { BRAND } from '../Landing'
+import { BRAND, BrandMark } from '@/components/SiteChrome'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 // ADM-01: the admin panel's shell. Anyone who is not an admin gets the app's ordinary 404 — the
 // panel's existence is not confirmed (the server functions check again on every call).
@@ -95,9 +97,9 @@ function AdminShell() {
   const initial = (admin.name || admin.email || '?').trim().charAt(0).toUpperCase()
 
   return (
-    <div className="flex min-h-screen bg-muted/40 text-foreground">
+    <div className="flex min-h-screen bg-background text-foreground">
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r bg-background transition-[width] duration-200 md:flex ${collapsed ? 'w-14' : 'w-56'}`}
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-(--duration-base) ease-out md:flex ${collapsed ? 'w-14' : 'w-60'}`}
       >
         {/* ADM-10: collapsed, the brand is just its mark and the toggle sits under it. */}
         <div className={`flex shrink-0 ${collapsed ? 'flex-col items-center gap-1 py-3' : 'h-14 items-center justify-between pl-4 pr-2'}`}>
@@ -107,21 +109,15 @@ function AdminShell() {
               {!collapsed && (
                 <>
                   <span className="truncate">{BRAND}</span>
-                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Admin</span>
+                  <Badge variant="secondary">Admin</Badge>
                 </>
               )}
             </Link>
           </Tip>
           <Tip show label={collapsed ? 'Expand sidebar (⌘B)' : 'Collapse sidebar (⌘B)'}>
-            <button
-              type="button"
-              onClick={toggle}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-expanded={!collapsed}
-              className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-            </button>
+            <Button variant="ghost" size="icon-sm" onClick={toggle} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} className="text-muted-foreground hover:text-foreground">
+              {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            </Button>
           </Tip>
         </div>
         {searchSlot}
@@ -129,9 +125,9 @@ function AdminShell() {
           {GROUPS.map((g) => (
             <div key={g.label} className="space-y-0.5">
               {collapsed ? (
-                <div className="mx-2 my-1.5 border-t first:hidden" aria-hidden />
+                <div className="mx-2 my-1.5 border-t border-sidebar-border first:hidden" aria-hidden />
               ) : (
-                <p className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</p>
+                <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{g.label}</p>
               )}
               {g.items.map((n) => (
                 <Tip key={n.to} show={collapsed} label={n.label}>
@@ -139,8 +135,8 @@ function AdminShell() {
                     to={n.to}
                     activeOptions={{ exact: 'exact' in n }}
                     aria-label={collapsed ? n.label : undefined}
-                    className={`flex h-9 items-center gap-2.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground ${collapsed ? 'justify-center' : 'px-2.5'}`}
-                    activeProps={{ className: 'bg-muted font-medium text-foreground' }}
+                    className={`flex h-9 items-center gap-2.5 rounded-sm text-muted-foreground outline-none transition-colors duration-(--duration-fast) hover:bg-sidebar-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring ${collapsed ? 'justify-center' : 'px-2.5'}`}
+                    activeProps={{ className: 'bg-sidebar-accent font-medium text-foreground' }}
                   >
                     <n.icon className="size-4 shrink-0" />
                     {!collapsed && <span className="truncate">{n.label}</span>}
@@ -151,31 +147,31 @@ function AdminShell() {
           ))}
         </nav>
         {collapsed ? (
-          <div className="flex flex-col items-center gap-2 border-t py-3 text-xs">
+          <div className="flex flex-col items-center gap-2 border-t border-sidebar-border py-3 text-xs">
             <Tip show label={admin.email}>
               <span className="grid size-8 place-items-center rounded-full bg-muted font-semibold text-muted-foreground">{initial}</span>
             </Tip>
             <Tip show label="Back to the app">
-              <Link to="/" aria-label="Back to the app" className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground">
+              <Link to="/" aria-label="Back to the app" className={buttonVariants({ variant: 'ghost', size: 'icon-sm', className: 'text-muted-foreground hover:text-foreground' })}>
                 <ArrowLeft className="size-4" />
               </Link>
             </Tip>
           </div>
         ) : (
-          <div className="border-t p-3 text-xs">
+          <div className="border-t border-sidebar-border p-3 text-xs">
             <p className="truncate font-medium">{admin.name || admin.email}</p>
             <p className="truncate text-muted-foreground">{admin.email}</p>
-            <Link to="/" className="mt-2 inline-block text-muted-foreground underline-offset-2 hover:underline">← Back to the app</Link>
+            <Link to="/" className="mt-2 inline-flex items-center gap-1 rounded-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ArrowLeft className="size-3.5" /> Back to the app</Link>
           </div>
         )}
       </aside>
       <div className="min-w-0 flex-1">
         {/* Phones: the sections as a scrolling row instead of the sidebar. */}
-        <nav className="flex items-center gap-1 overflow-x-auto border-b bg-background px-3 py-2 text-sm md:hidden">
+        <nav className="flex items-center gap-1 overflow-x-auto border-b border-border bg-sidebar px-3 py-2 text-sm md:hidden">
           {/* Phones have no ⌘K: the search opens from here. */}
           <CommandTrigger collapsed />
           {NAV.map((n) => (
-            <Link key={n.to} to={n.to} activeOptions={{ exact: 'exact' in n }} className="shrink-0 rounded-lg px-2.5 py-1.5 text-muted-foreground" activeProps={{ className: 'bg-muted font-medium text-foreground' }}>
+            <Link key={n.to} to={n.to} activeOptions={{ exact: 'exact' in n }} className="shrink-0 rounded-sm px-2.5 py-1.5 text-muted-foreground" activeProps={{ className: 'bg-sidebar-accent font-medium text-foreground' }}>
               {n.label}
             </Link>
           ))}
@@ -189,10 +185,3 @@ function AdminShell() {
   )
 }
 
-function BrandMark() {
-  return (
-    <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-foreground">
-      <span className="size-2.5 rounded-sm" style={{ background: '#C6F24E' }} />
-    </span>
-  )
-}

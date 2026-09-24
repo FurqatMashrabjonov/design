@@ -32,6 +32,8 @@
     --color-border: var(--border);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
@@ -151,6 +153,9 @@
     --accent-foreground: oklch(0.24 0.012 60);
     --destructive: oklch(0.56 0.19 30);         /* #cc3526 */
     --destructive-foreground: oklch(0.99 0.004 85);
+    /* UI-18: status text for the admin's good/slow/at-risk numbers; each clears 4.5:1 on background and card. */
+    --success: oklch(0.5 0.12 150);
+    --warning: oklch(0.54 0.13 60);
     --border: oklch(0.912 0.013 83);            /* #e6e1d8 */
     --input: oklch(0.975 0.007 85);
     /* The focus ring is ink, so it clears 3:1 on every surface (lime would not on sand). */
@@ -215,6 +220,8 @@
     --accent-foreground: oklch(0.93 0.012 85);
     --destructive: oklch(0.68 0.17 30);         /* #ef6856 */
     --destructive-foreground: oklch(0.17 0.007 60);
+    --success: oklch(0.78 0.14 150);
+    --warning: oklch(0.8 0.13 72);
     --border: oklch(0.3 0.01 60);               /* #322d29 */
     --input: oklch(0.24 0.009 60);
     --ring: oklch(0.86 0.02 80);                /* #d8d0c3 */

@@ -926,6 +926,9 @@ console.log('Testing Frame Height...')
       assert.ok(contrast(oklch(b, '--muted-foreground'), surface) >= 4.5, `${mode}: muted text on ${name} clears 4.5:1`)
       // The focus ring is never lime (lime on sand is ~1.3:1); it must clear 3:1 on every surface.
       assert.ok(contrast(oklch(b, '--ring'), surface) >= 3, `${mode}: the focus ring clears 3:1 on ${name}`)
+
+      // UI-18: the admin's status colours are text, so they hold text contrast on every surface.
+      if (name !== 'muted') for (const t of ['--success', '--warning', '--destructive']) assert.ok(contrast(oklch(b, t), surface) >= 4.5, `${mode}: ${t} text on ${name} clears 4.5:1`)
     }
     assert.ok(oklch(b, '--ring')[1] < 0.05, `${mode}: the ring is a warm neutral, not the lime`)
     for (const t of ['--elevation-1', '--elevation-2', '--elevation-3', '--elevation-4', '--elevation-phone']) assert.ok(b.includes(`${t}:`), `${mode}: ${t} is defined`)
@@ -933,6 +936,17 @@ console.log('Testing Frame Height...')
   for (const t of ['--brand-ink:', '--brand-lime:', '--lime-100:', '--lime-700:', '--phone-radius:', '--ease-spring', '--duration-base:']) assert.ok(css.includes(t), `${t} is defined`)
   for (const t of ['--radius-sm: 8px', '--radius-md: 12px', '--radius-lg: 16px', '--radius-xl: 24px', '--shadow-1:', '--shadow-4:', '--shadow-phone:', '--text-md: 13px', '--text-5xl: 64px']) assert.ok(css.includes(t), `the theme exposes ${t}`)
   assert.ok(/prefers-reduced-motion: reduce\)\s*\{\s*:root\s*\{\s*--duration-fast: 0ms/.test(css), 'reduced motion zeroes the durations')
+  // UI-18/19: the admin draws on the studio's tokens — no Tailwind palette colour, no hex, no
+  // off-scale 10/11px text, no Tailwind default shadow — so a page holds in both themes.
+  {
+    const { readdirSync, readFileSync } = await import('node:fs')
+    const files = [...readdirSync('src/routes').filter((f) => f.startsWith('admin')).map((f) => `src/routes/${f}`), ...readdirSync('src/admin').filter((f) => f.endsWith('.tsx')).map((f) => `src/admin/${f}`)]
+    const bad = /\b(?:bg|text|border|ring|fill|stroke)-(?:red|emerald|green|amber|yellow|blue|orange|rose|slate|gray|zinc|neutral|stone|sky|indigo|violet)-\d{2,3}\b|#[0-9a-fA-F]{6}\b|text-\[1[01]px\]|\bshadow-(?:sm|md|lg|xl)\b|\bbg-white\b|\btext-white\b/
+    for (const f of files) {
+      const hits = readFileSync(f, 'utf8').split('\n').map((l, i) => [i + 1, l] as const).filter(([, l]) => bad.test(l))
+      assert.equal(hits.length, 0, `${f}: off-system colour or size on line(s) ${hits.map(([n]) => n).join(', ')}`)
+    }
+  }
   assert.ok(css.includes("'Instrument Sans Variable'") && !css.includes('Geist'), 'the studio face is Instrument Sans, self-hosted')
   assert.ok(!readFileSync('src/routes/index.tsx', 'utf8').includes('fonts.googleapis.com'), 'no web-font request from the landing: the serif is self-hosted too')
   assert.ok(!/const (INK|LIME) =/.test(readFileSync('src/Landing.tsx', 'utf8') + readFileSync('src/Dashboard.tsx', 'utf8')), 'no hard-coded brand colours: the pages use the tokens')

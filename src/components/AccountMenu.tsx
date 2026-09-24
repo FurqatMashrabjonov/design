@@ -24,7 +24,7 @@ export function AccountMenu() {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold" aria-label="Account" title={user.email}>
+          <button type="button" className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold outline-none ring-offset-2 ring-offset-background transition-shadow duration-(--duration-base) hover:ring-2 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring" aria-label="Account" title={user.email}>
             {user.image ? <img src={user.image} alt="" className="size-full object-cover" referrerPolicy="no-referrer" /> : initials}
           </button>
         </DropdownMenuTrigger>

@@ -262,6 +262,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-12 | Dashboard v2: prompt-first, 3 ekranli kollaj kartalar, birinchi kirish, canvas'ga o'tish animatsiyasi | Interfeys / Bosh sahifa | MVP | Tayyor | O'rta | UI-10 | Kollaj kartalar, bo'sh holatlar, View Transition |
 | UI-13 | Canvas v2: toza TopBar, generatsiya tajribasi, hover/tanlash holatlari | Muharrir / Kanvas | MVP | Tayyor | Katta | UI-10 | TopBar ≤6, shimmer skeleton, qadamlar, dark |
 | UI-14 | Vizual QA: light/dark/420px skrinshot solishtiruvi | Interfeys / Sifat | MVP | Tayyor | Kichik | UI-11..13 | Oldin/keyin skrinshotlari |
+| UI-15 | Umumiy SiteHeader/SiteFooter + ThemeToggle, 404/xato sahifalari | Interfeys / Interfeys | MVP | Tayyor | Kichik | UI-10, UI-11 | Ommaviy sahifalarda landing header/footer, 404 va xato brendda |
+| UI-16 | Pricing va ommaviy sahifalar yangi ko'rinishga: lime tugmalar, kartalar, systems preview | Interfeys / Sayt | MVP | Tayyor | Kichik | UI-15 | Qora tugma yo'q, kartalar elevation bilan, preview kesilmaydi |
+| UI-17 | Preview sahifasi: PhoneFrame, tokenlar, ilova temasi | Interfeys / Ko'rish | MVP | Tayyor | Kichik | UI-10 | Hex yo'q, PhoneFrame, od:theme |
+| UI-18 | Admin poydevori: status tokenlari va ui.tsx primitivlari | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-10 | --success/--warning, bitta Table/FilterBar/Pager, palitra rangi yo'q |
+| UI-19 | Admin sahifalari va shell dashboard bilan bir xil | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-18 | Shell dashboard tokenlarida, log sahifalari umumiy primitivlarda |
 
 ## B4 · Pul ishlash
 

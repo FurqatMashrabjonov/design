@@ -43,14 +43,14 @@ function UserPage() {
 
   return (
     <>
-      <Link to="/admin/users" className="text-xs text-muted-foreground hover:underline">← Users</Link>
       <PageTitle
+        back={<Link to="/admin/users">← Users</Link>}
         title={u.name || u.email.split('@')[0]}
         sub={`${u.email} · joined ${ago(u.createdAt)} · last seen ${u.lastSeen ? ago(u.lastSeen) : '—'} · via ${u.providers ?? 'email'}`}
         right={
           <div className="flex flex-wrap gap-2">
             {u.banned ? <Badge tone="bad">Banned{u.banReason ? `: ${u.banReason}` : ''}</Badge> : null}
-            {u.role === 'admin' && <Badge tone="warn">Admin</Badge>}
+            {u.role === 'admin' && <Badge>Admin</Badge>}
           </div>
         }
       />
@@ -65,7 +65,7 @@ function UserPage() {
           [`Revenue · ${d.revenue.orders} orders`, money(d.revenue.revenue)],
           ['Margin', d.revenue.revenue - u.spend < 0 ? `−${money(u.spend - d.revenue.revenue)}` : money(d.revenue.revenue - u.spend)],
         ].map(([k, v]) => (
-          <div key={k as string} className="rounded-2xl border bg-background p-4">
+          <div key={k as string} className="rounded-lg border border-border bg-card p-4 shadow-1">
             <p className="text-xs text-muted-foreground">{k}</p>
             <p className="mt-1.5 text-xl font-semibold tabular-nums">{v}</p>
           </div>
@@ -119,7 +119,7 @@ function UserPage() {
                 <span className="w-32 shrink-0 text-xs text-muted-foreground">{date(c.createdAt)}</span>
                 <span className="w-16 shrink-0 text-xs text-muted-foreground">{c.kind}</span>
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{c.note ?? ''}</span>
-                <span className={`tabular-nums ${c.delta > 0 ? 'text-emerald-700' : ''}`}>{c.delta > 0 ? `+${c.delta}` : c.delta}</span>
+                <span className={`tabular-nums ${c.delta > 0 ? 'text-success' : ''}`}>{c.delta > 0 ? `+${c.delta}` : c.delta}</span>
               </li>
             ))}
             {d.credits.length === 0 && <li className="py-4 text-center text-muted-foreground">No credit movements yet.</li>}
@@ -129,7 +129,7 @@ function UserPage() {
 
       <div className="mt-4 grid gap-4">
         <Panel title="Spend and calls · 30 days">
-          {d.spendByDay.length ? <DailyChart rows={d.spendByDay} series={[{ key: 'calls', label: 'Calls', color: '#2F6BFF' }]} /> : <p className="text-sm text-muted-foreground">No calls in the last 30 days.</p>}
+          {d.spendByDay.length ? <DailyChart rows={d.spendByDay} series={[{ key: 'calls', label: 'Calls' }]} /> : <p className="text-sm text-muted-foreground">No calls in the last 30 days.</p>}
         </Panel>
       </div>
 
@@ -139,7 +139,7 @@ function UserPage() {
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {d.projects.map((p) => (
-              <Link key={p.id} to="/admin/projects/$projectId" params={{ projectId: p.id }} className="group overflow-hidden rounded-xl border hover:shadow-md">
+              <Link key={p.id} to="/admin/projects/$projectId" params={{ projectId: p.id }} className="group overflow-hidden rounded-lg border border-border bg-card shadow-1 outline-none transition-shadow duration-(--duration-base) ease-out hover:shadow-3 focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="relative h-32 overflow-hidden bg-muted">
                   {p.covers[0] && (p.device === 'mobile' ? (
                     <div className="absolute top-3 left-1/2 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-foreground/80" style={{ width: 84, height: 182 }}><Thumb screenId={p.covers[0]} device="mobile" width={80} /></div>
@@ -207,7 +207,7 @@ function UserPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className={confirm === 'ban' ? 'bg-destructive text-white hover:bg-destructive/90' : ''}
+              variant={confirm === 'ban' ? 'destructive' : 'default'}
               onClick={(e) => {
                 e.preventDefault()
                 if (confirm === 'ban') run('Banned', () => adminBan({ data: { userId: u.id, reason } }))

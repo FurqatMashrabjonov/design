@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { telescopeLogs } from '../server/telescope-fns'
-import { Badge, date, PageTitle } from '../admin/ui'
+import { Badge, control, date, PageTitle, Segmented, tbl } from '../admin/ui'
+import { Button } from '@/components/ui/button'
 import { levelTone, Pager } from '../admin/telescope-ui'
 
 // OBS-11: what the server printed, newest first; "Live" polls every 3s for newer lines.
@@ -53,31 +54,25 @@ function LogsPage() {
         title="Logs"
         sub={`${d.total + fresh.length} lines · kept 7 days`}
         right={
-          <button type="button" onClick={() => setLive((v) => !v)} disabled={!!s.page} className={`h-8 rounded-lg border px-3 text-sm disabled:opacity-40 ${live ? 'bg-foreground text-background' : 'bg-background'}`} aria-pressed={live}>
-            {live ? '● Live' : 'Live'}
-          </button>
+          <Button size="sm" variant={live ? 'default' : 'outline'} onClick={() => setLive((v) => !v)} disabled={!!s.page} aria-pressed={live}>
+            {live && <span className="size-1.5 animate-pulse rounded-full bg-brand-ink" aria-hidden />} Live
+          </Button>
         }
       />
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 text-sm" role="group" aria-label="Level">
-          {([undefined, ...LEVELS] as const).map((l) => (
-            <button key={l ?? 'all'} type="button" onClick={() => navigate({ search: (old) => ({ ...old, level: l, page: undefined }) })} className={`h-8 rounded-lg border px-3 ${s.level === l ? 'bg-foreground text-background' : 'bg-background'}`}>
-              {l ?? 'all'}
-            </button>
-          ))}
-        </div>
+        <Segmented label="Level" value={s.level} options={([undefined, ...LEVELS] as const).map((l) => ({ value: l, label: l ?? 'all' }))} onChange={(l) => navigate({ search: (old) => ({ ...old, level: l, page: undefined }) })} />
         <form onSubmit={search} key={s.q ?? ''} className="flex gap-2">
-          <input name="q" defaultValue={s.q} placeholder="Search messages" aria-label="Search messages" className="h-8 w-56 rounded-lg border bg-background px-2 text-sm" />
-          <button type="submit" className="h-8 rounded-lg border bg-background px-3 text-sm">Search</button>
+          <input name="q" defaultValue={s.q} placeholder="Search messages" aria-label="Search messages" className={`${control} w-56`} />
+          <Button type="submit" variant="outline" size="sm">Search</Button>
         </form>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-background">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
             <tr>{['Time', 'Level', 'Message', 'Request'].map((h) => <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>)}</tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {rows.map((l) => (
               <tr key={l.id} className="align-top">
                 <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">{date(l.createdAt)}</td>
@@ -87,7 +82,7 @@ function LogsPage() {
                   {l.stack && (
                     <details className="mt-1">
                       <summary className="cursor-pointer text-xs text-muted-foreground">Stack</summary>
-                      <pre className="mt-1 max-h-60 overflow-auto rounded-lg bg-muted p-2 text-[11px]">{l.stack}</pre>
+                      <pre className="mt-1 max-h-60 overflow-auto rounded-lg bg-muted p-2 text-xs">{l.stack}</pre>
                     </details>
                   )}
                 </td>
@@ -96,7 +91,7 @@ function LogsPage() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={4} className="px-3 py-10 text-center text-muted-foreground">No log lines match.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={4} className={tbl.empty}>No log lines match.</td></tr>}
           </tbody>
         </table>
       </div>

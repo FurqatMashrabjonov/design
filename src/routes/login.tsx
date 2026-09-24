@@ -5,6 +5,8 @@ import { getSession } from '../server/fns'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { BRAND, BrandLink, BrandMark, DotBackdrop, Em } from '@/components/SiteChrome'
 
 // AUTH-05: one page, two ways in — Google, or a link sent to your email. No passwords.
 export const Route = createFileRoute('/login')({
@@ -49,25 +51,33 @@ function Login() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground">
+      <DotBackdrop />
+      {/* UI-15: the way back and the theme, as on every public page — a sign-in form is not a dead end. */}
+      <header className="relative mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
+        <BrandLink />
+        <ThemeToggle />
+      </header>
+      <main className="relative flex flex-1 items-center justify-center px-4 pb-16">
       <div className="w-full max-w-sm space-y-6">
-        <div className="space-y-1 text-center">
-          <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
-          <p className="text-sm text-muted-foreground">Design app screens from a description.</p>
+        <div className="space-y-2 text-center">
+          <BrandMark className="mx-auto mb-5 size-11 rounded-md [&>span]:size-4" />
+          <h1 className="text-2xl sm:text-3xl">Sign in to <Em>{BRAND}</Em></h1>
+          <p className="text-sm text-muted-foreground">Describe an app. Get all of it.</p>
         </div>
         {sent ? (
-          <div className="rounded-xl border bg-card p-5 text-center text-sm">
+          <div className="rounded-lg border bg-card p-5 text-center text-sm shadow-1">
             <Mail className="mx-auto mb-2 size-6 text-foreground" />
             <p className="font-medium">Check your email</p>
             <p className="mt-1 text-muted-foreground">We sent a sign-in link to {email}. It works for 15 minutes.</p>
-            <button type="button" className="mt-3 text-xs text-muted-foreground underline" onClick={() => setSent(false)}>
+            <Button type="button" variant="link" size="xs" className="mt-3 text-muted-foreground" onClick={() => setSent(false)}>
               Use a different email
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="space-y-4">
             {methods.google && (
-              <Button variant="outline" className="h-11 w-full" onClick={google} disabled={busy !== null}>
+              <Button variant="outline" size="lg" className="w-full bg-card" onClick={google} disabled={busy !== null}>
                 {busy === 'google' ? <Loader2 className="size-4 animate-spin" /> : <GoogleMark />}
                 Continue with Google
               </Button>
@@ -80,8 +90,8 @@ function Login() {
               </div>
             )}
             <form onSubmit={emailLink} className="space-y-2">
-              <Input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" aria-label="Email" />
-              <Button type="submit" className="h-11 w-full" disabled={busy !== null}>
+              <Input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 bg-card" aria-label="Email" />
+              <Button type="submit" size="lg" className="w-full font-semibold" disabled={busy !== null}>
                 {busy === 'email' && <Loader2 className="size-4 animate-spin" />}
                 Email me a sign-in link
               </Button>
@@ -91,7 +101,8 @@ function Login() {
         )}
         <p className="text-center text-xs text-muted-foreground">No password needed. By continuing you agree to the terms of use and privacy policy.</p>
       </div>
-    </main>
+      </main>
+    </div>
   )
 }
 

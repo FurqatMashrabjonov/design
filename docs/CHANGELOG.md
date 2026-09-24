@@ -3,6 +3,90 @@
 Newest first. One entry per completed change: what changed, files touched, how it was verified.
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
+## 2026-09-25
+
+### Server xatolari tekshirildi: dev'da Postgres ulanishi oqishi va landing hydration xatosi tuzatildi
+
+Admin overview "85 server errors in the last hour" ko'rsatdi. `server_logs` fingerprint bo'yicha:
+- 77 tasi (`HTTPError: aborted`, `getCredits … abort`) 20:32–20:34 da — ikki `vite dev` bir-birini qayta
+  yuklagan halqa paytidagi uzilgan so'rovlar. Halqa to'xtatilgan, qaytmaydi.
+- 1 ta `too many clients already` — **haqiqiy xato**: dev server har SSR qayta yuklashda
+  `connection.ts` ni qayta baholab yangi `pg.Pool` ochardi, eskisi yopilmasdi. Endi bitta pool
+  `globalThis` da, migratsiya jarayonda bir marta. Tekshirildi: 9 marta majburiy qayta yuklashdan keyin
+  `pg_stat_activity` 9 → 10 (pool chegarasi), o'smaydi.
+- 5 ta hydration mismatch — **haqiqiy xato**: landing prompt'i `sessionStorage` dagi kutilayotgan
+  promptni birinchi render paytida o'qirdi; serverda storage yo'q, shuning uchun "Design it" tugmasining
+  `disabled` holati server va mijozda farq qilardi. Endi mount'dan keyin `fill` orqali tiklanadi.
+- 2 ta `SiteHeader is not defined` — UI-15 tahriri o'rtasidagi vaqtinchalik holat, tuzatilgan.
+
+- Fayllar: `src/database/connection.ts`, `src/Landing.tsx`.
+- Tekshirildi: `npm run check` va `tsc` toza; ulanishlar soni qayta yuklashlar orqali o'lchandi. Landing hydration brauzerda tekshirilmadi (kirgan holatda `/` dashboard beradi).
+
+### Preview va admin yangi ko'rinishga — UI-17, UI-18, UI-19
+
+- **UI-17 Preview:** `STAGE` hex ranglari va o'z qora bezel'i olib tashlandi — sahna `bg-canvas` + nuqtali fon,
+  telefon `PhoneFrame`, tema studioning o'zidan (`ThemeToggle`, `od:theme`), o'z dark/light holati yo'q.
+  Asboblar `Button ghost icon` (tooltip, focus ring), strelkalar `Button outline icon-lg`, chapda
+  "← loyiha nomi" tugmasi; ekran yo'q holatida editorga qaytish tugmasi.
+- **UI-18 Admin poydevori:** `styles.css` ga `--success`/`--warning` (yorug' va to'q); test ular va
+  `--destructive` background va card ustida 4.5:1 dan o'tishini tekshiradi. `admin/ui.tsx`: umumiy
+  `tbl` (jadval ko'rinishi), `control` (native select/date Input kabi), `Pager` (outline icon tugmalar —
+  3 nusxa o'rniga bitta), `Callout`, `Segmented`, `SectionTitle`, `toneText`; `Badge` tokenlarda (11px →
+  `text-xs`); `Panel`/`Kpi` `rounded-lg bg-card shadow-1`; `DailyChart` rangni `--chart-*` dan oladi
+  (sahifalardagi `#2F6BFF`/`#16a34a`/`#e2a400` olib tashlandi); CSV `Button`. Barcha sahifalarda emerald/red/amber
+  → `text-success`/`text-destructive`/`text-warning`; ban tugmasi `variant="destructive"` (dark'da oq matn
+  kontrastdan o'tmasdi). Test: admin fayllarida Tailwind palitra rangi, hex, 10/11px, default soya yo'q.
+- **UI-19 Admin shell va sahifalar:** sidebar dashboard kabi (`bg-sidebar`, `w-60`, nav `rounded-sm` +
+  `bg-sidebar-accent`, sentence-case guruh sarlavhalari), logo umumiy `BrandMark` (hardcode `#C6F24E` va
+  teskari chip olib tashlandi), sahifa foni `bg-background`, "Admin" `Badge secondary`. 5 log sahifasi
+  (requests, outgoing, webhooks, logs, errors) umumiy `tbl`/`control` da, Filter `Button`, Clear ghost;
+  logs Live `Button` (yoniq — lime), daraja va overview oralig'i `Segmented`; webhook Replay `Button`.
+  `PageTitle back` — orqaga havola har detal sahifasida bitta joyda (users, projects, requests, webhooks).
+  Admin roli `warn` emas, neytral badge.
+
+- Fayllar: `src/routes/preview.$projectId.tsx`, `src/styles.css`, `src/admin/ui.tsx`, `src/admin/telescope-ui.tsx`, `src/admin/CommandPalette.tsx`, `src/routes/admin*.tsx` (15 ta), `src/app/Services/new-features.check.ts`.
+- Tekshirildi: `npm run check` (yangi: status tokenlari AA, admin grep testi) va `tsc` toza. Chrome (Google bilan kirilgan admin): overview, requests, logs, providers, users va preview — yorug' va to'q temada; kirmagan holatda /admin brendli 404.
+
+### Pricing, playbook va systems yangi ko'rinishda; palitra preview kesilmaydi — UI-16
+
+- Pricing: qora `bg-foreground` tugmalar o'rniga Pro lime `Button`, Starter va Free outline (`size="lg"`);
+  paket "Buy" `Button outline sm`; kartalar `rounded-xl bg-card shadow-1`, Pro `shadow-3 ring-2`; "Most room"
+  `Badge variant="lime"` (11px o'rniga); oylik/yillik tanlovi hover va focus ring bilan; sarlavha
+  `Pay for what you <Em>make</Em>.`, bo'lim sarlavhalari tip shkalasida.
+- Playbook: `Rules in <Em>code</Em>, not in prompts.`; bo'lim chiplari hover/focus bilan, qoida kartalari
+  `rounded-lg shadow-1`, "qayerda" satri kod belgisi fonida; `scroll-mt-20` (yopishqoq header ostida qolmasin).
+- Systems: ikki guruh — **Built for phones** (Nova, Lumen, Graphite, Ember, Volt; landing ko'rsatadiganlar)
+  birinchi, keyin **Brand styles**; kartalar `shadow-1 → hover:shadow-3`, focus ring.
+- Systems/$id: palitra namunasi qat'iy 640px qutida pastdan kesilardi — endi kanvasning balandlik probi
+  (`withHeightProbe` + `parseHeightMessage`, faqat o'z iframe'idan xabar) bilan o'zini o'lchaydi (Nova: 747px);
+  `shadow-2`, CTA `size="lg"`.
+
+- Fayllar: `src/routes/pricing.tsx`, `src/routes/playbook.tsx`, `src/routes/systems.index.tsx`, `src/routes/systems.$id.tsx`.
+- Tekshirildi: `tsc` toza; Chrome: pricing (yorug' + to'q, pastki qism), systems (yorug' + to'q), systems/nova (iframe 747px, to'liq), playbook.
+
+### Umumiy sayt header/footer, tema tugmasi, brendli 404 va xato sahifasi — UI-15
+
+Audit (3 subagent: ikki kod auditi, bitta brauzer skrinshoti) ko'rsatdi: yangi ko'rinish faqat
+landing, dashboard va kanvasda. Pricing, playbook va systems sahifalarida header o'rniga "← Design"
+havolasi, login'da logo ham uyga yo'l ham yo'q, ommaviy sahifalarda tema tanlovi yo'q, 404 esa
+TanStack'ning uslubsiz "Not Found"i edi.
+
+- `components/SiteChrome.tsx` (yangi): `SiteHeader` (logo, nav, faol sahifa belgisi, tema tugmasi,
+  Sign in, lime "Start free"), `SiteFooter`, `SitePage`, `BrandMark`/`BrandLink`, `Em`, `Eyebrow`,
+  `DotBackdrop`. Landing o'zinikini tashlab shularni ishlatadi; `BRAND` shu faylda.
+- Pricing, playbook, systems, systems/$id `SitePage` ichida; sarlavhalar tip shkalasida (qo'lda tracking yo'q).
+- Login: logo va uyga havola, tema tugmasi, nuqtali fon, `Sign in to <Em>Design</Em>`; tugmalar `size="lg"`,
+  "Use a different email" `Button variant="link"`.
+- `components/NotFound.tsx`: `NotFound` va `ErrorPage` router'da `defaultNotFoundComponent` /
+  `defaultErrorComponent` — begona loyiha va admin bo'lmagan uchun /admin ham shu 404.
+- Umumiy: `ThemeToggle` ghost icon `Button` ustida (focus ring bilan); dialog va alert-dialog `shadow-4`,
+  dropdown/context menu `shadow-3` (Tailwind default soyalar o'rniga); AccountMenu avatariga hover/focus halqa.
+- Landing qoldiqlari: misol tablariga ko'rinadigan focus ring (qora bo'limda `--ring` = inverse-foreground),
+  FAQ "+" belgisi lucide `Plus`, takror `shadow-1` olib tashlandi.
+
+- Fayllar: `src/components/SiteChrome.tsx`, `src/components/NotFound.tsx` (yangi), `src/Landing.tsx`, `src/router.tsx`, `src/routes/{pricing,playbook,systems.index,systems.$id,login}.tsx`, `src/components/ThemeToggle.tsx`, `src/components/AccountMenu.tsx`, `src/components/ui/{dialog,alert-dialog,dropdown-menu,context-menu}.tsx`.
+- Tekshirildi: `npm run check` va `tsc` toza. Chrome: pricing, login, 404 va landing — yorug' va to'q temada (header, footer, tema almashishi, 404 dark'da).
+
 ## 2026-09-24
 
 ### Vizual QA: o'chiq asosiy tugma neytral, ekranlar soni matni bir xil (UI-14)

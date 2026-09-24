@@ -1,7 +1,8 @@
 import type { FormEvent } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { telescopeWebhooks } from '../server/telescope-fns'
-import { Badge, date, PageTitle } from '../admin/ui'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge, control, date, PageTitle, tbl } from '../admin/ui'
 import { Pager, statusTone } from '../admin/telescope-ui'
 
 // OBS-12: every webhook POST that reached us, newest first; a verified one keeps its payload.
@@ -20,7 +21,7 @@ export const Route = createFileRoute('/admin/webhooks/')({
   component: WebhooksPage,
 })
 
-const field = 'h-8 rounded-lg border bg-background px-2 text-sm'
+const field = control
 
 function WebhooksPage() {
   const d = Route.useLoaderData()
@@ -44,18 +45,18 @@ function WebhooksPage() {
           <option value="no">Not verified</option>
         </select>
         <input name="result" defaultValue={s.result} placeholder="Result contains" aria-label="Result contains" className={`${field} w-40`} />
-        <button type="submit" className="h-8 rounded-lg bg-foreground px-3 text-sm text-background">Filter</button>
-        <Link to="/admin/webhooks" className="text-sm text-muted-foreground hover:underline">Clear</Link>
+        <Button type="submit" size="sm">Filter</Button>
+        <Link to="/admin/webhooks" className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'text-muted-foreground' })}>Clear</Link>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border bg-background">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr>{['Time', 'Provider', 'Type', 'Event id', 'Signature', 'Result', 'We answered'].map((h) => <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>)}</tr>
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
+            <tr>{['Time', 'Provider', 'Type', 'Event id', 'Signature', 'Result', 'We answered'].map((h) => <th key={h} className={tbl.th}>{h}</th>)}</tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {d.rows.map((r) => (
-              <tr key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate({ to: '/admin/webhooks/$eventId', params: { eventId: String(r.id) } })}>
+              <tr key={r.id} className={tbl.row} onClick={() => navigate({ to: '/admin/webhooks/$eventId', params: { eventId: String(r.id) } })}>
                 <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">{date(r.createdAt)}</td>
                 <td className="px-3 py-2 text-xs">{r.provider}</td>
                 <td className="px-3 py-2 font-mono text-xs">
@@ -68,7 +69,7 @@ function WebhooksPage() {
               </tr>
             ))}
             {d.rows.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">No webhook events match.</td></tr>
+              <tr><td colSpan={7} className={tbl.empty}>No webhook events match.</td></tr>
             )}
           </tbody>
         </table>

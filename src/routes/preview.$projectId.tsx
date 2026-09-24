@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Link2, Moon, Pencil, Sun } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Link2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { getProject, getSession } from '../server/fns'
 import { frameSize } from '../canvas'
 import { orderScreens, screenByName, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
 import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { PhoneFrame } from '@/components/PhoneFrame'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const Route = createFileRoute('/preview/$projectId')({
   beforeLoad: async ({ location }) => {
@@ -19,13 +23,6 @@ export const Route = createFileRoute('/preview/$projectId')({
   component: PreviewPage,
 })
 
-type Theme = 'dark' | 'light'
-
-const STAGE: Record<Theme, { bg: string; fg: string; chip: string; ring: string }> = {
-  dark: { bg: '#1a1716', fg: '#f4f2ee', chip: 'rgba(255,255,255,0.08)', ring: 'rgba(255,255,255,0.14)' },
-  light: { bg: '#efece6', fg: '#1a1716', chip: 'rgba(0,0,0,0.06)', ring: 'rgba(0,0,0,0.12)' },
-}
-
 function PreviewPage() {
   const { project, screens: rows } = Route.useLoaderData()
   const search = Route.useSearch()
@@ -36,9 +33,7 @@ function PreviewPage() {
   const currentIndex = Math.max(0, screens.findIndex((s) => s.id === search.s))
   const current = screens[currentIndex]
 
-  const [theme, setTheme] = useState<Theme>('dark')
   const [viewport, setViewport] = useState({ w: 1280, h: 800 })
-  const c = STAGE[theme]
 
   useEffect(() => {
     const read = () => setViewport({ w: window.innerWidth, h: window.innerHeight })
@@ -90,16 +85,14 @@ function PreviewPage() {
   }, [step])
 
   const native = frameSize(project.device)
-  const isMobile = project.device === 'mobile'
-  const bezel = isMobile ? 10 : 0
+  const bezel = 10
   // Leave room for the arrows on the sides and a caption below.
   const availH = Math.max(240, viewport.h - 130)
   const availW = Math.max(240, viewport.w - 240)
   const scale = Math.min(1, availH / (native.height + bezel * 2), availW / (native.width + bezel * 2))
   const frameW = native.width * scale
-  const frameH = native.height * scale
 
-  // The project's own theme override — distinct from the dark/light stage theme above.
+  // The project's own theme override — distinct from the studio's light/dark, which the stage follows.
   const appTheme = useMemo(() => parseTheme(project.theme), [project.theme])
   const srcDoc = useMemo(
     () => (current ? withPreviewBridge(applyThemeOverride(current.html, appTheme)) : ''),
@@ -117,99 +110,87 @@ function PreviewPage() {
 
   if (!current) {
     return (
-      <div className="flex h-screen items-center justify-center text-sm" style={{ background: c.bg, color: c.fg }}>
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-canvas text-sm text-muted-foreground">
         This project has no screens to preview yet.
+        <Link to="/p/$projectId" params={{ projectId: project.id }} className={buttonVariants({ variant: 'outline' })}>
+          <Pencil /> Back to editor
+        </Link>
       </div>
     )
   }
 
+  // UI-17: the stage is the studio's canvas in the studio's own theme, and the phone is the one
+  // PhoneFrame — no hex stage colours, no second bezel, no light/dark of its own.
   return (
-    <div className="relative flex h-screen flex-col items-center justify-center overflow-hidden" style={{ background: c.bg, color: c.fg }}>
-      <div
-        className="absolute right-5 top-5 flex items-center overflow-hidden rounded-full"
-        style={{ background: c.chip, boxShadow: `inset 0 0 0 1px ${c.ring}` }}
+    <div className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-canvas text-foreground">
+      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px]" />
+      <Link
+        to="/p/$projectId"
+        params={{ projectId: project.id }}
+        className={buttonVariants({ variant: 'outline', size: 'sm', className: 'absolute left-5 top-5 rounded-full bg-card shadow-1' })}
       >
-        <ChromeButton label="Toggle theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-          {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        </ChromeButton>
-        <ChromeButton label="Copy preview link" onClick={copyLink}>
-          <Link2 className="size-4" />
-        </ChromeButton>
-        <Link
-          to="/p/$projectId"
-          params={{ projectId: project.id }}
-          aria-label="Back to editor"
-          title="Back to editor"
-          className="flex size-9 items-center justify-center transition-colors hover:bg-white/10"
-        >
-          <Pencil className="size-4" />
-        </Link>
+        <ChevronLeft /> {project.name || 'Editor'}
+      </Link>
+      <div className="absolute right-5 top-5 flex items-center gap-0.5 rounded-full bg-card/85 p-1 shadow-2 ring-1 ring-border backdrop-blur">
+        <ThemeToggle className="rounded-full" />
+        <Tip label="Copy preview link">
+          <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground" aria-label="Copy preview link" onClick={copyLink}>
+            <Link2 />
+          </Button>
+        </Tip>
+        <Tip label="Back to editor">
+          <Link
+            to="/p/$projectId"
+            params={{ projectId: project.id }}
+            aria-label="Back to editor"
+            className={buttonVariants({ variant: 'ghost', size: 'icon', className: 'rounded-full text-muted-foreground hover:text-foreground' })}
+          >
+            <Pencil />
+          </Link>
+        </Tip>
       </div>
 
-      <div className="flex items-center gap-8">
-        <Arrow label="Previous screen" disabled={currentIndex === 0} onClick={() => step(-1)} ring={c.ring} chip={c.chip}>
+      <div className="relative flex items-center gap-8">
+        <Arrow label="Previous screen" disabled={currentIndex === 0} onClick={() => step(-1)}>
           <ChevronLeft className="size-5" />
         </Arrow>
 
-        <div
-          style={{
-            width: frameW + bezel * 2 * scale,
-            height: frameH + bezel * 2 * scale,
-            borderRadius: isMobile ? 48 * scale : 12,
-            background: '#0d0c0c',
-            padding: bezel * scale,
-            boxShadow: `0 0 0 1px ${c.ring}, 0 30px 80px rgba(0,0,0,0.35)`,
-          }}
-        >
-          <div style={{ width: frameW, height: frameH, overflow: 'hidden', borderRadius: isMobile ? 40 * scale : 8, background: '#fff' }}>
-            <iframe
-              key={current.id}
-              ref={iframeRef}
-              title={current.name}
-              srcDoc={srcDoc}
-              sandbox="allow-scripts"
-              style={{ width: native.width, height: native.height, border: 0, transform: `scale(${scale})`, transformOrigin: 'top left' }}
-            />
-          </div>
-        </div>
+        <PhoneFrame width={frameW}>
+          <iframe
+            key={current.id}
+            ref={iframeRef}
+            title={current.name}
+            srcDoc={srcDoc}
+            sandbox="allow-scripts"
+            style={{ width: native.width, height: native.height, border: 0, transform: `scale(${scale})`, transformOrigin: 'top left' }}
+          />
+        </PhoneFrame>
 
-        <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)} ring={c.ring} chip={c.chip}>
+        <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)}>
           <ChevronRight className="size-5" />
         </Arrow>
       </div>
 
-      <p className="mt-5 text-xs tabular-nums opacity-60">
-        {currentIndex + 1} / {screens.length} · {current.name}
+      <p className="relative mt-5 text-xs tabular-nums text-muted-foreground">
+        {currentIndex + 1} / {screens.length} · <span className="text-foreground">{current.name}</span>
       </p>
     </div>
   )
 }
 
-function ChromeButton(props: { label: string; onClick: () => void; children: React.ReactNode }) {
+function Tip({ label, children }: { label: string; children: React.ReactElement }) {
   return (
-    <button
-      type="button"
-      aria-label={props.label}
-      title={props.label}
-      onClick={props.onClick}
-      className="flex size-9 items-center justify-center transition-colors hover:bg-white/10"
-    >
-      {props.children}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   )
 }
 
-function Arrow(props: { label: string; disabled: boolean; onClick: () => void; ring: string; chip: string; children: React.ReactNode }) {
+function Arrow(props: { label: string; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      aria-label={props.label}
-      disabled={props.disabled}
-      onClick={props.onClick}
-      className="flex size-12 shrink-0 items-center justify-center rounded-full transition-opacity disabled:opacity-25"
-      style={{ background: props.chip, boxShadow: `inset 0 0 0 1px ${props.ring}` }}
-    >
+    <Button variant="outline" size="icon-lg" aria-label={props.label} title={props.label} disabled={props.disabled} onClick={props.onClick} className="rounded-full bg-card shadow-1 disabled:opacity-30">
       {props.children}
-    </button>
+    </Button>
   )
 }

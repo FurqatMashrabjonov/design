@@ -19,18 +19,17 @@ function ProjectPage() {
   const screens = d.screens.filter((s) => !s.deletedAt)
   return (
     <>
-      {d.owner && <Link to="/admin/users/$userId" params={{ userId: d.owner.id }} className="text-xs text-muted-foreground hover:underline">← {d.owner.email}</Link>}
       <PageTitle
+        back={d.owner && <Link to="/admin/users/$userId" params={{ userId: d.owner.id }}>← {d.owner.email}</Link>}
         title={p.name}
         sub={`${p.designSystem} · ${p.device} · created ${date(p.createdAt)}`}
-        right={d.owner && <Link to="/admin/users/$userId" params={{ userId: d.owner.id }} className="text-sm text-muted-foreground hover:underline">Owner: {d.owner.email}</Link>}
       />
       <Panel title={`Screens (${screens.length})`}>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {screens.map((s) => (
             <figure key={s.id} className="shrink-0" style={{ width: p.device === 'mobile' ? 180 : 320 }}>
-              <div className="overflow-hidden rounded-xl border bg-muted" style={{ height: p.device === 'mobile' ? 390 : 200 }}>
-                {s.drawn ? <Thumb screenId={s.id} device={p.device} width={p.device === 'mobile' ? 180 : 320} /> : <div className="grid h-full place-items-center p-3 text-center text-xs text-red-600">{s.error ?? 'Not drawn'}</div>}
+              <div className="overflow-hidden rounded-lg border border-border bg-muted" style={{ height: p.device === 'mobile' ? 390 : 200 }}>
+                {s.drawn ? <Thumb screenId={s.id} device={p.device} width={p.device === 'mobile' ? 180 : 320} /> : <div className="grid h-full place-items-center p-3 text-center text-xs text-destructive">{s.error ?? 'Not drawn'}</div>}
               </div>
               <figcaption className="mt-1.5 flex items-center justify-between gap-1 text-xs">
                 <span className="truncate">{s.name}</span>
@@ -52,7 +51,7 @@ function ProjectPage() {
           <ul className="max-h-[420px] space-y-2 overflow-y-auto text-sm">
             {d.messages.map((m) => (
               <li key={m.id} className={`rounded-lg px-3 py-2 ${m.role === 'user' ? 'ml-8 bg-muted' : 'mr-8 border'}`}>
-                <p className="text-[11px] text-muted-foreground">{m.role} · {m.kind} · {date(m.createdAt)}</p>
+                <p className="text-xs text-muted-foreground">{m.role} · {m.kind} · {date(m.createdAt)}</p>
                 <p className="mt-0.5 whitespace-pre-wrap">{m.text}</p>
               </li>
             ))}

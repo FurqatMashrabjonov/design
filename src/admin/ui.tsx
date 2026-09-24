@@ -3,21 +3,89 @@ import { useRouterState } from '@tanstack/react-router'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Download, Loader2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PAGE_SIZE, type TableQuery } from './table-query'
 
 // Shared pieces of the admin panel: KPI cards, a sortable/searchable table, a daily chart, formats.
+// UI-18: every admin page draws its tables, filters, pagers, callouts and status colours from here, on
+// the studio's tokens — no Tailwind palette colours and no hex, so both themes hold.
+
+/** The table look every admin table shares: DataTable, ServerTable and the hand-built log tables. */
+export const tbl = {
+  wrap: 'overflow-x-auto rounded-md border border-border bg-card shadow-1',
+  table: 'w-full text-md',
+  head: 'bg-muted/60 text-xs text-muted-foreground',
+  th: 'px-3 py-2 text-left font-medium whitespace-nowrap',
+  body: 'divide-y divide-border',
+  td: 'px-3 py-2 align-middle',
+  row: 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-muted/50',
+  empty: 'px-3 py-10 text-center text-muted-foreground',
+}
+
+/** A native select or date input that looks like the shared Input. */
+export const control = 'h-8 rounded-lg border border-input bg-card px-2 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+
+const sortButton = 'inline-flex items-center gap-1 rounded-xs outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring'
+
+export type Tone = 'neutral' | 'good' | 'bad' | 'warn'
+
+/** Status as text colour: a number that is good news, bad news, or worth a look. */
+export const toneText: Record<Tone, string> = { neutral: 'text-muted-foreground', good: 'text-success', bad: 'text-destructive', warn: 'text-warning' }
+
+/** One pager for every table: the range shown and two outline icon buttons. */
+export function Pager({ from, to, total, onPrev, onNext, canPrev, canNext }: { from: number; to: number; total: number; onPrev: () => void; onNext: () => void; canPrev: boolean; canNext: boolean }) {
+  return (
+    <div className="mt-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+      <span className="tabular-nums">{total === 0 ? '0' : `${from}–${to}`} of {total}</span>
+      <Button variant="outline" size="icon-sm" disabled={!canPrev} onClick={onPrev} aria-label="Previous page"><ChevronLeft /></Button>
+      <Button variant="outline" size="icon-sm" disabled={!canNext} onClick={onNext} aria-label="Next page"><ChevronRight /></Button>
+    </div>
+  )
+}
+
+/** A small either/or control: a range, a level. The chosen one is a raised chip, not a colour. */
+export function Segmented<V extends string | number | undefined>({ value, options, onChange, label }: { value: V; options: { value: V; label: string }[]; onChange: (v: V) => void; label: string }) {
+  return (
+    <div className="inline-flex rounded-md border border-border bg-card p-0.5 text-sm shadow-1" role="group" aria-label={label}>
+      {options.map((o) => (
+        <button
+          key={String(o.value ?? 'all')}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cn('h-7 rounded-sm px-3 outline-none transition-colors duration-(--duration-fast) focus-visible:ring-2 focus-visible:ring-ring', value === o.value ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground')}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** A line that needs attention — an alert, a failed webhook, an open circuit. */
+export function Callout({ tone = 'bad', children, className }: { tone?: 'bad' | 'warn'; children: ReactNode; className?: string }) {
+  const cls = tone === 'bad' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-warning/30 bg-warning/10 text-warning'
+  return <div className={cn('rounded-md border px-4 py-3 text-sm', cls, className)}>{children}</div>
+}
+
+/** The heading of a group of panels on a page. */
+export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return <h2 className={cn('mb-3 text-md font-semibold', className)}>{children}</h2>
+}
 
 export const money = (usd: number) => (usd === 0 ? '$0' : usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`)
 export const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`)
 export const secs = (ms: number) => (ms ? `${(ms / 1000).toFixed(1)}s` : '—')
 export const date = (unix: number | null) => (unix ? new Date(unix * 1000).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—')
 
-export function PageTitle({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
+export function PageTitle({ title, sub, right, back }: { title: string; sub?: string; right?: ReactNode; back?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold tracking-tight" title={title}>{title}</h1>
+        {back && <div className="mb-2 text-sm text-muted-foreground [&_a]:rounded-xs [&_a]:transition-colors [&_a:hover]:text-foreground">{back}</div>}
+        <h1 className="truncate text-2xl" title={title}>{title}</h1>
         {sub && <p className="mt-1 text-sm text-muted-foreground">{sub}</p>}
       </div>
       {right}
@@ -27,10 +95,10 @@ export function PageTitle({ title, sub, right }: { title: string; sub?: string; 
 
 export function Panel({ title, children, right, className = '' }: { title?: string; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className={`min-w-0 rounded-2xl border bg-background ${className}`}>
+    <section className={cn('min-w-0 rounded-lg border border-border bg-card shadow-1', className)}>
       {title && (
-        <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
-          <h2 className="text-sm font-semibold">{title}</h2>
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+          <h2 className="text-md font-semibold">{title}</h2>
           {right}
         </div>
       )}
@@ -44,12 +112,12 @@ export function Kpi({ label, value, now, before, format = String, good = 'up' }:
   const delta = before === undefined || before === 0 ? null : (now - before) / before
   const better = delta === null || good === 'none' ? null : good === 'up' ? delta > 0 : delta < 0
   return (
-    <div className="rounded-2xl border bg-background p-4">
+    <div className="rounded-lg border border-border bg-card p-4 shadow-1">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1.5 text-xl font-semibold tabular-nums tracking-tight">{value ?? format(now)}</p>
       <p className="mt-1 h-4 text-xs tabular-nums text-muted-foreground">
         {delta !== null && Math.abs(delta) >= 0.005 ? (
-          <span className={better === null ? '' : better ? 'text-emerald-600' : 'text-red-600'}>
+          <span className={better === null ? '' : better ? toneText.good : toneText.bad}>
             {delta > 0 ? '▲' : '▼'} {Math.abs(Math.round(delta * 100))}%
           </span>
         ) : before !== undefined ? (
@@ -60,30 +128,34 @@ export function Kpi({ label, value, now, before, format = String, good = 'up' }:
   )
 }
 
+const CHART = ['var(--chart-1)', 'var(--chart-3)', 'var(--chart-2)', 'var(--chart-4)']
+
 /** A 30-day area chart; each series is one key of the rows. */
-export function DailyChart<T extends { day: string }>({ rows, series, format = (n: number) => String(n), height = 180 }: { rows: T[]; series: { key: keyof T & string; label: string; color: string }[]; format?: (n: number) => string; height?: number }) {
+export function DailyChart<T extends { day: string }>({ rows, series, format = (n: number) => String(n), height = 180 }: { rows: T[]; series: { key: keyof T & string; label: string; color?: string }[]; format?: (n: number) => string; height?: number }) {
+  // The studio's chart tokens, in the order a chart needs them: lime-green first, then amber, then greys.
+  const colorOf = (i: number) => series[i]!.color ?? CHART[i % CHART.length]!
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
           <defs>
-            {series.map((s) => (
+            {series.map((s, i) => (
               <linearGradient key={s.key} id={`g-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={s.color} stopOpacity={0.35} />
-                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+                <stop offset="0%" stopColor={colorOf(i)} stopOpacity={0.35} />
+                <stop offset="100%" stopColor={colorOf(i)} stopOpacity={0} />
               </linearGradient>
             ))}
           </defs>
           <CartesianGrid vertical={false} stroke="var(--border)" />
-          <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={11} tickFormatter={(d: string) => d.slice(5)} minTickGap={24} stroke="var(--muted-foreground)" />
-          <YAxis tickLine={false} axisLine={false} fontSize={11} width={52} tickFormatter={(n: number) => format(n)} allowDecimals={false} stroke="var(--muted-foreground)" />
+          <XAxis dataKey="day" tickLine={false} axisLine={false} fontSize={12} tickFormatter={(d: string) => d.slice(5)} minTickGap={24} stroke="var(--muted-foreground)" />
+          <YAxis tickLine={false} axisLine={false} fontSize={12} width={52} tickFormatter={(n: number) => format(n)} allowDecimals={false} stroke="var(--muted-foreground)" />
           <Tooltip
-            contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
+            contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 12, boxShadow: 'var(--elevation-3)', fontSize: 12 }}
             labelStyle={{ color: 'var(--foreground)' }}
             formatter={(v, name) => [format(Number(v)), series.find((s) => s.key === name)?.label ?? String(name)]}
           />
-          {series.map((s) => (
-            <Area key={s.key} type="monotone" dataKey={s.key as string} stroke={s.color} strokeWidth={2} fill={`url(#g-${s.key})`} isAnimationActive={false} />
+          {series.map((s, i) => (
+            <Area key={s.key} type="monotone" dataKey={s.key as string} stroke={colorOf(i)} strokeWidth={2} fill={`url(#g-${s.key})`} isAnimationActive={false} />
           ))}
         </AreaChart>
       </ResponsiveContainer>
@@ -119,17 +191,17 @@ export function DataTable<T>({ rows, columns, search, empty = 'Nothing here yet.
       {search && (
         <label className="relative mb-3 block w-full max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0) }} placeholder="Search" aria-label="Search" className="h-8 pl-8" />
+          <Input value={q} onChange={(e) => { setQ(e.target.value); setPage(0) }} placeholder="Search" aria-label="Search" className="h-8 bg-card pl-8" />
         </label>
       )}
-      <div className="overflow-x-auto rounded-xl border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
             <tr>
               {columns.map((c) => (
-                <th key={c.key} className={`px-3 py-2 text-left font-medium whitespace-nowrap ${c.className ?? ''}`}>
+                <th key={c.key} className={cn(tbl.th, c.className)}>
                   {c.sort ? (
-                    <button type="button" className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => setSort((s) => ({ key: c.key, desc: s?.key === c.key ? !s.desc : true }))}>
+                    <button type="button" className={sortButton} onClick={() => setSort((s) => ({ key: c.key, desc: s?.key === c.key ? !s.desc : true }))}>
                       {c.header}
                       {sort?.key === c.key && (sort.desc ? <ArrowDown className="size-3" /> : <ArrowUp className="size-3" />)}
                     </button>
@@ -140,36 +212,33 @@ export function DataTable<T>({ rows, columns, search, empty = 'Nothing here yet.
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {shown.slice(at * pageSize, (at + 1) * pageSize).map((r, i) => (
-              <tr key={i} className={onRow ? 'cursor-pointer hover:bg-muted/40' : ''} onClick={onRow ? () => onRow(r) : undefined}>
+              <tr key={i} className={onRow ? tbl.row : ''} onClick={onRow ? () => onRow(r) : undefined}>
                 {columns.map((c) => (
-                  <td key={c.key} className={`px-3 py-2 align-middle ${c.className ?? ''}`}>{c.cell(r)}</td>
+                  <td key={c.key} className={cn(tbl.td, c.className)}>{c.cell(r)}</td>
                 ))}
               </tr>
             ))}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-10 text-center text-muted-foreground">{empty}</td>
+                <td colSpan={columns.length} className={tbl.empty}>{empty}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
       {pages > 1 && (
-        <div className="mt-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
-          <span className="tabular-nums">{at * pageSize + 1}–{Math.min(shown.length, (at + 1) * pageSize)} of {shown.length}</span>
-          <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={at === 0} onClick={() => setPage(at - 1)} aria-label="Previous page"><ChevronLeft className="size-4" /></button>
-          <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={at >= pages - 1} onClick={() => setPage(at + 1)} aria-label="Next page"><ChevronRight className="size-4" /></button>
-        </div>
+        <Pager from={at * pageSize + 1} to={Math.min(shown.length, (at + 1) * pageSize)} total={shown.length} canPrev={at > 0} canNext={at < pages - 1} onPrev={() => setPage(at - 1)} onNext={() => setPage(at + 1)} />
       )}
     </div>
   )
 }
 
-export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'good' | 'bad' | 'warn' }) {
-  const cls = { neutral: 'bg-muted text-muted-foreground', good: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400', bad: 'bg-red-500/15 text-red-700 dark:text-red-400', warn: 'bg-amber-500/15 text-amber-700 dark:text-amber-400' }[tone]
-  return <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${cls}`}>{children}</span>
+/** A status pill. Tones are the studio's status tokens, tinted, so a pill reads in both themes. */
+export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: Tone }) {
+  const cls = { neutral: 'bg-muted text-muted-foreground', good: 'bg-success/12 text-success', bad: 'bg-destructive/10 text-destructive', warn: 'bg-warning/12 text-warning' }[tone]
+  return <span className={cn('inline-flex items-center rounded-sm px-1.5 py-0.5 text-xs font-medium whitespace-nowrap', cls)}>{children}</span>
 }
 
 /** A panel that slides over the right edge: full height, scrollable; Esc or the overlay closes it. */
@@ -190,7 +259,7 @@ export function Drawer({ open, onClose, title, children }: { open: boolean; onCl
 /** One label/value line of a detail panel; use inside a <dl>. */
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[8rem_1fr] gap-3 border-b py-2 text-sm last:border-0">
+    <div className="grid grid-cols-[8rem_1fr] gap-3 border-b border-border py-2 text-md last:border-0">
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-words">{children}</dd>
     </div>
@@ -261,13 +330,12 @@ export function ServerTable<T extends { id: string }>({ rows, total, columns, qu
     }
   }
 
-  const control = 'h-8 rounded-md border bg-background px-2 text-sm text-foreground'
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end gap-2">
         <label className="relative block w-full max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <DebouncedInput value={str('q')} onCommit={(v) => set('q', v)} placeholder="Search" aria-label="Search" className="h-8 pl-8" />
+          <DebouncedInput value={str('q')} onCommit={(v) => set('q', v)} placeholder="Search" aria-label="Search" className="h-8 bg-card pl-8" />
         </label>
         {filters.map((f) => (
           <label key={f.type === 'dateRange' ? f.from : f.key} className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -293,20 +361,20 @@ export function ServerTable<T extends { id: string }>({ rows, total, columns, qu
         <span className="ml-auto flex items-center gap-2">
           {loading && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Loading" />}
           {onExport && (
-            <button type="button" onClick={exportCsv} disabled={exporting || total === 0} className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-3 text-sm disabled:opacity-40">
-              <Download className="size-4" /> CSV
-            </button>
+            <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting || total === 0}>
+              <Download /> CSV
+            </Button>
           )}
         </span>
       </div>
-      <div className={`overflow-x-auto rounded-xl border transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
+      <div className={cn(tbl.wrap, 'transition-opacity duration-(--duration-base) ease-out', loading && 'opacity-60')} aria-busy={loading}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
             <tr>
               {columns.map((c) => (
-                <th key={c.key} className={`px-3 py-2 text-left font-medium whitespace-nowrap ${c.className ?? ''}`} aria-sort={c.sort && sort === c.sort ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
+                <th key={c.key} className={cn(tbl.th, c.className)} aria-sort={c.sort && sort === c.sort ? (dir === 'asc' ? 'ascending' : 'descending') : undefined}>
                   {c.sort ? (
-                    <button type="button" className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => change({ sort: c.sort, dir: sort === c.sort && dir === 'desc' ? 'asc' : 'desc' })}>
+                    <button type="button" className={sortButton} onClick={() => change({ sort: c.sort, dir: sort === c.sort && dir === 'desc' ? 'asc' : 'desc' })}>
                       {c.header}
                       {sort === c.sort && (dir === 'desc' ? <ArrowDown className="size-3" /> : <ArrowUp className="size-3" />)}
                     </button>
@@ -317,30 +385,26 @@ export function ServerTable<T extends { id: string }>({ rows, total, columns, qu
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {rows.map((r) => {
               const click = onRow ? () => onRow(r) : detail ? () => (setRow(r), setOpen(true)) : undefined
               return (
-                <tr key={r.id} className={click ? 'cursor-pointer hover:bg-muted/40' : ''} onClick={click}>
+                <tr key={r.id} className={click ? tbl.row : ''} onClick={click}>
                   {columns.map((c) => (
-                    <td key={c.key} className={`px-3 py-2 align-middle ${c.className ?? ''}`}>{c.cell(r)}</td>
+                    <td key={c.key} className={cn(tbl.td, c.className)}>{c.cell(r)}</td>
                   ))}
                 </tr>
               )
             })}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-10 text-center text-muted-foreground">{empty}</td>
+                <td colSpan={columns.length} className={tbl.empty}>{empty}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-      <div className="mt-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
-        <span className="tabular-nums">{total === 0 ? '0' : `${Math.min(total, page * size + 1)}–${Math.min(total, (page + 1) * size)}`} of {total}</span>
-        <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={page === 0} onClick={() => onQuery({ page: page - 1 || undefined })} aria-label="Previous page"><ChevronLeft className="size-4" /></button>
-        <button type="button" className="grid size-7 place-items-center rounded-md border disabled:opacity-40" disabled={(page + 1) * size >= total} onClick={() => onQuery({ page: page + 1 })} aria-label="Next page"><ChevronRight className="size-4" /></button>
-      </div>
+      <Pager from={Math.min(total, page * size + 1)} to={Math.min(total, (page + 1) * size)} total={total} canPrev={page > 0} canNext={(page + 1) * size < total} onPrev={() => onQuery({ page: page - 1 || undefined })} onNext={() => onQuery({ page: page + 1 })} />
       {detail && (
         <Drawer open={open} onClose={() => setOpen(false)} title={row && detailTitle ? detailTitle(row) : 'Details'}>
           {row && detail(row)}

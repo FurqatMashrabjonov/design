@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { telescopeErrors } from '../server/telescope-fns'
-import { date, PageTitle } from '../admin/ui'
+import { date, PageTitle, tbl } from '../admin/ui'
 
 // OBS-11: server errors grouped by fingerprint (name + message without ids + where it was thrown).
 export const Route = createFileRoute('/admin/errors')({
@@ -13,20 +13,20 @@ function ErrorsPage() {
   return (
     <>
       <PageTitle title="Errors" sub={`${groups.length} distinct errors · kept 7 days`} />
-      <div className="overflow-x-auto rounded-xl border bg-background">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr>{['Error', 'Count', 'First seen', 'Last seen', 'Last request'].map((h) => <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>)}</tr>
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
+            <tr>{['Error', 'Count', 'First seen', 'Last seen', 'Last request'].map((h) => <th key={h} className={tbl.th}>{h}</th>)}</tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {groups.map((g) => (
               <tr key={g.fingerprint} className="align-top">
                 <td className="max-w-xl px-3 py-2">
-                  <p className="font-mono text-xs break-all text-red-600">{g.message}</p>
+                  <p className="font-mono text-xs break-all text-destructive">{g.message}</p>
                   {g.stack && (
                     <details className="mt-1">
                       <summary className="cursor-pointer text-xs text-muted-foreground">Sample stack</summary>
-                      <pre className="mt-1 max-h-72 overflow-auto rounded-lg bg-muted p-2 text-[11px]">{g.stack}</pre>
+                      <pre className="mt-1 max-h-72 overflow-auto rounded-lg bg-muted p-2 text-xs">{g.stack}</pre>
                     </details>
                   )}
                 </td>
@@ -38,7 +38,7 @@ function ErrorsPage() {
                 </td>
               </tr>
             ))}
-            {groups.length === 0 && <tr><td colSpan={5} className="px-3 py-10 text-center text-muted-foreground">No errors in the last 7 days.</td></tr>}
+            {groups.length === 0 && <tr><td colSpan={5} className={tbl.empty}>No errors in the last 7 days.</td></tr>}
           </tbody>
         </table>
       </div>

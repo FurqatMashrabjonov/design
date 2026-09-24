@@ -1,7 +1,8 @@
 import type { FormEvent } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { telescopeRequests } from '../server/telescope-fns'
-import { Badge, date, PageTitle } from '../admin/ui'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge, control, date, PageTitle, tbl } from '../admin/ui'
 import { Pager, statusTone } from '../admin/telescope-ui'
 
 // OBS-10: every HTTP request the server answered, newest first; filters live in the URL.
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/admin/requests/')({
   component: RequestsPage,
 })
 
-const field = 'h-8 rounded-lg border bg-background px-2 text-sm'
+const field = control
 
 function RequestsPage() {
   const d = Route.useLoaderData()
@@ -55,18 +56,18 @@ function RequestsPage() {
         <input name="slow" type="number" min={1} defaultValue={s.slow} placeholder="Slow ≥ ms" aria-label="Slower than ms" className={`${field} w-28`} />
         <input name="from" type="date" defaultValue={s.from} aria-label="From" className={field} />
         <input name="to" type="date" defaultValue={s.to} aria-label="To" className={field} />
-        <button type="submit" className="h-8 rounded-lg bg-foreground px-3 text-sm text-background">Filter</button>
-        <Link to="/admin/requests" className="text-sm text-muted-foreground hover:underline">Clear</Link>
+        <Button type="submit" size="sm">Filter</Button>
+        <Link to="/admin/requests" className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'text-muted-foreground' })}>Clear</Link>
       </form>
 
-      <div className="overflow-x-auto rounded-xl border bg-background">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs text-muted-foreground">
-            <tr>{['Time', 'Method', 'Path', 'Status', 'ms', 'User', 'Kind'].map((h) => <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>)}</tr>
+      <div className={tbl.wrap}>
+        <table className={tbl.table}>
+          <thead className={tbl.head}>
+            <tr>{['Time', 'Method', 'Path', 'Status', 'ms', 'User', 'Kind'].map((h) => <th key={h} className={tbl.th}>{h}</th>)}</tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className={tbl.body}>
             {d.rows.map((r) => (
-              <tr key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => navigate({ to: '/admin/requests/$requestId', params: { requestId: r.id } })}>
+              <tr key={r.id} className={tbl.row} onClick={() => navigate({ to: '/admin/requests/$requestId', params: { requestId: r.id } })}>
                 <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">{date(r.createdAt)}</td>
                 <td className="px-3 py-2 font-mono text-xs">{r.method}</td>
                 <td className="max-w-md truncate px-3 py-2 font-mono text-xs" title={r.path + (r.query ? `?${r.query}` : '')}>
@@ -74,13 +75,13 @@ function RequestsPage() {
                   {r.query && <span className="text-muted-foreground">?{r.query}</span>}
                 </td>
                 <td className="px-3 py-2"><Badge tone={statusTone(r.status)}>{r.status}</Badge></td>
-                <td className={`px-3 py-2 text-right tabular-nums ${r.ms >= 1000 ? 'text-amber-600' : ''}`}>{r.ms}</td>
+                <td className={`px-3 py-2 text-right tabular-nums ${r.ms >= 1000 ? 'text-warning' : ''}`}>{r.ms}</td>
                 <td className="max-w-48 truncate px-3 py-2 text-xs">{r.email ?? <span className="text-muted-foreground">—</span>}</td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">{r.kind}</td>
               </tr>
             ))}
             {d.rows.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-10 text-center text-muted-foreground">No requests match.</td></tr>
+              <tr><td colSpan={7} className={tbl.empty}>No requests match.</td></tr>
             )}
           </tbody>
         </table>

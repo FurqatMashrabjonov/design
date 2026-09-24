@@ -28,13 +28,13 @@ export function CommandTrigger({ collapsed }: { collapsed?: boolean }) {
       onClick={toggle}
       aria-label={collapsed ? 'Search' : undefined}
       title={collapsed ? 'Search (⌘K)' : undefined}
-      className={`flex items-center gap-2 rounded-xl border bg-background text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${collapsed ? 'shrink-0 justify-center p-2' : 'w-full px-3 py-2'}`}
+      className={`flex items-center gap-2 rounded-md border border-border bg-card text-sm shadow-1 outline-none focus-visible:ring-2 focus-visible:ring-ring text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${collapsed ? 'shrink-0 justify-center p-2' : 'w-full px-3 py-2'}`}
     >
       <Search className="size-4 shrink-0" />
       {!collapsed && (
         <>
           <span className="flex-1 text-left">Search…</span>
-          <kbd className="rounded-md border bg-muted px-1.5 py-0.5 font-sans text-[11px]">⌘K</kbd>
+          <kbd className="rounded-md border bg-muted px-1.5 py-0.5 font-sans text-xs">⌘K</kbd>
         </>
       )}
     </button>
@@ -145,7 +145,7 @@ export function CommandPalette() {
                   aria-selected={i === active}
                   onMouseMove={() => setActive(i)}
                   onClick={r.go}
-                  className={`flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-sm ${i === active ? 'bg-muted' : ''}`}
+                  className={`flex cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-md ${i === active ? 'bg-muted' : ''}`}
                 >
                   <I className="size-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{r.label}</span>

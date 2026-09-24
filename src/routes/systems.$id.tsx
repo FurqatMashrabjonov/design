@@ -1,6 +1,9 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { parseHeightMessage, withHeightProbe } from '@/lib/frame-height'
 import { getSystem } from '../server/fns'
-import { BRAND, PENDING_PROMPT } from '../Landing'
+import { PENDING_PROMPT } from '../Landing'
+import { BRAND, SitePage } from '@/components/SiteChrome'
 import { Button } from '@/components/ui/button'
 
 // MKT-06: one design system — its style card in full, and the palette drawn from its own tokens
@@ -23,16 +26,18 @@ function System() {
   // shapes is the whole job — a markdown dependency for one page would not pay for itself.
   const lines = s.card.split('\n')
   return (
-    <main className="mx-auto max-w-5xl px-4 py-16">
-      <Link to="/systems" className="text-sm text-muted-foreground hover:text-foreground">
+    <SitePage className="max-w-5xl">
+      <Link to="/systems" className="rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         ← Design systems
       </Link>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em]">{s.name}</h1>
-          <p className="mt-1 text-xs uppercase tracking-[.12em] text-muted-foreground">{s.category}</p>
+          <h1 className="text-3xl sm:text-4xl">{s.name}</h1>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">{s.category}</p>
         </div>
         <Button
+          size="lg"
+          className="font-semibold"
           onClick={() => {
             try {
               sessionStorage.setItem(PENDING_PROMPT, `A mobile app in the ${s.name} style`)
@@ -60,13 +65,36 @@ function System() {
             return <p key={i} className="text-muted-foreground">{t}</p>
           })}
         </div>
-        <iframe
-          title={`${s.name} palette`}
-          srcDoc={s.sample}
-          sandbox="allow-scripts"
-          className="h-[640px] w-full rounded-2xl border bg-card lg:w-[520px]"
-        />
+        <SampleFrame name={s.name} html={s.sample} />
       </div>
-    </main>
+    </SitePage>
+  )
+}
+
+// UI-16: the palette sample measures itself (the canvas's height probe) instead of sitting in a
+// fixed 640px box that clipped its last card. The iframe stays sandboxed; only its own messages count.
+const SAMPLE_MIN = 320
+function SampleFrame({ name, html }: { name: string; html: string }) {
+  const ref = useRef<HTMLIFrameElement>(null)
+  const [height, setHeight] = useState(640)
+  const src = useMemo(() => withHeightProbe(html, 'ds-sample', SAMPLE_MIN), [html])
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.source !== ref.current?.contentWindow) return
+      const msg = parseHeightMessage(e.data, SAMPLE_MIN)
+      if (msg?.frameId === 'ds-sample') setHeight(msg.height)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+  return (
+    <iframe
+      ref={ref}
+      title={`${name} palette`}
+      srcDoc={src}
+      sandbox="allow-scripts"
+      style={{ height }}
+      className="w-full rounded-xl border border-border bg-card shadow-2 lg:w-[520px]"
+    />
   )
 }

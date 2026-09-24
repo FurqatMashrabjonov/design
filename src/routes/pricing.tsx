@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
-import { BRAND } from '../Landing'
+import { BRAND, Em, Eyebrow, SitePage } from '@/components/SiteChrome'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS, type ProductKey } from '@/lib/credit-prices'
 import { buy } from '../credits'
 
@@ -35,19 +37,17 @@ function Pricing() {
     })),
   ]
   return (
-    <main className="mx-auto max-w-5xl px-4 py-16">
-      <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-        ← {BRAND}
-      </Link>
-      <h1 className="mt-6 text-3xl font-semibold tracking-[-0.03em]">Pricing</h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
+    <SitePage className="max-w-5xl">
+      <Eyebrow>Pricing</Eyebrow>
+      <h1 className="text-3xl sm:text-5xl">Pay for what you <Em>make</Em>.</h1>
+      <p className="mt-4 max-w-2xl text-muted-foreground">
         Pay for what you generate, in credits. A whole app is {P.plan + P.draw} credits, a new or redrawn screen {P.screen}, an element edit {P.element}. A
         screen that fails or that you stop is given back.
       </p>
 
-      <div className="mt-8 inline-flex rounded-lg border bg-background p-0.5 text-sm" role="group" aria-label="Billing period">
+      <div className="mt-8 inline-flex rounded-md border border-border bg-card p-0.5 text-sm shadow-1" role="group" aria-label="Billing period">
         {[false, true].map((y) => (
-          <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`h-8 rounded-md px-3.5 ${yearly === y ? 'bg-muted font-medium' : 'text-muted-foreground'}`}>
+          <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`h-8 rounded-sm px-3.5 outline-none transition-colors duration-(--duration-base) focus-visible:ring-2 focus-visible:ring-ring ${yearly === y ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {y ? `Yearly · save up to ${bestSaving}%` : 'Monthly'}
           </button>
         ))}
@@ -55,10 +55,10 @@ function Pricing() {
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">
         {tiers.map((t) => (
-          <section key={t.id} className={`flex flex-col rounded-2xl border bg-background p-6 ${t.id === 'pro' ? 'border-foreground shadow-sm' : ''}`}>
+          <section key={t.id} className={`flex flex-col rounded-xl border bg-card p-6 ${t.id === 'pro' ? 'border-transparent shadow-3 ring-2 ring-foreground' : 'border-border shadow-1'}`}>
             <div className="flex items-baseline justify-between">
               <h2 className="font-semibold">{t.name}</h2>
-              {t.id === 'pro' && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">Most room</span>}
+              {t.id === 'pro' && <Badge variant="lime">Most room</Badge>}
             </div>
             <p className="mt-3 text-3xl font-semibold tabular-nums">
               ${t.price}
@@ -70,19 +70,19 @@ function Pricing() {
             <ul className="mt-4 space-y-2 text-sm">
               {t.features.map((f) => (
                 <li key={f} className="flex gap-2">
-                  <Check className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden /> {f}
+                  <Check className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden /> {f}
                 </li>
               ))}
             </ul>
             <div className="mt-auto pt-6">
               {t.id === 'free' ? (
-                <Link to="/login" className="inline-flex h-10 w-full items-center justify-center rounded-lg border text-sm font-medium hover:bg-muted">
+                <Link to="/login" className={buttonVariants({ variant: 'outline', size: 'lg', className: 'w-full' })}>
                   Start free
                 </Link>
               ) : (
-                <button type="button" onClick={() => buy(`${t.id}-${yearly ? 'year' : 'month'}` as ProductKey)} className="h-10 w-full rounded-lg bg-foreground text-sm font-medium text-background hover:opacity-90">
+                <Button size="lg" variant={t.id === 'pro' ? 'default' : 'outline'} className={`w-full ${t.id === 'pro' ? 'font-semibold' : ''}`} onClick={() => buy(`${t.id}-${yearly ? 'year' : 'month'}` as ProductKey)}>
                   Get {t.name}
-                </button>
+                </Button>
               )}
             </div>
           </section>
@@ -90,24 +90,24 @@ function Pricing() {
       </div>
 
       <section className="mt-12">
-        <h2 className="text-xl font-semibold tracking-[-0.02em]">Need more?</h2>
+        <h2 className="text-2xl">Need more?</h2>
         <p className="mt-1 text-sm text-muted-foreground">Starter and Pro can add a pack when they run low. Plan credits renew each month and unused ones do not carry over; pack credits never expire.</p>
         <div className="mt-4 flex flex-wrap gap-3">
           {PACKS.map((p) => (
-            <div key={p.credits} className="rounded-xl border bg-background px-5 py-4">
+            <div key={p.credits} className="min-w-44 rounded-lg border border-border bg-card px-5 py-4 shadow-1">
               <p className="text-sm font-medium">{p.credits.toLocaleString('en')} credits</p>
               <p className="text-xl font-semibold tabular-nums">${p.usd}</p>
               <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · never expire</p>
-              <button type="button" onClick={() => buy(`pack-${p.credits}` as ProductKey)} className="mt-3 h-8 w-full rounded-lg border text-sm hover:bg-muted">
+              <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => buy(`pack-${p.credits}` as ProductKey)}>
                 Buy
-              </button>
+              </Button>
             </div>
           ))}
         </div>
       </section>
 
       <section className="mt-12 overflow-x-auto">
-        <h2 className="text-xl font-semibold tracking-[-0.02em]">What a credit buys</h2>
+        <h2 className="text-2xl">What a credit buys</h2>
         <table className="mt-4 w-full max-w-lg text-sm">
           <tbody className="divide-y">
             {[
@@ -123,6 +123,6 @@ function Pricing() {
           </tbody>
         </table>
       </section>
-    </main>
+    </SitePage>
   )
 }

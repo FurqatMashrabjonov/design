@@ -30,7 +30,7 @@ function RequestPage() {
     : []
   return (
     <>
-      <PageTitle title={r ? `${r.method} ${r.path}` : 'Request'} sub={`Request ${requestId}`} right={<Link to="/admin/requests" className="text-sm text-muted-foreground hover:underline">← All requests</Link>} />
+      <PageTitle back={<Link to="/admin/requests">← All requests</Link>} title={r ? `${r.method} ${r.path}` : 'Request'} sub={`Request ${requestId}`} />
       <div className="grid gap-4">
         <Panel title="Request">
           {r ? (
@@ -52,8 +52,8 @@ function RequestPage() {
             <ul className="space-y-3">
               {errors.map((e) => (
                 <li key={e.id}>
-                  <p className="font-mono text-xs text-red-600 break-all">{e.message}</p>
-                  {e.stack && <pre className="mt-1 max-h-60 overflow-auto rounded-lg bg-muted p-2 text-[11px]">{e.stack}</pre>}
+                  <p className="font-mono text-xs text-destructive break-all">{e.message}</p>
+                  {e.stack && <pre className="mt-1 max-h-60 overflow-auto rounded-lg bg-muted p-2 text-xs">{e.stack}</pre>}
                 </li>
               ))}
             </ul>

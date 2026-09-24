@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { providerOverview } from '../server/provider-fns'
 import { adminSetSetting } from '../server/admin-fns'
-import { Badge, date, money, PageTitle, Panel, pct, secs } from '../admin/ui'
+import { Badge, Callout, control, date, money, PageTitle, Panel, pct, secs } from '../admin/ui'
 
 // ADM-14: which model each call site runs on (switched here, saved as the llm.* settings), how each
 // model is doing over the last hour and day, and any circuit the breaker has opened.
@@ -26,7 +26,7 @@ const STATUS = {
   healthy: { label: 'Healthy', tone: 'good' },
   idle: { label: 'Idle', tone: 'neutral' },
 } as const
-const field = 'h-9 w-full rounded-lg border bg-background px-2 text-sm'
+const field = `${control} h-9 w-full`
 const hhmm = (ms: number) => new Date(ms).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
 
 function ProvidersPage() {
@@ -60,9 +60,9 @@ function ProvidersPage() {
     <>
       <PageTitle title="Providers" sub="Which model each step runs on, and how each model is doing. Changes apply to the next call." />
       {d.circuits.map((c) => (
-        <p key={c.model} className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm">
+        <Callout key={c.model} className="mb-4">
           Circuit open → {label(c.model)} is down, using {label(c.fallback)} until {hhmm(c.until)}
-        </p>
+        </Callout>
       ))}
       <Panel title="Models in use">
         <div className="grid gap-4 md:grid-cols-4">
@@ -109,7 +109,7 @@ function ProvidersPage() {
 
 function KeyMissing({ provider }: { provider: string }) {
   return (
-    <span className="mt-1 block text-xs text-red-600 dark:text-red-400">
+    <span className="mt-1 block text-xs text-destructive">
       No {provider} API key — calls fail. <Link to="/admin/settings" className="underline underline-offset-2">Add it</Link>
     </span>
   )
@@ -190,8 +190,8 @@ function HourBars({ hours }: { hours: { calls: number; errors: number }[] }) {
     <div className="flex h-12 items-end gap-0.5">
       {hours.map((h, i) => (
         <div key={i} title={`${23 - i}h ago: ${h.calls} calls, ${h.errors} errors`} className="flex flex-1 flex-col justify-end rounded-sm bg-muted/50" style={{ height: '100%' }}>
-          <div className="w-full rounded-sm bg-foreground/30" style={{ height: `${((h.calls - h.errors) / max) * 100}%` }} />
-          <div className="w-full rounded-sm bg-red-500" style={{ height: `${(h.errors / max) * 100}%` }} />
+          <div className="w-full rounded-sm bg-chart-2/60" style={{ height: `${((h.calls - h.errors) / max) * 100}%` }} />
+          <div className="w-full rounded-sm bg-destructive" style={{ height: `${(h.errors / max) * 100}%` }} />
         </div>
       ))}
     </div>
