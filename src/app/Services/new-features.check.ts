@@ -243,13 +243,13 @@ assert.equal(sameShell(navA), sameShell(navB), 'Two root-tab navs may differ ONL
   assert.equal(navStyle('Ledger', { appType: 'fintech' }), navStyle('Ledger', { appType: 'fintech' }), 'the app type decides when the system says nothing')
   assert.notEqual(navStyle('Ledger', { designSystem: 'airbnb' }), navStyle('Ledger', { designSystem: 'slack' }), 'character changes the answer')
   assert.ok(navStyle('Crowded', { tabCount: 7, designSystem: 'airbnb' }) !== 'island', 'a crowded bar drops the labels rather than truncating them')
-  for (const style of ['island', 'pill', 'contrast', 'bar'] as const) {
+  for (const style of ['island', 'pill', 'contrast', 'bar', 'tiles', 'tonal', 'underline'] as const) {
     const html = buildBottomNav(multiPlan.navigation, 'home', style)
     assert.ok(html.includes(`data-od-nav="${style}"`), `${style}: the shape is marked`)
     assert.ok(html.includes('position:fixed'), `${style}: the bar is pinned`)
     assert.ok(!/bg-white|#fff\b/i.test(html), `${style}: no hardcoded light surface`)
     assert.ok(!/class="/.test(html), `${style}: inline styles only`)
-    const labelled = style === 'island' || style === 'bar'
+    const labelled = style === 'island' || style === 'bar' || style === 'tonal' || style === 'underline'
     assert.equal(html.includes('>Home</span>'), labelled, `${style}: labels only where there is room`)
     if (!labelled) assert.ok(html.includes('aria-label="Home"'), `${style}: an icon-only tab still says what it is`)
     // NAV-03: a floating bar stands above the screen edge, so the page must leave more room.
@@ -1028,14 +1028,26 @@ console.log('Testing Pinned Chrome (GQ-29)...')
   // flat edge-to-edge bar on every screen because the roulette was free to choose one — so not a
   // single screen showed the material the system exists for.
   const nav = { tabs: [{ id: 'a', label: 'Home', icon: 'home' }, { id: 'b', label: 'More', icon: 'list' }] }
+  // GQ-39: a phone system keeps its identity through its own short list of shapes, whatever the app type.
+  const own: Record<string, string[]> = { lumen: ['island', 'pill'], nova: ['underline', 'island', 'tiles'], ember: ['island', 'tonal'], graphite: ['bar', 'tonal'], volt: ['contrast', 'tiles'] }
   for (const seed of ['a', 'b', 'c', 'd', 'e']) {
     for (const appType of ['fintech', 'media', undefined]) {
-      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'lumen' }), 'island', 'lumen always floats')
-      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'ember' }), 'island', 'so does ember')
-      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'graphite' }), 'bar', 'graphite wears its chrome')
-      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'volt' }), 'bar', 'so does volt')
+      for (const [system, shapes] of Object.entries(own)) {
+        assert.ok(shapes.includes(navStyle(seed, { tabCount: 3, appType, designSystem: system })), `${system} wears one of its own shapes`)
+      }
     }
   }
+  assert.ok(['island', 'pill'].every((x) => own.lumen!.includes(x)) && !own.lumen!.includes('bar'), 'lumen always floats glass')
+  assert.ok(!own.graphite!.some((x) => ['island', 'pill', 'tiles', 'contrast'].includes(x)), 'graphite always wears its chrome')
+  // The measure that made this row: across the systems written for a phone, apps no longer share one bar.
+  const phone = Object.keys(own)
+  const worn = new Map<string, number>()
+  for (let i = 0; i < 30; i++) {
+    const shape = navStyle(`App ${i}`, { tabCount: 4, designSystem: phone[i % phone.length] })
+    worn.set(shape, (worn.get(shape) ?? 0) + 1)
+  }
+  assert.ok(worn.size >= 4, `30 apps wear ${worn.size} bar shapes: ${[...worn].map(([k, n]) => `${k} ${n}`).join(', ')}`)
+  assert.ok(Math.max(...worn.values()) <= 15, 'no one shape is half of all apps')
   // Nova still rolls, so pinning one system did not pin them all.
   assert.ok(new Set(['a', 'b', 'c', 'd', 'e', 'f'].map((s) => navStyle(s, { tabCount: 3, designSystem: 'nova' }))).size > 1, 'an unpinned system still varies')
   const bar = buildBottomNav(nav as never, 'a', 'island')

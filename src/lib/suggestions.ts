@@ -24,6 +24,8 @@ export function suggestions(screens: SuggestScreen[], tabs: { id: string; label:
   for (const [name] of [...wanted].sort((a, z) => z[1] - a[1])) out.push(`Design the “${name}” screen`)
 
   const home = drawn.find((s) => s.screenType === 'root-tab') ?? drawn[0]
-  out.push(`Show the empty state of “${home.name}”`, 'Add an onboarding screen')
+  out.push(`Show the empty state of “${home.name}”`)
+  // GQ-38: most apps now open with one — offer it only to an app that has none.
+  if (!drawn.some((s) => /onboard|welcome|get started|intro/i.test(s.name))) out.push('Add an onboarding screen')
   return [...new Set(out)].slice(0, max)
 }

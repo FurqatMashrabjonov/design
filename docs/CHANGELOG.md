@@ -5,6 +5,46 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Har bir telefon tizimining o'z bar shakllari, uchta yangi shakl — GQ-39
+
+O'lchov: avtomatik tanlanadigan tizimlarda (Lumen, Ember, Nova) bar ~90% island, ~10% pill edi —
+Lumen va Ember `island`ga qattiq bog'langan, Nova'ning uchta variantidan ikkitasi island.
+
+- Yangi shakllar (`ShellService`): **tiles** (har tab squircle plitka, faoli accent bilan to'la; suzadi),
+  **tonal** (Material 3: tekis 80px panel, faol ikonka orqasida 64×32 pill, yorliqlar doim), **underline**
+  (tahririy: faqat tab nomi, faol tab ustida qisqa accent chiziq). Hammasi inline style, tokenlarda.
+- Qattiq bog'lash o'rniga har telefon tizimining o'z ro'yxati (`SHAPES_BY_SYSTEM`): Lumen island/pill
+  (doim shisha va suzadi), Nova underline/island/tiles, Ember island/tonal, Graphite bar/tonal (doim
+  chassisda), Volt contrast/tiles. Ilova nomi hash bilan tanlaydi — bitta ilova ichida bar bir xil.
+  Bu kodda (jadval), prompt'da emas: bar'ni model chizmaydi.
+- `navClearance` shaklga qarab: suzuvchi 128, tonal 104, bar/underline 88.
+- Natija: 5 tizim × 30 ilova — 7 xil shakl, eng ko'pi 8/30; habit turidagi 300 ilova: island 45%
+  (oldin ~90%), pill 17%, tonal 17%, underline 11%, tiles 10%.
+
+- Fayllar: `src/app/Services/ShellService.ts`, `src/app/Services/new-features.check.ts`, `CLAUDE.md`.
+- Tekshirildi: `npm run check` (har shakl: belgi, pinned, inline, yorliqlar, clearance; har tizim o'z ro'yxatidan;
+  30 ilovada ≥4 shakl va hech biri yarmidan ko'p emas) va `tsc` toza. Chrome: saqlangan ekranlar LLM'siz
+  qayta render — Nova underline/tiles, Ember tonal, Volt tiles, Lumen pill, Graphite tonal. Hakam (coherence)
+  bilan haqiqiy generatsiyada o'lchanmadi — bar deterministik shell, keyingi eval'da ko'rinadi.
+
+### Ilova onboarding bilan ochiladi — GQ-38
+
+O'lchov: 105 chizilgan ekrandan 0 tasi onboarding edi, 19 loyihada 12 ta Settings (noaniq brief'ni
+planner to'ldiruvchi ekranlar bilan to'ldiradi). Onboarding blueprint'i bor edi, lekin tanlanmasdi.
+
+- `withOnboarding(plan, brief)` (PlannerService, kodda, planner va tuzatish aylanishidan keyin): brief
+  ekranlar sonini aytmagan, "no onboarding" demagan va rejada onboarding/auth yo'q bo'lsa — birinchi
+  o'ringa `Welcome` (archetype onboarding, modal-flow, `linksTo` birinchi tab). 6 ta bo'lsa o'rin
+  bo'shatadi: so'ralmagan settings → profile → notifications → search, bo'lmasa bir xil turdagi ikkinchi
+  so'ralmagan ekran (Edit Task yonida Create Task); brief so'ragan ekran va tab ildizi hech qachon
+  tushmaydi — bo'shatib bo'lmasa onboarding qo'shilmaydi. Ekranlar soni o'zgarmaydi (kredit xarajati yo'q).
+- Onboarding chromesiz chiziladi: `isBareScreen` → `shellPartsFor` hech narsa qo'shmaydi, shell
+  shartnomasi "header yo'q, tab bar yo'q, asosiy tugma `data-od-link` bilan birinchi tab'ga".
+- "Add an onboarding screen" taklifi onboarding'i bor ilovaga endi chiqmaydi.
+
+- Fayllar: `src/app/Services/PlannerService.ts`, `src/app/Services/ScreenContext.ts`, `src/lib/suggestions.ts`, `src/app/Services/services.check.ts`, `src/app/Http/Controllers/controllers.check.ts`.
+- Tekshirildi: `npm run check` va `tsc` toza (yangi testlar: o'rin bo'shatish, so'ralgan ekran qoladi, sanalgan/"no onboarding"/mavjud onboarding, ikkinchi forma, chromesiz shell, taklif). Eval (DeepSeek, noaniq brief'lar): birinchi yugurish 4/5 (vague-todo'da bo'shatadigan ekran yo'q edi) → "takroriy tur" qoidasi → vague-todo qayta: onboarding bor; jami 5/5, ~$0.16. Chrome: "make habit tracker" → reja kartasida Welcome birinchi, Settings chiqqan, tablar 3; Welcome Lumen'da headersiz (rasm, sarlavha, nuqtalar, Get started, Skip); preview 1/6 Welcome'dan boshlanadi, Get started → Today.
+
 ### Kanvasda harakat: panellar, tanlov, xabarlar va ekranlar animatsiya bilan — UI-25
 
 Foydalanuvchi so'rovi: Stitch'dagidek hamma narsa animatsiyali ochilsin. Menyular, dialoglar va

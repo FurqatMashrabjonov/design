@@ -14,6 +14,14 @@ export type ScreenSlot = {
   screenType: 'root-tab' | 'detail-view' | 'modal-flow'
   activeTabId?: string
   parentScreen?: string
+  /** What the screen is for; an onboarding screen is drawn without chrome (GQ-38). */
+  archetype?: string
+}
+
+/** GQ-38: a first-run screen fills the phone — no back header over it and no tab bar under it. */
+export function isBareScreen(slot: ScreenSlot): boolean {
+  if (slot.screenType === 'root-tab') return false
+  return slot.archetype ? slot.archetype === 'onboarding' : /onboard|welcome/i.test(slot.name ?? '')
 }
 
 export type ExistingScreen = { name: string; screenType: string; activeTabId: string | null }
@@ -27,6 +35,11 @@ export function navStyleFor(appName: string, nav: AppNavigation, about: { appTyp
 }
 
 export function shellContract(slot: ScreenSlot, nav: AppNavigation, style: NavStyle = 'island'): string {
+  if (isBareScreen(slot))
+    return `SHELL CONTRACT — a first-run screen
+1. This screen fills the phone: no top header, no back button, no bottom tab bar — nothing is injected.
+2. Put the primary button at the bottom within thumb reach; a quiet Skip may sit top-right.
+3. The primary button opens the app: give it data-od-link="${slot.parentScreen ?? nav.tabs[0]?.label ?? 'Home'}".`
   if (slot.screenType === 'root-tab') {
     return `SHELL CONTRACT — the shared chrome is injected for you
 1. A shared ${NAV_HEIGHT}px bottom tab bar ([${tabLabels(nav)}]) is added to your page automatically AFTER you finish.
@@ -44,6 +57,7 @@ export function shellContract(slot: ScreenSlot, nav: AppNavigation, style: NavSt
 
 // Shells are assembled in code so every screen gets byte-identical markup.
 export function shellPartsFor(slot: ScreenSlot, nav: AppNavigation, title: string, style: NavStyle = 'island'): ShellParts {
+  if (isBareScreen(slot)) return {}
   return slot.screenType === 'root-tab'
     ? { nav: buildBottomNav(nav, slot.activeTabId, style) }
     : { header: buildDetailHeader(title, slot.parentScreen ?? 'Home'), title }

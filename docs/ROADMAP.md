@@ -273,8 +273,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-23 | O'ng vertikal asboblar paneli, pastki o'ngda undo/redo/zoom, tema o'ngdan | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-21 | Eski pastki panel yo'q |
 | UI-24 | Kadr yorlig'i: tur ikonkasi, ekran o'lchamida, to'liq nom hover'da | Muharrir / Kanvas | MVP | Tayyor | Kichik | UI-20 | Nomlar kesilmaydi |
 | UI-25 | Kanvas harakati: panellar, chat, tanlov, xabarlar va kontent animatsiya bilan | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-10, UI-20…24 | Tokenlar bilan 120–320ms, reduced-motion'da o'chadi |
-| GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | Keyin | Rejada | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
-| GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | Keyin | Rejada | O'rta |  | 30 ilovada ≥4 xil bar |
+| GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | MVP | Tayyor | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
+| GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | 30 ilovada ≥4 xil bar |
+| UI-26 | Kirgan foydalanuvchida / avval landing bo'lib chiziladi — yozilgan prompt yo'qoladi | Interfeys / Bosh sahifa | Keyin | Rejada | Kichik |  | Landing ko'rinmaydi, matn saqlanadi |
 | TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
 | SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |
 | SHR-05 | Telefonda to'liq ekranli prototip pleyeri | Ulashish / Ko'rish | Keyin | Rejada | O'rta | SHR-02, SHR-04 | 360/440 da skroll yo'q, svayp |

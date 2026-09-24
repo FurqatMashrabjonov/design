@@ -251,6 +251,60 @@ export function trimToBrief(plan: Plan, brief: string): Plan {
 }
 
 
+/**
+ * GQ-38: an app opens with its onboarding. Measured before this: 0 of 105 drawn screens were one,
+ * while 12 of 19 apps spent a slot on a generic Settings screen — the planner fills a vague brief
+ * with supporting screens, and the first impression an app makes (its biggest, most designed
+ * screen) never got drawn. So, in code and after planning: a brief that did not count its screens
+ * and has no onboarding or sign-in screen gets one, first. At six screens it takes the place of a
+ * screen nobody asked for (settings, then profile, notifications, search); a screen the brief asked
+ * for is never dropped for it — then there is no onboarding.
+ */
+const ONBOARDING_WORDS = /\b(no|without|skip)\s+(an?\s+)?onboarding\b/i
+const MAKE_ROOM_FOR = ['settings', 'profile', 'notifications', 'search'] as const
+
+export function withOnboarding(plan: Plan, brief: string): Plan {
+  if (screenCountAsked(brief) || ONBOARDING_WORDS.test(brief)) return plan
+  if (plan.screens.some((s) => s.archetype === 'onboarding' || s.archetype === 'auth')) return plan
+  const firstRoot = plan.screens.find((s) => s.screenType === 'root-tab')
+  if (!firstRoot) return plan
+  let kept = plan.screens.map((s) => ({ ...s }))
+  if (kept.length >= MAX_SCREENS) {
+    const lastOf = (a: Archetype) => {
+      for (let i = kept.length - 1; i >= 0; i--) if (kept[i]!.archetype === a && kept[i]!.covers.length === 0) return i
+      return -1
+    }
+    // Then a second screen of a kind the app already has (Edit Task beside Create Task): the eval's
+    // "todo app" planned no supporting screen at all and was the one vague brief left without onboarding.
+    const repeat = () => {
+      for (let i = kept.length - 1; i >= 0; i--) {
+        const s = kept[i]!
+        if (s.covers.length === 0 && s.screenType !== 'root-tab' && kept.some((o, j) => j !== i && o.archetype === s.archetype)) return i
+      }
+      return -1
+    }
+    const drop = [...MAKE_ROOM_FOR.map(lastOf), repeat()].find((i) => i !== -1)
+    if (drop === undefined) return plan
+    kept = kept.filter((_, i) => i !== drop)
+  }
+  const onboarding: PlannedScreen = {
+    name: 'Welcome',
+    description: `The first screen of ${plan.appName || 'the app'} a new user sees. ${plan.summary} One idea that says why this app is worth opening, then Continue into the app.`.trim(),
+    screenType: 'modal-flow',
+    parentScreen: firstRoot.name,
+    archetype: 'onboarding',
+    userGoal: `Understand in one glance what ${plan.appName || 'the app'} does for them and start`,
+    primaryAction: 'Get started',
+    sections: ['A large illustration of the app’s core idea', 'Headline under 8 words', 'One supporting sentence', 'Page dots (1 of 3)', 'Get started button, with a quiet Skip'],
+    linksTo: [firstRoot.name],
+    covers: [],
+  }
+  const navigation = { ...plan.navigation, tabs: plan.navigation.tabs.map((t) => ({ ...t })) }
+  const screens = settleScreens([onboarding, ...kept], navigation, plan.appName)
+  const covered = new Set(screens.flatMap((s) => s.covers))
+  return { ...plan, navigation, screens, uncovered: plan.requested.filter((_, i) => !covered.has(i)) }
+}
+
 // Section words, grouped by what a tab is for. A screen and its tab may use different words of one
 // group ("Today" on "Home", "Order Tracking" on "Orders"); words from two groups are a contradiction.
 const SECTION_GROUPS: Record<string, string[]> = {
@@ -399,7 +453,7 @@ export async function planScreens(brief: string, onUsage?: (u: LlmUsage) => void
   const user = `Brief: ${brief}${pattern ? `\n\n${AppPatternService.brief(pattern)}` : ''}`
   const raw = await completeJSON(PLANNER_PROMPT, user, PLAN_MAX_TOKENS, onUsage)
   const plan = trimToBrief(parsePlan(raw), brief)
-  if (plan.uncovered.length === 0) return plan
+  if (plan.uncovered.length === 0) return withOnboarding(plan, brief)
 
   // One repair round. The model likes to spend its screens on Search / Profile / Settings and
   // quietly drop the checkout or the tracking screen the brief asked for.
@@ -412,9 +466,9 @@ It leaves these requested screens without a screen of their own: ${plan.uncovere
 Return the full corrected JSON. Stay within ${MAX_SCREENS} screens: replace screens nobody asked for (profile, settings, search, notifications) before anything else. Keep "requested" unchanged and set "covers" truthfully.`
   try {
     const fixed = trimToBrief(parsePlan(await completeJSON(PLANNER_PROMPT, repair, PLAN_MAX_TOKENS, onUsage)), brief)
-    return fixed.uncovered.length < plan.uncovered.length ? { ...fixed, repaired: true } : plan
+    return withOnboarding(fixed.uncovered.length < plan.uncovered.length ? { ...fixed, repaired: true } : plan, brief)
   } catch {
-    return plan
+    return withOnboarding(plan, brief)
   }
 }
 

@@ -3,7 +3,7 @@ import { extractArtifact } from '../../artifact.ts'
 import { streamCompletion } from './LlmService.ts'
 import { DesignSystemService } from './DesignSystemService.ts'
 import { composeSystemPrompt } from './PromptComposer.ts'
-import { parsePlan, screenTitle, type PlannedScreen } from './PlannerService.ts'
+import { parsePlan, screenTitle, withOnboarding, type PlannedScreen } from './PlannerService.ts'
 import { componentSheet, SHEET_BUDGET } from './ComponentSheetService.ts'
 import { mapLimit } from './Pool.ts'
 import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellService.ts'
@@ -82,6 +82,60 @@ assert.equal(screenTitle('Cart (GoBite)', 'GoBite'), 'Cart')
 assert.equal(screenTitle('Settings', ''), 'Settings')
 
 const screens = [{ name: 'Home', description: 'Today view' }]
+
+// GQ-38: an app opens with its onboarding, in place of a screen nobody asked for.
+{
+  const nav = { type: 'bottom-tabs', tabs: [{ id: 'today', label: 'Today' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }] }
+  const six = (requested: string[] = [], settingsCovers: number[] = []) =>
+    parsePlan(JSON.stringify({
+      appName: 'Streakly', summary: 'Build habits.', navigation: nav, requested,
+      screens: [
+        { name: 'Today', archetype: 'dashboard', screenType: 'root-tab', activeTabId: 'today' },
+        { name: 'Habit Detail', archetype: 'detail', screenType: 'detail-view', parentScreen: 'Today' },
+        { name: 'Create Habit', archetype: 'form', screenType: 'modal-flow', parentScreen: 'Today' },
+        { name: 'Stats', archetype: 'stats', screenType: 'root-tab', activeTabId: 'stats' },
+        { name: 'Achievements', archetype: 'result', screenType: 'detail-view', parentScreen: 'Stats' },
+        { name: 'Settings', archetype: 'settings', screenType: 'root-tab', activeTabId: 'settings', covers: settingsCovers },
+      ],
+    }))
+  const p = withOnboarding(six(), 'make habit tracker')
+  assert.equal(p.screens[0]!.archetype, 'onboarding', 'onboarding comes first')
+  assert.equal(p.screens[0]!.screenType, 'modal-flow')
+  assert.deepEqual(p.screens[0]!.linksTo, ['Today'], 'its button opens the first tab')
+  assert.equal(p.screens.length, 6, 'still six screens: it takes a slot, it does not add one')
+  assert.ok(!p.screens.some((s) => s.archetype === 'settings'), 'the unrequested settings screen made room')
+  assert.deepEqual(p.navigation.tabs.map((t) => t.id), ['today', 'stats'], 'a tab no screen opens any more is pruned')
+  // A requested settings screen stays; with nothing else to give up, there is no onboarding.
+  const kept = withOnboarding(six(['settings'], [0]), 'habit tracker with settings')
+  assert.ok(kept.screens.some((s) => s.name === 'Settings'), 'a screen the brief asked for is never dropped')
+  assert.ok(!kept.screens.some((s) => s.archetype === 'onboarding'), '…so there is no room for onboarding')
+  // Briefs that count their screens, refuse onboarding, or already have one are left alone.
+  assert.equal(withOnboarding(six(), 'a habit tracker on three screens').screens[0]!.name, 'Today')
+  assert.equal(withOnboarding(six(), 'habit tracker, no onboarding').screens[0]!.name, 'Today')
+  assert.equal(withOnboarding(p, 'make habit tracker').screens.filter((s) => s.archetype === 'onboarding').length, 1, 'never twice')
+  // No supporting screen to give up: a second screen of a kind the app already has makes room.
+  const forms = parsePlan(JSON.stringify({ appName: 'TaskFlow', navigation: { type: 'bottom-tabs', tabs: [{ id: 'today', label: 'Today' }, { id: 'projects', label: 'Projects' }] }, screens: [
+    { name: 'Today', archetype: 'list', screenType: 'root-tab', activeTabId: 'today' },
+    { name: 'Projects', archetype: 'list', screenType: 'root-tab', activeTabId: 'projects' },
+    { name: 'Project Detail', archetype: 'detail', screenType: 'detail-view', parentScreen: 'Projects' },
+    { name: 'Task Detail', archetype: 'detail', screenType: 'detail-view', parentScreen: 'Today' },
+    { name: 'Create Task', archetype: 'form', screenType: 'modal-flow', parentScreen: 'Today' },
+    { name: 'Edit Task', archetype: 'form', screenType: 'modal-flow', parentScreen: 'Today' },
+  ] }))
+  const f = withOnboarding(forms, 'todo app')
+  assert.equal(f.screens[0]!.archetype, 'onboarding')
+  assert.ok(!f.screens.some((s) => s.name === 'Edit Task') && f.screens.some((s) => s.name === 'Create Task'), 'the second form made room, the first stayed')
+  assert.ok(f.screens.filter((s) => s.screenType === 'root-tab').length === 2, 'a tab root is never the one given up')
+  // Fewer than six: onboarding is added without dropping anything.
+  const two = parsePlan(JSON.stringify({ appName: 'X', navigation: nav, screens: [{ name: 'Today', screenType: 'root-tab', activeTabId: 'today' }, { name: 'Stats', screenType: 'root-tab', activeTabId: 'stats' }] }))
+  assert.equal(withOnboarding(two, 'x').screens.length, 3)
+  // It is drawn without chrome: no back header, no tab bar, and its button opens the first tab.
+  const { shellPartsFor, shellContract } = await import('./ScreenContext.ts')
+  const welcome = p.screens[0]!
+  assert.deepEqual(shellPartsFor(welcome, p.navigation, welcome.name), {}, 'nothing injected over a first-run screen')
+  assert.ok(shellContract(welcome, p.navigation).includes('data-od-link="Today"'), 'the contract names where Get started goes')
+  assert.ok(shellPartsFor({ screenType: 'detail-view', name: 'Habit Detail', archetype: 'detail' }, p.navigation, 'Habit Detail').header, 'other pushed screens keep their header')
+}
 
 // pool: never exceeds the concurrency limit, still runs every item, preserves result order
 let inFlight = 0
@@ -372,6 +426,8 @@ assert.deepEqual(results, [10, 20, 30, 40, 50, 60])
   ]
   assert.deepEqual(suggestions(app, tabs), ['Design the Orders tab', 'Design the “Order Tracking” screen', 'Design the “Cart & Checkout” screen'], 'an empty tab first, then undesigned link targets, most linked first')
   assert.deepEqual(suggestions(app.slice(0, 2), [{ id: 'home', label: 'Home' }], 5).slice(-2), ['Show the empty state of “GoBite — Feed”', 'Add an onboarding screen'])
+  // GQ-38: an app that already opens with an onboarding screen is not offered another.
+  assert.ok(!suggestions([{ ...app[0]!, id: 'w', name: 'Welcome', x: -500 }, ...app.slice(0, 2)], [{ id: 'home', label: 'Home' }], 5).includes('Add an onboarding screen'))
   assert.deepEqual(suggestions([], tabs), [], 'nothing to suggest before anything is drawn')
   assert.deepEqual(suggestions([scr('x', 'root-tab', 'home', '')], tabs), [], 'a project of failed screens suggests nothing')
 }

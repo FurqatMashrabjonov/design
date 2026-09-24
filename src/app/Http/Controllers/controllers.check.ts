@@ -79,14 +79,17 @@ const planJson = JSON.stringify({
 })
 reply = (req) => {
   if (req.json) return new Response(JSON.stringify({ choices: [{ message: { content: planJson } }] }), { status: 200 })
+  if (req.user.includes('Screen to design: Welcome')) return sse(page('Welcome'))
   return req.user.includes('Screen to design: Task Detail') ? sse('<artifact title="Task Detail"><!doctype html><html><body>cut off') : sse(page('Today'))
 }
 const events = (await post(PlanController, { projectId: 'p2', brief: 'todo app' })).trim().split('\n').map((l) => JSON.parse(l))
 assert.ok(events.some((e) => e.type === 'screen_error'), 'the client is told')
 const rows = (await Screen.forProject('p2')).sort((a, z) => a.x - z.x)
-assert.deepEqual(rows.map((s) => [s.name, Boolean(s.html), Boolean(s.error)]), [['Today', true, false], ['Task Detail', false, true]], 'the failed screen still has its slot')
-assert.ok(rows[1].spec?.includes('1. Title') && rows[1].screenType === 'detail-view' && rows[1].parentScreenName === 'Today', 'with everything a retry needs')
-assert.ok(rows[0].spec?.includes('1. Greeting'), 'drawn screens keep their spec too, so they can be regenerated after edits')
+// GQ-38: the plan opens with its onboarding, drawn first on the canvas.
+assert.deepEqual(rows.map((s) => [s.name, Boolean(s.html), Boolean(s.error)]), [['Welcome', true, false], ['Today', true, false], ['Task Detail', false, true]], 'the failed screen still has its slot')
+assert.ok(!rows[0].html.includes('data-od-shell'), 'the onboarding screen gets no header and no tab bar')
+assert.ok(rows[2].spec?.includes('1. Title') && rows[2].screenType === 'detail-view' && rows[2].parentScreenName === 'Today', 'with everything a retry needs')
+assert.ok(rows[1].spec?.includes('1. Greeting'), 'drawn screens keep their spec too, so they can be regenerated after edits')
 
 // --- the conversation is written as the work happens (CHAT-01, CHAT-02, CHAT-04, CHAT-06, CHAT-07) ---
 const talk = (await Message.forProject('p1')).map((m) => ({ ...m, meta: parseMeta(m.meta) }))
@@ -136,11 +139,11 @@ assert.match((await Message.find(undoEdit))!.text, /^Applied that change again o
 const planTalk = await Message.forProject('p2')
 assert.deepEqual(planTalk.map((m) => `${m.role}:${m.kind}`), ['user:plan', 'agent:plan'])
 assert.equal(planTalk[0].text, 'todo app')
-assert.match(planTalk[1].text, /Designed 1 screen: Today\./)
+assert.match(planTalk[1].text, /Designed 2 screens: Welcome and Today\./)
 assert.match(planTalk[1].text, /Task Detail could not be drawn/)
 const planMeta = parseMeta(planTalk[1].meta)
-assert.deepEqual(planMeta.screens?.map((x) => x.name), ['Today'])
-assert.ok(planMeta.log?.some((l) => /^Planned 2 screens \(dashboard, detail\), 2 tabs/.test(l)) && planMeta.log?.some((l) => /Task Detail — failed/.test(l)))
+assert.deepEqual(planMeta.screens?.map((x) => x.name), ['Welcome', 'Today'])
+assert.ok(planMeta.log?.some((l) => /^Planned 3 screens \(onboarding, dashboard, detail\), 2 tabs/.test(l)) && planMeta.log?.some((l) => /Task Detail — failed/.test(l)))
 await assert.rejects(async () => await HistoryController.revertMessage({ projectId: 'p2', messageId: planTalk[1].id }), /cannot be undone/, 'reverting the plan would delete the app')
 
 // --- hand edits on the canvas (EDT-25, EDT-26) and theme from chat (EDT-18) ---
@@ -377,7 +380,7 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   await res.body!.cancel() // the tab closed before anything arrived
   for (let i = 0; i < 50 && (finished === 0 || PlanRuns.running('p-detach')); i++) await new Promise((r) => setTimeout(r, 20))
   assert.equal(finished, 1, 'the run reports its own end')
-  assert.equal((await Screen.forProject('p-detach')).filter((s) => s.html).length, 2, 'every planned screen was still drawn and saved')
+  assert.equal((await Screen.forProject('p-detach')).filter((s) => s.html).length, 3, 'every planned screen (with its onboarding, GQ-38) was still drawn and saved')
   assert.ok(!(await Message.forProject('p-detach')).some((m) => /Stopped/.test(m.text)), 'and the chat does not say it stopped')
 
   // Stop reaches the run on the server.

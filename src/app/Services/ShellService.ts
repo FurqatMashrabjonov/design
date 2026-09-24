@@ -52,7 +52,12 @@ export const NAV_CLEARANCE = 88
  *  - `contrast` a filled pill in the page's foreground colour — inverts itself on dark systems
  *  - `bar`      the edge-to-edge bar, kept for apps that want system chrome
  */
-export type NavStyle = 'island' | 'pill' | 'contrast' | 'bar'
+export type NavStyle = 'island' | 'pill' | 'contrast' | 'bar' | 'tiles' | 'tonal' | 'underline'
+
+/** Shapes that float above the screen edge (and minimise while the page scrolls). */
+const FLOATING: ReadonlySet<NavStyle> = new Set(['island', 'pill', 'contrast', 'tiles'])
+/** Shapes that carry the tab's name under (or instead of) its icon. */
+const LABELLED: ReadonlySet<NavStyle> = new Set(['island', 'bar', 'tonal', 'underline'])
 
 // The shape follows the app's character, not a coin toss. A chat or a banking app wears an
 // edge-to-edge bar the way iOS Mail does — it reads as "tool", not as "old"; a food or travel app
@@ -84,7 +89,17 @@ const BY_SYSTEM: Record<string, NavCharacter> = {
 // edge, because an instrument wears its chrome rather than floating it.
 // Ember's bar is the reference it was drawn from: a wide inset panel with labels, the active tab a
 // tinted pill.
-const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar', ember: 'island', volt: 'bar' }
+// GQ-39: pinning made every Lumen and Ember app an island — ~90% of new apps wore the same bar. A
+// system written for a phone now lists the shapes that belong to it (two or three), and the app's
+// name picks one: the system keeps its identity (Lumen always floats glass, Graphite always wears
+// its chrome), and two apps in one system no longer share a bar.
+const SHAPES_BY_SYSTEM: Record<string, readonly NavStyle[]> = {
+  lumen: ['island', 'pill'], // iOS 26: glass that floats, wide or compact
+  nova: ['underline', 'island', 'tiles'], // editorial serif: text tabs, or a quiet floating shape
+  ember: ['island', 'tonal'], // the soft tonal panel, floating or edge to edge
+  graphite: ['bar', 'tonal'], // an instrument wears its chrome
+  volt: ['contrast', 'tiles'], // sport: ink capsule or bold tiles
+}
 
 // When the system says nothing, what the app is for does.
 const BY_APP_TYPE: Record<string, NavCharacter> = {
@@ -100,13 +115,12 @@ const BY_APP_TYPE: Record<string, NavCharacter> = {
  * character still differ.
  */
 export function navStyle(seed: string, opts: { tabCount?: number; appType?: string; designSystem?: string } = {}): NavStyle {
-  const pinned = opts.designSystem && PINNED_BY_SYSTEM[opts.designSystem]
-  if (pinned) return pinned
+  const own = opts.designSystem ? SHAPES_BY_SYSTEM[opts.designSystem] : undefined
   const character = (opts.designSystem && BY_SYSTEM[opts.designSystem]) ?? (opts.appType && BY_APP_TYPE[opts.appType]) ?? null
-  const set: readonly NavStyle[] = character ? NAV_SETS[character] : (['island', 'bar', 'pill', 'contrast'] as const)
+  const set: readonly NavStyle[] = own ?? (character ? NAV_SETS[character] : (['island', 'bar', 'pill', 'contrast'] as const))
   // Labels are what make a bar readable; with more than five tabs the narrow pill cannot fit them,
   // so a crowded bar keeps only the shapes that work without labels.
-  const styles = (opts.tabCount ?? 4) > 5 ? set.filter((x) => x !== 'island') : set
+  const styles = (opts.tabCount ?? 4) > 5 ? set.filter((x) => x !== 'island' && x !== 'underline') : set
   const pool = styles.length ? styles : set
   return pool[hash(`${seed.trim().toLowerCase()}|nav`) % pool.length]!
 }
@@ -115,7 +129,9 @@ export function navStyle(seed: string, opts: { tabCount?: number; appType?: stri
 export function navClearance(style: NavStyle): number {
   // A floating bar (GQ-18) sits 21px up and is up to 64px tall, plus air: the judge saw a pill
   // covering list content on nearly every screen when this was +24.
-  return style === 'bar' ? NAV_CLEARANCE : NAV_CLEARANCE + 40
+  if (FLOATING.has(style)) return NAV_CLEARANCE + 40
+  // Edge-to-edge shapes need their own height plus air: the tonal bar is 80px tall (Material 3).
+  return style === 'tonal' ? NAV_CLEARANCE + 16 : NAV_CLEARANCE
 }
 
 export function iconSvg(name: string, size = 22): string {
@@ -129,10 +145,10 @@ export function iconSvg(name: string, size = 22): string {
 
 function tabHtml(tab: AppNavTab, isActive: boolean, style: NavStyle): string {
   const label = escapeHtml(tab.label)
-  const labelled = style === 'island' || style === 'bar'
+  const labelled = LABELLED.has(style)
   const inverted = style === 'contrast'
   const current = isActive ? ' aria-current="page"' : ''
-  const grow = style === 'pill' || inverted ? 'padding:0 14px' : 'flex:1'
+  const grow = style === 'pill' || inverted ? 'padding:0 14px' : style === 'tiles' ? 'padding:0 3px' : 'flex:1'
   if (tab.isAction) {
     // The action button is already accent-filled, so its active state reads as a ring
     // rather than a color change — without it an action-tab screen shows no active tab.
@@ -148,6 +164,22 @@ function tabHtml(tab: AppNavTab, isActive: boolean, style: NavStyle): string {
     const glass = 'background:color-mix(in oklab, var(--surface) 78%, transparent);backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);-webkit-backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 30px -12px rgba(0,0,0,.38),0 2px 6px -2px rgba(0,0,0,.12),0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent)'
     const tint = isActive ? 'color:var(--od-accent-text, var(--accent))' : 'color:var(--fg)'
     return `<a href="#" data-od-tab="${escapeHtml(tab.id)}" data-od-search="1"${current} aria-label="${label}" style="position:absolute;right:-70px;top:0;width:58px;height:58px;border-radius:9999px;display:flex;align-items:center;justify-content:center;text-decoration:none;${tint};${glass}">${iconSvg(tab.icon, 24)}</a>`
+  }
+  // GQ-39: three shapes of their own.
+  if (style === 'tiles') {
+    // Each tab a squircle tile; the active one is filled with the accent, so the shape is the signal.
+    const tile = isActive ? 'background:var(--accent);color:var(--accent-on)' : 'background:color-mix(in oklab, var(--fg) 6%, transparent);color:var(--meta)'
+    return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} aria-label="${label}" style="${grow};display:flex;align-items:center;justify-content:center;text-decoration:none"><span style="display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:var(--od-icon-radius, 14px);${tile}">${iconSvg(tab.icon, 22)}</span></a>`
+  }
+  if (style === 'tonal') {
+    // Material 3: a 64×32 pill behind the active icon, the label always under it, bolder when active.
+    const indicator = isActive ? 'background:color-mix(in oklab, var(--accent) 18%, transparent);color:var(--od-accent-text, var(--accent))' : 'color:var(--meta)'
+    return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} style="${grow};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:44px;text-decoration:none;color:${isActive ? 'var(--fg)' : 'var(--meta)'}"><span style="display:flex;align-items:center;justify-content:center;width:64px;height:32px;border-radius:9999px;${indicator}">${iconSvg(tab.icon)}</span><span style="font-size:12px;font-weight:${isActive ? 650 : 500};letter-spacing:0.01em">${label}</span></a>`
+  }
+  if (style === 'underline') {
+    // Editorial: the tab's name alone, and a short accent rule over the active one.
+    const rule = `<span style="width:20px;height:2px;border-radius:2px;background:${isActive ? 'var(--accent)' : 'transparent'}"></span>`
+    return `<a href="#" data-od-tab="${escapeHtml(tab.id)}"${current} style="${grow};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:44px;text-decoration:none;color:${isActive ? 'var(--fg)' : 'var(--meta)'}">${rule}<span style="font-size:13px;font-weight:${isActive ? 650 : 500};letter-spacing:0.02em">${label}</span></a>`
   }
   const on = inverted ? 'var(--bg)' : 'var(--accent)'
   // GQ-34: the active label is text, so it takes the measured ink; the dot under an icon-only tab is
@@ -189,8 +221,11 @@ export function buildBottomNav(nav: AppNavigation, activeTabId?: string, style: 
     pill: `left:50%;transform:translateX(-50%);bottom:21px;height:58px;padding-left:6px;padding-right:6px;border-radius:9999px;${glass}`,
     contrast: `left:16px;right:16px;bottom:14px;height:60px;border-radius:9999px;background:var(--fg);color:var(--bg);box-shadow:${lift}`,
     bar: `left:0;right:0;bottom:0;height:${NAV_HEIGHT}px;background:var(--surface);border-top:1px solid var(--border)`,
+    tiles: `left:50%;transform:translateX(-50%);bottom:21px;height:62px;padding-left:5px;padding-right:5px;border-radius:22px;${glass}`,
+    tonal: `left:0;right:0;bottom:0;height:80px;background:var(--surface-warm, var(--surface))`,
+    underline: `left:0;right:0;bottom:0;height:60px;background:var(--bg);border-top:1px solid var(--border-soft, var(--border))`,
   }
-  const floating = style === 'island' || style === 'pill'
+  const floating = style === 'island' || style === 'pill' || style === 'tiles'
   return `<nav data-od-id="bottom-nav" data-od-shell="bottom-nav" data-od-nav="${style}" style="${base};${box[style]}">${tabs}${floating ? NAV_ICON_STYLE + NAV_COLLAPSE_SCRIPT : ''}</nav>`
 }
 
