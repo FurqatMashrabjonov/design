@@ -34,7 +34,13 @@ async function freshDatabase(): Promise<string> {
 }
 
 // allowExitOnIdle: a script (the eval, a check) ends when its work does, not when idle clients time out.
-export const pool = new pg.Pool({ connectionString: process.env.DB_FRESH === '1' ? await freshDatabase() : base, allowExitOnIdle: true })
-await migrate(pool) // once, on first import
+// The dev server re-evaluates this module on every SSR reload; a new Pool each time, with the old one
+// never ended, leaked connections until Postgres refused with "too many clients already". One pool per
+// process, kept on globalThis, survives the reloads.
+const g = globalThis as typeof globalThis & { __odPool?: pg.Pool }
+const fresh = !g.__odPool
+export const pool: pg.Pool = g.__odPool ?? new pg.Pool({ connectionString: process.env.DB_FRESH === '1' ? await freshDatabase() : base, allowExitOnIdle: true })
+g.__odPool = pool
+if (fresh) await migrate(pool) // once per process, on first import
 
 export const db = drizzle(pool, { schema })

@@ -16,6 +16,8 @@ const MS: Record<string, string[]> = {
 // Parents before children; ordered by rowid so the new seq columns keep insertion order.
 const TABLES = ['user', 'session', 'account', 'verification', 'projects', 'screens', 'screen_versions', 'messages', 'feedback', 'image_cache', 'llm_calls', 'credit_ledger', 'subscriptions', 'admin_actions', 'settings']
 
+const has = (t: string) => Boolean(src.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?`).get(t))
+
 const busy = (await pool.query('SELECT (SELECT count(*) FROM projects) + (SELECT count(*) FROM "user") AS n')).rows[0].n
 if (busy > 0) throw new Error(`The target already has ${busy} users/projects — refusing to copy over it`)
 
@@ -23,6 +25,8 @@ const client = await pool.connect()
 try {
   await client.query('BEGIN')
   for (const t of TABLES) {
+    // A data.db from before the credits work has no credit_ledger or subscriptions: nothing to copy.
+    if (!has(t)) continue
     const rows = src.prepare(`SELECT * FROM "${t}" ORDER BY rowid`).all() as Record<string, unknown>[]
     for (const r of rows) {
       for (const c of BOOL[t] ?? []) if (c in r) r[c] = r[c] === 1 || r[c] === true
@@ -41,6 +45,10 @@ try {
 
 let ok = true
 for (const t of TABLES) {
+  if (!has(t)) {
+    console.log(`${t.padEnd(16)} sqlite    —  (table absent, skipped)`)
+    continue
+  }
   const a = (src.prepare(`SELECT count(*) n FROM "${t}"`).get() as { n: number }).n
   const b = Number((await pool.query(`SELECT count(*) n FROM "${t}"`)).rows[0].n)
   if (a !== b) ok = false
