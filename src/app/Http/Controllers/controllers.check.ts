@@ -676,6 +676,81 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.deepEqual(await AdminController.search('  '), { users: [], projects: [] }, 'blank text finds nothing')
 }
 
+// OBS-10/OBS-11: the request log masks secrets and skips assets; errors group by fingerprint; logs carry their request
+{
+  const { TelescopeService, maskQuery, skipPath, fingerprint, installServerLogs } = await import('../../Services/TelescopeService.ts')
+  const { RequestContext } = await import('../../Services/RequestContext.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { httpRequests, serverLogs, user } = await import('../../../database/schema.ts')
+  const { eq } = await import('drizzle-orm')
+
+  assert.equal(maskQuery(new URL('http://x/a?token=abc&page=2').search), 'token=***&page=2', 'a token is masked, page kept')
+  assert.equal(maskQuery('?apiKey=1&sessionId=2&q=hi'), 'apiKey=***&sessionId=***&q=hi')
+  assert.equal(maskQuery(''), null)
+  for (const p of ['/@vite/client', '/@fs/x', '/@id/y', '/node_modules/z.js', '/src/styles.css', '/assets/app.js', '/a.css', '/a.map', '/logo.png', '/icon.svg', '/favicon.ico', '/f.woff2', '/showcase/x', '/api/thumb/s1'])
+    assert.ok(skipPath(p), `${p} is not recorded`)
+  for (const p of ['/', '/admin/requests', '/_serverFn/abc', '/api/generate', '/p/123']) assert.ok(!skipPath(p), `${p} is recorded`)
+
+  const at = '    at load (/app/src/x.ts:10:5)\n    at run (/app/src/y.ts:1:1)'
+  const e1 = fingerprint('Error', 'Screen 3f2a9c1e-1b2c-4d5e-8f90-123456789abc not found (attempt 2)', `Error: …\n${at}`)
+  const e2 = fingerprint('Error', 'Screen 9aa0bb11-2222-4333-8444-555566667777 not found (attempt 7)', `Error: …\n${at}`)
+  assert.equal(e1, e2, 'errors differing only by ids and numbers share a fingerprint')
+  assert.notEqual(e1, fingerprint('Error', 'Project not found', `Error: …\n${at}`), 'a different message does not')
+  assert.notEqual(e1, fingerprint('TypeError', 'Screen x not found (attempt 2)', `Error: …\n${at}`))
+
+  const now = Math.floor(Date.now() / 1000)
+  await db.insert(user).values({ id: 'tel-u', name: 'Tel', email: 'tele@x.uz', createdAt: new Date(), updatedAt: new Date() })
+  const rows = [
+    ...Array.from({ length: 55 }, (_, i) => ({ id: `tr-ok-${i}`, method: 'GET', path: `/p/${i}`, kind: 'page', status: 200, ms: 20, createdAt: now - i })),
+    { id: 'tr-404', method: 'GET', path: '/missing', kind: 'page', status: 404, ms: 5, createdAt: now },
+    { id: 'tr-500', method: 'POST', path: '/_serverFn/boom', kind: 'server-fn', status: 500, ms: 2500, userId: 'tel-u', createdAt: now },
+    { id: 'tr-old', method: 'GET', path: '/old', kind: 'page', status: 200, ms: 1, createdAt: now - 8 * 86400 },
+  ]
+  await db.insert(httpRequests).values(rows)
+  const all = await TelescopeService.requests({})
+  assert.equal(all.total, 58)
+  assert.equal(all.rows.length, 50, '50 a page')
+  assert.equal((await TelescopeService.requests({ page: 1 })).rows.length, 8, 'the rest on page two')
+  assert.deepEqual((await TelescopeService.requests({ status: '5xx' })).rows.map((r) => r.id), ['tr-500'])
+  assert.deepEqual((await TelescopeService.requests({ status: '4xx' })).rows.map((r) => r.id), ['tr-404'])
+  assert.deepEqual((await TelescopeService.requests({ slowMs: 1000 })).rows.map((r) => [r.id, r.email]), [['tr-500', 'tele@x.uz']], 'slow, with the user')
+  assert.deepEqual((await TelescopeService.requests({ email: 'TELE@' })).rows.map((r) => r.id), ['tr-500'])
+  assert.equal((await TelescopeService.requests({ path: '/p/' })).total, 55)
+  assert.equal((await TelescopeService.requests({ path: '%' })).total, 0, '% is literal')
+  assert.equal((await TelescopeService.requests({ method: 'POST', from: now - 60 })).total, 1)
+
+  // A console.error inside a request is stored with that request's id (and still printed).
+  installServerLogs()
+  const stored = RequestContext.run({ requestId: 'tr-500' }, () => TelescopeService.log('error', ['boom:', new Error('Screen 42 not found')]))
+  await stored
+  console.error('[test] expected error line for tr-500', new Error('Screen 43 not found'))
+  await RequestContext.run({ requestId: 'tr-500' }, async () => console.warn('a warning'))
+  await new Promise((r) => setTimeout(r, 200))
+  const logs = await db.select().from(serverLogs).where(eq(serverLogs.requestId, 'tr-500'))
+  assert.ok(logs.some((l) => l.level === 'error' && l.message === 'boom: Error: Screen 42 not found' && l.stack?.includes('controllers.check') && l.fingerprint), 'stored with its request id, stack and fingerprint')
+  assert.ok(logs.some((l) => l.level === 'warn' && l.message === 'a warning' && !l.fingerprint), 'the console wrapper stores within the context')
+  assert.ok((await db.select().from(serverLogs).where(eq(serverLogs.message, '[test] expected error line for tr-500 Error: Screen 43 not found')))[0]?.requestId === null, 'outside a request: no request id')
+  console.log('[auth] magic link: http://x/api/auth/magic-link/verify?token=SECRET123&callbackURL=/')
+  await new Promise((r) => setTimeout(r, 200))
+  assert.equal((await db.select().from(serverLogs).where(eq(serverLogs.level, 'log'))).filter((l) => l.message.includes('SECRET123')).length, 0, 'a token in a logged URL is masked')
+  const detail = await TelescopeService.request('tr-500')
+  assert.equal(detail?.request?.email, 'tele@x.uz')
+  assert.ok(detail!.logs.length >= 2)
+  assert.equal(await TelescopeService.request('nope'), null)
+  const groups = await TelescopeService.errors()
+  assert.ok(groups.some((g) => g.count >= 1 && g.requestId === 'tr-500'), 'errors grouped, with the last request')
+  assert.ok((await TelescopeService.logs({ level: 'warn' })).rows.every((l) => l.level === 'warn'))
+  const newest = (await TelescopeService.logs({})).rows[0]!.id
+  assert.equal((await TelescopeService.logs({ afterId: newest })).rows.length, 0, 'live polling sees nothing newer')
+
+  // Retention: older than 7 days goes.
+  await db.insert(serverLogs).values({ level: 'info', message: 'ancient', createdAt: now - 8 * 86400 })
+  await TelescopeService.cleanup()
+  assert.equal((await db.select().from(httpRequests).where(eq(httpRequests.id, 'tr-old'))).length, 0, 'an old request is deleted')
+  assert.equal((await db.select().from(serverLogs).where(eq(serverLogs.message, 'ancient'))).length, 0, 'an old log line is deleted')
+  assert.equal((await TelescopeService.requests({})).total, 57, 'recent rows stay')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

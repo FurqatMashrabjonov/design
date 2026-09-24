@@ -5,6 +5,7 @@ import { getRequest } from '@tanstack/react-start/server'
 import { auth, isAdmin } from '@/app/Services/AuthService'
 import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
+import { RequestContext } from '@/app/Services/RequestContext'
 
 export class HttpError extends Error {
   status: number
@@ -22,6 +23,8 @@ export async function userFrom(request: Request): Promise<SessionUser | null> {
   if (!s) return null
   const u = s.user as typeof s.user & { role?: string | null; banned?: boolean | null; banExpires?: Date | null }
   if (u.banned && (!u.banExpires || new Date(u.banExpires) > new Date())) return null
+  const rc = RequestContext.get()
+  if (rc) rc.userId = u.id // OBS-10: the request log names who asked
   return { id: u.id, name: u.name, email: u.email, image: u.image, admin: isAdmin(u) }
 }
 

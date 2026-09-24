@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router'
-import { Activity, ArrowLeft, Gauge, PanelLeftClose, PanelLeftOpen, SlidersHorizontal, Users } from 'lucide-react'
+import { Activity, ArrowLeft, Bug, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { adminCheck } from '../server/admin-fns'
 import { CommandPalette, CommandTrigger } from '../admin/CommandPalette'
@@ -21,7 +21,15 @@ export const Route = createFileRoute('/admin')({
 
 // ADM-10: sections in groups, so a new page slots into its group instead of a flat list.
 const GROUPS = [
-  { label: 'Monitor', items: [{ to: '/admin', label: 'Overview', icon: Gauge, exact: true }] },
+  {
+    label: 'Monitor',
+    items: [
+      { to: '/admin', label: 'Overview', icon: Gauge, exact: true },
+      { to: '/admin/requests', label: 'Requests', icon: Globe },
+      { to: '/admin/logs', label: 'Logs', icon: ScrollText },
+      { to: '/admin/errors', label: 'Errors', icon: Bug },
+    ],
+  },
   { label: 'AI', items: [{ to: '/admin/generations', label: 'Generations', icon: Activity }] },
   { label: 'Business', items: [{ to: '/admin/users', label: 'Users', icon: Users }] },
   { label: 'System', items: [{ to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal }] },

@@ -4,6 +4,7 @@ import { db } from '@/database/connection'
 import { llmCalls } from '@/database/schema'
 import { costOf, onLlmCall } from './LlmService'
 import { Setting } from '@/app/Models/Setting'
+import { RequestContext } from './RequestContext'
 
 // OBS-01 + LIM-01/02/03. Every model call made inside a request is written to llm_calls with the
 // user and project of that request (carried by AsyncLocalStorage, so no controller has to pass
@@ -37,6 +38,7 @@ function listen() {
         ms: c.ms,
         ok: c.ok,
         error: c.error ?? null,
+        requestId: RequestContext.get()?.requestId ?? null,
       })
       .catch((e) => console.error('[usage] could not log a model call:', e))
   })
