@@ -276,15 +276,15 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | BIL-11 | To'lovni boshqarish portali havolasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-09 | Havola foydalanuvchining provayder portalini ochadi |
 | BIL-14 | Tarif chegaralari kodda: loyiha soni va eksport | To'lov va kreditlar / Kreditlar | MVP | Tayyor | Kichik | BIL-02, BIL-10 | /pricing va'da qilgan chegaralar serverda tekshiriladi |
 | BIL-12 | Narxlar sahifasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-02 | Tariflar va kredit narxlari ko'rinadi; tugmalar checkout'ni ochadi |
-| LLM-04 | Provayder adapterlari: DeepSeek, Gemini, Claude | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | LLM-05 | Bitta interfeys; OpenAI-mos va Anthropic adapteri; kalitlar serverda |
+| LLM-04 | Provayder adapterlari: DeepSeek, Gemini, Claude | Generatsiya / LLM xarajati | MVP | Tayyor | O'rta | LLM-05 | Bitta interfeys; OpenAI-mos va Anthropic adapteri; kalitlar serverda |
 | LLM-06 | Har model eval'dan o'tadi: sifat va $/ilova o'lchanadi | Generatsiya / Sifat | MVP | Rejada | Kichik | LLM-04 | Faqat o'tgan model tanlanadi; kredit narxi o'lchovdan |
-| LLM-07 | Modelni almashtirish: admin sozlamasi va zaxira provayder | Generatsiya / LLM xarajati | MVP | Rejada | Kichik | LLM-06, ADM-08 | Admin tanlaydi; xatoda zaxiraga o'tadi |
+| LLM-07 | Modelni almashtirish: admin sozlamasi va zaxira provayder | Generatsiya / LLM xarajati | MVP | Tayyor | Kichik | LLM-06, ADM-08 | Admin tanlaydi; xatoda zaxiraga o'tadi |
 | INF-10 | SQLite → Postgres: drizzle pg, async modellar, ma'lumotni ko'chirish | Infratuzilma / Ma'lumotlar bazasi | MVP | Tayyor | Katta | INF-01, INF-02 | Ilova, testlar, eval Postgres'da; ma'lumot ko'chirilgan; check/tsc/brauzer toza |
 | ADM-13 | Maxfiy kalitlar admin'dan: shifrlangan saqlash, test, rotatsiya | Monitoring / Kirish nazorati | MVP | Tayyor | O'rta | ADM-08 | Kalitlar admin'da; AES-256-GCM; brauzerga faqat oxirgi 4 belgi |
 | ADM-10 | Admin qobig'i: yig'iladigan sidebar, guruhlar, ⌘K | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-09 | Sidebar yig'iladi; guruhlar; ⌘K |
-| ADM-11 | Jadval v2: server tomonda qidiruv, filtr, saralash, URL'da holat | Monitoring / Analitika | MVP | Rejada | O'rta | ADM-10 | Filtr, qidiruv, sahifalash serverda; yon panel; CSV |
-| OBS-10 | Telescope: HTTP so'rovlar jurnali | Monitoring / Xatolar | MVP | Rejada | O'rta | ADM-11 | Har so'rov yoziladi, maxfiy narsalar maskalanadi, 7 kun |
-| OBS-11 | Telescope: server loglari va xatolar (guruhlangan) | Monitoring / Xatolar | MVP | Rejada | O'rta | OBS-10 | console.* va xatolar bazada, izi bo'yicha guruhlangan |
+| ADM-11 | Jadval v2: server tomonda qidiruv, filtr, saralash, URL'da holat | Monitoring / Analitika | MVP | Tayyor | O'rta | ADM-10 | Filtr, qidiruv, sahifalash serverda; yon panel; CSV |
+| OBS-10 | Telescope: HTTP so'rovlar jurnali | Monitoring / Xatolar | MVP | Tayyor | O'rta | ADM-11 | Har so'rov yoziladi, maxfiy narsalar maskalanadi, 7 kun |
+| OBS-11 | Telescope: server loglari va xatolar (guruhlangan) | Monitoring / Xatolar | MVP | Tayyor | O'rta | OBS-10 | console.* va xatolar bazada, izi bo'yicha guruhlangan |
 | ADM-14 | Provayderlar sahifasi: monitoring va bir bosishda almashtirish | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | ADM-13, LLM-04, LLM-07 | Holat, p50/p95, xato, $; chaqiruv joyi bo'yicha model; avtomatik zaxira |
 | ADM-12 | Overview v2: biznes va tizim bir qarashda, ogohlantirishlar | Monitoring / Analitika | MVP | Rejada | O'rta | ADM-14, OBS-10 | MRR, marja, tannarx, p95, ogohlantirishlar |
 | OBS-12 | Telescope: tashqi HTTP va webhook hodisalari | Monitoring / Xatolar | MVP | Rejada | Kichik | OBS-10 | Chiquvchi so'rovlar va Polar webhooklari, qayta yuborish |

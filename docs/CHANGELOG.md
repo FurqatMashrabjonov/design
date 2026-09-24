@@ -5,6 +5,63 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### 1-to'lqin, parallel: jadval v2, Telescope, provayder adapterlari (ADM-11, OBS-10, OBS-11, LLM-04, LLM-07)
+
+Uchta subagent o'z branch/worktree'sida parallel ishladi (`adm-11-tables`, `obs-10-telescope`,
+`llm-04-providers`). Lead ularni `canvas-planner`ga birlashtirdi. Test bloklaridagi uchta
+to'qnashuv hal qilindi: ikkitasida blokning yopuvchi qavsi qaytarildi.
+
+**ADM-11 — jadval v2.**
+- `ServerTable`: qidiruv, filtrlar, saralash va sahifalash serverda, holat URL'da; yangi sahifa
+  yuklanayotganda eski qatorlar ko'rinib turadi; yon panel (`Drawer`); CSV.
+- `table-query.ts` har bir saralash ustuni va filtr qiymatini oq ro'yxat bilan tekshiradi.
+  ILIKE uchun matn ekranlanadi. CSV joriy filtr bo'yicha, 10 000 qatorgacha; formula bilan
+  boshlanadigan katak qo'shtirnoqqa olinadi.
+- Generations: natija, model, sana, foydalanuvchi va minimal narx filtrlari; qatorni bosganda
+  to'liq chaqiruv yon panelda. Users: rol, holat va sana filtrlari.
+
+**OBS-10/11 — Telescope.**
+- `src/start.ts` global middleware har so'rovni `http_requests`'ga yozadi. `RequestContext` so'rov
+  id'sini va foydalanuvchini tashiydi.
+- Konsol chiqishi va ushlanmagan xatolar `server_logs`'ga tushadi; xatolar `fingerprint` bo'yicha
+  guruhlanadi. `llm_calls.request_id` qo'shildi.
+- Sahifalar:
+  - Requests: filtrlar va tafsilot (so'rovning loglari, LLM chaqiruvlari, xatolari).
+  - Logs: daraja filtri va Live rejimi.
+  - Errors: guruhlangan.
+- Maxfiylik: so'rov tanasi, cookie, Authorization va ochiq IP saqlanmaydi. Sirli query
+  parametrlari va `Bearer` tokenlar maskalanadi. Ma'lumot 7 kun saqlanadi (ko'pi bilan
+  200 000 qator).
+- TanStack'ning CSRF tekshiruvi `requestMiddleware` bilan tushib qolardi — `start.ts`'da
+  qaytarildi.
+
+**LLM-04/07 — provayderlar.**
+- DeepSeek, Gemini (OpenAI-mos) va Anthropic (Messages API) adapterlari. `MODELS` jadvali
+  `PRICES` yonida.
+- Model har chaqiruv joyi uchun admin sozlamasi: `llm.model.plan`, `llm.model.screen`,
+  `llm.model.edit` va `llm.fallback`.
+- Birinchi tokengacha xato bo'lsa, bir marta zaxira modelga o'tiladi.
+- Kredit narxi sozlangan modeldan olinadi. Har model uchun `CREDIT_PRICES` qatori bor, narx
+  testi hammasini tekshiradi.
+- Sonnet 5 uchun thinking o'chiq va temperatura yuborilmaydi (API talabi); Gemini 3 uchun
+  `reasoning_effort: minimal`.
+- **Gemini va Claude jonli sinalmagan** — kalitlar yo'q, faqat soxta javoblar bilan. Jonli
+  sinov LLM-06'da (kalitlar kiritilgach).
+
+Tekshiruv:
+- Har bir branch va birlashtirilgan kod: `npm run check`, `npx tsc --noEmit` toza.
+- Brauzerda:
+  - Requests: `token=***` maskalangan; 4xx filtri va tafsilot ishlaydi (uzun sarlavha endi
+    qirqiladi).
+  - Logs va Errors: guruhlangan.
+  - Generations: xarajat bo'yicha saralash URL'dan o'qiladi; yon panel ishlaydi; xatolar
+    filtri bo'yicha CSV — sarlavha va 1 qator.
+- **Haqiqiy tahrir yangi adapter qatlami orqali o'tdi:** `deepseek-flash`, `request_id` va
+  `action_id` bog'langan, 2 kredit band qilindi.
+
+Yon ta'sir: dev serverni qayta ishga tushirishda `pkill` foydalanuvchining 3002-portdagi dev
+serverini ham to'xtatdi.
+
 ### Admin qobig'i: yig'iladigan sidebar, guruhlar, ⌘K (ADM-10)
 
 Ikki subagent parallel ishladi: biri qobiqni, ikkinchisi paletni qildi. Fayllari ajratilgan edi.
