@@ -1,6 +1,58 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-24 (kech). Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: avval §2c, keyin §3.**
+> Yozilgan: 2026-09-21, yangilangan 2026-09-25. Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §0 — generatsiyani super optimallashtirish.**
+
+## 0. Keyingi asosiy ish: generatsiya sifatini super optimallashtirish (2026-09-25)
+
+Foydalanuvchi qarori: **endi asosiy ish — faqat generatsiya sifati.** Qolgan hamma narsa (deploy,
+marketing, muharrir) shundan keyin.
+
+**Oxirgi holat (commit `22f1a68`, `canvas-planner` = `main`):**
+- GQ-38 (standart onboarding), GQ-39 (har tizimning o'z bar shakllari) tayyor. Bar endi skrollda
+  yig'ilmaydi, shakl loyiha id si bo'yicha tanlanadi (ilova nomi emas), island Search doirasiga
+  joy qoldiradi — brauzerda tekshirilgan.
+- Bar tahlili: 7 shakl faqat qobig'i bilan farq qiladi, ichidagi tab bir xil (ingichka ikonka +
+  11px kulrang yozuv, aktiv holat 14% tint). Taklif **GQ-40** (Notion, `Keyin`): aktiv tabda ichi
+  to'la ikonka, har tizimning o'z bar tokenlari, Lumen uchun haqiqiy glass. **Foydalanuvchidan
+  so'raladi: GQ-40 ni MVP ga o'tkazish.**
+- Model A/B (2 brief: food-delivery, fit-tracker), eval asboblari endi repoda:
+  `npm run eval -- --model <id>`, `LLM_SCREEN_THINKING=1`, `LLM_PLAN_THINKING=1`, `LLM_RETRY_SAME=1`.
+
+  | | DeepSeek off (hozirgi) | DeepSeek thinking | Gemini 3.1 Flash-Lite |
+  |---|---|---|---|
+  | Ekranlar | 12/12 | 11/12 | 8/11 (bepul tarif 503) |
+  | Ilova vaqti | 48s | 479s | 38s |
+  | Narx (2 ilova) | $0.053 | $0.293 | $0.036 |
+  | Lint toza / audit toza | 25% / 58% | 82% / 100% | 86% / 71% |
+
+  Xulosa: thinking sifatni oshiradi, lekin 10× sekin va 5.5× qimmat (32k chekda 12 dan 7 ekran
+  yarim qoldi) — mahsulotga emas. Muhim signal: **thinking o'chiq DeepSeek'ning lint/audit
+  topilmalari ko'p** — asosiy optimallashtirish shu yerda. Gemini 3.8 Flash bepul tarifda
+  (20 so'rov/kun) sinalmadi; to'liq sinov LLM-06 da, kalitga billing ulangandan keyin.
+- **Gemini kaliti:** `.env` da `GEMINI_API_KEY` (gitda yo'q). Chatda ochiq yozilgan — AI Studio'da
+  yangisiga almashtirilsin, yangi kompyuterda `.env` ga (yoki Admin → API keys) qo'lda kiritilsin.
+
+**Reja (Notion tartibida, ochiq MVP G qatorlari):**
+1. **KIT-04 (Jarayonda) — avval shu tugaydi.** Mezon: chiqish tokenlari −40%, lint ≥95%.
+   A/B dagi eng ko'p lint qoidalari: `caps-eyebrow`, `mono-for-data`, `opacity-dimmed-text`,
+   `middle-dot-meta`, `accent-energy-mismatch`, `identical-card-stack`. Har birini: bitta to'g'ri
+   javobi bo'lsa — `autofixScreen` da kod bilan; aks holda input (blueprint / pattern / kit
+   eskizi / `craft/mobile.md` da zaifroq qoidaning o'rniga). Render audit: `low-contrast`,
+   `overlap`, `small-target`.
+2. **GEN-27** — ekran "Untitled" bo'lib qolmasin (kichik).
+3. **GQ-17** — planner'ga "bitta jasur harakat" maydoni.
+4. **GQ-27** — hero sticker tavsiya qilsin.
+5. **LLM-06** — har model eval'dan o'tadi (Gemini 3.8 Flash / 3.1 Flash-Lite, billing bilan).
+
+**Ish usuli (har o'zgarish):**
+1. Bazaviy o'lchov: `npm run eval -- --label baseline --concurrency 2` (barcha brief, ~20 daqiqa,
+   ~$1). 2026-09-25 da eski kompyuterda boshlangan edi (`eval/out/*-baseline-0925`), lekin
+   `eval/out` gitda yo'q — **yangi kompyuterda bazaviy o'lchovni qaytadan yurgiz.**
+2. O'zgarish → `npm run eval -- --only <brieflar> --label <nima>` bilan tez takror, keyin to'liq run.
+3. `compare.html` va metrics delta (lint `cleanShare`, `audit.cleanShare`, `usage.completionTokens`,
+   `sameness`, `time`) + vizual hakam (`npm run judge`, `claude -p`, pul sarflamaydi).
+4. Mezon yaxshilanmasa — rad etiladi. `npm run check` va `npx tsc --noEmit` toza bo'lishi shart
+   (TST-01 admin overview testi ba'zan tasodifan yiqiladi — ma'lum, `Keyin`).
 
 ## 1. Yangi kompyuterda sozlash
 
