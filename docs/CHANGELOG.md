@@ -5,6 +5,24 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Dashboard v2: prompt markazda, 3 telefonli kollaj kartalar, bo'sh holatlar, canvas'ga o'tish (UI-12)
+
+Subagent `ui-12-dashboard` branch'ida qildi, lead birlashtirdi. Salom pill + serif italic "design"
+sarlavha + hero PromptBox. Loyiha kartasi birinchi 3 ekranni yelpig'ich qilib ko'rsatadi (ko'pi bilan 3
+iframe, `loading="lazy"`, `/api/thumb` + `sandbox="allow-scripts"`), tizim chipi, ekranlar soni, vaqt.
+Misol kartalari tizim aksenti bilan bo'yaldi. Bo'sh holatlar: yangi foydalanuvchi va topilmagan qidiruv.
+Karta → canvas View Transition (`od-project`, reduced-motion'da o'chiq). Sidebar tokenlarga o'tdi,
+kredit kartasida holat nuqtasi. Server: `Project.cardsForUser` endi `coverId` o'rniga `covers` (birinchi
+3 bo'sh bo'lmagan ekran) qaytaradi; admin foydalanuvchi sahifasi `covers[0]`ga o'tdi.
+
+Fayllar: `src/Dashboard.tsx`, sidebar, `src/app/Models/Project.ts`, `src/routes/admin.users.$userId.tsx`,
+`src/components/canvas/Canvas.tsx` (bitta klass), `src/styles.css` (`/* UI-12 dashboard */`),
+`controllers.check.ts` (4 ekranli loyiha aynan birinchi 3 tasini qaytaradi).
+
+Tekshirildi: tsc va check toza. Headless Chrome'da 1440 light/dark, 420, bo'sh holat, qidiruv; lead
+3000-portda kartani bosib canvas'ga o'tishni ko'rdi. Agent dev bazada `ui12-empty@example.test`
+foydalanuvchisini yaratgan (bo'sh holat uchun).
+
 ### Vizual poydevor: siyoh + lime brend, OKLCH tokenlar, Instrument Sans (UI-10)
 
 Subagent `ui-10-foundations` branch'ida qildi, lead birlashtirdi. `src/styles.css` tokenlari OKLCH'ga
