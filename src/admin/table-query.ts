@@ -57,6 +57,26 @@ export function parseUsersQuery(v: unknown): UsersQuery {
   return compact({ ...base(o, USER_SORTS), role: pick(o.role, ['admin', 'user'] as const), status: pick(o.status, ['banned', 'active'] as const), from: day(o.from), to: day(o.to) })
 }
 
+// ADM-15: the credit ledger and the subscriptions list.
+export const LEDGER_KINDS = ['signup', 'admin', 'purchase', 'subscription', 'expire', 'hold', 'refund'] as const
+export const LEDGER_SORTS = ['when', 'delta'] as const
+export type LedgerQuery = TableQuery<(typeof LEDGER_SORTS)[number]> & { kind?: (typeof LEDGER_KINDS)[number]; user?: string; from?: string; to?: string; sign?: 'plus' | 'minus' }
+
+export function parseLedgerQuery(v: unknown): LedgerQuery {
+  const o = rec(v)
+  return compact({ ...base(o, LEDGER_SORTS), kind: pick(o.kind, LEDGER_KINDS), user: text(o.user), from: day(o.from), to: day(o.to), sign: pick(o.sign, ['plus', 'minus'] as const) })
+}
+
+/** Polar's subscription statuses, and 'revoked' as its revoke event reports it. */
+export const SUB_STATUSES = ['active', 'trialing', 'past_due', 'incomplete', 'incomplete_expired', 'unpaid', 'canceled', 'revoked'] as const
+export const SUB_SORTS = ['started', 'end'] as const
+export type SubsQuery = TableQuery<(typeof SUB_SORTS)[number]> & { status?: (typeof SUB_STATUSES)[number]; plan?: 'starter' | 'pro' }
+
+export function parseSubsQuery(v: unknown): SubsQuery {
+  const o = rec(v)
+  return compact({ ...base(o, SUB_SORTS), status: pick(o.status, SUB_STATUSES), plan: pick(o.plan, ['starter', 'pro'] as const) })
+}
+
 /** RFC 4180: every field quoted when it holds a comma, a quote or a line break; quotes doubled. Text a
  *  spreadsheet would run as a formula (a name or an error starting with = + - @) gets a leading '. */
 export function toCsv<T>(rows: T[], columns: [header: string, value: (r: T) => unknown][]): string {

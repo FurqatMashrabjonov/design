@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { adminBan, adminGrantCredits, adminRevokeSessions, adminSetRole, adminSetUserLimit, adminUnban, adminUser } from '../server/admin-fns'
+import { businessUserRevenue } from '../server/business-fns'
 import { ago, Thumb } from '../Dashboard'
 import { Badge, DailyChart, DataTable, date, money, PageTitle, Panel, secs } from '../admin/ui'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 // ADM-03 + ADM-04: one user — what they made, did and cost, and what an admin can do about it.
 export const Route = createFileRoute('/admin/users/$userId')({
-  loader: ({ params }) => adminUser({ data: params.userId }),
+  loader: async ({ params }) => {
+    const [d, revenue] = await Promise.all([adminUser({ data: params.userId }), businessUserRevenue({ data: params.userId })])
+    return { ...d, revenue }
+  },
   component: UserPage,
 })
 
@@ -51,13 +55,15 @@ function UserPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-7">
         {[
           ['Projects', u.projects],
           ['Screens', u.screens],
           ['Calls (24h)', `${u.calls24h} / ${d.limit.effective}`],
           ['Credits', u.credits],
           ['Spend', money(u.spend)],
+          [`Revenue · ${d.revenue.orders} orders`, money(d.revenue.revenue)],
+          ['Margin', d.revenue.revenue - u.spend < 0 ? `−${money(u.spend - d.revenue.revenue)}` : money(d.revenue.revenue - u.spend)],
         ].map(([k, v]) => (
           <div key={k as string} className="rounded-2xl border bg-background p-4">
             <p className="text-xs text-muted-foreground">{k}</p>
