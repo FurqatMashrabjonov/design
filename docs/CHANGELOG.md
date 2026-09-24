@@ -5,6 +5,45 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Ember — soft tonal tizimi; o'ylab topilgan palitra endi ixtiyoriy (GQ-33, GQ-34)
+
+**GQ-33 — eng muhimi.** Real ilovada (dashboard → auto) planner o'ylab topgan palitra hali ham
+tizimning o'z ranglari ustiga yozilardi. Foydalanuvchiga ko'rsatilgan Nova/Lumen/Graphite
+taqqoslashlari eval orqali qilingan edi — eval `designSystemAuto` ni yoqmaydi, shuning uchun u yerda
+palitra ishlamasdi. Ya'ni **mahsulot foydalanuvchi tasdiqlagan narsani ko'rsatmayotgan edi**: real
+foydalanuvchi Nova o'rniga o'sha 60% to'yingan teal siyohni olardi. "Palitra bayroq ortiga"
+kelishilgan edi, men bajarmagan ekanman. Endi `OD_INVENT_PALETTE=1` bilan yoqiladi, sukut bo'yicha
+o'chiq.
+
+**GQ-34 — Ember.** Sleek'dagi "Ember Fitness" presetidan olingan to'rtinchi mobil tizim: bitta
+yumshoq marjon va uning tuslari **yuza** sifatida (qahramon karta, ustunlar, faollik to'ri),
+neytral siyoh, bitta og'ir geometrik sans (Manrope, raqamlar 800), katta yumshoq burchaklar,
+chegarasiz kartalar, suzuvchi panel. Nova aksentni "taqinchoq" qilib ishlatadi (8–12%), Ember u
+bilan quradi (20–30%).
+
+Asosiy qaror: **marjon ustida matn to'q, oq emas.** Asl dizayndagi oq matn marjon ustida 2.67:1 —
+katta shrift uchun ham AA'dan past. Oq o'tishi uchun marjonni `#ca4821` gacha to'qlashtirish kerak,
+bu esa Nova'ning terrakotasi. Rang — identitet, matn rangi esa unga bo'ysunadi (6.81:1).
+
+Yo'l-yo'lakay EYE-06 dagi "brend rangi matn sifatida → o'lchangan token" almashtirishida ikki teshik
+topildi va yopildi: u faqat `<style>` bloklarini ko'rardi (inline `style="…"` ni emas — 10 ta) va
+faqat `var(--accent)` ni ushlardi (`--accent-active`/`--accent-hover` ni emas — 9 ta). Shell'ning
+faol tab yozuvi ham xom aksent edi — manbada o'lchangan tokenga o'tkazildi (faqat yozuv; nuqta fon
+bo'lib qoladi).
+
+Uchta brief (habit, fitness, food): `cleanShare 0.524`, tuzatishlardan keyin saqlangan ekranlarda
+generatsiyasiz qayta o'lchov `0.571`, low-contrast 5 → 3. **Ochiq:** 7 ta overlap — model kichik
+plitkada yorliq va raqamni yonma-yon qo'yadi; bu joylashuv xatosi, kirishda tuzatiladi. 16
+stickerdan 9 tasi `fire`.
+
+Tegilgan fayllar: `design-systems/ember/*` (yangi), `src/app/Http/Controllers/PlanController.ts`,
+`src/app/Services/ShellService.ts`, `src/app/Services/DesignSystemService.ts`,
+`src/lib/design-lint.ts`, `src/app/Services/new-features.check.ts`,
+`src/app/Services/services.check.ts`, `src/app/Http/Controllers/controllers.check.ts`,
+`eval/briefs-ember3.json`.
+Tekshirildi: `npm run check` va `npx tsc --noEmit` toza; uchta brief 390px'da ko'z bilan.
+
+
 ### Graphite, va avtomatik tanlov telefon uchun yozilgan tizimlarga o'tdi (GQ-32)
 
 Uchinchi mobil tizim va ataylab boshqa registr. Nova iliq, Lumen yorug' va shaffof — **Graphite

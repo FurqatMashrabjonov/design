@@ -515,6 +515,16 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   }
 }
 
+// GQ-33: an invented palette is opt-in. Laid over an authored system it replaced the system's own
+// colours — Nova's 8% ink ramp became a 60% teal one — and every comparison the person approved had
+// been run without it, so the default has to be the same.
+{
+  const { readFileSync } = await import('node:fs')
+  const plan = readFileSync('src/app/Http/Controllers/PlanController.ts', 'utf8')
+  assert.ok(plan.includes("const INVENT_PALETTE = process.env.OD_INVENT_PALETTE === '1'"), 'palette invention is behind an opt-in flag')
+  assert.ok(/if \(INVENT_PALETTE && project\.designSystemAuto/.test(plan), 'and nothing invents a palette without it')
+}
+
 // UX-02: app-type patterns, matched in code, only one reaches the planner
 {
   const { AppPatternService } = await import('./AppPatternService.ts')

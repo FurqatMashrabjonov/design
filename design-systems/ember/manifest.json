@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "ember",
+  "name": "Ember",
+  "category": "Mobile",
+  "description": "Soft tonal for phone apps: one warm coral and its tints used as surfaces, neutral ink, one heavy geometric sans, big soft corners and a floating pill bar.",
+  "source": { "type": "bundled", "origin": "Authored in-house, 2026-09-24 (GQ-34)" },
+  "files": { "design": "DESIGN.md", "tokens": "tokens.css" }
+}

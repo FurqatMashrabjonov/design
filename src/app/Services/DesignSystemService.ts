@@ -76,14 +76,15 @@ const BY_APP_TYPE: Record<string, string[]> = {
   //   nova      warm, consumer, a serif figure — the one that feels like a product
   //   lumen     iOS 26, light and translucent — the one that feels native
   //   graphite  engineered dark, dense, mono figures — the one that feels like an instrument
+  //   ember     soft tonal coral, loud and friendly — the one that feels like it is cheering you on
   fintech: ['graphite', 'lumen'],
   productivity: ['graphite', 'lumen', 'nova'],
-  habits: ['nova', 'lumen'],
-  fitness: ['graphite', 'nova', 'lumen'],
-  health: ['nova', 'lumen'],
-  learning: ['nova', 'lumen'],
-  'food-delivery': ['nova', 'lumen'],
-  food: ['nova', 'lumen'],
+  habits: ['ember', 'nova', 'lumen'],
+  fitness: ['ember', 'graphite', 'lumen'],
+  health: ['ember', 'nova', 'lumen'],
+  learning: ['ember', 'nova', 'lumen'],
+  'food-delivery': ['ember', 'nova', 'lumen'],
+  food: ['ember', 'nova', 'lumen'],
   commerce: ['lumen', 'nova'],
   marketplace: ['lumen', 'nova'],
   booking: ['lumen', 'nova'],

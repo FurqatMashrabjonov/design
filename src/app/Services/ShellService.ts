@@ -81,7 +81,9 @@ const BY_SYSTEM: Record<string, NavCharacter> = {
 // its first run, where not one screen showed the material the system exists for.
 // Graphite is the other half of the argument: its bar is part of the chassis, opaque and edge to
 // edge, because an instrument wears its chrome rather than floating it.
-const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar' }
+// Ember's bar is the reference it was drawn from: a wide inset panel with labels, the active tab a
+// tinted pill.
+const PINNED_BY_SYSTEM: Record<string, NavStyle> = { lumen: 'island', graphite: 'bar', ember: 'island' }
 
 // When the system says nothing, what the app is for does.
 const BY_APP_TYPE: Record<string, NavCharacter> = {
@@ -150,12 +152,15 @@ function tabHtml(tab: AppNavTab, isActive: boolean, style: NavStyle): string {
   // active state), so the prototype bridge and the shell contract do not change.
   if ((style === 'island' || style === 'pill') && (tab.icon === 'search' || /^search$/i.test(tab.label))) {
     const glass = 'background:color-mix(in oklab, var(--surface) 78%, transparent);backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);-webkit-backdrop-filter:blur(var(--od-blur-nav, 18px)) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 10px 30px -12px rgba(0,0,0,.38),0 2px 6px -2px rgba(0,0,0,.12),0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent)'
-    const tint = isActive ? 'color:var(--accent)' : 'color:var(--fg)'
+    const tint = isActive ? 'color:var(--od-accent-text, var(--accent))' : 'color:var(--fg)'
     return `<a href="#" data-od-tab="${escapeHtml(tab.id)}" data-od-search="1"${current} aria-label="${label}" style="position:absolute;right:-70px;top:0;width:58px;height:58px;border-radius:9999px;display:flex;align-items:center;justify-content:center;text-decoration:none;${tint};${glass}">${iconSvg(tab.icon, 24)}</a>`
   }
   const on = inverted ? 'var(--bg)' : 'var(--accent)'
+  // GQ-34: the active label is text, so it takes the measured ink; the dot under an icon-only tab is
+  // a fill and keeps the accent. On Ember the raw coral label read 2.67:1 against the bar.
+  const onInk = inverted ? 'var(--bg)' : 'var(--od-accent-text, var(--accent))'
   const off = inverted ? 'color-mix(in oklab, var(--bg) 60%, transparent)' : 'var(--meta)'
-  const color = isActive ? on : off
+  const color = isActive ? onInk : off
   const inner = labelled
     ? `${iconSvg(tab.icon)}<span style="font-size:11px;font-weight:500;letter-spacing:0.01em">${label}</span>`
     : iconSvg(tab.icon, 24)

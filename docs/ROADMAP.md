@@ -94,6 +94,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-29 | Lumen — iOS 26 Liquid Glass tizimi; tizim o'z chrome'ini qotira olsin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-13, NAV-01 | audit 0.45 → 0.65, overflow 13 → 2, panel 20/20 island |
 | GQ-31 | Qahramon raqam ekranga sig'sin — o'lcham belgilar soniga bog'lansin | Generatsiya / Sifat | MVP | Tayyor | Kichik | GQ-29 | brauzerda o'lchandi: $4,218.40 100px da 469px, 350px ga sig'maydi |
 | GQ-32 | Graphite (engineered dark); avtomatik tanlov telefon tizimlariga | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-29 | 3 tizim turga qarab; brend nomi taqqoslash bilan; audit 0.667 |
+| GQ-33 | O'ylab topilgan palitra ixtiyoriy bo'lsin (OD_INVENT_PALETTE) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10 | real ilova tasdiqlangan tizim ranglarini ko'rsatadi |
+| GQ-34 | Ember — soft tonal tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-32 | habit/fitness/health/learning/food; audit 0.571 |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-02 | Brief'dagi rang va kayfiyat so'zlari temaga aylanadi | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
 | GQ-03 | Auto dizayn tizimi standart (ilova turi va kayfiyat bo'yicha) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |

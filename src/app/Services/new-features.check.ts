@@ -201,7 +201,7 @@ assert.ok(navA.includes('data-od-shell="bottom-nav"'), 'Nav carries a shell mark
 // The active tab is a colour AND a shape (NAV-02), so both are erased before the two are compared.
 const sameShell = (html: string) =>
   html
-    .replace(/var\(--accent\)|var\(--meta\)/g, 'C')
+    .replace(/var\(--od-accent-text, var\(--accent\)\)|var\(--accent\)|var\(--meta\)/g, 'C')
     .replace(/ aria-current="page"/g, '')
     .replace(/;background:color-mix\(in oklab, C 14%, transparent\);border-radius:9999px/g, '')
     .replace(/<span style="width:4px[^>]*><\/span>/g, '')
@@ -432,7 +432,7 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   const auto = new Set<string>()
   for (const type of ['fintech', 'food-delivery', 'commerce', 'marketplace', 'booking', 'travel', 'fitness', 'health', 'learning', 'media', 'productivity', 'social', 'habits'])
     for (let i = 0; i < 40; i++) auto.add(DesignSystemService.autoFor('x', type, `seed-${i}`))
-  const mobileFirst = ['nova', 'lumen', 'graphite']
+  const mobileFirst = ['nova', 'lumen', 'graphite', 'ember']
   for (const id of auto) assert.ok(mobileFirst.includes(id), `the automatic choice offered ${id}, which was not authored for a phone`)
   assert.equal(auto.size, mobileFirst.length, 'all three phone systems are reachable automatically')
   for (const type of ['fintech', 'habits', 'travel', 'media']) {
@@ -941,6 +941,8 @@ console.log('Testing Pinned Chrome (GQ-29)...')
   for (const seed of ['a', 'b', 'c', 'd', 'e']) {
     for (const appType of ['fintech', 'media', undefined]) {
       assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'lumen' }), 'island', 'lumen always floats')
+      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'ember' }), 'island', 'so does ember')
+      assert.equal(navStyle(seed, { tabCount: 2, appType, designSystem: 'graphite' }), 'bar', 'graphite wears its chrome')
     }
   }
   // Nova still rolls, so pinning one system did not pin them all.
@@ -950,6 +952,23 @@ console.log('Testing Pinned Chrome (GQ-29)...')
   assert.ok(bar.includes('var(--od-blur-nav, 18px)'), 'so is the blur')
   const tokens = readFileSync('design-systems/lumen/tokens.css', 'utf8')
   for (const t of ['--od-nav-tint', '--od-blur-nav']) assert.ok(tokens.includes(t), `lumen sets ${t}`)
+}
+
+console.log('Testing Ink Swap Reach (GQ-34)...')
+{
+  const { autofixScreen } = await import('../../lib/design-lint.ts')
+  const { buildBottomNav } = await import('./ShellService.ts')
+  // The brand-colour-as-text swap only reached <style> blocks and only var(--accent) itself; Ember's
+  // first run wrote the same colour inline ten times and as --accent-active nine, and a coral figure
+  // on a grey tile read 2.4:1.
+  const page = '<html><head><style>.a{color: var(--accent-active)}.h{color:var(--accent-hover)}.b{background:var(--accent)}</style></head><body><b style="font-size:40px;color:var(--accent)">82</b><i style="color:var(--accent-on);background:var(--accent)">x</i></body></html>'
+  const out = autofixScreen(page)
+  assert.ok(/\.a\{color: var\(--od-accent-text\)\}/.test(out) && /\.h\{color: var\(--od-accent-text\)\}/.test(out), 'pressed and hover shades used as text are swapped')
+  assert.ok(out.includes('style="font-size:40px;color: var(--od-accent-text)"'), 'an inline colour is swapped too')
+  assert.ok(out.includes('background:var(--accent)'), 'a fill is left alone')
+  assert.ok(out.includes('color:var(--accent-on)'), 'the ink on the accent is left alone')
+  const nav = buildBottomNav({ tabs: [{ id: 'a', label: 'Home', icon: 'home' }, { id: 'b', label: 'More', icon: 'list' }] } as never, 'a', 'island')
+  assert.ok(!/color:var\(--accent\)/.test(nav), "the shell's active tab takes the measured token at its source")
 }
 
 console.log('Testing Stickers (GQ-21)...')

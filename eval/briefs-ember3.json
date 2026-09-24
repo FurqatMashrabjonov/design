@@ -1,0 +1,11 @@
+[
+  { "id": "ember-habit", "appType": "habits", "designSystem": "ember",
+    "brief": "make habit tracker",
+    "expect": ["dashboard", "detail", "form", "stats", "list"] },
+  { "id": "ember-fitness", "appType": "fitness", "designSystem": "ember",
+    "brief": "Running app: today's activity with weekly chart, a workout summary with duration, calories and distance, a day-streak screen with an activity grid, and training insights.",
+    "expect": ["dashboard", "result", "stats", "detail"] },
+  { "id": "ember-food", "appType": "food-delivery", "designSystem": "ember",
+    "brief": "Food delivery: restaurant feed with categories, a dish detail with size and add-ons, cart and checkout, and live order tracking.",
+    "expect": ["feed", "detail", "checkout", "map"] }
+]

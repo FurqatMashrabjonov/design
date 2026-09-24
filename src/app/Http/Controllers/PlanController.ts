@@ -28,6 +28,8 @@ import { briefStyle } from '@/lib/intent'
 import { isEmptyTheme, parseTheme, sanitizeTheme } from '@/lib/theme-override'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 
+const INVENT_PALETTE = process.env.OD_INVENT_PALETTE === '1'
+
 // POST { projectId, brief } -> newline-delimited JSON events (see PlanEvent in src/generatePlan.ts).
 // Only used to seed a brand-new, empty project — positions are assigned by plan order (0, 1, 2, ...).
 // GQ-07: the run is not tied to the response. If the page goes away the events stop, the drawing
@@ -150,7 +152,12 @@ export const PlanController = {
           // GQ-10: a system chosen for the person (not by them) may have its colours replaced by
           // the palette the planner invented for this app. Built and repaired to AA once, saved,
           // then every screen — drawn now or added weeks later — gets the same :root.
-          if (project.designSystemAuto && plan.palette && !parsePalette(project.palette)) {
+          // GQ-33: an invented palette is opt-in. It replaced the colours of whichever system was
+          // chosen, and the systems now chosen automatically were authored with their colours as
+          // part of the design — a planner palette laid over Nova put a 60%-saturated teal ink ramp
+          // where Nova's 8% one had been. Every comparison the person approved was run without it;
+          // this makes the product match what was approved. OD_INVENT_PALETTE=1 brings it back.
+          if (INVENT_PALETTE && project.designSystemAuto && plan.palette && !parsePalette(project.palette)) {
             const built = buildPalette(plan.palette)
             Project.savePalette(project.id, built)
             project.palette = JSON.stringify(built)

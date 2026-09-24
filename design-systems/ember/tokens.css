@@ -1,0 +1,106 @@
+/* Ember — the soft tonal system (GQ-34).
+   The fourth mobile system: one warm coral and its own tints, used loudly. Where Nova wears its
+   accent like jewellery (8–12% of pixels), Ember builds with it — a hero card filled in coral, bars
+   and grids in its lighter shades, a peach panel for encouragement — while the ink stays neutral,
+   because a loud accent only reads as friendly if everything around it is quiet.
+   One heavy geometric sans carries it all; the figures are ExtraBold and tight.
+   The reference this is drawn from puts white text on coral at 2.67:1, under AA even for large
+   type. Deepening the coral until white passes lands on Nova's terracotta, so the coral stays soft
+   and the ink on it is dark (6.81:1) — the colour is the identity, the text colour is not. */
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+  /* White page, cards a step of cool grey on it, and a peach panel for the one warm moment. */
+  --bg: #ffffff;
+  --surface: #f4f4f6;
+  --surface-warm: #fbede6;
+  --fg: #181716;
+  --fg-2: #4c4743;
+  --muted: #6c6660;
+  --muted-2: #726b65;
+  --meta: #726b65;
+  --border: #dcdad8;
+  --border-soft: #ececef;
+  --accent: #e8845a;
+  --accent-on: #1c1411;
+  --accent-hover: #e4703f;
+  --accent-active: #e15f29;
+  --success: #16a34a;
+  --warn: #b45309;
+  --warning: #b45309;
+  --danger: #dc2626;
+
+  --font-display: Manrope, "Helvetica Neue", system-ui, sans-serif;
+  --font-body: Manrope, "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 19px;
+  --text-xl: 26px;
+  --text-2xl: 32px;
+  --text-3xl: 56px;
+  --text-4xl: 84px;
+  --leading-body: 1.5;
+  --leading-tight: 0.98;
+  --tracking-display: -0.04em;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --section-y-desktop: 96px;
+  --section-y-tablet: 64px;
+  --section-y-phone: 36px;
+
+  /* Soft and big: nothing on this screen has a sharp corner. */
+  --radius-sm: 16px;
+  --radius-md: 22px;
+  --radius-lg: 30px;
+  --radius-pill: 9999px;
+
+  /* Flat: cards separate by tone, not by line or shadow. */
+  --elev-flat: none;
+  --elev-ring: 0 0 0 1px var(--border-soft);
+  --elev-raised: 0 1px 2px rgba(24, 23, 22, 0.03);
+  --focus-ring: 0 0 0 4px color-mix(in oklab, var(--accent), transparent 64%);
+  --motion-fast: 150ms;
+  --motion-base: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Friendly means a little bounce on the moments that deserve one. */
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+  --motion-press: 120ms;
+  --container-max: 1200px;
+  --container-gutter-desktop: 32px;
+  --container-gutter-tablet: 24px;
+  --container-gutter-phone: 16px;
+
+  --icon-stroke: 2;
+
+  --od-display-weight: 800;
+  --od-heading-weight: 700;
+  --od-heading-font: var(--font-body);
+
+  /* kit/od-kit.css reads these. The bar floats and stays near-opaque: this system's depth is tone. */
+  --od-card-bg: var(--surface);
+  --od-card-border: 0;
+  --od-card-shadow: none;
+  --od-blur: blur(16px);
+  --od-nav-tint: 92%;
+  --od-control-border: 1px solid var(--border);
+  --od-btn-weight: 700;
+  --od-btn-shadow: none;
+  --od-row-min: 56px;
+  --od-icon-radius: 9999px;
+  --od-icon-bg: var(--bg);
+  --od-icon-fg: var(--od-accent-text);
+  --od-accent-text: #a44117;
+  --od-success-text: #0f6d32;
+  --od-warn-text: #954507;
+  --od-danger-text: #b21d1d;
+}

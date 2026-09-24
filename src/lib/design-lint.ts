@@ -422,15 +422,19 @@ export function autofixScreen(html: string): string {
   // --border is a hairline and is never measured as an ink; a separator dot painted with it read
   // 1.26:1. Only the page's own stylesheets are rewritten: od-kit.css already uses these tokens,
   // and its one raw `color: var(--warn)` is a filled star, where the colour is the point.
-  out = out.replace(/(<style(?![^>]*\bdata-od)[^>]*>)([\s\S]*?)(<\/style>)/gi, (_m, open: string, css: string, close: string) => {
-    const fixed = css
+  // GQ-34: the same swap for inline style attributes and for the accent's hover and pressed shades.
+  // Ember's first run wrote `style="color:var(--accent)"` ten times and `color: var(--accent-active)`
+  // nine — neither form was rewritten, and a coral figure on a grey tile read 2.4:1. The shell's
+  // own active tab takes the measured token at its source (ShellService), so nothing here edits it.
+  const inkSwap = (css: string) =>
+    css
       // `color: var(--success)`, and the lightened mixes the model reaches for on a tinted chip
       // (`color-mix(in oklab, var(--danger), white 25%)` measured 1.12:1 on its own tint).
-      .replace(/(?<![-\w])color\s*:\s*(?:var\(\s*--(accent|success|warn|danger)\s*\)|color-mix\([^;{}]*?var\(\s*--(accent|success|warn|danger)\s*\)[^;{}]*?\))/gi,
-        (whole: string, a?: string, b?: string) => `color: var(--od-${(a ?? b ?? '').toLowerCase()}-text)`)
+      .replace(/(?<![-\w])color\s*:\s*(?:var\(\s*--(accent|success|warn|danger)(?:-hover|-active)?\s*\)|color-mix\([^;{}"]*?var\(\s*--(accent|success|warn|danger)(?:-hover|-active)?\s*\)[^;{}"]*?\))/gi,
+        (_whole: string, a?: string, b?: string) => `color: var(--od-${(a ?? b ?? '').toLowerCase()}-text)`)
       .replace(/(?<![-\w])color\s*:\s*var\(\s*--border(?:-soft)?\s*\)/gi, 'color: var(--meta)')
-    return open + fixed + close
-  })
+  out = out.replace(/(<style(?![^>]*\bdata-od)[^>]*>)([\s\S]*?)(<\/style>)/gi, (_m, open: string, css: string, close: string) => open + inkSwap(css) + close)
+  out = out.replace(/(\sstyle=")([^"]*)(")/gi, (_m, open: string, css: string, close: string) => open + inkSwap(css) + close)
 
   // EYE-06: a white label on a scrim over a photo. `.hero__tag { color:#fff; background:
   // rgba(17,17,19,.42) }` measured 1.00:1 — the photo behind it happened to be bright, and a 42%
