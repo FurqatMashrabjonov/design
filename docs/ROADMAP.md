@@ -274,7 +274,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | BIL-09 | Har foydalanuvchi uchun checkout | To'lov va kreditlar / To'lovlar | MVP | Tayyor | O'rta | BIL-03 | Checkout foydalanuvchi ID sini olib boradi, webhook to'g'ri hisobga yozadi |
 | BIL-10 | To'lov webhook: imzoni tekshirish, kreditni bir marta berish | To'lov va kreditlar / To'lovlar | MVP | Tayyor | O'rta | BIL-09 | Qayta kelgan hodisa kreditni ikkinchi marta bermaydi; noto'g'ri imzo rad etiladi |
 | BIL-11 | To'lovni boshqarish portali havolasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-09 | Havola foydalanuvchining provayder portalini ochadi |
-| BIL-14 | Tarif chegaralari kodda: loyiha soni va eksport | To'lov va kreditlar / Kreditlar | Keyin | Rejada | Kichik | BIL-02, BIL-10 | /pricing va'da qilgan chegaralar serverda tekshiriladi |
+| BIL-14 | Tarif chegaralari kodda: loyiha soni va eksport | To'lov va kreditlar / Kreditlar | MVP | Tayyor | Kichik | BIL-02, BIL-10 | /pricing va'da qilgan chegaralar serverda tekshiriladi |
 | BIL-12 | Narxlar sahifasi | To'lov va kreditlar / To'lovlar | MVP | Tayyor | Kichik | BIL-02 | Tariflar va kredit narxlari ko'rinadi; tugmalar checkout'ni ochadi |
 | LLM-04 | Provayder adapterlari: DeepSeek, Gemini, Claude | Generatsiya / LLM xarajati | MVP | Rejada | O'rta | LLM-05 | Bitta interfeys; OpenAI-mos va Anthropic adapteri; kalitlar serverda |
 | LLM-06 | Har model eval'dan o'tadi: sifat va $/ilova o'lchanadi | Generatsiya / Sifat | MVP | Rejada | Kichik | LLM-04 | Faqat o'tgan model tanlanadi; kredit narxi o'lchovdan |

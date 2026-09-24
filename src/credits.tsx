@@ -2,14 +2,26 @@ import { useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCredits, openBillingPortal, startCheckout } from './server/fns'
-import { appsFor, CREDIT_PRICES, PACKS, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
+import { appsFor, CREDIT_PRICES, PACKS, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-// BIL-08: the balance where people work, and a dialog — not an error — when it runs out.
+// BIL-08/14: the balance where people work, and one dialog — not an error — when it runs out or a
+// plan's limit is reached.
 
 const OUT = 'od:credits-out'
 const CHANGED = 'od:credits-changed'
+const LIMIT = 'od:plan-limit'
+
+/** BIL-14: what a plan did not allow — a project over its count, or an export on Free. */
+type Limit = { projects: number } | 'export'
+export const askUpgrade = (why: Limit) => window.dispatchEvent(new CustomEvent(LIMIT, { detail: why }))
+
+/** The project limit a server error names (`plan-limit:projects:N`), or null. */
+export function projectLimitOf(e: unknown): number | null {
+  const m = e instanceof Error ? e.message.match(new RegExp(`${PLAN_LIMIT_ERROR}projects:(\\d+)`)) : null
+  return m ? Number(m[1]) : null
+}
 
 /** A 402 from a guarded route: the action was refused before anything ran, and nothing was charged. */
 export class OutOfCredits extends Error {
@@ -44,13 +56,15 @@ export const creditsChanged = () => window.dispatchEvent(new Event(CHANGED))
 /** Error toast for a generation, silent for OutOfCredits — the dialog already says it. */
 export function reportError(e: unknown) {
   if (e instanceof OutOfCredits) return
+  const limit = projectLimitOf(e)
+  if (limit !== null) return askUpgrade({ projects: limit })
   toast.error(e instanceof Error ? e.message : String(e))
 }
 
-type CreditState = { balance: number; plan: 'starter' | 'pro' | null }
+type CreditState = { balance: number; plan: 'starter' | 'pro' | null; canExport: boolean }
 
 export function useCredits(initial?: number): CreditState | undefined {
-  const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null })
+  const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null, canExport: false })
   useEffect(() => {
     let live = true
     const load = () => getCredits().then((r) => live && setState(r)).catch(() => {})
@@ -98,24 +112,36 @@ export function CreditsBadge() {
 
 /** Mounted once (root): opens when a generation is refused for credits. */
 export function CreditsDialog() {
-  const [out, setOut] = useState<OutOfCredits | null>(null)
+  const [why, setWhy] = useState<OutOfCredits | Limit | null>(null)
   const plan = useCredits()?.plan
   useEffect(() => {
-    const on = (e: Event) => setOut((e as CustomEvent<OutOfCredits>).detail)
+    const on = (e: Event) => setWhy((e as CustomEvent<OutOfCredits | Limit>).detail)
     window.addEventListener(OUT, on)
-    return () => window.removeEventListener(OUT, on)
+    window.addEventListener(LIMIT, on)
+    return () => {
+      window.removeEventListener(OUT, on)
+      window.removeEventListener(LIMIT, on)
+    }
   }, [])
   const p = CREDIT_PRICES['deepseek-flash']!
+  const out = why instanceof OutOfCredits ? why : null
+  const projects = why && typeof why === 'object' && 'projects' in why ? why.projects : 0
+  const [title, text] = out
+    ? [out.balance ? 'Not enough credits' : 'You’re out of credits', `${out.message} Nothing was charged. A whole app is ${p.plan + p.draw} credits, a screen ${p.screen}, an element edit ${p.element}.`]
+    : why === 'export'
+      ? ['Export is on Starter and Pro', 'Download the app as code, copy screens as HTML or paste them into Figma with a paid plan. Your screens stay here either way.']
+      : ['Project limit reached', `Your plan includes ${projects} project${projects === 1 ? '' : 's'}. Delete one, or move to a plan with more room.`]
+  // A subscriber short of credits tops up with a pack (packs are for subscribers only); everything else is a plan.
+  const offerPacks = out !== null && plan !== null && plan !== undefined
+  const plans = PLANS.filter((x) => x.id !== plan)
   return (
-    <Dialog open={out !== null} onOpenChange={(o) => !o && setOut(null)}>
+    <Dialog open={why !== null} onOpenChange={(o) => !o && setWhy(null)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{out?.balance ? 'Not enough credits' : 'You’re out of credits'}</DialogTitle>
-          <DialogDescription>
-            {out?.message} Nothing was charged. A whole app is {p.plan + p.draw} credits, a screen {p.screen}, an element edit {p.element}.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{text}</DialogDescription>
         </DialogHeader>
-        {plan ? (
+        {offerPacks ? (
           // A subscriber tops up with a pack (BIL-02: packs are for subscribers only).
           <div className="grid gap-3 sm:grid-cols-2">
             {PACKS.map((k) => (
@@ -131,7 +157,7 @@ export function CreditsDialog() {
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {PLANS.map((p) => (
+            {plans.map((p) => (
               <div key={p.id} className={`rounded-xl border p-4 ${p.id === 'pro' ? 'border-foreground' : ''}`}>
                 <p className="text-sm font-semibold">{p.name}</p>
                 <p className="mt-1 text-2xl font-semibold tabular-nums">

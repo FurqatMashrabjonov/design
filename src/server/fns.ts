@@ -9,10 +9,9 @@ import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
-import { Subscription } from '@/app/Models/Subscription'
 import { CreditService } from '@/app/Services/CreditService'
 import { BillingController } from '@/app/Http/Controllers/BillingController'
-import { PRODUCTS, productOf } from '@/lib/credit-prices'
+import { PRODUCTS } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { getRequest } from '@tanstack/react-start/server'
@@ -30,9 +29,10 @@ export const deleteAccount = createServerFn({ method: 'POST' }).handler(async ()
 
 /** BIL-08: the signed-in user's credit balance, for the top bar and the dashboard. */
 export const getCredits = createServerFn({ method: 'GET' }).handler(async () => {
-  const id = (await requireUser()).id
-  CreditService.refresh(id) // a new month of a plan lands the first time it is looked at
-  return { balance: Credit.balance(id), plan: productOf(Subscription.activeFor(id)?.productKey)?.plan ?? null }
+  const user = await requireUser()
+  CreditService.refresh(user.id) // a new month of a plan lands the first time it is looked at
+  const limits = CreditService.limitsFor(user.id, user.admin)
+  return { balance: Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export }
 })
 
 /** BIL-09: a hosted checkout for one product; the page goes to the returned URL. */
@@ -57,7 +57,10 @@ export const createProject = createServerFn({ method: 'POST' })
     const o = obj(d)
     return { designSystem: str(o.designSystem, 60), brief: o.brief === undefined ? undefined : str(o.brief, 4000) }
   })
-  .handler(async ({ data }) => ProjectController.store({ ...data, userId: (await requireUser()).id }))
+  .handler(async ({ data }) => {
+    const user = await requireUser()
+    return ProjectController.store({ ...data, userId: user.id, admin: user.admin })
+  })
 
 export const renameProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), name: str(obj(d).name, 200) }))

@@ -1,7 +1,7 @@
 import { Credit } from '@/app/Models/Credit'
 import { BILLED_MODEL } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
-import { CREDIT_PRICES, SIGNUP_CREDITS, productOf, type ActionKind } from '@/lib/credit-prices'
+import { CREDIT_PRICES, PLAN_LIMITS, SIGNUP_CREDITS, productOf, type ActionKind, type Limits, type PlanId } from '@/lib/credit-prices'
 import { monthIndex, Subscription } from '@/app/Models/Subscription'
 
 // BIL-05/06/07: charging credits for actions. The prices themselves live in lib/credit-prices.ts,
@@ -39,6 +39,12 @@ export const CreditService = {
     const lapse = last ? Math.min(Math.max(0, last.delta - last.usedSince), Credit.balance(userId)) : 0
     if (lapse > 0) Credit.add({ userId, delta: -lapse, kind: 'expire', ref: `expire:${ref}`, note: 'unused plan credits from last month' })
     Credit.add({ userId, delta: product.credits, kind: 'subscription', ref, note: product.name })
+  },
+
+  /** BIL-14: the plan in force and what it allows. An admin is not limited. */
+  limitsFor(userId: string, admin = false): { plan: PlanId } & Limits {
+    const plan: PlanId = productOf(Subscription.activeFor(userId)?.productKey)?.plan ?? 'free'
+    return { plan, ...(admin ? { projects: null, export: true } : PLAN_LIMITS[plan]) }
   },
 
   /** BIL-07: the free start. Keyed by the user, so it is granted once however often it is called. */

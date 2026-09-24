@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { reportError } from '../credits'
+import { askUpgrade, reportError, useCredits } from '../credits'
 import { CircleX, Sparkles, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
@@ -467,11 +467,17 @@ function ProjectPage() {
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+  // BIL-14: export is a paid feature. The screens are in this page anyway, so this is where it is
+  // held — a plan limit, not a lock. Allowed while the plan is still loading.
+  const credits = useCredits()
+  const mayExport = () => credits?.canExport !== false || (askUpgrade('export'), false)
   function downloadHtml(screen: { name: string; html: string }) {
+    if (!mayExport()) return
     save(new Blob([applyThemeOverride(screen.html, theme)], { type: 'text/html' }), `${fileName(screen.name)}.html`)
   }
   // Every drawn screen with the theme baked in, linked like the preview (lib/export-app.ts).
   function downloadApp() {
+    if (!mayExport()) return
     const files = exportApp(screens, theme, project.name)
     save(new Blob([zip(files) as Uint8Array<ArrayBuffer>], { type: 'application/zip' }), `${fileName(project.name)}.zip`)
     toast.success(`Exported ${files.length - 1} screens`)
@@ -571,6 +577,7 @@ function ProjectPage() {
   // From a frame: that screen, or every selected screen when it is one of them. From the export
   // menu: the whole app. Each screen arrives as its own group, placed as it sits on the canvas.
   async function copyToFigma(screenId?: string) {
+    if (!mayExport()) return
     const drawn = screens.filter((s) => s.html)
     const chosen =
       screenId && !(selectedIds.length > 1 && selectedIds.includes(screenId))
@@ -592,6 +599,7 @@ function ProjectPage() {
   }
 
   async function copyHtml(html: string) {
+    if (!mayExport()) return
     try {
       await navigator.clipboard.writeText(html)
       toast.success('HTML copied')

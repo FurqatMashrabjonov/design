@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { getHome, createProject, getSession } from '../server/fns'
 import { Landing, PENDING_PROMPT, BRAND } from '../Landing'
 import { Dashboard } from '../Dashboard'
-import { creditsChanged } from '../credits'
+import { creditsChanged, reportError } from '../credits'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/')({
@@ -42,9 +42,9 @@ function Home() {
     } catch {}
     if (!prompt || started.current) return
     started.current = true
-    createProject({ data: { designSystem: 'auto', brief: prompt } }).then(({ id }) =>
-      navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }),
-    )
+    createProject({ data: { designSystem: 'auto', brief: prompt } })
+      .then(({ id }) => navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }))
+      .catch(reportError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // BIL-09: back from checkout. The credits come by webhook a moment later, so the balance reloads a few times.

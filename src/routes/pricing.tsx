@@ -31,7 +31,7 @@ function Pricing() {
       note: yearly ? `billed $${p.yearly * 12} a year` : 'billed monthly',
       credits: `${p.credits.toLocaleString('en')} credits a month`,
       apps: appsFor(p.credits),
-      features: [p.projects, 'Figma and code export', 'Share preview links', 'Extra credit packs'],
+      features: [p.projects, 'Figma and code export', 'Extra credit packs'],
     })),
   ]
   return (

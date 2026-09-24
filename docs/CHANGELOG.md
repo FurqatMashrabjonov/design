@@ -5,6 +5,37 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-24
 
+### Tarif chegaralari kodda: loyiha soni va eksport (BIL-14)
+
+/pricing'dagi va'dalar endi kod tomonidan bajariladi (`PLAN_LIMITS`):
+- **Loyiha soni** (Free 1, Starter 5, Pro cheksiz) **serverda**, `ProjectController.store`'da
+  tekshiriladi, loyiha qaysi yo'l bilan yaratilishidan qat'i nazar. Limitga yetganda xato
+  (`plan-limit:projects:N`) toast emas, upgrade dialogini ochadi. Dialogda joriy tarif
+  ko'rsatilmaydi.
+- **Eksport** (zip, HTML, Figma) faqat pullik tarifda. U sahifada to'siladi (`mayExport`),
+  chunki ekranlar baribir brauzerda turadi: bu tarif chegarasi, qulf emas.
+- **Admin cheklanmaydi.** Foydalanuvchisiz yaratilgan loyiha (eval, testlar) ham cheklanmaydi.
+- `getCredits` endi `canExport` qaytaradi. Kredit dialogi umumiy upgrade dialogiga aylandi: kredit,
+  loyiha soni yoki eksport sababi bilan ochiladi.
+- /pricing'dan "Share preview links" olib tashlandi: preview havolasi hozir faqat egasiga ochiladi,
+  boshqalar uchun ishlamaydi (SHR-02 gacha).
+
+Fayllar: `lib/credit-prices.ts`, `CreditService.ts`, `ProjectController.ts`, `server/fns.ts`,
+`credits.tsx`, `Dashboard.tsx`, `routes/index.tsx`, `routes/p.$projectId.tsx`,
+`routes/pricing.tsx`, `controllers.check.ts`, CLAUDE.md.
+
+Tekshiruv:
+- `npm run check`, `npx tsc --noEmit` toza. Testlar:
+  - Free'da ikkinchi loyiha rad etiladi, Starter'da oltinchisi, Pro'da chegara yo'q;
+  - admin va foydalanuvchisiz yaratish cheklanmaydi;
+  - `limitsFor` har tarif uchun to'g'ri.
+- Brauzerda:
+  - Starter'dagi admin hisobida "Copy all screens to Figma" ishladi (7 ta ekran);
+  - eksport va loyiha-chegarasi dialoglari to'g'ri chizildi (Starter'da faqat Pro taklif
+    qilinadi).
+- Oddiy Free foydalanuvchining to'liq oqimi brauzerda sinalmadi: mening hisobim admin. U unit
+  testda qoplangan.
+
 ### To'lovlar: Polar checkout, webhook, oylik kreditlar, portal (BIL-01, 09, 10, 11, 12)
 
 **Provayder — Polar.** Stripe O'zbekistonda hisob ochmaydi. Polar Stripe ustida ishlaydi,

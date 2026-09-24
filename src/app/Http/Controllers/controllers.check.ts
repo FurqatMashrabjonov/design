@@ -591,6 +591,29 @@ assert.equal(Project.find('p9')!.name.length, 80, 'capped')
   assert.equal(Credit.balance('payer'), before, 'a revoked plan grants nothing more')
 }
 
+// BIL-14: a plan's project count is enforced on the server; export follows the plan; admins are free.
+{
+  const { CreditService } = await import('../../Services/CreditService.ts')
+  const { Subscription } = await import('../../Models/Subscription.ts')
+  const { ProjectController } = await import('./ProjectController.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user } = await import('../../../database/schema.ts')
+  db.insert(user).values({ id: 'freebie', name: 'F', email: 'f@x.uz', createdAt: new Date(), updatedAt: new Date() }).run()
+  assert.deepEqual(CreditService.limitsFor('freebie'), { plan: 'free', projects: 1, export: false })
+  assert.deepEqual(CreditService.limitsFor('freebie', true), { plan: 'free', projects: null, export: true }, 'an admin is not limited')
+  ProjectController.store({ designSystem: 'nova', userId: 'freebie' })
+  assert.throws(() => ProjectController.store({ designSystem: 'nova', userId: 'freebie' }), /plan-limit:projects:1/, 'Free makes one project')
+  ProjectController.store({ designSystem: 'nova', userId: 'freebie', admin: true })
+  Subscription.upsert({ id: 'sub_s', userId: 'freebie', productKey: 'starter-month', status: 'active', startedAt: Math.floor(Date.now() / 1000), currentPeriodEnd: null, cancelAtPeriodEnd: false })
+  assert.deepEqual(CreditService.limitsFor('freebie'), { plan: 'starter', projects: 5, export: true })
+  for (let i = 0; i < 3; i++) ProjectController.store({ designSystem: 'nova', userId: 'freebie' })
+  assert.throws(() => ProjectController.store({ designSystem: 'nova', userId: 'freebie' }), /plan-limit:projects:5/, 'Starter makes five')
+  Subscription.upsert({ id: 'sub_s', userId: 'freebie', productKey: 'pro-month', status: 'active', startedAt: Math.floor(Date.now() / 1000), currentPeriodEnd: null, cancelAtPeriodEnd: false })
+  ProjectController.store({ designSystem: 'nova', userId: 'freebie' })
+  assert.equal(CreditService.limitsFor('freebie').projects, null, 'Pro is unlimited')
+  ProjectController.store({ designSystem: 'nova' }) // the eval and tests make projects with no user: never limited
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

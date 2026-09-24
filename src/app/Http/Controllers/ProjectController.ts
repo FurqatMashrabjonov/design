@@ -1,4 +1,6 @@
 import { notFound } from '@tanstack/react-router'
+import { CreditService } from '@/app/Services/CreditService'
+import { PLAN_LIMIT_ERROR } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
@@ -46,7 +48,12 @@ export const ProjectController = {
   },
 
   // 2026-09-22: the product designs phone apps only; desktop projects made before stay viewable.
-  store(data: { designSystem: string; brief?: string; userId?: string }) {
+  store(data: { designSystem: string; brief?: string; userId?: string; admin?: boolean }) {
+    // BIL-14: a plan's project count is checked here, on the server, for every way a project is made.
+    if (data.userId) {
+      const { projects } = CreditService.limitsFor(data.userId, data.admin)
+      if (projects !== null && Project.forUser(data.userId).length >= projects) throw new Error(`${PLAN_LIMIT_ERROR}projects:${projects}`)
+    }
     // GQ-03: "auto" means the brief chooses (its named style, else its app type). DS-01: the id is
     // minted first so it can seed the pick — two people typing the same brief get different systems.
     const id = crypto.randomUUID()

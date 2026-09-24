@@ -18,6 +18,19 @@ export const PLANS = [
   { id: 'pro', name: 'Pro', monthly: 24, yearly: 17, credits: 3000, projects: 'Unlimited projects' },
 ] as const
 
+/**
+ * BIL-14: what each plan may do beyond spending credits — the promises /pricing makes, kept in code.
+ * `projects: null` is unlimited. Admins are not limited (they test the product).
+ */
+export type PlanId = 'free' | 'starter' | 'pro'
+export type Limits = { projects: number | null; export: boolean }
+export const PLAN_LIMITS: Record<PlanId, Limits> = {
+  free: { projects: 1, export: false },
+  starter: { projects: 5, export: true },
+  pro: { projects: null, export: true },
+}
+export const PLAN_LIMIT_ERROR = 'plan-limit:'
+
 /** Extra credits, for subscribers only — a pack tops a plan up, it does not replace one (BIL-02). */
 export const PACKS = [
   { credits: 500, usd: 6 },

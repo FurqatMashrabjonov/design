@@ -5,7 +5,7 @@ import { createProject, deleteProject, favoriteProject, renameProject } from './
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
 import { BRAND, PENDING_IMAGES, Phone, SETS, shot } from './Landing'
-import { useCredits } from './credits'
+import { reportError, useCredits } from './credits'
 import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { frameSize } from './canvas'
@@ -231,8 +231,12 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                     if (images?.length) sessionStorage.setItem(PENDING_IMAGES, JSON.stringify(images))
                     else sessionStorage.removeItem(PENDING_IMAGES)
                   } catch {}
-                  const { id } = await createProject({ data: { designSystem, brief: prompt } })
-                  navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
+                  try {
+                    const { id } = await createProject({ data: { designSystem, brief: prompt } })
+                    navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
+                  } catch (e) {
+                    reportError(e) // BIL-14: over the plan's project count opens the upgrade dialog
+                  }
                 }}
               />
             </div>
