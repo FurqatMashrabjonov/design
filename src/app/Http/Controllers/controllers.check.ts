@@ -876,6 +876,109 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.equal(await CreditService.priceOf('screen'), 2, 'reset: DeepSeek again')
 }
 
+// ADM-12: the overview's money (MRR, credits, margin estimate) and every alert at its threshold.
+// The clock is pinned in 2100, so the windows see only the rows seeded here.
+{
+  const { OverviewService } = await import('../../Services/OverviewService.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { subscriptions, creditLedger, llmCalls, serverLogs, screens } = await import('../../../database/schema.ts')
+  const { like } = await import('drizzle-orm')
+  const T = Date.UTC(2100, 0, 15, 12) / 1000
+  const has = async (key: string, now = T) => (await OverviewService.alerts(now)).some((a) => a.key === key)
+
+  // MRR: starter-month $12 + pro-year $204/12 = $29; the canceled and the lapsed plan count for nothing.
+  const before = await OverviewService.subscriptions(T)
+  await db.insert(subscriptions).values([
+    { id: 'o-s1', userId: 'o-u1', productKey: 'starter-month', status: 'active', startedAt: T - 5 * 86400, currentPeriodEnd: T + 86400, updatedAt: T - 5 * 86400 },
+    { id: 'o-s2', userId: 'o-u2', productKey: 'pro-year', status: 'trialing', startedAt: T - 5 * 86400, currentPeriodEnd: T + 300 * 86400, updatedAt: T - 5 * 86400 },
+    { id: 'o-s3', userId: 'o-u3', productKey: 'pro-month', status: 'canceled', startedAt: T - 40 * 86400, currentPeriodEnd: T - 3 * 86400, updatedAt: T - 2 * 86400 },
+    { id: 'o-s4', userId: 'o-u4', productKey: 'pro-month', status: 'active', startedAt: T - 40 * 86400, currentPeriodEnd: T - 1, updatedAt: T - 40 * 86400 },
+  ])
+  const after = await OverviewService.subscriptions(T)
+  assert.equal((after.mrr - before.mrr).toFixed(2), '29.00', 'MRR is monthly-equivalent over live plans')
+  assert.equal(after.starter - before.starter, 1)
+  assert.equal(after.pro - before.pro, 1, 'the canceled and the lapsed plan are not active')
+
+  // Ledger: a Starter grant ($12), a yearly Pro grant ($17 a month), a 500 pack ($6); 300 held, 50 refunded.
+  await db.insert(creditLedger).values([
+    { id: 'o-l1', userId: 'o-u1', delta: 1200, kind: 'subscription', ref: 'sub:o-s1:0:starter-month', note: 'Starter (monthly)', createdAt: T - 5 * 86400 },
+    { id: 'o-l2', userId: 'o-u2', delta: 3000, kind: 'subscription', ref: 'sub:o-s2:0:pro-year', note: 'Pro (yearly)', createdAt: T - 5 * 86400 },
+    { id: 'o-l3', userId: 'o-u1', delta: 500, kind: 'purchase', ref: 'order:o-1', note: '500 credits', createdAt: T - 86400 },
+    { id: 'o-l4', userId: 'o-u1', delta: -300, kind: 'hold', createdAt: T - 3600 },
+    { id: 'o-l5', userId: 'o-u1', delta: 50, kind: 'refund', createdAt: T - 3600 },
+    { id: 'o-l6', userId: 'o-u9', delta: 60, kind: 'signup', ref: 'signup:o-u9', createdAt: T - 3600 },
+  ])
+  await db.insert(llmCalls).values({ id: 'o-c0', provider: 'deepseek', model: 'o-cheap', actionId: 'o-a1', costUsd: 1, ms: 4000, ok: true, createdAt: T - 7200 })
+  const w = await OverviewService.windowStats(T - 7 * 86400, T + 1)
+  assert.equal(w.creditsSold, 4700, 'plan grants and packs are sold credits; a signup grant is not')
+  assert.equal(w.creditsSpent, 250, 'holds net of refunds')
+  assert.equal(w.newPaying, 2)
+  assert.equal(w.churned, 1, 'the canceled plan churned in the window')
+  assert.equal(w.revenue.toFixed(2), '35.00', '$12 + $204/12 + $6')
+  const fees = 35 * 0.04 + (1 + 1 / 12 + 1) * 0.4
+  assert.equal(w.margin.toFixed(4), (35 - 1 - fees).toFixed(4), 'margin = revenue − LLM − fees')
+  assert.equal(w.p95GenMs, 4000, "an action's wall time")
+
+  // Budget: 80% of today's budget fires, just under does not.
+  await AdminController.setSetting('adm', { key: 'limits.dailyBudgetUsd', value: '10' })
+  assert.ok(!(await has('budget')), '$1 of $10 is fine')
+  await db.insert(llmCalls).values({ id: 'o-c1', provider: 'deepseek', model: 'o-cheap', costUsd: 6.75, ms: 10, ok: true, createdAt: T - 60 })
+  assert.ok(!(await has('budget')), '$7.75 of $10 is under 80%')
+  await db.insert(llmCalls).values({ id: 'o-c2', provider: 'deepseek', model: 'o-cheap', costUsd: 0.25, ms: 10, ok: true, createdAt: T - 60 })
+  assert.ok(await has('budget'), '$8.00 of $10 is 80%')
+  await AdminController.setSetting('adm', { key: 'limits.dailyBudgetUsd', value: null })
+
+  // A model failing: ≥5 calls in 15 min and half of them failed.
+  const calls = (from: number, total: number, failed: number) =>
+    db.insert(llmCalls).values(Array.from({ length: total }, (_, i) => ({ id: `o-m${from + i}`, provider: 'deepseek', model: 'o-flaky', ms: 10, ok: i >= failed, createdAt: T - 100 })))
+  await calls(0, 4, 2)
+  assert.ok(!(await has('model')), '2 of 4 is too few calls')
+  await calls(10, 1, 0)
+  assert.ok(!(await has('model')), '2 of 5 is under half')
+  await calls(20, 1, 1)
+  assert.ok(await has('model'), '3 of 6 failed')
+  assert.ok(!(await has('model', T + 900)), 'older than 15 minutes')
+
+  // Error spike: > 3× the hourly average of the 24h before, and at least 5.
+  const errs = (tag: string, count: number, at: number) =>
+    db.insert(serverLogs).values(Array.from({ length: count }, () => ({ level: 'error', message: `o-${tag}`, fingerprint: tag, createdAt: at })))
+  await errs('base', 48, T - 5 * 3600) // an average of 2 an hour
+  await errs('hour', 6, T - 60)
+  assert.ok(!(await has('errors')), '6 is exactly 3× the average')
+  await errs('hour', 1, T - 60)
+  assert.ok(await has('errors'), '7 is more than 3×')
+
+  // Failed screens: ≥ 20% of at least 10 attempts in 24h.
+  await Project.create({ id: 'o-p', name: 'O', designSystem: 'minimal', device: 'mobile' })
+  const shots = (from: number, count: number, failed: boolean) =>
+    db.insert(screens).values(Array.from({ length: count }, (_, i) => ({ id: `o-sc${from + i}`, projectId: 'o-p', name: 'S', prompt: 'p', html: failed ? '' : '<html></html>', error: failed ? 'boom' : null, createdAt: T - 600 })))
+  await shots(0, 7, false)
+  await shots(10, 2, true)
+  assert.ok(!(await has('screens')), '2 of 9 is too few attempts')
+  await shots(20, 1, false)
+  assert.ok(await has('screens'), '2 of 10 is 20%')
+  await shots(30, 1, false)
+  assert.ok(!(await has('screens')), '2 of 11 is under 20%')
+
+  // Paused.
+  assert.ok(!(await has('paused')))
+  await AdminController.setSetting('adm', { key: 'generation.paused', value: '1' })
+  assert.ok(await has('paused'))
+  await AdminController.setSetting('adm', { key: 'generation.paused', value: null })
+
+  const o = await OverviewService.overview(7, T)
+  assert.equal(o.series.length, 30)
+  assert.equal(Number(o.series.at(-2)!.revenue).toFixed(2), '6.00', 'the pack is on its day in the revenue series')
+  assert.ok(o.errors.some((e) => e.source === 'server') && o.errors.every((e, i) => i === 0 || Number(o.errors[i - 1]!.createdAt) >= Number(e.createdAt)), 'latest errors, newest first')
+  // The rows are in 2100: left behind, they would count toward every later "today".
+  await db.delete(serverLogs).where(like(serverLogs.message, 'o-%'))
+  await db.delete(llmCalls).where(like(llmCalls.id, 'o-%'))
+  await db.delete(creditLedger).where(like(creditLedger.id, 'o-%'))
+  await db.delete(subscriptions).where(like(subscriptions.id, 'o-%'))
+  await Project.delete('o-p')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')
