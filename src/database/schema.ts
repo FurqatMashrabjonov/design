@@ -268,3 +268,33 @@ export const orders = pgTable('orders', {
   subscriptionId: text('subscription_id'),
   createdAt: unix('created_at').notNull().default(now),
 })
+
+// OBS-12: one row per outgoing HTTP call (no bodies, no headers; secret query params masked).
+export const outgoingRequests = pgTable('outgoing_requests', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  requestId: text('request_id'),
+  method: text('method').notNull(),
+  host: text('host').notNull(),
+  path: text('path').notNull(),
+  query: text('query'),
+  purpose: text('purpose').notNull(),
+  status: integer('status'),
+  error: text('error'),
+  ms: integer('ms').notNull(),
+  size: integer('size'),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+// OBS-12: every webhook POST; the payload is kept only when the signature was valid.
+export const webhookEvents = pgTable('webhook_events', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  provider: text('provider').notNull(),
+  eventType: text('event_type'),
+  eventId: text('event_id'),
+  verified: boolean('verified').notNull(),
+  result: text('result').notNull(),
+  httpStatus: integer('http_status').notNull(),
+  payload: text('payload'),
+  requestId: text('request_id'),
+  createdAt: unix('created_at').notNull().default(now),
+})

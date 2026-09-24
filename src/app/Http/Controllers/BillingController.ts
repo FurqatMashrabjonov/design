@@ -4,6 +4,9 @@ import { CreditService } from '@/app/Services/CreditService'
 import { PolarService } from '@/app/Services/PolarService'
 import { BusinessService } from '@/app/Services/BusinessService'
 import { productOf, type ProductKey } from '@/lib/credit-prices'
+import { SecretService } from '@/app/Services/SecretService'
+import { TelescopeService } from '@/app/Services/TelescopeService'
+import { verify } from '@/lib/standard-webhooks'
 
 // BIL-09/10/11. Checkout and the portal are the provider's pages; what they cause arrives as webhooks,
 // already verified by the route. Every grant carries a ref from the provider's own ids, so an event
@@ -68,5 +71,36 @@ export const BillingController = {
       return 'plan order'
     }
     return 'ignored'
+  },
+
+  /**
+   * BIL-10 + OBS-12: a POST to /api/polar-webhook. Nothing is trusted before the signature is: a forged
+   * or replayed request is refused with 403 and changes nothing. A 2xx tells the provider to stop
+   * retrying. Every POST lands in webhook_events (fire-and-forget); the body only once verified.
+   */
+  async receivePolar(request: Request): Promise<Response> {
+    const body = await request.text()
+    const h = request.headers
+    const verified = verify((await SecretService.get('POLAR_WEBHOOK_SECRET')) ?? '', { id: h.get('webhook-id'), timestamp: h.get('webhook-timestamp'), signature: h.get('webhook-signature') }, body)
+    let event: { type?: string; data?: Obj } | null = null
+    const answer = (result: string, status: number, text = result) => {
+      void TelescopeService.recordWebhook({ provider: 'polar', eventType: typeof event?.type === 'string' ? event.type : null, eventId: h.get('webhook-id'), verified, result, httpStatus: status, payload: event ? body : null })
+      return new Response(text, { status })
+    }
+    if (!verified) return answer('invalid signature', 403, 'Invalid signature')
+    try {
+      const parsed = JSON.parse(body)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) event = parsed
+    } catch {}
+    if (!event) return answer('invalid body', 400, 'Invalid body')
+    let did: string
+    try {
+      did = await BillingController.webhook(event)
+    } catch (e) {
+      answer(`error: ${e instanceof Error ? e.message : String(e)}`, 500)
+      throw e
+    }
+    console.log(`[polar] ${event.type}: ${did}`)
+    return answer(did, 202)
   },
 }

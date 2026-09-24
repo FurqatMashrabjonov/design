@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { telescopeRequest } from '../server/telescope-fns'
 import { Badge, date, money, PageTitle, Panel, secs } from '../admin/ui'
-import { levelTone, statusTone } from '../admin/telescope-ui'
+import { levelTone, OutgoingStatus, statusTone } from '../admin/telescope-ui'
 
 // OBS-10: one request — what came in, what it logged, the model calls it made, the errors it hit.
 export const Route = createFileRoute('/admin/requests/$requestId')({
@@ -10,7 +10,7 @@ export const Route = createFileRoute('/admin/requests/$requestId')({
 })
 
 function RequestPage() {
-  const { request: r, logs, calls } = Route.useLoaderData()
+  const { request: r, logs, calls, outgoing } = Route.useLoaderData()
   const { requestId } = Route.useParams()
   const errors = logs.filter((l) => l.level === 'error')
   const fields: [string, React.ReactNode][] = r
@@ -93,6 +93,31 @@ function RequestPage() {
                       <td className="px-2 py-1.5 tabular-nums">{secs(c.ms)}</td>
                       <td className="px-2 py-1.5 tabular-nums">{money(c.costUsd)}</td>
                       <td className="px-2 py-1.5">{c.ok ? <Badge tone="good">ok</Badge> : <span title={c.error ?? ''}><Badge tone="bad">{(c.error ?? 'error').slice(0, 40)}</Badge></span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title={`Outgoing calls (${outgoing.length})`}>
+          {outgoing.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No outgoing calls.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted-foreground">
+                  <tr>{['Purpose', 'Call', 'Status', 'ms', 'Size'].map((h) => <th key={h} className="px-2 py-1 text-left font-medium">{h}</th>)}</tr>
+                </thead>
+                <tbody className="divide-y">
+                  {outgoing.map((o) => (
+                    <tr key={o.id}>
+                      <td className="px-2 py-1.5 text-xs">{o.purpose}</td>
+                      <td className="max-w-md truncate px-2 py-1.5 font-mono text-xs" title={`${o.method} ${o.host}${o.path}${o.query ? `?${o.query}` : ''}`}>{o.method} {o.host}{o.path}{o.query && <span className="text-muted-foreground">?{o.query}</span>}</td>
+                      <td className="px-2 py-1.5"><OutgoingStatus status={o.status} error={o.error} /></td>
+                      <td className="px-2 py-1.5 tabular-nums">{o.ms}</td>
+                      <td className="px-2 py-1.5 tabular-nums text-muted-foreground">{o.size ?? '—'}</td>
                     </tr>
                   ))}
                 </tbody>

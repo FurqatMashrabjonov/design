@@ -1135,6 +1135,123 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.equal((await BusinessService.ledgerPage(parseLedgerQuery({ user: 'biz-a@', sort: 'evil' }))).rows[0]!.kind, 'expire', 'and the default sort applies')
 }
 
+// OBS-12: outgoing calls are recorded (masked, no bodies), webhooks are stored (payload only when
+// verified), and a stored verified event can be replayed without granting twice.
+{
+  const { TelescopeService, wrapFetch, purposeOf } = await import('../../Services/TelescopeService.ts')
+  const { RequestContext } = await import('../../Services/RequestContext.ts')
+  const { BillingController } = await import('./BillingController.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  const { sign } = await import('../../../lib/standard-webhooks.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { outgoingRequests, webhookEvents, adminActions } = await import('../../../database/schema.ts')
+  const { eq, desc } = await import('drizzle-orm')
+  const settle = () => new Promise((r) => setTimeout(r, 150))
+  const rowsFor = (rid: string) => db.select().from(outgoingRequests).where(eq(outgoingRequests.requestId, rid)).orderBy(outgoingRequests.id)
+
+  assert.deepEqual(['api.deepseek.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'api.pexels.com', 'sandbox-api.polar.sh', 'oauth2.googleapis.com', 'example.org'].map(purposeOf), ['deepseek', 'gemini', 'anthropic', 'pexels', 'polar', 'google', 'other'])
+
+  // A stub underneath: no network. The body is streamed in two chunks and must arrive unchanged.
+  const seen: string[] = []
+  const stub = (async (input: RequestInfo | URL) => {
+    const u = String(input instanceof Request ? input.url : input)
+    seen.push(u)
+    if (u.includes('down.example')) throw new TypeError('fetch failed', { cause: new Error('connect ECONNREFUSED') })
+    const body = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(new TextEncoder().encode('data: one\n\n')); c.enqueue(new TextEncoder().encode('data: two\n\n')); c.close() } })
+    return new Response(body, { status: u.includes('missing') ? 404 : 200, headers: u.includes('sized') ? { 'content-length': '22' } : {} })
+  }) as typeof fetch
+  const f = wrapFetch(stub)
+  await RequestContext.run({ requestId: 'out-req' }, async () => {
+    const r = await f('https://generativelanguage.googleapis.com/v1beta/models/x:generate?key=AIzaSECRET&alt=sse', { method: 'post', body: 'PROMPT-BODY', headers: { Authorization: 'Bearer SK-SECRET' } })
+    assert.equal(await r.text(), 'data: one\n\ndata: two\n\n', 'a streamed body passes through unchanged')
+    await f(new URL('https://api.pexels.com/v1/search?query=cats&sized=1'))
+    await f('https://api.deepseek.com/missing')
+    await assert.rejects(f('https://down.example/x'), /fetch failed/, 'a network error is thrown on, as it was')
+    await f('http://localhost:3000/_serverFn/x')
+    await f('http://127.0.0.1:5173/y')
+  })
+  assert.equal(seen.length, 6, 'every call reached the real fetch')
+  await settle()
+  const out = await rowsFor('out-req')
+  assert.equal(out.length, 4, 'localhost calls are not recorded')
+  // Inserts are fire-and-forget on a pool, so their order is not the calls' order.
+  const [gem, pex, ds, down] = ['generativelanguage.googleapis.com', 'api.pexels.com', 'api.deepseek.com', 'down.example'].map((h) => out.find((o) => o.host === h))
+  assert.deepEqual([gem!.host, gem!.method, gem!.path, gem!.query, gem!.status, gem!.purpose], ['generativelanguage.googleapis.com', 'POST', '/v1beta/models/x:generate', 'key=***&alt=sse', 200, 'gemini'], "Gemini's key is masked")
+  assert.ok(gem!.ms >= 0 && Number.isInteger(gem!.ms))
+  assert.ok(!JSON.stringify(out).includes('SECRET') && !JSON.stringify(out).includes('PROMPT-BODY'), 'no key, header or body is stored')
+  assert.deepEqual([pex!.purpose, pex!.size, pex!.method], ['pexels', 22, 'GET'], 'size from content-length')
+  assert.deepEqual([ds!.status, ds!.purpose], [404, 'deepseek'])
+  assert.deepEqual([down!.status, down!.purpose], [null, 'other'])
+  assert.match(down!.error ?? '', /fetch failed \(connect ECONNREFUSED\)/, 'a network error is recorded with its cause')
+
+  // Filters and paging.
+  const now = Math.floor(Date.now() / 1000)
+  await db.insert(outgoingRequests).values(Array.from({ length: 55 }, (_, i) => ({ requestId: 'out-bulk', method: 'GET', host: 'api.pexels.com', path: `/p/${i}`, purpose: 'pexels', status: 200, ms: i * 100, createdAt: now - i })))
+  await db.insert(outgoingRequests).values({ requestId: 'out-old', method: 'GET', host: 'old.example', path: '/', purpose: 'other', status: 200, ms: 1, createdAt: now - 8 * 86400 })
+  const pexAll = await TelescopeService.outgoing({ purpose: 'pexels' })
+  assert.deepEqual([pexAll.total, pexAll.rows.length, (await TelescopeService.outgoing({ purpose: 'pexels', page: 1 })).rows.length], [56, 50, 6], '50 a page')
+  assert.deepEqual((await TelescopeService.outgoing({ status: 'error' })).rows.map((r) => r.host), ['down.example'], 'network errors')
+  assert.equal((await TelescopeService.outgoing({ status: '4xx' })).total, 1)
+  assert.equal((await TelescopeService.outgoing({ host: 'GOOGLEAPIS' })).total, 1, 'host contains, any case')
+  assert.equal((await TelescopeService.outgoing({ purpose: 'pexels', slowMs: 5000 })).total, 5)
+  assert.equal((await TelescopeService.outgoing({ from: now - 10, to: now + 10, purpose: 'pexels' })).total, 56 - 44, 'date range')
+  assert.equal((await TelescopeService.request('out-req'))?.outgoing.length, 4, "a request's page lists its outgoing calls")
+  await TelescopeService.cleanup()
+  assert.equal((await rowsFor('out-old')).length, 0, 'retention: an old outgoing call is deleted')
+
+  // Webhooks: unsigned → stored, not verified, no payload; signed → stored with payload and result.
+  const secret = `whsec_${Buffer.from('obs12-test-secret').toString('base64')}`
+  const realSecret = process.env.POLAR_WEBHOOK_SECRET
+  process.env.POLAR_WEBHOOK_SECRET = secret
+  try {
+    const hook = (body: string, signed: boolean, id = `msg_${Math.random().toString(36).slice(2)}`) => {
+      const ts = String(Math.floor(Date.now() / 1000))
+      const headers: Record<string, string> = { 'webhook-id': id, 'webhook-timestamp': ts, 'webhook-signature': signed ? `v1,${sign(secret, id, ts, body)}` : 'v1,forged' }
+      return RequestContext.run({ requestId: 'wh-req' }, () => BillingController.receivePolar(new Request('http://x/api/polar-webhook', { method: 'POST', headers, body })))
+    }
+    const packPaid = (orderId: string) => JSON.stringify({ type: 'order.paid', data: { id: orderId, product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'wh-payer' } } })
+    const forged = await hook(packPaid('ord_forged'), false, 'msg_forged')
+    assert.equal(forged.status, 403)
+    const signed = await hook(packPaid('ord_wh1'), true, 'msg_signed')
+    assert.deepEqual([signed.status, await signed.text()], [202, 'pack granted'])
+    const junk = await hook('not json', true, 'msg_junk')
+    assert.equal(junk.status, 400)
+    await settle()
+    const byId = async (id: string) => (await db.select().from(webhookEvents).where(eq(webhookEvents.eventId, id)))[0]!
+    const f1 = await byId('msg_forged')
+    assert.deepEqual([f1.verified, f1.payload, f1.result, f1.httpStatus, f1.eventType, f1.provider, f1.requestId], [false, null, 'invalid signature', 403, null, 'polar', 'wh-req'], 'unsigned: stored, no payload')
+    const s1 = await byId('msg_signed')
+    assert.deepEqual([s1.verified, s1.result, s1.httpStatus, s1.eventType], [true, 'pack granted', 202, 'order.paid'])
+    assert.equal(JSON.parse(s1.payload!).data.id, 'ord_wh1', 'signed: the payload is stored')
+    assert.deepEqual([(await byId('msg_junk')).result, (await byId('msg_junk')).payload], ['invalid body', null])
+    assert.equal(await Credit.balance('wh-payer'), 500)
+
+    // Replay: a stored verified event that was never applied grants once, then is a duplicate.
+    const [stored] = await db.insert(webhookEvents).values({ provider: 'polar', eventType: 'order.paid', eventId: 'msg_replay', verified: true, result: 'error: db down', httpStatus: 500, payload: packPaid('ord_replay') }).returning()
+    assert.deepEqual(await AdminController.replayWebhook('adm-wh', stored!.id), { result: 'pack granted' })
+    assert.deepEqual(await AdminController.replayWebhook('adm-wh', stored!.id), { result: 'duplicate' }, 'the second replay grants nothing')
+    assert.deepEqual(await AdminController.replayWebhook('adm-wh', s1.id), { result: 'duplicate' }, 'replaying an applied event grants nothing')
+    assert.equal(await Credit.balance('wh-payer'), 1000, 'one pack per order, however often replayed')
+    await assert.rejects(AdminController.replayWebhook('adm-wh', f1.id), /verified/, 'an unverified event cannot be replayed')
+    const logged = await db.select().from(adminActions).where(eq(adminActions.adminId, 'adm-wh')).orderBy(desc(adminActions.createdAt))
+    assert.equal(logged.filter((a) => a.action === 'replay-webhook').length, 3, 'each replay is in the admin log')
+
+    // List filters and paging.
+    await db.insert(webhookEvents).values(Array.from({ length: 52 }, (_, i) => ({ provider: 'polar', eventType: 'subscription.updated', eventId: `bulk-${i}`, verified: true, result: 'subscription saved', httpStatus: 202, payload: '{}' })))
+    const list = await TelescopeService.webhooks({})
+    assert.deepEqual([list.total, list.rows.length, (await TelescopeService.webhooks({ page: 1 })).rows.length], [56, 50, 6])
+    assert.ok(!('payload' in list.rows[0]!) && list.rows[0]!.hasPayload === true, 'the list leaves payloads out')
+    assert.deepEqual((await TelescopeService.webhooks({ verified: false })).rows.map((r) => r.eventId), ['msg_forged'])
+    assert.equal((await TelescopeService.webhooks({ type: 'ORDER.' })).total, 2)
+    assert.equal((await TelescopeService.webhooks({ result: 'invalid' })).total, 2)
+    assert.equal((await TelescopeService.webhooks({ type: 'subscription', verified: true, result: 'saved' })).total, 52)
+  } finally {
+    if (realSecret === undefined) delete process.env.POLAR_WEBHOOK_SECRET
+    else process.env.POLAR_WEBHOOK_SECRET = realSecret
+  }
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')
