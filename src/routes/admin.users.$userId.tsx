@@ -141,10 +141,10 @@ function UserPage() {
             {d.projects.map((p) => (
               <Link key={p.id} to="/admin/projects/$projectId" params={{ projectId: p.id }} className="group overflow-hidden rounded-xl border hover:shadow-md">
                 <div className="relative h-32 overflow-hidden bg-muted">
-                  {p.coverId && (p.device === 'mobile' ? (
-                    <div className="absolute top-3 left-1/2 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-foreground/80" style={{ width: 84, height: 182 }}><Thumb screenId={p.coverId} device="mobile" width={80} /></div>
+                  {p.covers[0] && (p.device === 'mobile' ? (
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 overflow-hidden rounded-xl border-2 border-foreground/80" style={{ width: 84, height: 182 }}><Thumb screenId={p.covers[0]} device="mobile" width={80} /></div>
                   ) : (
-                    <div className="absolute inset-2 overflow-hidden rounded-md border"><Thumb screenId={p.coverId} device="desktop" width={180} /></div>
+                    <div className="absolute inset-2 overflow-hidden rounded-md border"><Thumb screenId={p.covers[0]} device="desktop" width={180} /></div>
                   ))}
                 </div>
                 <div className="p-2 text-xs">

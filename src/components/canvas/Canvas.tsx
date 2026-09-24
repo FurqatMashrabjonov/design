@@ -293,7 +293,7 @@ export function Canvas(props: {
   )
 
   return (
-    <div className="relative size-full select-none overflow-hidden bg-canvas" style={bg}>
+    <div className="relative size-full select-none overflow-hidden bg-canvas [view-transition-name:od-project]" style={bg}>
       <div
         ref={viewportRef}
         data-canvas-viewport

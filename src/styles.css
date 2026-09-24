@@ -274,3 +274,11 @@ svg.lucide { stroke-width: 1.75; }
 @keyframes od-ring{0%,100%{box-shadow:0 0 0 2px color-mix(in oklab,var(--primary) 25%,transparent)}50%{box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 70%,transparent),0 0 28px color-mix(in oklab,var(--primary) 30%,transparent)}}
 .od-stream-ring{animation:od-ring 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.od-stream-ring{animation:none;box-shadow:0 0 0 2px var(--primary)}}
+
+/* UI-12 dashboard */
+/* A project card's collage grows into the canvas (Dashboard.tsx names it, Canvas.tsx names the canvas). */
+::view-transition-group(od-project) { animation-duration: var(--duration-slow); animation-timing-function: var(--motion-ease-out); }
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+/* /UI-12 dashboard */
