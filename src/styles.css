@@ -274,3 +274,28 @@ svg.lucide { stroke-width: 1.75; }
 @keyframes od-ring{0%,100%{box-shadow:0 0 0 2px color-mix(in oklab,var(--primary) 25%,transparent)}50%{box-shadow:0 0 0 3px color-mix(in oklab,var(--primary) 70%,transparent),0 0 28px color-mix(in oklab,var(--primary) 30%,transparent)}}
 .od-stream-ring{animation:od-ring 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.od-stream-ring{animation:none;box-shadow:0 0 0 2px var(--primary)}}
+
+/* UI-13 canvas */
+/* A frame's outline is ink, never lime, and stays the same width on screen at any zoom (Canvas sets --canvas-scale). */
+.od-frame {
+    outline: calc(1.5px / var(--canvas-scale, 1)) solid transparent;
+    outline-offset: calc(4px / var(--canvas-scale, 1));
+    transition: outline-color var(--duration-fast, 120ms) ease-out;
+}
+.group:hover > div > .od-frame { outline-color: color-mix(in oklab, var(--ring) 30%, transparent); }
+/* On the dark canvas the paper shadow disappears; a hairline keeps a dark screen's edge. */
+.dark .od-frame:not(.od-stream-ring) { box-shadow: var(--elevation-phone), 0 0 0 calc(1px / var(--canvas-scale, 1)) var(--border); }
+.od-frame[data-selected] { outline-width: calc(2px / var(--canvas-scale, 1)); outline-color: var(--ring); }
+/* A screen-shaped placeholder in the studio's own tokens, so a waiting slot is never a blank white phone. */
+.od-skel i {
+    display: block;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--muted) 25%, color-mix(in oklab, var(--muted) 45%, var(--card)) 50%, var(--muted) 75%);
+    background-size: 200% 100%;
+    animation: od-skel 1.5s linear infinite;
+}
+@keyframes od-skel { to { background-position: -200% 0; } }
+/* The drawing step's progress: lime as a fill on a muted track. */
+.od-progress { height: 3px; border-radius: 999px; background: var(--muted); overflow: hidden; }
+.od-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--duration-base, 200ms) ease-out; }
+/* UI-13 canvas end */

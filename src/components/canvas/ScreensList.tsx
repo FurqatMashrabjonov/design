@@ -15,9 +15,9 @@ export function ScreensList(props: {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="absolute left-4 top-4 z-10 gap-2 rounded-full bg-background shadow-sm">
+        <Button variant="outline" size="sm" className="absolute left-4 top-4 z-10 gap-2 rounded-xl bg-card/95 shadow-2 backdrop-blur">
           <Layers className="size-4" />
-          Screens ({props.screens.length})
+          Screens <span className="tabular-nums text-muted-foreground">{props.screens.length}</span>
           <ChevronRight className="size-3.5 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowDown, ChevronRight, CircleAlert, Copy, Loader2, Pencil, RotateCw, Undo2 } from 'lucide-react'
+import { ArrowDown, ChevronRight, CircleAlert, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MessageRow } from '@/app/Models/Message'
 import { parseMeta } from '@/lib/agent-messages'
@@ -57,25 +57,14 @@ export function ChatPanel(props: {
   const lastAgent = [...props.messages].reverse().find((m) => m.role === 'agent')
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={scroller} onScroll={onScroll} className="h-full space-y-3 overflow-y-auto pr-1">
+      <div ref={scroller} onScroll={onScroll} className="h-full space-y-4 overflow-y-auto pr-1">
         {props.messages.map((m, i) =>
           m.role === 'user' ? (
             <UserMessage key={m.id} message={m} onEdit={props.onEdit} />
           ) : (
             <AgentMessage key={m.id} message={m} asked={askedBefore(props.messages, i)} {...props}>
               {!props.running && m === lastAgent && props.suggestions && props.suggestions.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {props.suggestions.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      onClick={() => props.onSuggest?.(text)}
-                      className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs text-muted-foreground hover:border-ring/40 hover:text-foreground"
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
+                <Suggestions items={props.suggestions} onPick={(text) => props.onSuggest?.(text)} className="pt-1" />
               )}
             </AgentMessage>
           ),
@@ -96,6 +85,41 @@ export function ChatPanel(props: {
           {unseen > 0 ? `${unseen} new` : props.running ? 'New activity' : 'Latest'}
         </button>
       )}
+    </div>
+  )
+}
+
+/** CHAT-06 / UI-13: next steps as chips; picking one puts it in the composer, it never sends. */
+export function Suggestions(props: { items: string[]; onPick: (text: string) => void; className?: string }) {
+  return (
+    <div className={cn('flex flex-wrap gap-1.5', props.className)}>
+      {props.items.map((text) => (
+        <button
+          key={text}
+          type="button"
+          onClick={() => props.onPick(text)}
+          className="inline-flex max-w-full items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs text-foreground/80 transition-colors hover:border-ring/40 hover:bg-muted hover:text-foreground"
+        >
+          <Plus className="size-3 shrink-0 text-muted-foreground" />
+          <span className="truncate">{text}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** UI-13: a conversation with nothing in it yet — what this panel is for, and a few ways to start. */
+export function ChatEmpty(props: { suggestions: string[]; onPick: (text: string) => void }) {
+  return (
+    <div className="flex h-full flex-col justify-end gap-4 px-1 pb-2">
+      <div className="space-y-1.5">
+        <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+          <Sparkles className="size-4" />
+        </span>
+        <p className="pt-1 text-base font-semibold">What should we design?</p>
+        <p className="text-sm text-muted-foreground">Describe a screen or a change. Everything the agent does shows up here, with a way back.</p>
+      </div>
+      <Suggestions items={props.suggestions} onPick={props.onPick} />
     </div>
   )
 }
@@ -129,7 +153,7 @@ function IconAction(props: { title: string; onClick: () => void; children: React
 function UserMessage({ message, onEdit }: { message: MessageRow; onEdit: (text: string) => void }) {
   return (
     <div className="group flex flex-col items-end gap-0.5">
-      <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-3 py-2 text-sm text-primary-foreground">{message.text}</p>
+      <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-sm text-primary-foreground shadow-1">{message.text}</p>
       {/* CHAT-04: the actions every chat has, shown when the pointer is on the message. */}
       <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <IconAction title="Edit and resend" onClick={() => onEdit(message.text)}>
@@ -180,7 +204,7 @@ function AgentMessage(props: {
   }
 
   return (
-    <div className={cn('group space-y-2 rounded-xl border bg-card p-3 text-sm', isError && 'border-destructive/40 bg-destructive/5')}>
+    <div className={cn('group space-y-2.5 rounded-2xl rounded-bl-md border bg-card p-3.5 text-sm shadow-1', isError && 'border-destructive/40 bg-destructive/5')}>
       <div className="flex gap-2">
         {isError && <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />}
         <p className={cn('min-w-0 flex-1 whitespace-pre-wrap break-words', meta.reverted && 'text-muted-foreground line-through')}>{m.text}</p>

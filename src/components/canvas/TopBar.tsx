@@ -1,11 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, FolderArchive, ClipboardCopy, PenTool } from 'lucide-react'
+import { Download, Play, Trash2, ChevronRight, Share2, Ellipsis, FileCode2, FolderArchive, ClipboardCopy, PenTool, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { AccountMenu } from '@/components/AccountMenu'
 import { CreditsBadge } from '@/credits'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { THEME_KEY } from '@/components/ThemeToggle'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
@@ -47,9 +46,19 @@ export function TopBar(props: {
     setDraft(null)
     if (name && name !== props.name) await props.onRename(name).catch(() => {})
   }
+  // The light/dark switch moved into ⋯ (UI-13); same key and class as ThemeToggle.
+  const [dark, setDark] = useState(false)
+  useEffect(() => setDark(document.documentElement.classList.contains('dark')), [])
+  function toggleDark() {
+    document.documentElement.classList.toggle('dark', !dark)
+    try {
+      localStorage.setItem(THEME_KEY, dark ? 'light' : 'dark')
+    } catch {}
+    setDark(!dark)
+  }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-background px-4">
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b bg-background pr-3 pl-2">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
         <Link to="/" className="shrink-0 rounded px-1.5 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
           Projects
@@ -74,21 +83,15 @@ export function TopBar(props: {
           className="min-w-0 truncate rounded bg-transparent px-1.5 py-1 font-semibold outline-none hover:bg-muted focus:bg-muted focus:ring-2 focus:ring-ring/40"
         />
       </nav>
-      <Badge variant="secondary" className="font-normal capitalize">
-        {props.device}
-      </Badge>
-      <Badge variant="secondary" className="font-normal capitalize">
-        {props.designSystem}
-      </Badge>
-      <div className="ml-auto flex items-center gap-2">
-        <ThemeToggle className="size-8" />
+      {/* UI-13: six controls at most — the rest lives in ⋯ and the account menu. */}
+      <div className="ml-auto flex items-center gap-1.5">
+        <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
+          <Share2 className="size-4" />
+          Share
+        </Button>
         <Button variant="outline" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
           <Play className="size-4" />
           Preview
-        </Button>
-        <Button variant="outline" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
-          <Share2 className="size-4" />
-          Share
         </Button>
         {/* Works with nothing selected: the whole app is always exportable. */}
         <DropdownMenu>
@@ -121,13 +124,23 @@ export function TopBar(props: {
               <Ellipsis className="size-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              <span className="capitalize">{props.designSystem.replace(/-/g, ' ')}</span> · <span className="capitalize">{props.device}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuItem onSelect={toggleDark}>
+              {dark ? <Sun /> : <Moon />} {dark ? 'Light mode' : 'Dark mode'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
               <Trash2 /> Delete project
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <CreditsBadge />
+        {/* Visible but quiet: no border, just the count. */}
+        <div className="[&>span]:border-transparent [&>span:not(.text-destructive)]:text-muted-foreground">
+          <CreditsBadge />
+        </div>
         <AccountMenu />
       </div>
 

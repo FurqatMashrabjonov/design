@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { askUpgrade, reportError, useCredits } from '../credits'
-import { CircleX, Sparkles, X } from 'lucide-react'
+import { CircleX, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, saveTheme, saveScreenHeight, revertMessage, stepVersion, restoreScreen, rateScreen, getElementInfo, editElementText, elementAction, replaceElementPhoto, themeFromChat } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan } from '../generatePlan'
@@ -11,12 +11,12 @@ import { PENDING_IMAGES } from '../Landing'
 import { extractArtifact } from '../artifact'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
-import { ScreenFrame, serializeScreen } from '../ScreenFrame'
+import { FrameLabel, ScreenFrame, ScreenSkeleton, serializeScreen } from '../ScreenFrame'
 import { copyTreesToFigma } from '@/lib/figma-copy'
 import { Canvas, type CanvasFrame } from '@/components/canvas/Canvas'
 import { TopBar } from '@/components/canvas/TopBar'
 import { Sidebar } from '@/components/canvas/Sidebar'
-import { ChatPanel } from '@/components/canvas/ChatPanel'
+import { ChatEmpty, ChatPanel } from '@/components/canvas/ChatPanel'
 import { ActivityCard, PlanApproval, type Activity, type ScreenStatus } from '@/components/canvas/ActivityCard'
 import { parseAffects } from '@/lib/screen-patch'
 import { suggestions } from '@/lib/suggestions'
@@ -37,7 +37,6 @@ import { applyThemeOverride, parseTheme, type Theme } from '@/lib/theme-override
 import { extractRootBlock, parseDeclarations } from '@/lib/screen-normalizer'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/p/$projectId')({
   beforeLoad: async ({ location }) => {
@@ -675,10 +674,11 @@ function ProjectPage() {
                 onSuggest={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
                 running={awaiting && plan ? <PlanApproval plan={plan} onDraw={approvePlan} onDiscard={discardPlan} askNextTime={gatePref()} /> : activity ? <ActivityCard activity={activity} /> : undefined}
                 empty={
-                  <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
-                    <Sparkles className="size-5" />
-                    <p>Everything you ask for and everything the agent does shows up here, with a way back.</p>
-                  </div>
+                  <ChatEmpty
+                    // What the canvas is missing when there is something drawn; a few first screens when there is not.
+                    suggestions={nextSteps.length ? nextSteps : ['Design a welcome screen with sign-in', 'Add an onboarding screen', 'Design a home screen with a summary card']}
+                    onPick={(text) => setFill((f) => ({ text, key: (f?.key ?? 0) + 1 }))}
+                  />
                 }
               />
               {selectedScreen && (
@@ -761,6 +761,7 @@ function ProjectPage() {
             selectedIds={selectedIds}
             onMarquee={(ids, additive) => selectMany(ids.filter((id) => screenIds.has(id)), additive)}
             onShortcuts={() => setShortcutsOpen(true)}
+            onUndo={(redo) => undo(redo)}
             onBackgroundClick={() => selectScreen(null)}
             onMove={(moves) => {
               const real = moves.flatMap((m) => {
@@ -787,10 +788,12 @@ function ProjectPage() {
                 const st = status[i]
                 if (st === 'pending')
                   return (
-                    <div>
-                      <p className="mb-2 truncate text-sm font-medium text-muted-foreground">{s.name}</p>
-                      <Skeleton style={{ width: f.width, height: f.height, borderRadius: 40 }} />
-                    </div>
+                    <figure className="relative" style={{ width: f.width }}>
+                      <FrameLabel width={f.width}>
+                        <figcaption className="flex h-7 items-center truncate text-md font-medium text-muted-foreground">{s.name}</figcaption>
+                      </FrameLabel>
+                      <ScreenSkeleton className="overflow-hidden shadow-phone" style={{ width: f.width, height: f.height, borderRadius: 'var(--radius-phone)' }} />
+                    </figure>
                   )
                 // The same wrapper shape as a saved frame, so React keeps this iframe when the saved
                 // screen takes over (LP-04).
@@ -931,14 +934,17 @@ function ProjectPage() {
 // A planned screen whose generation failed keeps its place on the canvas.
 function FailedFrame(props: { name: string; error: string | null; width: number; height: number; onRetry: () => void; onDelete: () => void }) {
   return (
-    <figure style={{ width: props.width }}>
-      <figcaption className="mb-2 flex h-7 items-center gap-1 truncate text-sm font-medium text-muted-foreground">
-        <FrameHandle />
-        {props.name}
-      </figcaption>
+    <figure className="relative" style={{ width: props.width }}>
+      <FrameLabel width={props.width}>
+        <figcaption className="flex h-7 items-center gap-1 truncate text-md font-medium text-muted-foreground">
+          <FrameHandle>
+            <span className="truncate">{props.name}</span>
+          </FrameHandle>
+        </figcaption>
+      </FrameLabel>
       <div
-        className="flex flex-col items-center justify-center gap-3 border border-dashed border-destructive/40 bg-background p-8 text-center"
-        style={{ width: props.width, height: props.height, borderRadius: 40 }}
+        className="flex flex-col items-center justify-center gap-3 border border-dashed border-destructive/40 bg-card p-8 text-center"
+        style={{ width: props.width, height: props.height, borderRadius: 'var(--radius-phone)' }}
         onPointerDown={(e) => e.stopPropagation()}
       >
         <CircleX className="size-8 text-destructive" />

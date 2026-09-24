@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Minus, Plus, RotateCcw, Maximize, MousePointer2, Hand, Keyboard } from 'lucide-react'
+import { Minus, Plus, Maximize, MousePointer2, Hand, Keyboard, Undo2, Redo2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { framesIn, type Rect } from '@/canvas'
@@ -7,6 +7,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
@@ -41,6 +43,8 @@ export function Canvas(props: {
   focus?: { id: string; key: number }
   /** Opens the shortcuts sheet (the `?` key does the same). */
   onShortcuts?: () => void
+  /** UI-13: the page's own undo (redo when true), the same one ⌘Z runs. */
+  onUndo?: (redo: boolean) => void
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [view, setView] = useState({ scale: 1, x: 80, y: 80 })
@@ -282,7 +286,9 @@ export function Canvas(props: {
     }
   }
 
-  const dotSize = 22 * view.scale
+  // UI-13: zoomed out, the grid doubles its step instead of turning into a grey haze.
+  let dotSize = 22 * view.scale
+  while (dotSize < 14) dotSize *= 2
   const bg = useMemo(
     () => ({
       backgroundImage: 'radial-gradient(circle, var(--canvas-dot) 1px, transparent 1px)',
@@ -329,25 +335,43 @@ export function Canvas(props: {
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-5 flex justify-center">
-        <div className="flex items-center gap-1 rounded-full border bg-background/95 p-1 shadow-md backdrop-blur">
-          <Button variant={hand ? 'ghost' : 'secondary'} size="icon" className="size-8 rounded-full" onClick={() => setTool('select')} title="Select (V)" aria-label="Select tool" aria-pressed={!hand}>
+      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+        <div className="pointer-events-auto flex items-center gap-0.5 rounded-xl border bg-card/95 p-1 shadow-3 backdrop-blur">
+          <ToolButton label="Select (V)" pressed={!hand} onClick={() => setTool('select')}>
             <MousePointer2 className="size-4" />
-          </Button>
-          <Button variant={hand ? 'secondary' : 'ghost'} size="icon" className="size-8 rounded-full" onClick={() => setTool('hand')} title="Hand (H, or hold Space)" aria-label="Hand tool" aria-pressed={hand}>
+          </ToolButton>
+          <ToolButton label="Hand (H, or hold Space)" pressed={hand} onClick={() => setTool('hand')}>
             <Hand className="size-4" />
-          </Button>
-          <div className="mx-1 h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(view.scale - 0.1)}>
+          </ToolButton>
+          {props.onUndo && (
+            <>
+              <Divider />
+              <ToolButton label="Undo (⌘Z)" onClick={() => props.onUndo!(false)}>
+                <Undo2 className="size-4" />
+              </ToolButton>
+              <ToolButton label="Redo (⇧⌘Z)" onClick={() => props.onUndo!(true)}>
+                <Redo2 className="size-4" />
+              </ToolButton>
+            </>
+          )}
+          <Divider />
+          <ToolButton label="Zoom out" onClick={() => zoomCentered(view.scale - 0.1)}>
             <Minus className="size-4" />
-          </Button>
+          </ToolButton>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 min-w-14 rounded-full px-2 text-xs tabular-nums">
+              <Button variant="ghost" className="h-8 min-w-13 rounded-lg px-1.5 text-xs font-medium tabular-nums" title="Zoom">
                 {Math.round(view.scale * 100)}%
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="center">
+            <DropdownMenuContent align="center" side="top" className="min-w-40">
+              <DropdownMenuItem onSelect={() => fit()}>
+                Zoom to fit <DropdownMenuShortcut>⌘0</DropdownMenuShortcut>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={reset}>
+                Reset view
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               {ZOOM_PRESETS.map((p) => (
                 <DropdownMenuItem key={p} onSelect={() => zoomCentered(p / 100)}>
                   {p}%
@@ -355,23 +379,40 @@ export function Canvas(props: {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => zoomCentered(view.scale + 0.1)}>
+          <ToolButton label="Zoom in" onClick={() => zoomCentered(view.scale + 0.1)}>
             <Plus className="size-4" />
-          </Button>
-          <div className="mx-1 h-5 w-px bg-border" />
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={reset} title="Reset view">
-            <RotateCcw className="size-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={() => fit()} title="Fit to screen (⌘0)">
+          </ToolButton>
+          <ToolButton label="Fit to screen (⌘0)" onClick={() => fit()}>
             <Maximize className="size-4" />
-          </Button>
+          </ToolButton>
           {props.onShortcuts && (
-            <Button variant="ghost" size="icon" className="size-8 rounded-full" onClick={props.onShortcuts} title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
-              <Keyboard className="size-4" />
-            </Button>
+            <>
+              <Divider />
+              <ToolButton label="Keyboard shortcuts (?)" onClick={props.onShortcuts}>
+                <Keyboard className="size-4" />
+              </ToolButton>
+            </>
           )}
         </div>
       </div>
     </div>
   )
 }
+
+function ToolButton(props: { label: string; pressed?: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn('size-8 rounded-lg text-muted-foreground hover:text-foreground', props.pressed && 'bg-muted text-foreground')}
+      onClick={props.onClick}
+      title={props.label}
+      aria-label={props.label}
+      aria-pressed={props.pressed}
+    >
+      {props.children}
+    </Button>
+  )
+}
+
+const Divider = () => <div className="mx-1 h-5 w-px bg-border" />

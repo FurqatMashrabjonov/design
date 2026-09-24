@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { frameSize } from './canvas'
 import { cn } from '@/lib/utils'
 import { applyThemeOverride, themeMessage, withLiveTheme, type Theme } from '@/lib/theme-override'
@@ -218,24 +218,23 @@ export function ScreenFrame(props: {
 
   return (
     <figure className="group relative" style={{ width: f.width }}>
-      {props.label ?? (
-        <figcaption
-          className="mb-2 flex items-center gap-1.5 truncate text-sm font-medium text-muted-foreground"
-          title={props.hint}
-        >
-          {props.streaming && <span className="size-2 shrink-0 animate-ping rounded-full bg-primary" />}
-          {props.title}
-        </figcaption>
-      )}
+      <FrameLabel width={f.width}>
+        {props.label ?? (
+          <figcaption className="flex h-7 items-center gap-1.5 text-md font-medium text-muted-foreground" title={props.hint}>
+            {props.streaming && <span className="size-2 shrink-0 animate-pulse rounded-full bg-primary" />}
+            <span className="truncate">{props.title}</span>
+          </figcaption>
+        )}
+      </FrameLabel>
 
       <div className="relative">
         <div
           className={cn(
             // UI-02: no card around a design — only the paper shadow that lifts it off the canvas.
-            'relative overflow-hidden bg-card shadow-phone transition-shadow duration-(--duration-base) ease-out',
-            props.selected && 'ring-2 ring-ring ring-offset-2 ring-offset-canvas',
+            'od-frame relative overflow-hidden bg-card shadow-phone transition-shadow duration-(--duration-base) ease-out',
             props.streaming && 'od-stream-ring'
           )}
+          data-selected={props.selected || undefined}
           // The corners a phone actually has, so a screen reads as a device and not as a rectangle
           // of HTML. A frame drawn wider than a device (the design-system card) keeps card corners.
           style={{ width: f.width, height, borderRadius: props.width ? 16 : 'var(--radius-phone)' }}
@@ -274,6 +273,8 @@ export function ScreenFrame(props: {
               }}
             />
           )}
+          {/* UI-13: over the stream frame (never instead of it) until the body has its first element. */}
+          {props.streaming && !/<body[^>]*>\s*<[a-z]/i.test(streamHtml) && <ScreenSkeleton className="absolute inset-0" />}
         </div>
 
         {active && rect && props.panel && (
@@ -312,6 +313,44 @@ export function ScreenFrame(props: {
         )}
       </div>
     </figure>
+  )
+}
+
+/** UI-13: the name row above a frame, kept at screen size whatever the zoom and never wider than the frame. */
+export function FrameLabel(props: { width: number; children: ReactNode }) {
+  return (
+    <div
+      className="@container absolute bottom-full left-0 origin-bottom-left pb-1.5"
+      style={{ width: `calc(${props.width}px * var(--canvas-scale, 1))`, transform: 'scale(calc(1 / var(--canvas-scale, 1)))' }}
+    >
+      {props.children}
+    </div>
+  )
+}
+
+/** UI-13: a screen-shaped shimmer in the studio's tokens, for a slot that has nothing to show yet. */
+export function ScreenSkeleton(props: { className?: string; style?: CSSProperties }) {
+  return (
+    <div className={cn('od-skel pointer-events-none flex flex-col gap-3.5 bg-card px-5 pt-14 pb-6', props.className)} style={props.style} aria-hidden>
+      <i style={{ height: 14, width: '38%' }} />
+      <i style={{ height: 30, width: '70%' }} />
+      <i style={{ height: 150, borderRadius: 20 }} />
+      <div className="flex gap-3">
+        <i style={{ height: 64, flex: 1 }} />
+        <i style={{ height: 64, flex: 1 }} />
+      </div>
+      <i style={{ height: 14, width: '30%', marginTop: 6 }} />
+      {[0, 1, 2].map((n) => (
+        <div key={n} className="flex items-center gap-3">
+          <i style={{ height: 44, width: 44, borderRadius: 14 }} />
+          <div className="flex flex-1 flex-col gap-2">
+            <i style={{ height: 12, width: '65%' }} />
+            <i style={{ height: 10, width: '40%' }} />
+          </div>
+        </div>
+      ))}
+      <i className="mt-auto" style={{ height: 56, borderRadius: 28 }} />
+    </div>
   )
 }
 
