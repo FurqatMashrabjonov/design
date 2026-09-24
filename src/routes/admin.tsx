@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router'
-import { Activity, ArrowLeft, Bug, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users } from 'lucide-react'
+import { Activity, ArrowLeft, Bug, Coins, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { adminCheck } from '../server/admin-fns'
 import { CommandPalette, CommandTrigger } from '../admin/CommandPalette'
@@ -31,7 +31,13 @@ const GROUPS = [
     ],
   },
   { label: 'AI', items: [{ to: '/admin/generations', label: 'Generations', icon: Activity }] },
-  { label: 'Business', items: [{ to: '/admin/users', label: 'Users', icon: Users }] },
+  {
+    label: 'Business',
+    items: [
+      { to: '/admin/users', label: 'Users', icon: Users },
+      { to: '/admin/credits', label: 'Credits', icon: Coins },
+    ],
+  },
   { label: 'System', items: [{ to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal }] },
 ] as const
 const NAV = GROUPS.flatMap((g) => [...g.items] as (typeof GROUPS)[number]['items'][number][])

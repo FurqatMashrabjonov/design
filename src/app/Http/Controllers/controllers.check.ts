@@ -876,6 +876,90 @@ assert.equal((await Project.find('p9'))!.name.length, 80, 'capped')
   assert.equal(await CreditService.priceOf('screen'), 2, 'reset: DeepSeek again')
 }
 
+// ADM-15: every paid order is stored once; revenue, fees and margin are read from orders and llm_calls;
+// the ledger and subscriptions tables filter, page and total on the server with whitelisted values.
+{
+  const { BillingController } = await import('./BillingController.ts')
+  const { BusinessService, feeCents } = await import('../../Services/BusinessService.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  const { parseLedgerQuery, parseSubsQuery } = await import('../../../admin/table-query.ts')
+  const { productOf } = await import('../../../lib/credit-prices.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user, llmCalls, orders } = await import('../../../database/schema.ts')
+  const { eq } = await import('drizzle-orm')
+  await db.insert(user).values([
+    { id: 'biz-a', name: 'Buyer', email: 'biz-a@x.uz', createdAt: new Date(), updatedAt: new Date() },
+    { id: 'biz-b', name: 'Burner', email: 'biz-b@x.uz', createdAt: new Date(), updatedAt: new Date() },
+  ])
+  const before = await BusinessService.revenue()
+
+  const pack = { type: 'order.paid', data: { id: 'ord_biz1', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'biz-a' }, total_amount: 1234, currency: 'USD', billing_reason: 'purchase' } }
+  assert.equal(await BillingController.webhook(pack), 'pack granted')
+  assert.equal(await BillingController.webhook(pack), 'duplicate')
+  const stored = await db.select().from(orders).where(eq(orders.id, 'ord_biz1'))
+  assert.equal(stored.length, 1, 'a second delivery stores no second order')
+  assert.deepEqual([stored[0]!.userId, stored[0]!.productKey, stored[0]!.amountCents, stored[0]!.currency, stored[0]!.billingReason], ['biz-a', 'pack-500', 1234, 'usd', 'purchase'], 'the amount is what the order charged')
+  // A plan's order with no amount in the payload falls back to the product's price.
+  assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_biz2', product: { metadata: { od: 'starter-month' } }, customer: { external_id: 'biz-b' }, subscription_id: 'sub_biz', billing_reason: 'subscription_create' } }), 'plan order')
+  const plan = (await db.select().from(orders).where(eq(orders.id, 'ord_biz2')))[0]!
+  assert.deepEqual([plan.amountCents, plan.subscriptionId], [productOf('starter-month')!.cents, 'sub_biz'], 'a plan order is stored too')
+
+  // Long ago, so the daily budget later tests check is not spent; margin counts all time.
+  const longAgo = Date.parse('2001-06-01T00:00:00Z') / 1000
+  await db.insert(llmCalls).values([
+    { id: 'biz-c1', userId: 'biz-a', provider: 'deepseek', model: 'm', actionId: 'act-biz', costUsd: 2.5, ok: true, createdAt: longAgo },
+    { id: 'biz-c2', userId: 'biz-b', provider: 'deepseek', model: 'm', costUsd: 500, ok: true, createdAt: longAgo },
+  ])
+  const r = await BusinessService.revenue()
+  assert.equal(r.totals.orders - before.totals.orders, 2)
+  assert.equal(Math.round((r.totals.gross - before.totals.gross) * 100), 1234 + productOf('starter-month')!.cents, 'gross is the sum of the stored amounts')
+  assert.equal(r.totals.fees, feeCents(Math.round(r.totals.gross * 100), r.totals.orders) / 100, 'fees: 4% + $0.40 an order')
+  assert.equal(Math.round(r.totals.net * 100), Math.round((r.totals.gross - r.totals.fees) * 100))
+  assert.equal(feeCents(1000, 1), 80)
+  assert.equal(r.byDay.length, 30, 'every one of 30 days')
+  assert.ok(r.byDay.at(-1)!.revenue >= 12.34 + productOf('starter-month')!.cents / 100, "today's orders land on the last day")
+  assert.ok(r.byProduct.some((p) => p.productKey === 'starter-month' && p.orders >= 1))
+  const a = r.top.find((m) => m.userId === 'biz-a')!
+  assert.deepEqual([a.email, a.revenue, a.spend, Math.round(a.margin * 100)], ['biz-a@x.uz', 12.34, 2.5, 984], 'margin = revenue − LLM spend')
+  assert.equal(r.worst[0]!.userId, 'biz-b', 'the worst margin comes first')
+  assert.deepEqual(await BusinessService.userRevenue('biz-a'), { orders: 1, revenue: 12.34 })
+
+  // The ledger: biz-a has the +500 pack; add a hold, its partial refund, an admin grant and an expiry.
+  await Credit.add({ userId: 'biz-a', delta: -30, kind: 'hold', actionId: 'act-biz' })
+  await Credit.add({ userId: 'biz-a', delta: 10, kind: 'refund', actionId: 'act-biz' })
+  await Credit.add({ userId: 'biz-a', delta: 7, kind: 'admin', note: 'sorry' })
+  await Credit.add({ userId: 'biz-a', delta: -5, kind: 'expire' })
+  const ledger = (q: Record<string, unknown>) => BusinessService.ledgerPage(parseLedgerQuery({ user: 'BIZ-A@', ...q }))
+  const all = await ledger({})
+  assert.equal(all.total, 5)
+  assert.deepEqual(all.totals, { granted: 507, spent: 20, expired: 5 }, 'totals: granted, holds net of refunds, expired')
+  assert.equal(all.rows[0]!.kind, 'expire', 'newest first')
+  const p2 = await ledger({ size: 2, page: 2 })
+  assert.deepEqual([p2.rows.length, p2.total, p2.rows[0]!.kind], [1, 5, 'purchase'], 'the last page holds the oldest row')
+  assert.deepEqual((await ledger({ sort: 'delta', dir: 'asc', size: 1 })).rows.map((x) => x.delta), [-30], 'sort by delta')
+  assert.deepEqual((await ledger({ kind: 'hold' })).rows.map((x) => x.actionId), ['act-biz'], 'kind filter')
+  assert.deepEqual((await ledger({ sign: 'minus' })).totals, { granted: 0, spent: 30, expired: 5 }, 'sign filter, totals follow it')
+  assert.equal((await ledger({ from: new Date().toISOString().slice(0, 10) })).total, 5)
+  assert.equal((await ledger({ to: '2001-01-01' })).total, 0, 'date range')
+  assert.equal((await ledger({ q: 'sorry' })).total, 1, 'search matches the note')
+  assert.equal((await ledger({ q: '%' })).total, 0, '% is a literal')
+  assert.deepEqual((await BusinessService.actionCalls('act-biz')).map((c) => c.id), ['biz-c1'], "a hold's model calls, by action id")
+  const csv = await BusinessService.ledgerCsv(parseLedgerQuery({ user: 'biz-a@' }))
+  assert.ok(csv.startsWith('id,time,user,kind,delta,action_id,ref,note\r\n') && csv.trim().split('\r\n').length === 6, 'CSV is the filter, unpaged')
+
+  // Subscriptions.
+  await BillingController.webhook({ type: 'subscription.updated', data: { id: 'sub_biz', status: 'past_due', started_at: new Date().toISOString(), customer: { external_id: 'biz-b' }, product: { metadata: { od: 'starter-month' } } } })
+  const subs = (q: Record<string, unknown>) => BusinessService.subscriptionsPage(parseSubsQuery(q))
+  assert.deepEqual((await subs({ status: 'past_due', plan: 'starter' })).rows.map((s) => [s.id, s.email]), [['sub_biz', 'biz-b@x.uz']], 'status and plan filters')
+  assert.equal((await subs({ status: 'past_due', plan: 'pro' })).total, 0)
+  assert.equal((await subs({ q: 'biz-b' })).total, 1, 'search by email')
+
+  // Hand-edited URLs fall back to the defaults.
+  assert.deepEqual(parseLedgerQuery({ sort: 'delta; DROP TABLE credit_ledger', dir: 'up', kind: 'free-money', sign: '±', page: -1, size: 1e9, from: 'yesterday' }), {}, 'ledger: unknown values are dropped')
+  assert.deepEqual(parseSubsQuery({ sort: 'id; --', status: 'hacked', plan: 'enterprise' }), {}, 'subscriptions: unknown values are dropped')
+  assert.equal((await BusinessService.ledgerPage(parseLedgerQuery({ user: 'biz-a@', sort: 'evil' }))).rows[0]!.kind, 'expire', 'and the default sort applies')
+}
+
 // DSH-04/08/11/12: dashboard cards count what is shown, point at the first screen, sort by last change
 {
   const { UsageService } = await import('../../Services/UsageService.ts')

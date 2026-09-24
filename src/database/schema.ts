@@ -255,3 +255,16 @@ export const serverLogs = pgTable('server_logs', {
   requestId: text('request_id'),
   createdAt: unix('created_at').notNull().default(now),
 })
+
+// ADM-15: one row per paid order (Polar order.paid); the id is the provider's order id.
+export const orders = pgTable('orders', {
+  id: text('id').primaryKey(),
+  provider: text('provider').notNull().default('polar'),
+  userId: text('user_id').notNull(),
+  productKey: text('product_key').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  currency: text('currency').notNull(),
+  billingReason: text('billing_reason'),
+  subscriptionId: text('subscription_id'),
+  createdAt: unix('created_at').notNull().default(now),
+})

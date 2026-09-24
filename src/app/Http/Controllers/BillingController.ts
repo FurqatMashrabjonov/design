@@ -2,6 +2,7 @@ import { Credit } from '@/app/Models/Credit'
 import { Subscription } from '@/app/Models/Subscription'
 import { CreditService } from '@/app/Services/CreditService'
 import { PolarService } from '@/app/Services/PolarService'
+import { BusinessService } from '@/app/Services/BusinessService'
 import { productOf, type ProductKey } from '@/lib/credit-prices'
 
 // BIL-09/10/11. Checkout and the portal are the provider's pages; what they cause arrives as webhooks,
@@ -49,6 +50,15 @@ export const BillingController = {
       const product = productOf(d.product?.metadata?.od)
       const userId = userOf(d)
       if (!product || !userId || !d.id) return 'ignored'
+      // ADM-15: revenue is what the order says it charged; the list price only when the payload has no amount.
+      const cents = [d.total_amount, d.amount].find((v) => Number.isInteger(v) && v >= 0) ?? product.cents
+      await BusinessService.recordOrder({
+        id: String(d.id), userId, productKey: product.key, amountCents: cents,
+        currency: typeof d.currency === 'string' && d.currency ? d.currency.toLowerCase() : 'usd',
+        billingReason: typeof d.billing_reason === 'string' ? d.billing_reason : null,
+        subscriptionId: d.subscription_id ?? d.subscription?.id ?? null,
+        createdAt: sec(d.created_at) ?? Math.floor(Date.now() / 1000),
+      })
       if (!product.plan) {
         return (await Credit.add({ userId, delta: product.credits, kind: 'purchase', ref: `order:${d.id}`, note: product.name })) ? 'pack granted' : 'duplicate'
       }
