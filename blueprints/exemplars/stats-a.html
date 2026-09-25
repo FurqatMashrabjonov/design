@@ -1,0 +1,48 @@
+<!-- Running app: progress tab -->
+<div class="od-page">
+  <header class="od-header">
+    <div class="od-header__bar">
+      <div class="od-header__actions">
+        <button class="od-icon-btn" aria-label="Share"><i data-lucide="share"></i></button>
+      </div>
+    </div>
+    <h1 class="od-header__title">Progress</h1>
+  </header>
+  <div class="od-segmented">
+    <button>Week</button>
+    <button class="is-active">Month</button>
+    <button>Year</button>
+  </div>
+  <div class="od-stat od-stat--lg">
+    <span class="od-stat__label">Distance in May</span>
+    <span class="od-stat__value">142.6 km</span>
+    <span class="od-stat__delta od-stat__delta--up">+18.4 km vs April</span>
+  </div>
+  <div class="od-card">
+    <div class="od-section__head">
+      <span class="od-label">By week</span>
+      <span class="od-tag od-tag--neutral">Goal 35 km</span>
+    </div>
+    <div data-od-chart="bar" data-values="28.4,36.2,31.0,41.5,5.5" data-labels="1–7,8–14,15–21,22–28,29–31" data-highlight="3" data-unit="km"></div>
+  </div>
+  <section class="od-section">
+    <span class="od-label">By run type</span>
+    <div class="od-list">
+      <a class="od-row od-row--chevron">
+        <span class="od-row__lead"><i data-lucide="footprints"></i></span>
+        <span class="od-row__body"><span class="od-row__title">Easy runs</span><span class="od-row__sub">11 runs, 5:52 /km</span></span>
+        <span class="od-row__trail">78.2 km</span>
+      </a>
+      <a class="od-row od-row--chevron">
+        <span class="od-row__lead"><i data-lucide="mountain"></i></span>
+        <span class="od-row__body"><span class="od-row__title">Long runs</span><span class="od-row__sub">3 runs, 6:04 /km</span></span>
+        <span class="od-row__trail">48.0 km</span>
+      </a>
+      <a class="od-row od-row--chevron">
+        <span class="od-row__lead"><i data-lucide="zap"></i></span>
+        <span class="od-row__body"><span class="od-row__title">Intervals</span><span class="od-row__sub">3 sessions, 4:31 /km</span></span>
+        <span class="od-row__trail">16.4 km</span>
+      </a>
+    </div>
+  </section>
+</div>

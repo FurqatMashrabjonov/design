@@ -1,0 +1,51 @@
+<!-- Point of sale app for a coffee shop: sales report -->
+<div class="od-page">
+  <header class="od-header">
+    <div class="od-header__bar">
+      <div class="od-header__actions">
+        <button class="od-icon-btn" aria-label="Export"><i data-lucide="download"></i></button>
+      </div>
+    </div>
+    <h1 class="od-header__title">Sales</h1>
+  </header>
+  <div class="od-segmented od-segmented--underline">
+    <button>Today</button>
+    <button class="is-active">This week</button>
+    <button>Month</button>
+  </div>
+  <div class="od-summary od-summary--outlined">
+    <p class="od-summary__label">Revenue, 9 – 15 June</p>
+    <p class="od-summary__value">$6,480</p>
+    <div class="od-summary__foot">
+      <span class="od-tag od-tag--success">+12% vs last week</span>
+      <span class="od-summary__meta">1,412 orders</span>
+    </div>
+  </div>
+  <section class="od-section">
+    <div class="od-section__head">
+      <span class="od-label">Best sellers</span>
+      <button class="od-section__link">All 23 items</button>
+    </div>
+    <div class="od-list">
+      <div class="od-row">
+        <span class="od-row__body"><span class="od-section__head"><span class="od-row__title">Flat white</span><span class="od-row__trail">$1,860</span></span><div class="od-progress od-progress--thin" style="--value:100%"><span></span></div></span>
+      </div>
+      <div class="od-row">
+        <span class="od-row__body"><span class="od-section__head"><span class="od-row__title">Iced oat latte</span><span class="od-row__trail">$1,420</span></span><div class="od-progress od-progress--thin" style="--value:76%"><span></span></div></span>
+      </div>
+      <div class="od-row">
+        <span class="od-row__body"><span class="od-section__head"><span class="od-row__title">Butter croissant</span><span class="od-row__trail">$1,140</span></span><div class="od-progress od-progress--thin" style="--value:61%"><span></span></div></span>
+      </div>
+      <div class="od-row">
+        <span class="od-row__body"><span class="od-section__head"><span class="od-row__title">Cold brew</span><span class="od-row__trail">$980</span></span><div class="od-progress od-progress--thin" style="--value:53%"><span></span></div></span>
+      </div>
+      <div class="od-row">
+        <span class="od-row__body"><span class="od-section__head"><span class="od-row__title">Cardamom bun</span><span class="od-row__trail">$620</span></span><div class="od-progress od-progress--thin" style="--value:33%"><span></span></div></span>
+      </div>
+    </div>
+  </section>
+  <div class="od-card">
+    <span class="od-label">By day</span>
+    <div data-od-chart="bar" data-values="780,820,860,910,1040,1180,890" data-labels="M,T,W,T,F,S,S" data-highlight="5" data-unit="$"></div>
+  </div>
+</div>
