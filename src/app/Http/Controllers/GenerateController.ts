@@ -17,6 +17,7 @@ import { extractElement, patchElement } from '@/lib/element-patcher'
 import { annotateElements, elementInfo } from '@/lib/element-ops'
 import { applyEdits, EDIT_MODE, parseAffects, parseEdits } from '@/lib/screen-patch'
 import { normalizeScreen } from '@/lib/screen-normalizer'
+import { precompileScreen, sourceView } from '@/lib/precompile'
 import { componentSheet } from '@/app/Services/ComponentSheetService'
 import { navClearance, type NavStyle } from '@/app/Services/ShellService'
 import { dataBlock, navStyleFor, parseNavigation, parseStoredPlan, screenBrief, shellContract, shellPartsFor, slotForAddedScreen, type ScreenSlot } from '@/app/Services/ScreenContext'
@@ -73,7 +74,9 @@ export const GenerateController = {
     let addTo: { nav: NonNullable<ReturnType<typeof parseNavigation>>; slot: ScreenSlot; bar: NavStyle } | undefined
 
     // The browser addresses elements by the ids annotateElements gives the stored HTML; so does this.
-    const editBase = editScreen?.html ? annotateElements(editScreen.html) : ''
+    // The model edits the screen as written (CDN tag, <i data-lucide>), not its compiled CSS (LP-06):
+    // the ids agree, and saving the edit compiles it again.
+    const editBase = editScreen?.html ? annotateElements(sourceView(editScreen.html)) : ''
     let elementLabel: string | undefined
     if (editScreen && editElementId) {
       const existingElementHtml = extractElement(editBase, editElementId)
@@ -195,13 +198,13 @@ export const GenerateController = {
             const newElementSnippet = extracted.html || text
             finalHtml = patchElement(editBase, editElementId, newElementSnippet)
             title = editScreen.name
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
+            finalHtml = await precompileScreen(annotateHtml(await resolveImages(autofixScreen(normalizeScreen(finalHtml, normalizeOpts)), abort.signal, { name: projectRef.name ?? title })))
           } else if (editScreen && parseEdits(text).length > 0) {
             const edits = parseEdits(text)
             const result = applyEdits(editBase, edits)
             if (result.applied.length === 0) throw new Error(`The change did not match anything on the screen (${result.skipped.join('; ')})`)
             title = editScreen.name
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(result.html, normalizeOpts)), abort.signal, { name: projectRef.name ?? title }))
+            finalHtml = await precompileScreen(annotateHtml(await resolveImages(autofixScreen(normalizeScreen(result.html, normalizeOpts)), abort.signal, { name: projectRef.name ?? title })))
             patchNote = {
               parts: result.applied.map((a) => (a.op === 'insert' ? `added next to ${a.label}` : a.op === 'delete' ? `removed ${a.label}` : a.label)),
               log: [
@@ -222,7 +225,7 @@ export const GenerateController = {
             title = isNew ? extracted.title : screenTitle(extracted.title, projectRef.name ?? '')
             if (editScreen && title === 'Untitled') title = editScreen.name
             const shell = addTo && shellPartsFor(addTo.slot, addTo.nav, title, addTo.bar)
-            finalHtml = annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: navClearance(addTo?.bar ?? 'island') })), abort.signal, { name: projectRef.name ?? title }))
+            finalHtml = await precompileScreen(annotateHtml(await resolveImages(autofixScreen(normalizeScreen(extracted.html, { ...normalizeOpts, shell, navClearance: navClearance(addTo?.bar ?? 'island') })), abort.signal, { name: projectRef.name ?? title })))
             if (!/<\/html>/i.test(finalHtml)) throw new Error('Model returned incomplete HTML')
           }
 

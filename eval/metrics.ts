@@ -2,6 +2,7 @@
 // delta between two runs of the same brief set.
 import { DesignSystemService } from '../src/app/Services/DesignSystemService.ts'
 import { lintScreen } from '../src/lib/design-lint.ts'
+import { sourceView } from '../src/lib/precompile.ts'
 import { BlueprintService } from '../src/app/Services/BlueprintService.ts'
 import type { NavStyle } from '../src/app/Services/ShellService.ts'
 
@@ -58,7 +59,9 @@ const pageClasses = (html: string) => [...body(html).replace(/<(nav|header)\b[^>
 // USD per million tokens. ponytail: constants, overridable by env; move to config when OBS-01 logs real cost.
 import { PRICE } from '../src/app/Services/LlmService.ts'
 
-export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors: number, usage?: Usage, plans: PlanInput[] = []) {
+export function computeMetrics(stored: ScreenInput[], briefMs: number[], errors: number, usage?: Usage, plans: PlanInput[] = []) {
+  // LP-06: measured as the model wrote it — compiled CSS and inlined icon SVG are ours, like any data-od sheet.
+  const screens = stored.map((s) => ({ ...s, html: sourceView(s.html) }))
   const byRule: Record<string, number> = {}
   let lintClean = 0
   let brandLeakScreens = 0

@@ -331,6 +331,51 @@ assert.ok(icons.includes('stroke-width="11"'), 'A progress ring stroke is left a
 assert.ok(icons.includes(LUCIDE_CDN), 'Lucide is booted when the page uses data-lucide')
 assert.ok(!normalizeIcons('<body><svg stroke-width="2"></svg></body>', 2).includes(LUCIDE_CDN), 'No lucide payload when unused')
 
+console.log('Testing Precompile (LP-06)...')
+{
+  const { precompileScreen, sourceView, parseLiteral } = await import('../../lib/precompile.ts')
+  const TW = '<script src="https://cdn.tailwindcss.com"></script>'
+  const page = (head: string, body: string) =>
+    normalizeIcons(`<!doctype html><html><head>${TW}${head}<style>.own{color:red}</style></head><body>${body}</body></html>`, 1.5)
+  const screen = page('', `<div class="flex p-4 own"><i data-lucide="flame" class="w-5 h-5 text-[var(--accent)]"></i><i data-lucide="no-such-icon"></i></div>
+<script>document.querySelector('.own').classList.add('translate-y-[3px]')</script>`)
+  const out = await precompileScreen(screen)
+  assert.ok(!out.includes('cdn.tailwindcss.com') && out.includes('<style data-od-tw>'), 'the Tailwind CDN script becomes a compiled sheet')
+  assert.ok(out.indexOf('<style data-od-tw>') > out.indexOf('.own{color:red}') && out.indexOf('<style data-od-tw>') < out.indexOf('</head>'), 'the sheet goes where the CDN put its own: the end of <head>')
+  const tw = out.match(/<style data-od-tw>([\s\S]*?)<\/style>/)![1]!
+  assert.ok(tw.includes('.flex{display:flex}') && /box-sizing:border-box/.test(tw), 'utilities and preflight, as the CDN compiles them')
+  assert.ok(tw.includes('translate-y-\\[3px\\]'), 'a class only an inline script adds is compiled too')
+  assert.ok(tw.includes('color:var(--accent)'), 'an arbitrary value keeps its var(), so theme overrides still reach it')
+  assert.ok(!out.includes('lucide.min.js') && !out.includes('createIcons'), 'the Lucide library and its boot call go')
+  assert.ok(/<svg xmlns="http:\/\/www.w3.org\/2000\/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-lucide="flame" aria-hidden="true" class="lucide lucide-flame w-5 h-5 text-\[var\(--accent\)\]"><path d="/.test(out), '<i data-lucide> becomes the svg createIcons draws, with the page stroke')
+  assert.ok(out.includes('<i data-lucide="no-such-icon"></i>'), 'an unknown icon is left as it was')
+  assert.equal(await precompileScreen(out), out, 'precompiling is idempotent')
+  // An edit starts from the source view and passes the normalizer again, which boots lucide for its icons.
+  assert.equal(await precompileScreen(normalizeIcons(sourceView(out), 1.5)), out, 'the source view compiles back to the same screen')
+  assert.ok(sourceView(out).includes('<i data-lucide="flame" class="w-5 h-5 text-[var(--accent)]"></i>') && sourceView(out).includes(TW), 'the model edits the screen as written')
+
+  // A script that inserts icons later keeps a small createIcons with just the icons it names.
+  const live = await precompileScreen(page('', `<i data-lucide="plus"></i><button onclick="x()">b</button><script>function x(){document.body.insertAdjacentHTML('beforeend','<i data-lucide="check"></i>');lucide.createIcons()}</script>`))
+  assert.ok(live.includes('data-od-lucide') && live.includes('"check":') && !live.includes('"plus":') && !live.includes('lucide.min.js'), 'a runtime icon gets a shim, not the library')
+  assert.ok(live.includes("lucide.createIcons({attrs:{'stroke-width':1.5}})"), 'the boot stays to draw what load-time scripts inserted')
+  // A load-time createIcons() without attrs runs before the boot and so decides the stroke.
+  const early = await precompileScreen(page('', `<i data-lucide="plus"></i><script>if (window.lucide) { lucide.createIcons(); }</script>`).replace('<i data-lucide="plus">', '<script src="https://unpkg.com/lucide@latest"></script><i data-lucide="plus">'))
+  assert.ok(/data-lucide="plus"[^>]*/.test(early) && early.includes('stroke-width="2" stroke-linecap'), 'the first call to run decides the stroke')
+
+  // tailwind.config: a literal is honoured, code keeps the CDN.
+  const configured = await precompileScreen(page(`<script>tailwind.config = { theme: { extend: { colors: { brand: 'var(--accent)' } } }, corePlugins: { preflight: false } }</script>`, '<p class="bg-brand">x</p>'))
+  assert.ok(configured.includes('.bg-brand{background-color:var(--accent)}') && !/box-sizing:border-box/.test(configured) && !configured.includes('tailwind.config'), 'a literal config is compiled in')
+  assert.equal(await precompileScreen(configured), configured, 'a compiled config survives a second pass')
+  assert.ok(sourceView(configured).includes('<script>tailwind.config = {"theme"'), 'and comes back for the model')
+  const coded = page(`<script>tailwind.config = { theme: { extend: { colors: { brand: getBrand() } } } }</script>`, '<p class="bg-brand">x</p>')
+  assert.ok((await precompileScreen(coded)).includes('cdn.tailwindcss.com'), 'a config that is code keeps the CDN')
+  assert.equal(parseLiteral(`{ a: 'x', "b": [1, 2.5, true, null,], /* c */ }`) !== undefined, true)
+  assert.equal(parseLiteral('{ a: window.x }'), undefined)
+  assert.equal(parseLiteral('{ ...x }'), undefined)
+  assert.equal(parseLiteral('{ __proto__: {} }'), undefined)
+  assert.equal(await precompileScreen('<p>plain css</p>'), '<p>plain css</p>', 'a screen without the CDN is left alone')
+}
+
 console.log('Testing Design Lint...')
 const { lintScreen, autofixScreen } = await import('../../lib/design-lint.ts')
 const sloppy = `<html><head><style>:root{--accent:#2952cc}</style></head><body>

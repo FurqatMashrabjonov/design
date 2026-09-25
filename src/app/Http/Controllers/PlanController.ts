@@ -12,6 +12,7 @@ import { readReference, referenceBlock, type ReferenceStyle } from '@/app/Servic
 import { parseRefImages } from '@/lib/ref-images'
 import { mapLimit } from '@/app/Services/Pool'
 import { prefetchImage, resolveImages } from '@/app/Services/ImageService'
+import { precompileScreen } from '@/lib/precompile'
 import { imageQueries } from '@/lib/image-slots'
 import { navClearance } from '@/app/Services/ShellService'
 import { dataBlock, navStyleFor, screenBrief, screenSpec, shellContract, shellPartsFor } from '@/app/Services/ScreenContext'
@@ -230,7 +231,7 @@ export const PlanController = {
                 // The model titles its page "Streakly — Today"; the app's name stays off the screen's.
                 name: screenTitle(title, plan.appName) || s.name,
                 prompt: s.description,
-                html: annotateHtml(withImages),
+                html: await precompileScreen(annotateHtml(withImages)),
                 x: i * (fw + FRAME_GAP),
                 y: 0,
                 screenType: s.screenType,
