@@ -304,6 +304,8 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 .od-sheet { display: flex; flex-direction: column; gap: var(--space-4, 16px); padding: var(--space-2, 8px) var(--space-4, 16px) calc(var(--space-4, 16px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0; box-shadow: 0 -8px 32px rgba(0, 0, 0, .12); }
 .od-sheet__grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto; }
 .od-sheet__title { font: var(--od-heading-weight, 650) var(--text-lg, 18px)/1.2 var(--od-heading-font, var(--font-display)); margin: 0; color: var(--fg); text-align: center; }
+/* A detail screen's content sheet pulled up over the bottom edge of its photo hero. */
+.od-sheet--overlap { position: relative; margin-top: calc(-1 * var(--space-6, 24px)); padding-top: var(--space-3, 12px); box-shadow: none; }
 .od-actions { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
 .od-actions > .od-btn { width: 100%; }
 .od-actions--row { flex-direction: row; }

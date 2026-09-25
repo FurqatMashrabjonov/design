@@ -74,6 +74,6 @@ Format: block — variants/elements — when to use.
 
 ## States and bars
 - `od-empty` — `__icon`, `__title`, `__text`; `--card` (dashed box), `--inline` (icon left, one line) — nothing here yet.
-- `od-sheet` — `__grabber`, `__title` + content — a bottom sheet or confirm dialog.
+- `od-sheet` — `__grabber`, `__title` + content — a bottom sheet or confirm dialog; `--overlap` pulls it 24px up over a photo hero (detail).
 - `od-actions` / `--row` — stacked full-width buttons, or two side by side — the end of a sheet or flow.
 - `od-bottom-bar` / `--stack` — sticky bar with the primary action (price + button, or two stacked buttons).
