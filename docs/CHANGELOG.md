@@ -5,6 +5,18 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### KIT-04 (davom): kit geometriyasi haqiqiy ilovalar bilan o'lchandi
+
+22 ta haqiqiy iOS ekran (Gummble; dashboard, list, detail, onboarding) o'lchandi, jadval `kit/REFERENCE.md`da.
+Mos kelgan: 16px chekka, karta burchagi/ichki bo'shliq, ro'yxat ikonkasi, katta sarlavha. O'zgartirildi:
+sarlavhali bo'lim oldidan 20 → 32px (stack ichida 12 → 24), ikki qatorli qator ~64 → ~68px, qidiruv 48 → 44px,
+detail bloklari 16 → 24px, oqim tugmasi 48 → 52px, onboarding illyustratsiyasi chekkadan chekkagacha va tugma
+pastdan 32px. Namunalar: bo'lim sarlavhalari oddiy registrda (dashboard-a, detail-a), onboarding-a'da Skip pastda.
+
+Eval (claude-cli, 4 brief, 24 ekran, 0 xato): audit 0.75, kit ulushi 0.61, lint 0.38 (topilmalar soni oldingi
+run bilan bir xil darajada — 16 → 20; `mono-for-data`ning ko'pi brief'i "tabular numerals" deydigan Wallet'dan).
+Fayllar: `kit/od-kit.css`, `kit/README.md`, `kit/REFERENCE.md`, `blueprints/exemplars/{dashboard-a,detail-a,onboarding-a}.html`.
+
 ### KIT-04 (davom): hech narsa ekrandan chiqmaydi; tab ekrani katta sarlavha bilan ochiladi, raqamlar kichraydi
 
 `autofixScreen` craft jadvaliga: `img, video, svg, canvas, iframe, input, select, textarea` telefon enidan
