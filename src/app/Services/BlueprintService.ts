@@ -55,6 +55,21 @@ export type Blueprint = {
 
 const cache = new Map<string, Blueprint | null>()
 
+// KIT-04: a finished screen of the pattern, built from the kit — blueprints/exemplars/<id>-<variant>.html,
+// else <id>.html. A flash model copies an example far more reliably than it follows a description,
+// so where one exists it takes the kit sketch's place in the brief (it never adds to it: KIT-05
+// measured that more material lowers quality). Whitespace is collapsed; the file stays readable.
+const EXEMPLARS = join(DIR, 'exemplars')
+export const EXEMPLAR_BUDGET = 3600
+const exemplarCache = new Map<string, string>()
+function exemplarFile(name: string): string {
+  if (!exemplarCache.has(name)) {
+    const path = join(EXEMPLARS, `${name}.html`)
+    exemplarCache.set(name, existsSync(path) ? readFileSync(path, 'utf8').replace(/<!--[\s\S]*?-->/g, '').replace(/\s*\n\s*/g, '').replace(/\s{2,}/g, ' ').trim() : '')
+  }
+  return exemplarCache.get(name)!
+}
+
 export const BlueprintService = {
   find(id: string): Blueprint | null {
     if (!/^[a-z-]{2,30}$/.test(id)) return null
@@ -81,6 +96,12 @@ export const BlueprintService = {
     return cards.length ? `Platform notes (${platform === 'ios' ? 'iOS' : 'Android'}) for this screen's components:\n${cards.join('\n')}` : ''
   },
 
+  /** The finished example for an archetype, in the app's layout variant when one was drawn for it. */
+  exemplar(id: string, variantId?: string): string {
+    if (!/^[a-z-]{2,30}$/.test(id)) return ''
+    return (variantId && /^[a-z]$/.test(variantId) ? exemplarFile(`${id}-${variantId}`) : '') || exemplarFile(id)
+  },
+
   /** The pattern as brief text — a few lines, so it fits next to the plan's own sections. */
   brief(id: string, seed?: string): string {
     const b = BlueprintService.find(id)
@@ -96,7 +117,9 @@ export const BlueprintService = {
       `Primary action placement: ${b.primaryAction.note}`,
       `Avoid: ${b.avoid.join('; ')}.`,
       BlueprintService.platformNotes(id),
-      b.kit && `Kit sketch of this pattern — structure only; follow the layout above where it differs, and replace every [bracket] with this app's real content (never output a bracket):\n${b.kit}`,
+      BlueprintService.exemplar(id, v?.id)
+        ? `A finished screen of this pattern from a different app, at the quality bar — copy its build, its kit classes, its spacing and its restraint; never its words, numbers or icons (this app's content comes from the plan and the data above):\n\`\`\`html\n${BlueprintService.exemplar(id, v?.id)}\n\`\`\``
+        : b.kit && `Kit sketch of this pattern — structure only; follow the layout above where it differs, and replace every [bracket] with this app's real content (never output a bracket):\n${b.kit}`,
     ]
       .filter(Boolean)
       .join('\n')

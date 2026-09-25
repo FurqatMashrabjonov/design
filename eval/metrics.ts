@@ -146,6 +146,13 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       screensUsing: share(screens.filter((s) => /class="[^"]*\bod-[a-z-]+/.test(body(s.html))).length),
       blocksMean: round(mean(screens.map((s) => new Set([...body(s.html).matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1]!.split(/\s+/)).filter((c) => c.startsWith('od-')).map((c) => c.split('__')[0]!)).size))),
       ownRules: round(mean(screens.map((s) => ownStyle(s.html).split('{').length - 1))),
+      // KIT-04: how much of the screen is built from the kit, and how much CSS the model still wrote.
+      // Shell markup is ours, so its classes are left out of the share.
+      classShare: round(mean(screens.map((s) => {
+        const cls = [...body(s.html).replace(/<(nav|header)\b[^>]*data-od-shell[\s\S]*?<\/\1>/gi, '').matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1]!.split(/\s+/)).filter(Boolean)
+        return cls.length ? cls.filter((c) => c.startsWith('od-')).length / cls.length : 0
+      }))),
+      ownCssBytes: Math.round(mean(screens.map((s) => ownStyle(s.html).length))),
     },
     // KIT-03: charts drawn by code from a data-od-chart slot, versus charts the model drew itself.
     charts: {

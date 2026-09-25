@@ -498,7 +498,7 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
     assert.ok(['bottom-bar', 'inline', 'header', 'none'].includes(b.primaryAction.placement) && b.primaryAction.note.length > 10, `${id}: primary action`)
     assert.ok(b.avoid.length >= 2 && b.avoid.length <= 4, `${id}: 2–4 things to avoid`)
     for (const h of b.hig) assert.ok(HIG.includes(h), `${id}: unknown HIG card "${h}"`)
-    assert.ok(BlueprintService.brief(id).length < 4200, `${id}: the brief stays short (pattern + platform notes + kit sketch): ${BlueprintService.brief(id).length}`)
+    assert.ok(BlueprintService.brief(id).length < (BlueprintService.exemplar(id) ? 6800 : 4200), `${id}: the brief stays short (pattern + platform notes + kit sketch or exemplar): ${BlueprintService.brief(id).length}`)
     assert.ok(!/\b(Airbnb|Uber|Spotify|Instagram|Duolingo|Apple|Google)\b/.test(JSON.stringify(b)), `${id}: no brand names`)
     // GQ-15: a hero names what it is and how big, in pixels — "big" without a number came out at 14px.
     if (b.hero) {
@@ -522,6 +522,26 @@ assert.ok(!/<svg data-od-icon[^>]*><circle cx="12" cy="12" r="10"\/><\/svg>/.tes
   for (const id of ARCHETYPES) {
     const kit = BlueprintService.find(id)!.kit ?? ''
     assert.ok(/class="od-/.test(kit) && kit.length < 1200, `${id}: a short kit sketch built from od- classes`)
+  }
+  // KIT-04: golden exemplars — a finished screen per pattern, built from the kit, replacing the sketch
+  {
+    const { EXEMPLAR_BUDGET } = await import('./BlueprintService.ts')
+    const { readFileSync } = await import('node:fs')
+    const kitCss = readFileSync('kit/od-kit.css', 'utf8')
+    const known = new Set([...kitCss.matchAll(/\.(od-[a-z0-9_-]+)/g)].map((m) => m[1]))
+    for (const f of readdirSync('blueprints/exemplars').filter((x) => x.endsWith('.html'))) {
+      const m = f.match(/^([a-z-]+?)(?:-([a-z]))?\.html$/)
+      assert.ok(m && (ARCHETYPES as readonly string[]).includes(m[1]!), `${f}: named <archetype>[-<variant>].html`)
+      if (m![2]) assert.ok(BlueprintService.find(m![1]!)!.variants!.some((v) => v.id === m![2]), `${f}: its variant exists`)
+      const html = BlueprintService.exemplar(m![1]!, m![2])
+      assert.ok(html.length > 400 && html.length <= EXEMPLAR_BUDGET, `${f}: 400–${EXEMPLAR_BUDGET} chars once collapsed (${html.length})`)
+      assert.ok(!/<style|<script|<nav\b|data-od-link|data-od-shell|\[[A-Za-z]/.test(html), `${f}: no CSS, scripts, shell, links or [brackets] — the kit and the plan supply those`)
+      assert.ok(!/<svg/.test(html), `${f}: icons are data-lucide`)
+      const classes = [...html.matchAll(/class="([^"]*)"/g)].flatMap((x) => x[1]!.split(/\s+/)).filter(Boolean)
+      const unknown = classes.filter((c) => !c.startsWith('is-') && !known.has(c))
+      assert.deepEqual(unknown, [], `${f}: every class is a kit class`)
+      assert.ok(BlueprintService.brief(m![1]!, 'x').length > 0)
+    }
   }
   // HIG-01 / HIG-02: platform cards, and only the ones a screen's archetype uses
   const { readFileSync } = await import('node:fs')
