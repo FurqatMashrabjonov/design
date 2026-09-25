@@ -277,6 +277,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | MVP | Tayyor | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
 | GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | 30 ilovada ≥4 xil bar |
 | GQ-40 | Bar hunari: aktiv tab to'ldirilgan ikonka, tizimning o'z bar tokenlari, haqiqiy glass | Generatsiya / Izchillik | Keyin | Rejada | O'rta | GQ-39 | Aktiv tab to'ldirilgan glif; tizim bar tokenlari tokens.css da; bar galereyasi; eval'da bar bahosi o'sadi |
+| EVAL-05 | Hakamni kuchaytirish: ko'p o'lchovli rubrika + langarli juftlik, 👍/👎 bilan kalibrlash | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Hakam har eval'da; juftlik g'olib foizi; FB-01 bilan kelishuv o'lchangan |
+| GQ-41 | Topilma → tuzatish: lint + audit topilmalari rubrika sifatida, bitta bo'lakli tahrir | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | audit ≥90%, lint ≥90%, hakam g'olib; vaqt +≤25%, narx +≤30% |
+| GQ-42 | Ixcham system prompt A/B (24k → ~8k) | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Metrikalar va hakamda teng/yaxshi; prompt tokenlari −60% |
+| GQ-43 | Kontent qoidalari kodda: raqamlar, sentence case, tugmada fe'l, haqiqiy ma'lumot | Generatsiya / Kontent | Keyin | Rejada | Kichik |  | Har qoidaga hisoblagich; bitta javobli bo'lsa autofix |
+| GQ-44 | Birinchi tab ekrani uchun best-of-2 + juftlik hakam | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | Bosh ekran g'olibligi ≥65%; narx +1 ekran |
+| GQ-45 | Tajriba: blok-JSON oraliq ko'rinish — kod chizadi, model faqat hero | Generatsiya / Izchillik | Keyin | Rejada | Katta |  | Chiqish tokenlari −40%, lint ≥95%, hakamda yutqazmaydi |
 | UI-26 | Kirgan foydalanuvchida / avval landing bo'lib chiziladi — yozilgan prompt yo'qoladi | Interfeys / Bosh sahifa | Keyin | Rejada | Kichik |  | Landing ko'rinmaydi, matn saqlanadi |
 | TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
 | SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |
