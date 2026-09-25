@@ -5,7 +5,7 @@
 Format: block — variants/elements — when to use.
 
 ## Layout
-- `od-page` — screen body: 16px inset, 20px between sections.
+- `od-page` — screen body: 16px inset, 20px between blocks and 32px before a titled `od-section` / `od-group` (24px inside `od-stack`), as shipped apps space them (`REFERENCE.md`).
 - `od-stack` / `od-grid` (2 cols) / `od-bento` + `__wide` — vertical rhythm, a tile grid, a grid that opens on one wide tile.
 - `od-carousel` — horizontal scroller that bleeds to the screen edge; holds chips or `od-card--carousel`.
 - `od-divider` — a hairline.
@@ -16,12 +16,12 @@ Format: block — variants/elements — when to use.
 - `od-header--greeting` — avatar + `__sub` ("Good morning") + name, bell on the right — a home tab.
 - `od-hero` — `__eyebrow`, `__title`, `__sub` — a free-standing intro block (welcome, detail top).
 - `od-section` — `__head`, `__title`, `__link` — a titled section with "See all".
-- `od-label` / `--accent` — small uppercase tracked label; use it as the section head instead of a big title (quieter screens).
+- `od-label` / `--accent` — small uppercase tracked label; a quieter section head. Shipped apps head most sections with a 17-20px sentence-case title (`od-section__title`); keep the micro label for day groups, settings groups and labels inside a card.
 
 ## Lists
 - `od-list` — card of rows with inset hairlines; `--plain` drops the card.
 - `od-group` — `__label` (an `od-label`) above an `od-list`, `__note` below — settings and forms, iOS inset-grouped.
-- `od-row` — `__lead`, `__body` (`__title`, `__sub`), `__trail` — default 52-56px row with a 40px tinted icon.
+- `od-row` — `__lead`, `__body` (`__title`, `__sub`), `__trail` — default row (two lines come to ~68px, as shipped lists do) with a 40px tinted icon.
   - `--compact` — 44px row, 30px icon tile — settings.
   - `--media` — 56px photo lead (`__lead--round` for a round one) — food, places, people.
   - `--tall` — 72px — media rows or two-line content.
@@ -55,7 +55,7 @@ Format: block — variants/elements — when to use.
 - `od-btn` — `--secondary`, `--ghost`, `--danger`, `--sm`, `--block`; `od-icon-btn` (44px) — one filled button per screen.
 - `od-form` — `__field` (`__label` + bare `input`/`select`), `__field--inline` (label left, value right) — several fields in one card instead of a box per input.
 - `od-field` / `--error` — `__label`, `__help` + `od-input` — a single boxed field.
-- `od-search` — pill search field.
+- `od-search` — pill search field, 44px (shipped apps: 36-40).
 - `od-amount` — `__unit` + `__field`: a large centred amount being typed (send money, a budget); never a bare oversized input.
 - `od-slider` — a native range input in the accent; in a row it sits in `od-row__trail`.
 - `od-options` / `--2` / `--4` — grid of `od-option` tiles (icon + label; `--row` for a wide row; `is-active`) — pick a category, time, plan.
@@ -76,12 +76,12 @@ Format: block — variants/elements — when to use.
 
 ## States and bars
 - `od-empty` — `__icon`, `__title`, `__text`; `--card` (dashed box), `--inline` (icon left, one line) — nothing here yet.
-- `od-sheet` — `__grabber`, `__title` + content — a bottom sheet or confirm dialog; `--overlap` pulls it 24px up over a photo hero (detail).
+- `od-sheet` — `__grabber`, `__title` + content — a bottom sheet or confirm dialog; `--overlap` pulls it 24px up over a photo hero and spaces its blocks 24px apart (detail).
 - `od-actions` / `--row` — stacked full-width buttons, or two side by side — the end of a sheet or flow.
 - `od-bottom-bar` / `--stack` — sticky bar with the primary action (price + button, or two stacked buttons). A body that holds one becomes a full-height column, so the bar sits at the foot of a short screen.
 
 ## First run
-- `od-page--fill` — a page that fills the phone; its last block (the actions) sits at the bottom. `od-feature--fill` — a photo that is the whole screen, copy and button over the scrim.
-- `od-art` — the illustration drawn from the kit: an accent wash around one big icon or figure (a ring, chips); in `od-page--fill` it takes the free height.
+- `od-page--fill` — a page that fills the phone; its last block (the actions) sits at the bottom, 32px above the edge. A `--block` button (or one in `od-actions`) is 52px, the height of a flow's last button in shipped apps. `od-feature--fill` — a photo that is the whole screen, copy and button over the scrim.
+- `od-art` — the illustration drawn from the kit: an accent wash around one big icon or figure (a ring, chips); in `od-page--fill` it takes the free height and bleeds to the side edges (and the top, when it comes first).
 - `od-dots` — `<i>` per page, `is-active` on the current one — the page indicator.
 - `od-row--danger` — a destructive row (Delete account, Sign out) in danger text, never a filled red button.
