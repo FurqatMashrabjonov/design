@@ -3,6 +3,8 @@
    the page's own styles only when the page uses an od- class; the page may still override it.
    Class names: block (od-card), element (od-row__title), modifier (od-btn--ghost). */
 
+/* A kit box measures its border, so min-height 44 is 44 whatever the page resets (zero specificity: the page wins). */
+:where([class^="od-"], [class*=" od-"]), :where([class^="od-"], [class*=" od-"])::before, :where([class^="od-"], [class*=" od-"])::after { box-sizing: border-box; }
 .od-page { padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-5, 20px); }
 .od-stack { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
 .od-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3, 12px); }
@@ -73,8 +75,11 @@
 .od-list { display: flex; flex-direction: column; background: var(--od-card-bg); border: var(--od-card-border); border-radius: var(--radius-lg, 16px); box-shadow: var(--od-card-shadow); overflow: hidden; backdrop-filter: var(--od-blur); -webkit-backdrop-filter: var(--od-blur); }
 .od-list--plain { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .od-row { display: flex; align-items: center; gap: var(--space-3, 12px); min-height: var(--od-row-min); padding: 10px var(--space-4, 16px); color: var(--fg); text-decoration: none; }
-.od-list > .od-row + .od-row { border-top: 1px solid var(--border-soft, var(--border)); }
-.od-row__lead { flex: none; width: 40px; height: 40px; border-radius: var(--radius-md, 12px); display: flex; align-items: center; justify-content: center; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--od-accent-text); overflow: hidden; }
+/* Hairlines between rows start at the text, not the edge (iOS grouped list): 16px, or past the lead. */
+.od-list > .od-row { position: relative; }
+.od-list > .od-row + .od-row::before { content: ""; position: absolute; top: 0; right: 0; left: var(--space-4, 16px); height: 1px; background: var(--border-soft, var(--border)); }
+.od-list > .od-row + .od-row:has(> .od-row__lead)::before { left: calc(var(--space-4, 16px) + var(--od-lead, 40px) + var(--space-3, 12px)); }
+.od-row__lead { flex: none; width: var(--od-lead, 40px); height: var(--od-lead, 40px); border-radius: var(--radius-md, 12px); display: flex; align-items: center; justify-content: center; background: color-mix(in oklab, var(--accent), transparent 88%); color: var(--od-accent-text); overflow: hidden; }
 .od-row__lead > img { width: 100%; height: 100%; object-fit: cover; }
 .od-row__lead i[data-lucide], .od-row__lead svg { width: 20px; height: 20px; }
 /* GQ-20: duotone without changing libraries — a light fill of the icon's own colour inside its closed shapes. A system sets --od-icon-duotone: 0% to stay pure line. */
@@ -153,15 +158,188 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 .od-bottom-bar { position: sticky; bottom: 0; z-index: 20; display: flex; align-items: center; gap: var(--space-3, 12px); padding: var(--space-3, 12px) var(--space-4, 16px) calc(var(--space-3, 12px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--border-soft, var(--border)); margin-top: auto; }
 .od-bottom-bar > .od-btn { flex: 1; }
 
+/* ── Kit v2 (KIT-04) ── Geometry from iOS / Material conventions: 44px bars, 16px insets, rows of
+   44 / 56 / 72, an 8-point rhythm. Restraint is the style: one card per system (the tokens above),
+   micro labels rather than big headings, data tints at 10-45%, never a saturated block. */
+
+/* Micro label: the small uppercase section label (also the head of a grouped list). */
+.od-label { display: block; font: 600 var(--text-xs, 12px)/1.3 var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.od-label--accent { color: var(--od-accent-text); }
+
+/* Screen headers: large title (a root tab), compact centred title (a pushed or modal screen),
+   greeting (a home tab). Actions are .od-icon-btn. */
+.od-header { display: flex; flex-direction: column; gap: var(--space-1, 4px); }
+.od-header__bar { display: flex; align-items: center; gap: var(--space-2, 8px); min-height: 44px; }
+.od-header__actions { display: flex; align-items: center; gap: var(--space-2, 8px); margin-left: auto; }
+.od-header__title { font-family: var(--font-display); font-size: var(--text-2xl, 32px); font-weight: var(--od-display-weight, 700); line-height: 1.1; letter-spacing: var(--tracking-display, -0.01em); margin: 0; color: var(--fg); }
+.od-header__sub { font-size: var(--text-sm, 14px); color: var(--muted); margin: 0; }
+.od-header--compact .od-header__bar { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; }
+.od-header--compact .od-header__title { grid-column: 2; font: 600 var(--text-base, 17px)/1.2 var(--font-body); letter-spacing: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.od-header--compact .od-header__actions { grid-column: 3; }
+.od-header--greeting .od-header__bar { gap: var(--space-3, 12px); }
+.od-header--greeting .od-header__title { font: var(--od-heading-weight, 650) var(--text-lg, 20px)/1.2 var(--od-heading-font, var(--font-display)); letter-spacing: 0; }
+.od-header--greeting .od-header__sub { font-size: var(--text-xs, 12px); }
+
+/* Grouped list: micro label above, a card of rows, a note below (iOS inset grouped). */
+.od-group { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.od-group__label { padding: 0 var(--space-4, 16px); }
+.od-group__note { font-size: var(--text-xs, 12px); color: var(--muted); margin: 0; padding: 0 var(--space-4, 16px); }
+/* Row variants: media (56 photo), compact settings (44, 30px icon tile), tall (72). */
+.od-row--media { --od-lead: 56px; }
+.od-row--media .od-row__lead { border-radius: var(--radius-sm, 8px); }
+.od-row--compact { --od-lead: 30px; min-height: 44px; padding-block: 7px; }
+.od-row--compact .od-row__lead { border-radius: calc(var(--radius-sm, 8px) * .6); }
+.od-row--compact .od-row__lead i[data-lucide], .od-row--compact .od-row__lead svg { width: 17px; height: 17px; }
+.od-row--tall { min-height: 72px; }
+.od-row__lead--solid { background: var(--accent); color: var(--accent-on, #fff); }
+.od-row__lead--solid svg { fill: none; }
+.od-row__lead--round { border-radius: 50%; }
+.od-row__value { font-weight: 400; color: var(--muted); font-size: var(--text-sm, 14px); }
+.od-row__meta { font-size: var(--text-xs, 12px); color: var(--meta, var(--muted)); font-weight: 500; }
+.od-row__trail--stack { flex-direction: column; align-items: flex-end; gap: 2px; }
+
+/* Check mark: a 24px circle (or rounded square) ticked in the accent. The tick is ::before so ::after stays the 44px hit area. */
+.od-check { appearance: none; -webkit-appearance: none; flex: none; width: 24px; height: 24px; margin: 0; border-radius: 50%; border: 2px solid var(--border); background: transparent; cursor: pointer; }
+.od-check--square { border-radius: calc(var(--radius-sm, 8px) * .6); }
+.od-check:checked { background: var(--accent); border-color: var(--accent); }
+.od-check:checked::before { content: ""; position: absolute; left: 7px; top: 3px; width: 5px; height: 10px; border: solid var(--accent-on, #fff); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+/* Figures: a row of 2-3 in one card split by hairlines; small and large sizes; an icon above. */
+.od-metrics { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: var(--space-4, 16px); }
+.od-metrics > * + * { border-left: 1px solid var(--border-soft, var(--border)); padding-left: var(--space-4, 16px); }
+.od-metrics .od-stat__value, .od-stat--sm .od-stat__value { font-size: var(--text-xl, 22px); }
+.od-stat--lg .od-stat__value { font-size: var(--text-3xl, 48px); line-height: 1; }
+.od-stat__label--micro { font-size: var(--text-xs, 12px); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.od-stat__icon { width: 32px; height: 32px; margin-bottom: var(--space-2, 8px); border-radius: var(--od-icon-radius, 50%); display: flex; align-items: center; justify-content: center; background: var(--od-icon-bg, var(--surface-warm, var(--surface))); color: var(--od-icon-fg, var(--fg)); }
+.od-stat__icon i[data-lucide], .od-stat__icon svg { width: 18px; height: 18px; }
+
+/* Ring: a figure inside a progress ring drawn from --value (a percentage). */
+.od-ring { --size: 88px; --track: 8px; position: relative; flex: none; width: var(--size); height: var(--size); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.od-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(var(--od-ring-color, var(--accent)) var(--value, 60%), color-mix(in oklab, var(--od-ring-color, var(--accent)), transparent 84%) 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--track) - 1px), #fff calc(100% - var(--track))); mask: radial-gradient(farthest-side, transparent calc(100% - var(--track) - 1px), #fff calc(100% - var(--track))); }
+.od-ring__value { font: var(--od-display-weight, 700) var(--text-lg, 18px)/1 var(--font-display); font-variant-numeric: tabular-nums; color: var(--fg); }
+.od-ring__label { font-size: var(--text-xs, 12px); color: var(--muted); margin-top: 2px; }
+.od-ring--sm { --size: 44px; --track: 5px; }
+.od-ring--sm .od-ring__value { font-size: var(--text-xs, 12px); }
+.od-ring--lg { --size: 148px; --track: 12px; }
+.od-ring--lg .od-ring__value { font-size: var(--text-2xl, 32px); }
+.od-ring--success { --od-ring-color: var(--success); }
+.od-progress--thin { height: 4px; }
+.od-progress--success > span { background: var(--success); }
+.od-progress--warn > span { background: var(--warn); }
+
+/* Summary card: four ways to lead a screen, so not every screen opens on the same big number. */
+.od-summary { position: relative; display: flex; flex-direction: column; gap: var(--space-1, 4px); padding: var(--space-5, 20px); border-radius: var(--radius-lg, 16px); background: var(--od-card-bg); border: var(--od-card-border); box-shadow: var(--od-card-shadow); color: var(--fg); overflow: hidden; min-width: 0; }
+.od-summary__label { font-size: var(--text-sm, 14px); color: var(--muted); margin: 0; }
+.od-summary__value { font-family: var(--font-display); font-size: var(--text-3xl, 44px); font-weight: var(--od-display-weight, 700); letter-spacing: var(--tracking-display, -0.01em); font-variant-numeric: tabular-nums; line-height: 1; margin: var(--space-1, 4px) 0; }
+.od-summary__meta { font-size: var(--text-sm, 14px); color: var(--muted); margin: 0; }
+.od-summary__foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); margin-top: var(--space-3, 12px); }
+.od-summary--tinted { background: color-mix(in oklab, var(--accent), var(--surface) 90%); border: 0; box-shadow: none; }
+.od-summary--outlined { background: transparent; border: 1px solid var(--border); box-shadow: none; }
+.od-summary--accent { background: var(--accent); color: var(--accent-on, #fff); border: 0; }
+.od-summary--accent .od-summary__label, .od-summary--accent .od-summary__meta { color: inherit; opacity: .8; }
+/* Text on a photo is white over a dark scrim, in both themes. */
+.od-summary--image, .od-feature { color: #fff; border: 0; background: var(--surface-warm, var(--surface)); }
+.od-summary--image { min-height: 200px; justify-content: flex-end; }
+.od-summary--image > :is(img, [role="img"]), .od-feature > :is(img, [role="img"]) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; aspect-ratio: auto; }
+.od-summary--image::before, .od-feature::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(to top, rgba(0, 0, 0, .7), rgba(0, 0, 0, .12) 58%, transparent); }
+.od-summary--image > :not(img, [role="img"]) { position: relative; z-index: 2; }
+.od-summary--image .od-summary__label, .od-summary--image .od-summary__meta, .od-feature__eyebrow, .od-feature__meta { color: rgba(255, 255, 255, .88); }
+
+/* Media cards: a fixed-width card for a horizontal carousel; a full-bleed feature with its text on the photo. */
+.od-card--carousel { width: 240px; }
+.od-card--carousel.od-card--sm { width: 160px; }
+.od-feature { position: relative; display: flex; flex-direction: column; justify-content: flex-end; aspect-ratio: 4 / 5; border-radius: var(--radius-lg, 16px); overflow: hidden; text-decoration: none; }
+.od-feature--wide { aspect-ratio: 16 / 10; }
+.od-feature__top { position: absolute; top: var(--space-3, 12px); left: var(--space-3, 12px); right: var(--space-3, 12px); z-index: 2; display: flex; justify-content: space-between; gap: 8px; }
+.od-feature__top .od-tag { background: var(--surface); color: var(--fg); }
+.od-feature__body { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 4px; padding: var(--space-5, 20px); }
+.od-feature__eyebrow { font-size: var(--text-xs, 12px); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.od-feature__title { font-family: var(--font-display); font-size: var(--text-xl, 24px); font-weight: var(--od-display-weight, 700); letter-spacing: var(--tracking-display, -0.01em); line-height: 1.1; margin: 0; }
+.od-feature__meta { font-size: var(--text-sm, 14px); margin: 0; }
+
+/* Form group: stacked fields in one card, a hairline between them, no box per input. */
+.od-form { display: flex; flex-direction: column; background: var(--od-card-bg); border: var(--od-card-border); border-radius: var(--radius-lg, 16px); box-shadow: var(--od-card-shadow); overflow: hidden; }
+.od-form__field { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 56px; padding: 8px var(--space-4, 16px); box-sizing: border-box; }
+.od-form__field + .od-form__field { border-top: 1px solid var(--border-soft, var(--border)); }
+.od-form__label { font-size: var(--text-xs, 12px); font-weight: 600; color: var(--muted); }
+.od-form__field > :is(input, select, textarea) { width: 100%; border: 0; padding: 0; background: transparent; color: var(--fg); font: var(--text-base, 16px)/1.4 var(--font-body); outline: none; }
+.od-form__field--inline { flex-direction: row; align-items: center; justify-content: space-between; gap: var(--space-3, 12px); }
+.od-form__field--inline > .od-form__label { flex: none; font-size: var(--text-base, 16px); font-weight: 400; color: var(--fg); }
+.od-form__field--inline > :is(input, select) { width: auto; flex: 1; min-width: 0; text-align: right; color: var(--muted); }
+
+/* Option grid: pick one of a few tiles (icon + label); swatches for a colour. */
+.od-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2, 8px); }
+.od-options--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.od-options--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.od-option { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 80px; padding: var(--space-3, 12px) var(--space-2, 8px); border-radius: var(--radius-md, 12px); border: var(--od-control-border); background: var(--surface); color: var(--fg-2, var(--fg)); font: 500 var(--text-sm, 14px)/1.2 var(--font-body); text-align: center; cursor: pointer; }
+.od-option i[data-lucide], .od-option svg { width: 22px; height: 22px; }
+.od-option.is-active, .od-option[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent), var(--surface) 90%); color: var(--fg); box-shadow: inset 0 0 0 1px var(--accent); }
+.od-option--row { flex-direction: row; justify-content: flex-start; min-height: 56px; padding: 0 var(--space-4, 16px); gap: var(--space-3, 12px); text-align: left; }
+.od-swatches { display: flex; flex-wrap: wrap; gap: var(--space-3, 12px); }
+.od-swatch { width: 32px; height: 32px; border-radius: 50%; border: 0; padding: 0; background: var(--swatch, var(--accent)); cursor: pointer; }
+.od-swatch.is-active, .od-swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--swatch, var(--accent)); }
+
+/* Segmented and chips, other shapes. */
+.od-segmented--pill, .od-segmented--pill > button { border-radius: var(--radius-pill, 999px); }
+.od-segmented--underline { background: transparent; padding: 0; gap: var(--space-5, 20px); border-radius: 0; border-bottom: 1px solid var(--border-soft, var(--border)); }
+.od-segmented--underline > button { flex: none; min-height: 40px; padding: 0; border-radius: 0; }
+.od-segmented--underline > button.is-active, .od-segmented--underline > button[aria-pressed="true"] { background: transparent; box-shadow: inset 0 -2px 0 var(--fg); }
+.od-chips { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
+.od-chip--sm { min-height: 30px; padding: 0 12px; font-size: var(--text-xs, 12px); }
+.od-chip--tinted.is-active, .od-chip--tinted[aria-pressed="true"] { background: color-mix(in oklab, var(--accent), var(--surface) 86%); color: var(--fg); border-color: color-mix(in oklab, var(--accent), var(--surface) 50%); }
+.od-chip i[data-lucide], .od-chip svg { width: 16px; height: 16px; }
+
+/* Avatar stack: overlapping faces ringed in the colour beneath, "+n" last. */
+.od-avatars { display: inline-flex; align-items: center; }
+.od-avatars > * { box-shadow: 0 0 0 2px var(--bg); background: var(--od-icon-bg, var(--surface-warm, var(--surface))); }
+.od-avatars > * + * { margin-left: -6px; }
+:is(.od-card, .od-list, .od-summary) .od-avatars > * { box-shadow: 0 0 0 2px var(--od-card-bg, var(--surface)); }
+.od-avatars__more { font-size: 11px; font-weight: 700; color: var(--fg-2, var(--fg)); }
+
+/* Empty state in a card or inline; a bottom sheet; the action area at the end of a flow. */
+.od-empty--card { border: 1px dashed var(--border); border-radius: var(--radius-lg, 16px); padding: var(--space-6, 24px) var(--space-4, 16px); }
+.od-empty--inline { flex-direction: row; text-align: left; gap: var(--space-3, 12px); padding: var(--space-4, 16px); }
+.od-empty--inline .od-empty__icon { margin: 0; flex: none; }
+.od-empty__text { font-size: var(--text-sm, 14px); color: var(--muted); margin: 0; max-width: 280px; }
+.od-sheet { display: flex; flex-direction: column; gap: var(--space-4, 16px); padding: var(--space-2, 8px) var(--space-4, 16px) calc(var(--space-4, 16px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0; box-shadow: 0 -8px 32px rgba(0, 0, 0, .12); }
+.od-sheet__grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto; }
+.od-sheet__title { font: var(--od-heading-weight, 650) var(--text-lg, 18px)/1.2 var(--od-heading-font, var(--font-display)); margin: 0; color: var(--fg); text-align: center; }
+.od-actions { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.od-actions > .od-btn { width: 100%; }
+.od-actions--row { flex-direction: row; }
+.od-actions--row > .od-btn { flex: 1; width: auto; }
+.od-bottom-bar--stack { flex-direction: column; align-items: stretch; gap: var(--space-2, 8px); }
+
+/* Dates: a week strip, a month grid, a heat grid. Levels 1-4 (data-level) are soft accent tints. */
+.od-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.od-week__day { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 64px; padding: 10px 0 8px; border: 0; border-radius: var(--radius-md, 12px); background: transparent; color: var(--fg); font: 600 var(--text-base, 16px)/1 var(--font-body); font-variant-numeric: tabular-nums; cursor: pointer; }
+.od-week__day > small { font-size: var(--text-xs, 12px); font-weight: 500; color: var(--muted); }
+.od-week__day.is-active, .od-week__day[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.od-week__day.is-active > small, .od-week__day[aria-pressed="true"] > small { color: inherit; }
+.od-week__day.is-done::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.od-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; text-align: center; }
+.od-calendar__dow { font-size: var(--text-xs, 12px); font-weight: 600; color: var(--muted); padding-bottom: 8px; }
+.od-calendar__day { display: grid; place-items: center; width: 44px; height: 44px; margin: 0 auto; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--fg); font: 500 var(--text-sm, 14px)/1 var(--font-body); font-variant-numeric: tabular-nums; cursor: pointer; }
+.od-calendar__day.is-muted { color: var(--meta, var(--muted)); }
+.od-calendar__day.is-today { color: var(--od-accent-text); font-weight: 700; }
+.od-calendar__day.is-active, .od-calendar__day[aria-pressed="true"] { background: var(--accent); color: var(--accent-on, #fff); }
+.od-heat { display: grid; grid-template-rows: repeat(7, auto); grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; }
+.od-heat > i { aspect-ratio: 1; border-radius: 3px; background: var(--surface-warm, var(--border-soft)); }
+.od-calendar__day:where([data-level]) { background: color-mix(in oklab, var(--accent), transparent 80%); }
+.od-heat > i[data-level="1"] { background: color-mix(in oklab, var(--accent), transparent 88%); }
+.od-heat > i[data-level="2"] { background: color-mix(in oklab, var(--accent), transparent 74%); }
+.od-heat > i[data-level="3"] { background: color-mix(in oklab, var(--accent), transparent 56%); }
+.od-heat > i[data-level="4"] { background: color-mix(in oklab, var(--accent), transparent 34%); }
+
 /* Tap targets (HIG 44px): compact controls keep their drawn size but get an invisible 44px hit area,
    the same way autofix treats icon-only buttons. The switch is exempt — its ::after is the knob — and
    is tapped through its row. */
-.od-chip, .od-segmented > button, .od-btn--sm, .od-stepper > button, .od-section__link { position: relative; }
-.od-chip::after, .od-segmented > button::after, .od-btn--sm::after, .od-stepper > button::after, .od-section__link::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+.od-chip, .od-segmented > button, .od-btn--sm, .od-stepper > button, .od-section__link, .od-check, .od-swatch { position: relative; }
+.od-chip::after, .od-segmented > button::after, .od-btn--sm::after, .od-stepper > button::after, .od-section__link::after, .od-check::after, .od-swatch::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 
 /* GQ-24: motion as a token. Press feedback is a small scale with a spring-ish curve, state colours cross-fade, the switch knob glides — and none of it under prefers-reduced-motion. A system tunes --ease-spring / --motion-press; the defaults give every system the same feel. */
 @media (prefers-reduced-motion: no-preference) {
-  .od-btn, .od-icon-btn, .od-chip, .od-segmented > button, .od-stepper > button, .od-section__link { transition: transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)), background-color var(--motion-fast, 150ms) ease, color var(--motion-fast, 150ms) ease, box-shadow var(--motion-fast, 150ms) ease, border-color var(--motion-fast, 150ms) ease; }
+  .od-btn, .od-icon-btn, .od-chip, .od-segmented > button, .od-stepper > button, .od-section__link, .od-option, .od-swatch, .od-week__day, .od-calendar__day, .od-check { transition: transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)), background-color var(--motion-fast, 150ms) ease, color var(--motion-fast, 150ms) ease, box-shadow var(--motion-fast, 150ms) ease, border-color var(--motion-fast, 150ms) ease; }
   .od-row { transition: background-color var(--motion-fast, 150ms) ease, transform var(--motion-press, 120ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
   .od-btn:active, .od-icon-btn:active, .od-chip:active, .od-segmented > button:active, .od-stepper > button:active { transform: scale(.96); }
   .od-row:active { transform: scale(.985); }
