@@ -52,7 +52,7 @@ export function composeSystemPrompt(designSystem: string) {
 
 **Maps.** Never draw a map or ask for a map photo. Write \`<div data-od-map data-pins="Burger Palace, Home" data-route data-you></div>\` — a street plan with labelled pins is drawn for you (\`data-route\` joins first to last pin, \`data-you\` marks the user). Give the container a height.
 
-**Stickers.** No emoji. Write \`<div data-od-sticker="fire"></div>\` — drawn as a soft-3D sticker in the system's colours. Names: fire, trophy, leaf, star, moon, drop, bolt, heart, target, check, sparkle, calendar. Style width sets the size; \`data-tone="success|warn|danger"\`. **One per screen**, and when the screen's brief names one, use that name.
+**No stickers and no emoji.** No decorative badges or 3D icons — an icon is a lucide icon, and a screen's emphasis comes from its type and layout.
 
 **Component kit — build with it first.** A stylesheet of ready components is added to your page as soon as you use an \`od-\` class. They are already styled with the design tokens: never write a CSS rule for an \`od-\` class (the kit's rules win, and yours are removed). Write CSS only for your own classes — this screen's hero composition, a special layout — and use them next to kit classes (\`class="od-card promo"\`). Classes:
 - Layout: \`od-page\` (screen body), \`od-stack\`, \`od-grid\` (2 columns), \`od-carousel\` (horizontal scroll), \`od-divider\`, \`od-bento\` (2-column tile grid; add \`od-bento__wide\` to a tile that spans both columns)

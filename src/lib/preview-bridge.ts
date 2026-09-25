@@ -1,3 +1,4 @@
+import { withFrameRuntime } from './nav-guard.ts'
 // Injected into a screen's iframe on the preview page. The shell marks every tab with
 // data-od-tab and the back button with data-od-back, and the model marks in-content taps that
 // open another screen with data-od-link, so wiring needs no per-app knowledge.
@@ -29,7 +30,8 @@ export const PREVIEW_BRIDGE = `
 `
 
 export function withPreviewBridge(html: string): string {
-  return html.includes('</body>') ? html.replace('</body>', `${PREVIEW_BRIDGE}</body>`) : html + PREVIEW_BRIDGE
+  const guarded = withFrameRuntime(html)
+  return guarded.includes('</body>') ? guarded.replace('</body>', `${PREVIEW_BRIDGE}</body>`) : guarded + PREVIEW_BRIDGE
 }
 
 export type PreviewScreen = {

@@ -1,3 +1,4 @@
+import { withFrameRuntime } from './nav-guard.ts'
 // "Export › Whole app (.zip)": every drawn screen as its own HTML file with the project's theme
 // baked in, plus an index. The files link to each other the way the preview does — tabs, Back and
 // data-od-link taps open the right file — so the zip is a clickable prototype that works offline.
@@ -99,5 +100,6 @@ function withLinks(html: string, table: { tab: object; back: object; link: objec
 </script>
 <style>[data-od-tab], [data-od-back], [data-od-link] { cursor: pointer; }</style>
 `
-  return html.includes('</body>') ? html.replace('</body>', `${script}</body>`) : html + script
+  const guarded = withFrameRuntime(html)
+  return guarded.includes('</body>') ? guarded.replace('</body>', `${script}</body>`) : guarded + script
 }

@@ -5,6 +5,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Ekran havolalari studioga olib bormaydi; katta raqam qutiga sig'adi; stickerlar o'chirildi
+
+- **Login bosilsa studioning login sahifasi ochilardi:** sandbox'dagi srcdoc iframe'da `<a href="/login">` bizning
+  domenimizga nisbatan ochiladi. `lib/nav-guard.ts` — har kadr (canvas `ScreenFrame`, preview, zip eksport) boshida
+  capture bosqichida havola va forma yuborishni to'xtatadi; ekranlar orasidagi o'tish `data-od-link/tab/back` orqali ishlaydi.
+- **Katta raqam kartadan chiqib ketardi** ("$9,540.40" 88px monospace, 320px karta): model render qilingan kenglikni
+  o'lchay olmaydi. `FIT_TEXT` — shriftlar yuklangach ≥28px bir qatorli matn qutisidan keng bo'lsa, shrift sig'guncha
+  kichrayadi (yarmidan kam emas); faqat font-size, joylashuv o'zgarmaydi; render vaqtida — eski ekranlarga ham.
+  PennyWise Home'da brauzerda tekshirildi. Halqa grafigi yorlig'i `display:block` — endi ellipsis bilan, kesilmaydi.
+- **Stickerlar o'chirildi** (foydalanuvchi so'rovi): tizim promptida "No stickers and no emoji", blueprint spec va
+  `result` eskizidan olib tashlandi; renderer saqlangan ekranlar uchun qoladi. Testlar yangilandi.
+Fayllar: `src/lib/nav-guard.ts` (yangi), `src/lib/preview-bridge.ts`, `src/lib/export-app.ts`, `src/ScreenFrame.tsx`,
+`src/lib/charts.ts`, `src/app/Services/{PromptComposer,BlueprintService}.ts`, `blueprints/result.json`, testlar. tsc, check toza.
+
 ### Preview: ekranlar orasida lag'siz o'tish (SHR-03)
 
 O'lchandi: har o'tish router navigatsiyasi edi (sessiya + loader barcha ekran HTML'i bilan qayta) va `key={current.id}`

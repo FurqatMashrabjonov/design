@@ -387,8 +387,8 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.ok(alone.includes('overflow:hidden'), 'the centre is clipped to the circle')
   const wordy = renderCharts('<html><body><div data-od-chart="ring" data-values="2" data-max="6" data-labels="habits completed today"></div></body></html>')
   // The slot keeps its own attributes; what must not appear is the label drawn inside the circle.
-  assert.ok(!/<span style="font-size:11px[^>]*>habits completed today</.test(wordy), 'a label too long for a circle belongs beside it, not in it')
-  assert.ok(alone.includes('<span style="font-size:11px'), 'a short label still sits under the number')
+  assert.ok(!/<span style="display:block;font-size:11px[^>]*>habits completed today</.test(wordy), 'a label too long for a circle belongs beside it, not in it')
+  assert.ok(alone.includes('<span style="display:block;font-size:11px'), 'a short label still sits under the number')
 }
 
 // IMG-02: a reference picture decides the look. The model reads the picture; the choice of system
@@ -526,6 +526,21 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.ok(!shellRules.includes('caps-eyebrow') && !shellRules.includes('mono-for-data'), 'the shell is not a tell')
 }
 
+// A screen's own links and forms never navigate the frame to our origin (a "Log in" link opened the studio's login page).
+{
+  const { withNavGuard } = await import('../../lib/nav-guard.ts')
+  const { withPreviewBridge } = await import('../../lib/preview-bridge.ts')
+  const page = '<html><head><title>x</title></head><body><a href="/login">Log in</a></body></html>'
+  const g = withNavGuard(page)
+  assert.ok(g.indexOf('data-od-nav-guard') < g.indexOf('<title>'), 'the guard runs before anything of the screen')
+  assert.ok(g.includes("addEventListener('submit'") && g.includes('a[href]'), 'links and form submits are both stopped')
+  assert.equal(withNavGuard(g), g, 'idempotent')
+  assert.ok(withPreviewBridge(page).includes('data-od-nav-guard'), 'the preview carries it')
+  const { withFrameRuntime } = await import('../../lib/nav-guard.ts')
+  const rt = withFrameRuntime(page)
+  assert.ok(rt.includes('data-od-nav-guard') && rt.includes('data-od-fit') && withFrameRuntime(rt) === rt, 'every frame gets the guard and the text fitter, once')
+  assert.ok(withPreviewBridge(page).includes('data-od-fit'), 'the preview fits overflowing figures too')
+}
 // KIT-07: the linter judges what the model wrote, not the sheets we inject.
 {
   const page = '<html><head><style data-od-kit>.od-x{opacity:.5;color:var(--accent)}</style></head><body><p class="od-x">x</p></body></html>'
@@ -1108,29 +1123,15 @@ console.log('Testing Stickers (GQ-21)...')
   assert.equal(renderStickers(once), once, 'idempotent: a drawn sticker is left alone')
   assert.ok(fix(page).includes('data-od-sticker-rendered'), 'autofix draws stickers, next to charts and maps')
   assert.ok(!lint(fix(page)).some((f) => f.rule === 'hand-drawn-icon'), 'a drawn sticker is not reported as a hand-drawn icon')
-  assert.ok(readFileSync('src/app/Services/PromptComposer.ts', 'utf8').includes('data-od-sticker="fire"'), 'the model is told the slot exists')
-
-  // GQ-27: a paragraph in the system prompt is not enough. One run put the same flame on two
-  // screens and nothing on the stats screen, so the name now travels in the screen's own spec —
-  // the same lesson as the hue: a sampler acts on what its specific brief says, not on a general
-  // permission. Only heroes that are a figure or a moment get one; a detail, a player and a
-  // profile lead with a photo or an avatar, where a glyph would compete with the subject.
+  // 2026-09-25: stickers are off — the founder asked for none. The renderer stays (stored screens keep
+  // theirs), but no prompt, spec or kit sketch asks for one any more.
   const { BlueprintService } = await import('./BlueprintService.ts')
-  const withSticker = ['dashboard', 'stats', 'result', 'onboarding', 'paywall']
-  for (const id of withSticker) {
-    const bp = BlueprintService.find(id)!
-    assert.ok(bp.hero?.sticker && STICKER_NAMES.includes(bp.hero.sticker), `${id}: its hero names a real sticker`)
-    const brief = BlueprintService.brief(id)
-    assert.ok(brief.includes(`data-od-sticker="${bp.hero!.sticker}"`), `${id}: the name reaches the screen's spec`)
-    assert.ok(brief.indexOf('HERO MOMENT') < brief.indexOf('data-od-sticker'), `${id}: the sticker sits with the hero, not loose`)
+  const prompt = readFileSync('src/app/Services/PromptComposer.ts', 'utf8')
+  assert.ok(!prompt.includes('data-od-sticker') && prompt.includes('No stickers and no emoji'), 'the system prompt asks for no stickers')
+  for (const id of ['dashboard', 'stats', 'result', 'onboarding', 'paywall', 'list']) {
+    assert.ok(!BlueprintService.brief(id, 'x').includes('sticker'), `${id}: its spec asks for no sticker`)
+    assert.ok(!(BlueprintService.find(id)!.kit ?? '').includes('data-od-sticker'), `${id}: its kit sketch draws no sticker`)
   }
-  for (const id of ['detail', 'player', 'profile']) assert.ok(!BlueprintService.find(id)?.hero?.sticker, `${id}: a photo-led hero takes no sticker`)
-  assert.ok(!BlueprintService.brief('list').includes('data-od-sticker'), 'an archetype with no hero offers no sticker')
-  // Every suggestion is distinct, so two screens of one app never ask for the same glyph.
-  const names = withSticker.map((id) => BlueprintService.find(id)!.hero!.sticker)
-  assert.equal(new Set(names).size, names.length, 'no two archetypes suggest the same sticker')
-  assert.ok(BlueprintService.find('result')!.kit!.includes('data-od-sticker="trophy"'), "result's kit sketch draws the same sticker its hero names")
-  assert.ok(readFileSync('src/app/Services/PromptComposer.ts', 'utf8').includes('when the screen\'s brief names one'), 'the general paragraph defers to the spec')
 }
 
 console.log('Testing Large-Title Header (GQ-19)...')

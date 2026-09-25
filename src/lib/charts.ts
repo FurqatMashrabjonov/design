@@ -132,7 +132,7 @@ function ring(d: ReturnType<typeof parse>, bare = false): string {
   const r = 15.9155
   // A ring's centre holds a number and at most a word or two; anything longer belongs beside it.
   const short = (d.labels[0] ?? '').trim()
-  const label = short && short.length <= 14 ? `<span style="font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(short)}</span>` : ''
+  const label = short && short.length <= 14 ? `<span style="display:block;font-size:11px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(short)}</span>` : ''
   // The page already draws a centre: only the arc is ours, or the two labels stack.
   const centre = bare
     ? ''
