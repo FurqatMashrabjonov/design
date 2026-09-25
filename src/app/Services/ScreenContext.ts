@@ -18,9 +18,15 @@ export type ScreenSlot = {
   archetype?: string
 }
 
-/** GQ-38: a first-run screen fills the phone — no back header over it and no tab bar under it. */
+/** A sheet or side drawer drawn open over its parent screen (KIT-07); the model draws the parent under a scrim. */
+export function isSheetScreen(slot: ScreenSlot): boolean {
+  return slot.screenType !== 'root-tab' && slot.archetype === 'sheet'
+}
+
+/** GQ-38: a first-run screen fills the phone — no back header over it and no tab bar under it. So does a sheet. */
 export function isBareScreen(slot: ScreenSlot): boolean {
   if (slot.screenType === 'root-tab') return false
+  if (isSheetScreen(slot)) return true
   return slot.archetype ? slot.archetype === 'onboarding' : /onboard|welcome/i.test(slot.name ?? '')
 }
 
@@ -39,6 +45,14 @@ export function navStyleFor(projectId: string, nav: AppNavigation, about: { appT
 }
 
 export function shellContract(slot: ScreenSlot, nav: AppNavigation, style: NavStyle = 'island'): string {
+  if (isSheetScreen(slot)) {
+    const parent = slot.parentScreen ?? nav.tabs[0]?.label ?? 'Home'
+    return `SHELL CONTRACT — a sheet drawn open over "${parent}"
+1. Nothing is injected: no top header, no back button, no bottom tab bar — draw none of them.
+2. First draw "${parent}" as it looks underneath: its title and a few rows of its real content, short and plain. Then, as the last children of <body>, an od-scrim and the overlay on top of it: an od-sheet od-sheet--overlay (--medium or --large for a taller detent), an od-action-sheet, or an od-drawer for a side menu.
+3. Keep the whole screen to one phone height (844px): the page behind never scrolls past it.
+4. The sheet's close button and its primary action return to "${parent}": give both data-od-link="${parent}".`
+  }
   if (isBareScreen(slot))
     return `SHELL CONTRACT — a first-run screen
 1. This screen fills the phone: no top header, no back button, no bottom tab bar — nothing is injected.
@@ -127,6 +141,11 @@ ${lines.join('\n')}`
 // first version of the fallback made. A tab whose job is a tool, not a status, gets no headline.
 const QUIET_ROOTS = new Set(['settings', 'search', 'chat', 'camera', 'map'])
 
+// A sheet's variants are kinds, not layouts: a Filters sheet drawn as a side drawer because the
+// app's seed landed on "d" is wrong. Its name picks the kind; only a name that says nothing falls back to the seed.
+const SHEET_KINDS: [RegExp, string][] = [[/filter|sort|refine/i, 'a'], [/menu|drawer|navigation|sidebar/i, 'd'], [/add|new|create|quick|log\b|compose/i, 'c'], [/share|action|option|choose|pick|select|more/i, 'b']]
+export const sheetKind = (name: string) => SHEET_KINDS.find(([re]) => re.test(name))?.[1]
+
 /** A planned screen's spec, written so the drawing model composes a decided screen instead of deciding one. */
 /** @param seed the app (its name): picks the app's layout variant for each archetype (VAR-02). */
 export function screenSpec(s: PlannedScreen, seed?: string): string {
@@ -137,7 +156,7 @@ export function screenSpec(s: PlannedScreen, seed?: string): string {
     s.sections.length > 0 && `Sections, top to bottom:\n${s.sections.map((x, i) => `${i + 1}. ${x}`).join('\n')}`,
     s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
     // The archetype's structural pattern (blueprints/<archetype>.json); the plan's sections above say what content fills it.
-    s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype, seed)}`,
+    s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype, seed, s.archetype === 'sheet' ? sheetKind(s.name) : undefined)}`,
     // GQ-15: a tab's root screen is a destination and needs an anchor — a home screen once came out
     // with nothing bigger than 28px. KIT-04: the anchor is the tab's large title, as shipped apps do
     // (Things, Apple Home); a forced 72–96px figure put "27 total streak days" on every tab.

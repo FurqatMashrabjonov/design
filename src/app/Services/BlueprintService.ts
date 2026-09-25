@@ -103,10 +103,11 @@ export const BlueprintService = {
   },
 
   /** The pattern as brief text — a few lines, so it fits next to the plan's own sections. */
-  brief(id: string, seed?: string): string {
+  /** @param pick a variant the screen itself asks for (a sheet's kind); otherwise the app's seeded one. */
+  brief(id: string, seed?: string, pick?: string): string {
     const b = BlueprintService.find(id)
     if (!b) return ''
-    const v = seed ? BlueprintService.variant(id, seed) : null
+    const v = b.variants?.find((x) => x.id === pick) ?? (seed ? BlueprintService.variant(id, seed) : null)
     return [
       v ? `Screen pattern (${b.id}, layout ${v.id}): ${v.layout} Use this layout, not the most common one.` : `Screen pattern (${b.id}): ${b.layout}`,
       `It must show: ${b.sections.required.join('; ')}.`,
