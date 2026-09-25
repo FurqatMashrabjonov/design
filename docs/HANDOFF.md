@@ -1,8 +1,58 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-25. Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §0 — generatsiyani super optimallashtirish.**
+> Yozilgan: 2026-09-21, yangilangan 2026-09-25 (kechqurun). Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §0 — generatsiyani super optimallashtirish.**
 
-## 0. Keyingi asosiy ish: generatsiya sifatini super optimallashtirish (2026-09-25)
+## 0. 2026-09-25 kechki holat — shu yerdan davom et
+
+Eng yangi ish: **`canvas-planner`** (oxirgi commit `b9d5b16`, push qilingan). Alohida WIP branch: **`lp06-precompile`**
+(`b398a4d`, push qilingan, **birlashtirilmagan**).
+
+### Bugun qilingan (hammasi `canvas-planner`da, CHANGELOG'da batafsil)
+- **KIT-04 (Jarayonda):** kit v2 (~40+ blok), 33+ namuna ekran (`blueprints/exemplars/`, brief'da kit eskizi o'rnini
+  egallaydi), `SKILL.md`da "kit'dan qur, `od-` nom ixtiro qilma" qoidasi, kit geometriyasi haqiqiy ilovalar bo'yicha
+  o'lchangan (`kit/REFERENCE.md`), tab ekrani raqam o'rniga katta sarlavha bilan ochiladi, raqamlar 56–64px.
+  Tuzatilgan buglar: ```artifact wrapper sizishi, ixtiro qilingan `od-` klass uslubsiz qolishi, audit rasm ustidagi
+  matnni xato deb sanashi, linter kit jadvalini ham baholashi (lint 0% ko'rsatardi).
+- **KIT-07 (Tayyor):** Kit 2026 — sheet/drawer/menyu/swipe/toast/glass/dialog/skeleton/chat/social kirish;
+  yangi `sheet` arxetipi (planner filtr/ulashish/tez qo'shish/yon menyuni ota ekran ustida rejalaydi); xarita
+  telefon balandligida chiziladi (to'liq ekranda kattalashmaydi); `map-b`/`map-c` namunalari.
+- **SHR-03 (Tayyor):** preview'da ekran almashishi 1–6 ms (routing yo'q, har ekranning doimiy iframe'i, push/pop/fade).
+- **Oxirgi commit:** ekran ichidagi `<a href>`/forma endi studioga olib bormaydi (`lib/nav-guard.ts`, hamma kadrda);
+  qutidan keng katta raqam render vaqtida sig'guncha kichrayadi (eski ekranlarga ham); **stickerlar o'chirildi**
+  (foydalanuvchi so'rovi — prompt/blueprint'da yo'q, renderer eski ekranlar uchun qoladi).
+
+### O'lchovlar (eval, 4 brief: feast-two, dribbble-wallet, dribbble-plants, dribbble-focus)
+| | DeepSeek ertalab | DeepSeek kechqurun | Haiku ertalab | Haiku oxirgi |
+|---|---|---|---|---|
+| audit toza | 0.56 | **0.91** | 0.79 | 0.75–0.92 |
+| kit ulushi | 0.39 | 0.43 | 0.37 | 0.60–0.65 |
+| lint toza | 0.74 | 0.61* | 0.29 | 0.38–0.58 |
+*DeepSeek lint tushishi `accent-energy-mismatch`dan edi — u kit jadvalidan kelgan va keyin tuzatildi (qayta o'ynatishda 0.61).
+24 ekranlik run'lar orasida shovqin katta — yakuniy xulosani ko'z bilan (sheet PNG) ham tekshir.
+
+### Keyingi qadamlar (tartib bilan)
+1. **LP-06 (Jarayonda, `lp06-precompile` branch):** saqlashda Tailwind (CDN'ning o'zi — v3.4, `tailwindcss-v3` npm
+   alias) va Lucide ikonalarini oldindan kompilyatsiya qilish; `src/lib/precompile.ts`, `scripts/precompile-screens.ts`
+   (backfill, standart dry-run). **Tekshirilmagan:** CDN bilan piksel solishtiruvi va vaqt o'lchovi to'xtatilgan.
+   Davom: branch'ni ol → `npm install` → 20+ saqlangan ekranni CDN va precompile bilan render qilib piksel-diff (<0.5%)
+   va yuklanish vaqtini o'lcha → testlar → birlashtir. Backfill'ni `--write` bilan faqat foydalanuvchi roziligida.
+   Maqsad: ekran birinchi ochilishi ~3 s → <0.5 s (98% ekran 400 KB Tailwind CDN yuklaydi).
+2. **DeepSeek kit ulushi 43%** (Haiku 60%): DeepSeek kit'ni kamroq ishlatadi — arxetipga mos 5–6 kit blokining qisqa
+   ro'yxatini brief'ga qo'shishni sinash (eval: avval claude-cli, keyin DeepSeek ~$0.09).
+3. **"Chala HTML" xatosi** (~1/4 run'da bitta ekran): endi `[plan] incomplete HTML` log'ida javob oxiri yoziladi —
+   Telescope'dan sababni top.
+4. Kichik: chatdan "filtr paneli qo'sh" hali `sheet` bo'lmaydi (`slotForAddedScreen`); nav-guard'ni haqiqiy login
+   havolali ekranda brauzerda bir bosib tekshir.
+5. **Foydalanuvchidan kutilayotgan:** Nova karta burchagi 28 → 24px?; Gummble 7 kunlik sinovini bekor qilish
+   (davom etmasak); Gemini kaliti (LLM-06, Admin → API keys).
+
+### Ish usuli (bugun kelishilgan)
+- Eval'lar **`LLM_PROVIDER=claude-cli`** bilan (Haiku, bepul), asosiy natija DeepSeek'da bir marta qayta tekshiriladi.
+- Gummble MCP ulangan (7 kunlik sinov): `search_flows`, `get_app`, `get_screen_details_batch` ishlaydi;
+  `search_screens` buzuq. Haqiqiy ekranlar faqat ilhom/o'lchov uchun — repoga saqlanmaydi.
+- Foydalanuvchi telefonda bo'lsa — natijani rasm bilan yubor (SendUserFile).
+
+## 0b. (oldingi) Keyingi asosiy ish: generatsiya sifatini super optimallashtirish (2026-09-25)
 
 Foydalanuvchi qarori: **endi asosiy ish — faqat generatsiya sifati.** Qolgan hamma narsa (deploy,
 marketing, muharrir) shundan keyin.
