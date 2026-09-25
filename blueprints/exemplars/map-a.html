@@ -1,0 +1,23 @@
+<!-- Qozon — a food map: the map fills the top edge to edge (it runs on under the sheet), glass controls float over it, nearby places in a sheet at the medium detent with no scrim -->
+<div class="od-media" style="aspect-ratio:auto;height:calc(100dvh / 2 + 40px);border-radius:0">
+  <div data-od-map data-pins="Caravan, Afsona, Bon! Café, Plov Center" data-you></div>
+  <div class="od-float">
+    <label class="od-search od-glass" style="flex:1"><i data-lucide="search"></i><input placeholder="Search food and places"></label>
+    <button class="od-glass-btn" aria-label="Filters"><i data-lucide="sliders-horizontal"></i></button>
+  </div>
+</div>
+<div class="od-sheet od-sheet--overlay od-sheet--medium">
+  <div class="od-sheet__grabber"></div>
+  <div class="od-section__head"><h2 class="od-section__title">Nearby</h2><button class="od-section__link">4 open now</button></div>
+  <div class="od-carousel">
+    <button class="od-chip od-chip--sm is-active">Open now</button>
+    <button class="od-chip od-chip--sm">Plov</button>
+    <button class="od-chip od-chip--sm">Coffee</button>
+    <button class="od-chip od-chip--sm">Under $10</button>
+  </div>
+  <div class="od-list od-list--plain">
+    <div class="od-row od-row--media"><span class="od-row__lead"><img data-od-img="plov in a large kazan" alt=""></span><span class="od-row__body"><span class="od-row__title">Plov Center</span><span class="od-row__sub">350 m · <span class="od-rating"><i data-lucide="star"></i>4.8</span></span></span><button class="od-btn od-btn--sm">Directions</button></div>
+    <a class="od-row od-row--media"><span class="od-row__lead"><img data-od-img="caravan restaurant courtyard" alt=""></span><span class="od-row__body"><span class="od-row__title">Caravan</span><span class="od-row__sub">900 m · Uzbek · $$</span></span><span class="od-row__trail"><span class="od-row__meta">12 min</span></span></a>
+    <a class="od-row od-row--media"><span class="od-row__lead"><img data-od-img="latte on a cafe table" alt=""></span><span class="od-row__body"><span class="od-row__title">Bon! Café</span><span class="od-row__sub">1.2 km · Coffee · $</span></span><span class="od-row__trail"><span class="od-row__meta">16 min</span></span></a>
+  </div>
+</div>
