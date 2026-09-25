@@ -526,6 +526,12 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.ok(!shellRules.includes('caps-eyebrow') && !shellRules.includes('mono-for-data'), 'the shell is not a tell')
 }
 
+// KIT-07: the linter judges what the model wrote, not the sheets we inject.
+{
+  const page = '<html><head><style data-od-kit>.od-x{opacity:.5;color:var(--accent)}</style></head><body><p class="od-x">x</p></body></html>'
+  assert.ok(!lintScreen(page).some((f) => f.rule === 'opacity-dimmed-text'), 'a dimmed rule inside the kit sheet is not the screen\'s fault')
+  assert.ok(lintScreen(page.replace(' data-od-kit', '')).some((f) => f.rule === 'opacity-dimmed-text'), 'the same rule in the page\'s own CSS is still found')
+}
 // CRAFT-01: the craft rules that have one right answer live in code, as zero-specificity defaults.
 {
   const craft = autofixScreen('<html><head><style>.a{x:1}</style></head><body><h1>Title</h1><p>Body</p></body></html>')

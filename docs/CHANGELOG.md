@@ -5,6 +5,16 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Linter faqat modelning CSS'ini baholaydi, injeksiya qilingan jadvallarni emas (KIT-07)
+
+`lintScreen` `<style data-od-*>` (kit, craft, slots, shell) jadvallarini ham tekshirardi: kit'ga `opacity:.75`li
+vaqt belgisi qo'shilgan kuni kit ishlatgan har ekran `opacity-dimmed-text` oldi (eval lint 0%), va
+`accent-energy-mismatch`ning hammasi ham kit jadvalidan kelgan (DeepSeek run'idagi 7 ta ham). Endi `withoutRoot`
+injeksiya qilingan jadvallarni olib tashlaydi; `od-bubble__time` opacity o'rniga `color-mix` ishlatadi.
+Saqlangan ekranlarda qayta o'ynatildi: cli-kit07 toza 0/26 → 15/26. Test qo'shildi. Eval (claude-cli; chat-team,
+courier-map, notes-ai, dribbble-wallet): audit 0.92, kit ulushi 0.61; chat bloklari (`od-chat`, `od-bubble`,
+`od-composer`, `od-typing`) 2 ta ekranda ishlatildi; overlay bloklari hali ishlatilmadi (namunada yo'q).
+
 ### Kit 2026: sheet/drawer, menyu, swipe, toast, glass, dialog, skeleton, chat, kirish (KIT-07)
 
 Tadqiqot (2026 mobil + iOS 26 Liquid Glass): bottom sheet ikkinchi darajali kontent uchun asosiy konteyner, glass

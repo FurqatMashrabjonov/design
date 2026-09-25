@@ -51,7 +51,9 @@ function bodyOf(html: string): string {
 /** Strip the token block so canonical values are never reported as violations. */
 function withoutRoot(html: string): string {
   const block = extractRootBlock(html)
-  return block ? html.replace(block, '') : html
+  // KIT-07: the sheets we inject (kit, craft, slots) are ours and carry data-od-*; judging them flagged
+  // every screen that used the kit the day the kit gained one dimmed timestamp.
+  return (block ? html.replace(block, '') : html).replace(/<style\b[^>]*\bdata-od-[a-z-]+[^>]*>[\s\S]*?<\/style>/gi, '')
 }
 
 function uniq(values: string[], cap = 4): string[] {
