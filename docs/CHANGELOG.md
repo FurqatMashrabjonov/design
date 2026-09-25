@@ -268,6 +268,27 @@ TanStack'ning uslubsiz "Not Found"i edi.
 - Fayllar: `src/components/SiteChrome.tsx`, `src/components/NotFound.tsx` (yangi), `src/Landing.tsx`, `src/router.tsx`, `src/routes/{pricing,playbook,systems.index,systems.$id,login}.tsx`, `src/components/ThemeToggle.tsx`, `src/components/AccountMenu.tsx`, `src/components/ui/{dialog,alert-dialog,dropdown-menu,context-menu}.tsx`.
 - Tekshirildi: `npm run check` va `tsc` toza. Chrome: pricing, login, 404 va landing — yorug' va to'q temada (header, footer, tema almashishi, 404 dark'da).
 
+## 2026-09-25
+
+### KIT-04 (davom): kit v2, 33 ta namuna ekran, "kit'dan qur" qoidasi, uch bug tuzatildi
+
+Kit v2 (`kit/od-kit.css`, 171 → ~370 qator): sarlavha variantlari, mikro yorliq, guruhlangan ro'yxat,
+stat/halqa/summary/feature kartalar, forma guruhi, variant plitkalari, kalendar, sheet, summa kiritish
+(`od-amount`) va slayder (`od-slider`). 33 ta namuna ekran (`blueprints/exemplars/<arxetip>-<variant>.html`,
+10 arxetip) brief'da kit eskizi o'rnini egallaydi. Tizim promptiga (`skills/mobile-screen/SKILL.md`)
+3-qoida: har blok HOUSE STYLE va namunadagi `od-` blok; o'z klassi faqat kit'da yo'q narsa uchun, `od-`
+nomini ixtiro qilmaydi (budjet uchun takrorlangan rasm qoidasi va shell jumlasi qisqartirildi).
+
+Tuzatildi: `artifact.ts` — Haiku'ning ```artifact fence'i va hujjatdan oldingi matn ekranga chiqardi;
+`screen-normalizer.ts` — kit'da yo'q `od-` klass qoidasi ham o'chirilib, blok uslubsiz qolardi (ikonka
+ulkan); `render-audit.ts` — rasm kartasi ustidagi oq matn sahifa foniga o'lchanib soxta low-contrast berardi.
+Metrikalar: `kit.classShare` (faqat haqiqiy kit klasslari), `kit.coinedClasses`, `kit.ownCssBytes` (token blokisiz).
+
+Eval (claude-cli/Haiku, 4 brief, 24 ekran): lint 0.29 → 0.58, kit ulushi 0.37 → 0.65, o'z CSS 3.6 → 2.5 KB,
+AI belgilari 11/11/5 → 2/5/4, artifact sizishi 2 → 0. Audit 0.79 → 0.54 (soxta topilmalar olib tashlangach
+0.67; qolgani haqiqiy overflow — keyingi qadam). Chiqish tokenlari kamaymadi (KIT-04 mezoni hali bajarilmagan).
+Tekshirildi: tsc va check toza; audit tuzatishi saqlangan eval ekranlarida qayta o'ynatildi.
+
 ## 2026-09-24
 
 ### Vizual QA: o'chiq asosiy tugma neytral, ekranlar soni matni bir xil (UI-14)

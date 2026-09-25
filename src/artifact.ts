@@ -6,9 +6,10 @@ export function extractArtifact(text: string) {
     const html = stripFence(tag[2])
     return { title: decodeEntities(tag[1] || '') || titleFrom(html), html }
   }
-  const fence = text.match(/```html\s*([\s\S]*?)(?:```|$)/i)
-  const html = stripFence(fence ? fence[1] : text)
-  return { title: titleFrom(html), html }
+  // Haiku also writes the tag as a fence: ```artifact, then title="…" on its own line.
+  const fence = text.match(/```(?:html|artifact)\s*(?:title="([^"]*)"\s*)?([\s\S]*?)(?:```|$)/i)
+  const html = stripFence(fence ? fence[2] : text)
+  return { title: decodeEntities(fence?.[1] || '') || titleFrom(html), html }
 }
 
 // A screen the model forgot to name is named by its own <title>, then its first heading.
@@ -25,10 +26,13 @@ function decodeEntities(s: string) {
     .trim()
 }
 
-// Also drops anything after the document: models sometimes explain the screen in markdown after
+// Drops anything after the document: models sometimes explain the screen in markdown after
 // </html>, and the browser renders that prose at the bottom of the page.
 function stripFence(s: string) {
-  const html = s.replace(/^\s*```html\s*/i, '').replace(/```\s*$/, '').trim()
+  let html = s.replace(/^\s*```html\s*/i, '').replace(/```\s*$/, '').trim()
+  // …and anything before it: a stray wrapper line rendered as text at the top of the screen.
+  const start = html.search(/<!doctype|<html[\s>]/i)
+  if (start > 0) html = html.slice(start)
   const end = html.search(/<\/html\s*>/i)
   return end === -1 ? html : html.slice(0, end) + '</html>'
 }

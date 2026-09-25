@@ -11,6 +11,8 @@ import { buildBottomNav, ICON_NAMES, ICON_SYNONYMS, resolveIcon } from './ShellS
 const h = '<!doctype html><html><head><title>T</title></head></html>'
 assert.deepEqual(extractArtifact(`<artifact title="Dash">${h}</artifact>`), { title: 'Dash', html: h })
 assert.deepEqual(extractArtifact('Sure!\n```html\n' + h + '\n```'), { title: 'T', html: h })
+assert.deepEqual(extractArtifact("```artifact\ntitle=\"Welcome – Wallet\"\n" + h + "\n```"), { title: "Welcome – Wallet", html: h }, "a fenced artifact keeps its title and leaves no wrapper text on the page")
+assert.equal(extractArtifact("<artifact title=\"X\">stray line\n" + h + "</artifact>").html, h, "text before the document is dropped")
 assert.deepEqual(extractArtifact(`<artifact title="X">\n\`\`\`html\n${h}\n\`\`\`\n</artifact>`), { title: 'X', html: h })
 assert.equal(extractArtifact(`<artifact title="Cut">${h.slice(0, 20)}`).html, h.slice(0, 20)) // partial stream
 assert.equal(extractArtifact(`<artifact title="Profile &amp; Goals">${h}</artifact>`).title, 'Profile & Goals', 'titles are plain text')

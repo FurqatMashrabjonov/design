@@ -564,6 +564,12 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.equal(normalizeKit(once, css), once, 'idempotent')
   assert.equal(normalizeKit('<html><head></head><body><div class="card">x</div></body></html>', css).includes('data-od-kit'), false, 'no od- class, no sheet')
   assert.equal(normalizeKit('<html><head></head><body><div class="food-card">x</div></body></html>', css).includes('data-od-kit'), false, '"food-card" is not an od- class')
+  {
+    // KIT-04: a class the kit does not define is the model's own component, and its rule stays.
+    const coined = normalizeKit('<html><head><style>.od-benefit-row{display:flex;gap:12px} .od-btn{background:red}</style></head><body><div class="od-benefit-row">x</div><button class="od-btn">y</button></body></html>', css)
+    assert.ok(coined.includes('.od-benefit-row{display:flex;gap:12px}'), 'a coined od- class keeps its styling')
+    assert.ok(!coined.includes('.od-btn{background:red}'), 'a real kit class is still not restyled')
+  }
   assert.ok(!normalizeKit(once.replace('class="od-card"', 'class="card"'), css).includes('data-od-kit'), 'a sheet is removed once nothing uses it')
   const restyled = normalizeKit('<html><head><style>.od-btn{background:red}.od-row__lead, .od-kv:hover{x:1}.promo .od-btn{padding:0}.od-card.promo{margin:0}.mine{color:blue}@media (min-width:1px){.od-chip{x:2}}</style></head><body><div class="od-card promo">x</div></body></html>', css)
   const own = restyled.replace(/<style data-od-kit>[\s\S]*?<\/style>/, '')

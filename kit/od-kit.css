@@ -374,3 +374,13 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 .od-row--danger .od-row__lead { background: color-mix(in oklab, var(--danger), transparent 88%); color: inherit; }
 /* The bottom bar's margin-top:auto needs a column to push against: a short form keeps its button at the foot of the phone, not under the last field. Zero specificity, so a page that lays out its body wins. */
 :where(body:has(> .od-bottom-bar)) { display: flex; flex-direction: column; min-height: 100dvh; }
+
+/* An amount being entered (send money, set a budget, log a weight): the figure is the screen's hero,
+   so it is drawn large and centred, and the field never grows wider than its box. */
+.od-amount { display: flex; align-items: baseline; justify-content: center; gap: 4px; padding: var(--space-6, 24px) 0; font-family: var(--font-display); font-variant-numeric: tabular-nums; color: var(--fg); }
+.od-amount__unit { font-size: 28px; font-weight: 600; color: var(--muted); }
+.od-amount__field { min-width: 3ch; width: 6ch; field-sizing: content; max-width: 100%; border: 0; background: transparent; padding: 0; color: inherit; font: inherit; font-size: 56px; font-weight: 700; letter-spacing: -0.02em; text-align: center; outline: none; }
+.od-amount__field::placeholder { color: var(--muted); }
+/* A slider: the native range input, coloured by the accent; the value sits in its own trail. */
+.od-slider { display: block; width: 100%; min-width: 0; height: 44px; margin: 0; accent-color: var(--accent); }
+.od-row__trail .od-slider { width: 120px; }

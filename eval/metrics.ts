@@ -50,6 +50,11 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 const body = (html: string) => html.replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
 const ownStyle = (html: string) => [...html.matchAll(/<style(?![^>]*\bdata-od)[^>]*>([\s\S]*?)<\/style>/gi)].map((m) => m[1]).join('\n')
 
+// KIT-04: the classes kit/od-kit.css defines, and a page's classes outside the injected shell.
+import { readFileSync } from 'node:fs'
+const KIT_CLASSES = new Set([...readFileSync(new URL('../kit/od-kit.css', import.meta.url), 'utf8').matchAll(/\.(od-[a-z0-9_-]+)/gi)].map((m) => m[1]!))
+const pageClasses = (html: string) => [...body(html).replace(/<(nav|header)\b[^>]*data-od-shell[\s\S]*?<\/\1>/gi, '').matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1]!.split(/\s+/)).filter(Boolean)
+
 // USD per million tokens. ponytail: constants, overridable by env; move to config when OBS-01 logs real cost.
 import { PRICE } from '../src/app/Services/LlmService.ts'
 
@@ -149,10 +154,13 @@ export function computeMetrics(screens: ScreenInput[], briefMs: number[], errors
       // KIT-04: how much of the screen is built from the kit, and how much CSS the model still wrote.
       // Shell markup is ours, so its classes are left out of the share.
       classShare: round(mean(screens.map((s) => {
-        const cls = [...body(s.html).replace(/<(nav|header)\b[^>]*data-od-shell[\s\S]*?<\/\1>/gi, '').matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1]!.split(/\s+/)).filter(Boolean)
-        return cls.length ? cls.filter((c) => c.startsWith('od-')).length / cls.length : 0
+        const cls = pageClasses(s.html)
+        return cls.length ? cls.filter((c) => KIT_CLASSES.has(c)).length / cls.length : 0
       }))),
-      ownCssBytes: Math.round(mean(screens.map((s) => ownStyle(s.html).length))),
+      // od- names the kit does not define: the model imitating the kit's naming without its styling.
+      coinedClasses: screens.reduce((n, s) => n + new Set(pageClasses(s.html).filter((c) => c.startsWith('od-') && !KIT_CLASSES.has(c))).size, 0),
+      // The design system's tokens arrive as a :root block in the same sheet; they are ours, not the screen's.
+      ownCssBytes: Math.round(mean(screens.map((s) => ownStyle(s.html).replace(/:root\s*\{[^}]*\}/g, '').length))),
     },
     // KIT-03: charts drawn by code from a data-od-chart slot, versus charts the model drew itself.
     charts: {

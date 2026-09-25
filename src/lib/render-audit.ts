@@ -41,6 +41,10 @@ function background(el) {
     var cs = getComputedStyle(e);
     if (cs.backgroundImage && cs.backgroundImage !== 'none') return null; // a photo or gradient behind: cannot judge
     if (e.tagName === 'IMG' || e.tagName === 'VIDEO') return null;
+    // KIT-04: a photo card paints its photo as an absolutely placed child and its scrim on ::before —
+    // the box's own colour is only what shows while the photo loads.
+    if (e !== el && ((getComputedStyle(e, '::before').backgroundImage || 'none') !== 'none' || (getComputedStyle(e, '::after').backgroundImage || 'none') !== 'none')) return null;
+    for (var k = e.firstElementChild; k; k = k.nextElementSibling) if ((k.tagName === 'IMG' || k.getAttribute('role') === 'img') && getComputedStyle(k).position === 'absolute' && k.offsetWidth >= e.offsetWidth * 0.9) return null;
     var c = rgba(cs.backgroundColor);
     if (c[3] > 230) return layers.length ? flatten(layers, c) : c;
     if (c[3] > 8) layers.push(c);

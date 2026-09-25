@@ -56,6 +56,8 @@ Format: block — variants/elements — when to use.
 - `od-form` — `__field` (`__label` + bare `input`/`select`), `__field--inline` (label left, value right) — several fields in one card instead of a box per input.
 - `od-field` / `--error` — `__label`, `__help` + `od-input` — a single boxed field.
 - `od-search` — pill search field.
+- `od-amount` — `__unit` + `__field`: a large centred amount being typed (send money, a budget); never a bare oversized input.
+- `od-slider` — a native range input in the accent; in a row it sits in `od-row__trail`.
 - `od-options` / `--2` / `--4` — grid of `od-option` tiles (icon + label; `--row` for a wide row; `is-active`) — pick a category, time, plan.
 - `od-swatches` + `od-swatch` (`style="--swatch:var(--success)"`, `is-active`) — pick a colour.
 - `od-segmented` / `--pill` / `--underline` — 2-4 views of one list; underline for page-level tabs.
