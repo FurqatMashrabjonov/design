@@ -85,3 +85,25 @@ Format: block — variants/elements — when to use.
 - `od-art` — the illustration drawn from the kit: an accent wash around one big icon or figure (a ring, chips); in `od-page--fill` it takes the free height and bleeds to the side edges (and the top, when it comes first).
 - `od-dots` — `<i>` per page, `is-active` on the current one — the page indicator.
 - `od-row--danger` — a destructive row (Delete account, Sign out) in danger text, never a filled red button.
+
+## Overlays (drawn open) and the floating layer — KIT-07
+A screen is a still picture, so an overlay is drawn in its open state: `od-scrim` and the overlay are the last children of `<body>`, after the page. Keep a screen that shows a modal overlay to one phone height. Numbers in `REFERENCE.md`.
+- `od-scrim` / `--light` — the dim layer (40% black; `--light` 12% under a menu). Every modal overlay sits on one.
+- `od-sheet--overlay` — the sheet docked to the bottom over the page; content-high, or a detent: `--medium` (half) / `--large` (~90%). `__head` — a 3-column row: a ghost Reset left, `od-sheet__title` centred, a close `od-icon-btn` right. A last `od-actions` or `od-btn` sits at the foot. The container for filters, share, confirm and previews; a map's nearby list is the same sheet with no scrim.
+- `od-drawer` — side navigation over a scrim, 300px from the left: `__head` (avatar + name), `__item` (icon + label, `is-active` tinted pill, an `od-badge` count), `od-label` group heads, `__foot` (settings, account) at the bottom.
+- `od-action-sheet` — `__group` cards inset 8px from the edges: `__title` (the question), `__btn` (56px, `--danger`), and Cancel alone in the last group (`__btn--cancel`). A choice of 2-4 actions about one thing; a sheet when there is more to show.
+- `od-menu` inside an `od-anchor` (wrap the button and the menu) — a glass pull-down under its button: `__item` (label + trailing icon, 44px, `--danger`), `__divider` between groups; `--left` aligns it to the button's left, `--up` opens above. Pair with `od-scrim--light`.
+- `od-dialog` — a centred alert over the scrim: `__icon` (optional), `__title`, `__text`, then an `od-actions` (stacked, or `--row` for two short ones). Only to confirm something that cannot be undone.
+- `od-row--swiped` + `od-swipe` (last child of the row) — a list row slid open with 1-3 `od-swipe__action` (icon + word, 78px each; `--accent`, `--danger`, neutral by default). Draw one such row per list, to show the gesture exists.
+- `od-toast` / `--success` / `--error` — `__icon`, the message, `__action` (Undo) — an inverted capsule above the tab bar confirming what just happened.
+- `od-glass-btn` — a 44px glass circle over a photo or a map (back, save, share); `od-float` / `--bottom` places a row of them over their positioned parent (`od-media`); `od-glass` gives any small thing (a chip, a search field) the same material.
+- `od-toolbar` — a floating glass capsule of 2-4 actions at the bottom (icon buttons and at most one `od-btn`), iOS 26 style, for screens without a tab bar.
+- `od-search--floating` — the search field as a glass pill at the bottom of the screen, in thumb reach.
+- `od-skeleton` / `--title` / `--short` / `--circle` / `--card` — grey shapes where content will land; a loading state, never a spinner in the middle.
+- Top tabs: `od-segmented--underline` scrolls sideways when the tabs outgrow the width; pills are `od-chip` in an `od-carousel`.
+
+## Chat and sign-in — KIT-07
+- `od-chat` — the thread: `__day` (a centred day label), then `od-bubble`s. `od-bubble` is theirs (surface, left), `--out` is mine (accent, right), `--media` holds a photo, `--ai` is an assistant's answer as plain text across the width; `__time` inside the bubble, `__reactions` (heart + count) hangs off its corner.
+- `od-typing` — three dots inside a bubble while the other side writes.
+- `od-composer` — the message pill with `__send` (36px accent circle), inside an `od-bottom-bar` after an attach `od-icon-btn`. `--ai` is a card: a textarea over `__tools` (`od-chip--sm` tools, send at the end); put suggestion chips (`od-chip--sm` in an `od-carousel`) above it.
+- `od-btn--social` — a neutral full-width provider button: a lucide icon or a letter (`<b>G</b>`) and "Continue with …"; never a brand logo image. `od-divider--label` — a hairline carrying a word ("or"). A passkey is offered as an `od-btn--ghost` with a `fingerprint` icon.

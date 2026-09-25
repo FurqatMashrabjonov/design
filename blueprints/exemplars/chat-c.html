@@ -1,0 +1,32 @@
+<!-- Oshpaz — a cooking assistant: the recipe pinned on top, the answer as text, suggestions above the assistant composer -->
+<div class="od-page">
+  <div class="od-card od-card--flat" style="flex-direction:row;align-items:center;gap:12px">
+    <span class="od-row__lead" style="--od-lead:48px"><img data-od-img="lagman noodles in a bowl" alt=""></span>
+    <div style="flex:1;min-width:0"><p class="od-card__title">Lagman for four</p><p class="od-card__meta">Step 3 of 7 · 40 min left</p></div>
+    <span class="od-tag od-tag--neutral">Cooking</span>
+  </div>
+</div>
+<div class="od-chat" style="padding-top:0">
+  <div class="od-bubble od-bubble--out">I have no celery. What can I use instead?</div>
+  <div class="od-bubble od-bubble--ai">
+    <p>Use <b>fennel</b> or the stalks of <b>bok choy</b> — both keep their crunch in the sauce. Cut them the same size as the peppers and add them two minutes later, since they cook faster.</p>
+    <p class="od-card__meta">No fennel either? Leave it out and add half an onion more.</p>
+  </div>
+  <div class="od-bubble od-bubble--out">Fennel it is. How much?</div>
+  <div class="od-bubble od-bubble--ai"><span class="od-typing" aria-label="Thinking"><i></i><i></i><i></i></span></div>
+</div>
+<div class="od-bottom-bar od-bottom-bar--stack" style="border-top:0;background:var(--bg)">
+  <div class="od-carousel">
+    <button class="od-chip od-chip--sm">Next step</button>
+    <button class="od-chip od-chip--sm">Make it spicier</button>
+    <button class="od-chip od-chip--sm">Set a timer</button>
+  </div>
+  <div class="od-composer od-composer--ai">
+    <textarea rows="1" placeholder="Ask about this recipe"></textarea>
+    <div class="od-composer__tools">
+      <button class="od-chip od-chip--sm"><i data-lucide="camera"></i>Photo</button>
+      <button class="od-chip od-chip--sm"><i data-lucide="mic"></i>Voice</button>
+      <button class="od-composer__send" aria-label="Send"><i data-lucide="arrow-up"></i></button>
+    </div>
+  </div>
+</div>

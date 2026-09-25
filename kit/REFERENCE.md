@@ -78,3 +78,31 @@ Measured on 390×844 iOS screens from the Gummble library (September 2026), esti
 | `od-btn--block`, `od-actions > od-btn` height | 48 | 52 | a flow's last button is 50-56 |
 | `od-page--fill` bottom padding | 16 | 32 | the CTA ends 38-66 above the edge |
 | `od-art` in `od-page--fill` | inset card, rounded | bleeds to the sides (and top when first), square | 5/6 onboarding arts are full-bleed |
+
+## Overlays, chat and sign-in (KIT-07, 16 screens)
+
+Measured the same way (Gummble, September 2026; images at 1.23× or 2.37×, divided back to 390 px).
+
+| Source | What | Measured | Ours |
+|---|---|---|---|
+| Crypto.com | "Sort and Filter" sheet | top ~58 under the status bar (≈93%); head row 44 with centred 17px title and × right; chip grid; Reset / Apply side by side, 44 tall, at the foot | `od-sheet--large` = phone − 84 (≈90%); `__head` 44; `od-actions--row` at the foot |
+| Savee | board menu sheet | content-high (~245), top radius ~26, grabber 36×4, rows ~46 | `od-sheet--overlay` content-high, radius `--radius-lg`, grabber 36×5, rows 44-56 |
+| Savee | comments sheet | top ~55 under the status bar (≈88%), radius ~24 | `--large` |
+| bless. | delete confirm (action sheet) | inset 8 from the edges, group radius ~14, Cancel 56 tall in its own card, 8 apart | `od-action-sheet`: 8 inset, 56 buttons, 8 gap, `--radius-md` |
+| Messages | pull-down menu | 260 wide, 8 from the edge, 8 under the button; rows ~46 with a 20px trailing icon; groups split by an 8px band; the page behind barely dimmed | `od-menu` min 250, 8 under its anchor, 44 rows, 8px `__divider`, `od-scrim--light` (12%) |
+| Claude | side drawer | 318 wide (82%), rows ~49 with 20px icon and 17px label, "Recents" label, account pill at the foot | `od-drawer` min(300, 82%), rows 48, 22px icon, `od-label`, `__foot` |
+| Airbnb | swiped message row | actions full row height, ~86 wide each, 18px icon over a 13-14px semibold word, row slid left by their width | `od-swipe__action` 78 wide, 20px icon, 13px 600 |
+| Yazio | sign-in | provider buttons full width, ~55 tall, radius ~16, 16 apart, icon + "Continue with …" centred; terms 13px at the foot | `od-btn--social` 52 tall, `--radius-md`, 12 apart in `od-stack` |
+| Orb | log-in options | pill rows 60 tall, 8 apart, icon tile left | (not taken: rows read as a list, not as buttons) |
+| Airbnb | host chat | bubbles ~16×11 padding, radius ~18, max ~280 (72%), 17px text, 36 avatar, day and system lines 13px centred | `od-bubble` 14×9, radius 20 with a 6px tail corner, max 78%, `--text-base` |
+| Revolut | payment chat | composer pill 40 tall, inset 16, send icon inside | `od-composer` 44 (tap target), 36px send inside |
+| Instagram | direct message | composer 40 pill, 32px accent send capsule inside | same |
+| DeepSeek | assistant chat | prompt as a right bubble; answer as plain full-width text (no bubble); composer a floating card r~20 inset 12, tools (32 tall chips) under the field, send at the end | `od-bubble--ai` (no bubble), `od-composer--ai` (card, `__tools`) |
+| KAYAK | map | pill filter chips on top of the map, "List view" capsule floating, photo card docked at the bottom | `od-float` + `od-glass`, `od-sheet--overlay` with no scrim |
+
+- A modal sheet takes 50% (medium) or ~88-93% (large) of the screen, or only its content (menus of 3-5 rows). **Ours:** `--medium` = half, `--large` = phone − 84, default content-high.
+- Every modal overlay dims the page behind; menus dim it only slightly. Scrim 40% black, 12% for a menu.
+- Destructive actions sit last in their group, in red text, never as the only filled button; Cancel is always the separate, bold one.
+- Swipe actions are 78-86 wide, full height, icon above a word.
+- iOS 26 floating controls over content (glass): 44 circles, a capsule of actions, search at the bottom. Glass is 78% surface over an 18px blur and saturate(1.4), the same recipe as the shell's floating tab bar; where blur is unsupported it falls back to the solid surface.
+- Toasts: an inverted capsule 52 tall, 16 from the sides, 24 above the bottom edge or 104 when the floating tab bar is there (conventions: iOS 26 banners, Material snackbar; no library screen caught one on screen).

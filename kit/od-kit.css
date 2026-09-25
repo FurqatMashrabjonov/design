@@ -8,7 +8,7 @@
 .od-page { padding: var(--space-4, 16px); display: flex; flex-direction: column; gap: var(--space-5, 20px); }
 .od-stack { display: flex; flex-direction: column; gap: var(--space-3, 12px); }
 .od-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3, 12px); }
-.od-carousel { display: flex; gap: var(--space-3, 12px); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--space-4, 16px)); padding: 0 var(--space-4, 16px); scrollbar-width: none; }
+.od-carousel { display: flex; gap: var(--space-3, 12px); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--space-4, 16px)); padding: 0 var(--space-4, 16px); scrollbar-width: none; scroll-padding-inline: var(--space-4, 16px); }
 .od-carousel > * { flex: 0 0 auto; scroll-snap-align: start; }
 .od-divider { height: 1px; background: var(--border-soft, var(--border)); border: 0; margin: 0; }
 
@@ -281,8 +281,8 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 
 /* Segmented and chips, other shapes. */
 .od-segmented--pill, .od-segmented--pill > button { border-radius: var(--radius-pill, 999px); }
-.od-segmented--underline { background: transparent; padding: 0; gap: var(--space-5, 20px); border-radius: 0; border-bottom: 1px solid var(--border-soft, var(--border)); }
-.od-segmented--underline > button { flex: none; min-height: 40px; padding: 0; border-radius: 0; }
+.od-segmented--underline { background: transparent; padding: 0; gap: var(--space-5, 20px); border-radius: 0; border-bottom: 1px solid var(--border-soft, var(--border)); overflow-x: auto; scrollbar-width: none; }
+.od-segmented--underline > button { flex: none; min-height: 40px; padding: 0; border-radius: 0; white-space: nowrap; }
 .od-segmented--underline > button.is-active, .od-segmented--underline > button[aria-pressed="true"] { background: transparent; box-shadow: inset 0 -2px 0 var(--fg); }
 .od-chips { display: flex; flex-wrap: wrap; gap: var(--space-2, 8px); }
 .od-chip--sm { min-height: 30px; padding: 0 12px; font-size: var(--text-xs, 12px); }
@@ -392,3 +392,155 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 :where(.od-page, .od-stack) > :where(*) + :where(.od-section, .od-group) { margin-top: var(--space-3, 12px); }
 /* The last button of a flow (onboarding, a form's submit) is 50-56px tall in shipped apps; in-content buttons stay 48. */
 .od-btn--block, .od-actions > .od-btn:not(.od-btn--ghost, .od-btn--sm) { min-height: 52px; }
+
+/* ── Kit 2026 (KIT-07) ── A screen is a still picture, so an overlay is drawn open, over the page, in
+   markup: a scrim, then the sheet / drawer / menu / dialog above it. Geometry in kit/REFERENCE.md.
+   The iOS 26 glass is for the floating layer only (buttons over photos and maps, a toolbar, a
+   bottom search); content stays on solid surfaces. */
+:where(:root) {
+  --od-scrim: rgba(0, 0, 0, .4);
+  --od-glass-bg: color-mix(in oklab, var(--surface) 78%, transparent);
+  --od-glass-blur: blur(var(--od-blur-nav, 18px)) saturate(1.4);
+  --od-glass-edge: inset 0 1px 0 rgba(255, 255, 255, .3), 0 0 0 1px color-mix(in oklab, var(--fg) 8%, transparent), 0 8px 24px -8px rgba(0, 0, 0, .3);
+  --od-float-shadow: 0 16px 48px rgba(0, 0, 0, .22), 0 0 0 1px color-mix(in oklab, var(--fg) 7%, transparent);
+  --od-float-bottom: calc(var(--space-6, 24px) + env(safe-area-inset-bottom, 0px));
+}
+/* Above a floating tab bar (the shell's nav: 64px tall, 21px up) instead of on it. */
+:where(body:has([data-od-shell="bottom-nav"])) { --od-float-bottom: 104px; }
+.od-scrim { position: fixed; inset: 0; z-index: 50; background: var(--od-scrim); }
+.od-scrim--light { background: rgba(0, 0, 0, .12); }
+
+/* Glass: the floating layer. An opaque surface where the browser cannot blur, so text never sits on a bare photo. */
+.od-glass, .od-glass-btn, .od-toolbar, .od-search--floating, .od-menu { background: var(--od-glass-bg); backdrop-filter: var(--od-glass-blur); -webkit-backdrop-filter: var(--od-glass-blur); box-shadow: var(--od-glass-edge); border: 0; color: var(--fg); }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .od-glass, .od-glass-btn, .od-toolbar, .od-search--floating, .od-menu { background: var(--surface); } }
+.od-glass-btn { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%; cursor: pointer; }
+.od-glass-btn i[data-lucide], .od-glass-btn svg, .od-toolbar i[data-lucide], .od-toolbar svg { width: 20px; height: 20px; }
+/* A row of floating controls over a photo or a map (its parent is positioned): at the top, or --bottom. */
+.od-float { position: absolute; z-index: 3; top: var(--space-3, 12px); left: var(--space-3, 12px); right: var(--space-3, 12px); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2, 8px); }
+.od-float--bottom { top: auto; bottom: var(--space-3, 12px); }
+.od-toolbar { position: fixed; z-index: 35; bottom: var(--od-float-bottom); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 2px; padding: 6px; border-radius: var(--radius-pill, 999px); }
+.od-toolbar .od-icon-btn { background: transparent; }
+.od-toolbar > .od-btn { min-height: 44px; border-radius: var(--radius-pill, 999px); }
+.od-search--floating { position: fixed; z-index: 35; left: var(--space-4, 16px); right: var(--space-4, 16px); bottom: var(--od-float-bottom); min-height: 48px; }
+
+/* Sheet as an overlay: docked to the bottom over a scrim, as tall as its content or at a detent (medium half, large ~90%). */
+.od-sheet--overlay { position: fixed; z-index: 51; left: 0; right: 0; bottom: 0; max-height: calc(100dvh - 48px); overflow-y: auto; padding-bottom: calc(var(--space-6, 24px) + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -8px 40px rgba(0, 0, 0, .18); }
+.od-sheet--medium { height: calc(100dvh / 2); }
+.od-sheet--large { height: calc(100dvh - 84px); }
+.od-sheet--overlay > :last-child:is(.od-actions, .od-btn) { margin-top: auto; }
+.od-sheet__head { display: grid; grid-template-columns: minmax(44px, 1fr) auto minmax(44px, 1fr); align-items: center; gap: var(--space-2, 8px); min-height: 44px; }
+.od-sheet__head > .od-sheet__title { grid-column: 2; }
+.od-sheet__head > :last-child { grid-column: 3; justify-self: end; }
+.od-sheet__head > .od-btn--ghost { padding: 0; min-height: 44px; }
+.od-sheet__head > .od-btn--ghost:first-child { justify-self: start; }
+.od-sheet > .od-list--plain { margin-inline: calc(-1 * var(--space-4, 16px)); }
+
+/* Side drawer: navigation over the page from the left edge, 300px wide. */
+.od-drawer { position: fixed; z-index: 51; top: 0; bottom: 0; left: 0; width: min(300px, 82%); display: flex; flex-direction: column; gap: var(--space-1, 4px); padding: var(--space-6, 24px) var(--space-3, 12px) calc(var(--space-4, 16px) + env(safe-area-inset-bottom, 0px)); background: var(--surface); color: var(--fg); border-radius: 0 var(--radius-lg, 16px) var(--radius-lg, 16px) 0; box-shadow: 8px 0 40px rgba(0, 0, 0, .18); overflow-y: auto; }
+.od-drawer__head { display: flex; align-items: center; gap: var(--space-3, 12px); padding: 0 var(--space-2, 8px) var(--space-4, 16px); }
+.od-drawer__item { display: flex; align-items: center; gap: var(--space-3, 12px); min-height: 48px; padding: 0 var(--space-3, 12px); border-radius: var(--radius-md, 12px); color: var(--fg); text-decoration: none; font: 500 var(--text-base, 16px)/1.2 var(--font-body); }
+.od-drawer__item i[data-lucide], .od-drawer__item svg { width: 22px; height: 22px; flex: none; color: var(--fg-2, var(--fg)); }
+.od-drawer__item > .od-badge { margin-left: auto; }
+.od-drawer__item.is-active, .od-drawer__item[aria-current="page"] { background: color-mix(in oklab, var(--accent), var(--surface) 88%); font-weight: 650; }
+.od-drawer__item.is-active :is(i, svg), .od-drawer__item[aria-current="page"] :is(i, svg) { color: var(--od-accent-text); }
+.od-drawer > .od-label { padding: var(--space-4, 16px) var(--space-3, 12px) var(--space-2, 8px); }
+.od-drawer__foot { margin-top: auto; display: flex; align-items: center; gap: var(--space-3, 12px); padding: var(--space-3, 12px) var(--space-2, 8px) 0; border-top: 1px solid var(--border-soft, var(--border)); }
+
+/* Action sheet: grouped choices inset from the bottom edge, Cancel apart in its own card. */
+.od-action-sheet { position: fixed; z-index: 51; left: var(--space-2, 8px); right: var(--space-2, 8px); bottom: calc(var(--space-2, 8px) + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--space-2, 8px); }
+.od-action-sheet__group { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius-md, 14px); overflow: hidden; }
+.od-action-sheet__title { padding: var(--space-3, 12px) var(--space-4, 16px); text-align: center; font-size: var(--text-xs, 13px); color: var(--muted); }
+.od-action-sheet__btn { min-height: 56px; border: 0; border-top: 1px solid var(--border-soft, var(--border)); background: transparent; color: var(--od-accent-text); font: 500 var(--text-base, 17px)/1 var(--font-body); cursor: pointer; }
+.od-action-sheet__group > .od-action-sheet__btn:first-child { border-top: 0; }
+.od-action-sheet__btn--danger { color: var(--od-danger-text); }
+.od-action-sheet__btn--cancel { font-weight: 650; }
+
+/* Menu: a floating panel anchored to the button that opened it (.od-anchor wraps both). */
+.od-anchor { position: relative; display: inline-flex; }
+.od-anchor:has(> .od-menu) { z-index: 52; }
+.od-menu { position: absolute; z-index: 52; top: calc(100% + var(--space-2, 8px)); right: 0; min-width: 250px; display: flex; flex-direction: column; padding: 6px 0; border-radius: var(--radius-md, 14px); box-shadow: var(--od-float-shadow); }
+.od-menu--left { right: auto; left: 0; }
+.od-menu--up { top: auto; bottom: calc(100% + var(--space-2, 8px)); }
+.od-menu__item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4, 16px); min-height: 44px; padding: 0 var(--space-4, 16px); border: 0; background: transparent; color: var(--fg); font: 400 var(--text-base, 16px)/1.2 var(--font-body); text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.od-menu__item i[data-lucide], .od-menu__item svg { width: 20px; height: 20px; flex: none; }
+.od-menu__item--danger { color: var(--od-danger-text); }
+.od-menu__divider { height: 8px; margin: 6px 0; border: 0; background: color-mix(in oklab, var(--fg) 6%, transparent); }
+
+/* Swiped row: the row slides left and its actions show at the trailing edge, full height, 78px each. */
+.od-row--swiped { --od-swipe-w: 156px; position: relative; overflow: hidden; }
+.od-row--swiped:has(.od-swipe > :nth-child(3)) { --od-swipe-w: 234px; }
+.od-row--swiped:not(:has(.od-swipe > :nth-child(2))) { --od-swipe-w: 78px; }
+.od-row--swiped > :not(.od-swipe) { transform: translateX(calc(-1 * var(--od-swipe-w))); }
+.od-swipe { position: absolute; top: 0; right: 0; bottom: 0; display: flex; width: var(--od-swipe-w); }
+.od-swipe__action { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; padding: 0; background: var(--muted); color: var(--bg); font: 600 var(--text-xs, 13px)/1 var(--font-body); cursor: pointer; }
+.od-swipe__action i[data-lucide], .od-swipe__action svg { width: 20px; height: 20px; }
+.od-swipe__action--accent { background: var(--accent); color: var(--accent-on, #fff); }
+.od-swipe__action--danger { background: var(--danger); color: var(--bg); }
+
+/* Toast: a capsule floating above the tab bar, inverted so it reads over any content. */
+.od-toast { position: fixed; z-index: 60; left: var(--space-4, 16px); right: var(--space-4, 16px); bottom: var(--od-float-bottom); display: flex; align-items: center; gap: var(--space-3, 12px); min-height: 52px; padding: var(--space-2, 8px) var(--space-5, 20px) var(--space-2, 8px) var(--space-3, 12px); border-radius: var(--radius-pill, 999px); background: var(--fg); color: var(--bg); box-shadow: var(--od-float-shadow); font: 500 var(--text-sm, 14px)/1.3 var(--font-body); }
+.od-toast__icon { flex: none; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-on, #fff); }
+.od-toast__icon i[data-lucide], .od-toast__icon svg { width: 16px; height: 16px; }
+.od-toast--success .od-toast__icon { background: var(--success); color: #fff; }
+.od-toast--error .od-toast__icon { background: var(--danger); color: #fff; }
+.od-toast__action { position: relative; flex: none; margin-left: auto; border: 0; padding: 0; background: none; color: color-mix(in oklab, var(--accent), var(--bg) 45%); font: 650 var(--text-sm, 14px)/1 var(--font-body); cursor: pointer; }
+
+/* Dialog: a centred alert over the scrim; its buttons are an .od-actions (stacked, or --row for two). */
+.od-dialog { position: fixed; z-index: 51; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(300px, calc(100% - 64px)); display: flex; flex-direction: column; gap: var(--space-2, 8px); padding: var(--space-6, 24px) var(--space-5, 20px) var(--space-5, 20px); border-radius: var(--radius-lg, 16px); background: var(--surface); color: var(--fg); text-align: center; box-shadow: var(--od-float-shadow); }
+.od-dialog__icon { width: 48px; height: 48px; margin: 0 auto var(--space-2, 8px); border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in oklab, var(--danger), transparent 86%); color: var(--od-danger-text); }
+.od-dialog__title { margin: 0; font: 650 var(--text-lg, 18px)/1.25 var(--font-body); }
+.od-dialog__text { margin: 0; font-size: var(--text-sm, 14px); line-height: 1.4; color: var(--muted); }
+.od-dialog > .od-actions { margin-top: var(--space-3, 12px); }
+.od-dialog .od-btn { min-height: 48px; border-radius: var(--radius-pill, 999px); }
+
+/* Skeleton: quiet shapes where content will land (a line, a title, a circle, a card). */
+.od-skeleton { display: block; height: 12px; border-radius: 6px; background-color: color-mix(in oklab, var(--fg) 8%, transparent); }
+.od-skeleton--title { height: 20px; width: 55%; }
+.od-skeleton--short { width: 40%; }
+.od-skeleton--circle { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.od-skeleton--card { height: 140px; border-radius: var(--radius-lg, 16px); }
+
+/* Chat: a thread of bubbles (theirs on the surface, mine in the accent), a day label, a typing row. */
+.od-chat { display: flex; flex-direction: column; gap: 4px; padding: var(--space-4, 16px); }
+.od-chat__day { align-self: center; margin: var(--space-3, 12px) 0; font-size: var(--text-xs, 12px); font-weight: 600; color: var(--muted); }
+.od-bubble { position: relative; align-self: flex-start; max-width: 78%; padding: 9px 14px; border-radius: 20px 20px 20px 6px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--border-soft, var(--border)); color: var(--fg); font-size: var(--text-base, 16px); line-height: 1.35; overflow-wrap: anywhere; }
+.od-bubble--out { align-self: flex-end; border-radius: 20px 20px 6px 20px; background: var(--accent); color: var(--accent-on, #fff); box-shadow: none; }
+.od-bubble:not(.od-bubble--out) + .od-bubble--out, .od-bubble--out + .od-bubble:not(.od-bubble--out) { margin-top: var(--space-3, 12px); }
+.od-bubble__time { float: right; margin: 6px 0 -4px 10px; font-size: 11px; line-height: 1.4; opacity: .75; font-variant-numeric: tabular-nums; }
+.od-bubble--media { padding: 0; overflow: hidden; background: none; box-shadow: none; }
+.od-bubble > img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.od-bubble:has(> .od-bubble__reactions) { margin-bottom: 14px; }
+.od-bubble__reactions { position: absolute; right: 10px; bottom: -14px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: var(--radius-pill, 999px); background: var(--surface); box-shadow: 0 0 0 2px var(--bg); color: var(--fg); font-size: 12px; font-weight: 600; }
+.od-bubble__reactions i[data-lucide], .od-bubble__reactions svg { width: 13px; height: 13px; color: var(--danger); fill: currentColor; }
+/* An assistant's answer is text on the page, not a bubble; the person's prompt stays a bubble. */
+.od-bubble--ai { align-self: stretch; max-width: none; padding: 0; background: none; box-shadow: none; border-radius: 0; display: flex; flex-direction: column; gap: var(--space-2, 8px); margin-block: var(--space-2, 8px); }
+.od-bubble--ai > * { margin: 0; }
+.od-typing { display: inline-flex; gap: 4px; align-items: center; min-height: 20px; }
+.od-typing > i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); opacity: .5; }
+
+/* Composer: the message pill with its send button; --ai grows into a card with a row of tools. */
+.od-composer { flex: 1; display: flex; align-items: center; gap: var(--space-2, 8px); min-width: 0; min-height: 44px; padding: 4px 4px 4px var(--space-4, 16px); border-radius: 22px; background: var(--surface-warm, var(--surface)); border: 1px solid var(--border-soft, var(--border)); }
+.od-composer > :is(input, textarea) { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; color: var(--fg); font: var(--text-base, 16px)/1.4 var(--font-body); outline: none; resize: none; }
+.od-composer__send { position: relative; flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: var(--accent-on, #fff); cursor: pointer; }
+.od-composer__send i[data-lucide], .od-composer__send svg { width: 18px; height: 18px; }
+.od-composer--ai { flex-direction: column; align-items: stretch; gap: var(--space-3, 12px); padding: var(--space-3, 12px) var(--space-3, 12px) var(--space-2, 8px) var(--space-4, 16px); border-radius: var(--radius-lg, 24px); background: var(--surface); box-shadow: var(--elev-raised, none); }
+.od-composer__tools { display: flex; align-items: center; gap: var(--space-2, 8px); }
+.od-composer__tools > .od-composer__send { margin-left: auto; }
+
+/* Sign-in: a neutral full-width provider button (icon + label), and a divider that carries a word ("or"). */
+.od-btn--social { width: 100%; min-height: 52px; background: var(--surface); color: var(--fg); border: var(--od-control-border); box-shadow: none; }
+.od-btn--social i[data-lucide], .od-btn--social svg { width: 20px; height: 20px; }
+.od-divider--label { display: flex; align-items: center; gap: var(--space-3, 12px); height: auto; background: none; font-size: var(--text-xs, 12px); color: var(--muted); }
+.od-divider--label::before, .od-divider--label::after { content: ""; flex: 1; height: 1px; background: var(--border-soft, var(--border)); }
+
+/* Tap targets and motion for the new parts. */
+.od-composer__send::after, .od-toast__action::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: no-preference) {
+  .od-skeleton { background-image: linear-gradient(90deg, transparent, color-mix(in oklab, var(--surface) 55%, transparent), transparent); background-size: 200% 100%; background-repeat: no-repeat; animation: od-shimmer 1.4s ease-in-out infinite; }
+  .od-typing > i { animation: od-typing 1.2s ease-in-out infinite; }
+  .od-typing > i:nth-child(2) { animation-delay: .15s; }
+  .od-typing > i:nth-child(3) { animation-delay: .3s; }
+  .od-glass-btn:active, .od-swipe__action:active, .od-composer__send:active, .od-menu__item:active, .od-drawer__item:active { transform: scale(.96); }
+  @keyframes od-shimmer { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+  @keyframes od-typing { 0%, 60%, 100% { opacity: .35; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
+}

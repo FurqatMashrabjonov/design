@@ -1,0 +1,23 @@
+<!-- Jamoa — a team app's Activity tab: rows by Today / Earlier, unread marked, one row swiped open, an undo toast -->
+<div class="od-page">
+  <header class="od-header">
+    <div class="od-header__bar"><div class="od-header__actions"><button class="od-btn od-btn--ghost od-btn--sm">Mark all read</button></div></div>
+    <h1 class="od-header__title">Activity</h1>
+  </header>
+  <div class="od-group">
+    <span class="od-label od-group__label">Today</span>
+    <div class="od-list">
+      <div class="od-row od-row--swiped"><span class="od-avatar"><img data-od-avatar="Sardor Umarov" alt=""></span><span class="od-row__body"><span class="od-row__title"><b>Sardor</b> assigned you Q3 budget</span><span class="od-row__sub">Finance · 10 min</span></span><span class="od-swipe"><button class="od-swipe__action"><i data-lucide="bell-off"></i>Mute</button><button class="od-swipe__action od-swipe__action--danger"><i data-lucide="trash-2"></i>Delete</button></span></div>
+      <a class="od-row"><span class="od-avatar"><img data-od-avatar="Madina Yusupova" alt=""></span><span class="od-row__body"><span class="od-row__title"><b>Madina</b> commented on Launch plan</span><span class="od-row__sub">“Moved the date to Friday” · 1 h</span></span><span class="od-badge" aria-label="Unread"></span></a>
+      <a class="od-row"><span class="od-row__lead"><i data-lucide="calendar-check"></i></span><span class="od-row__body"><span class="od-row__title"><b>Design review</b> starts at 15:00</span><span class="od-row__sub">Room 2 · 3 h</span></span></a>
+    </div>
+  </div>
+  <div class="od-group">
+    <span class="od-label od-group__label">Earlier</span>
+    <div class="od-list">
+      <a class="od-row"><span class="od-avatar"><img data-od-avatar="Jasur Nazarov" alt=""></span><span class="od-row__body"><span class="od-row__title"><b>Jasur</b> joined Mobile team</span><span class="od-row__sub">Yesterday</span></span></a>
+      <a class="od-row"><span class="od-row__lead"><i data-lucide="check-circle"></i></span><span class="od-row__body"><span class="od-row__title"><b>Onboarding flow</b> was approved</span><span class="od-row__sub">Mon</span></span></a>
+    </div>
+  </div>
+</div>
+<div class="od-toast" role="status"><span class="od-toast__icon"><i data-lucide="archive"></i></span><span>3 notifications archived</span><button class="od-toast__action">Undo</button></div>
