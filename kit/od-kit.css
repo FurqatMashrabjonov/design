@@ -74,7 +74,7 @@
 /* Lists */
 .od-list { display: flex; flex-direction: column; background: var(--od-card-bg); border: var(--od-card-border); border-radius: var(--radius-lg, 16px); box-shadow: var(--od-card-shadow); overflow: hidden; backdrop-filter: var(--od-blur); -webkit-backdrop-filter: var(--od-blur); }
 .od-list--plain { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
-.od-row { display: flex; align-items: center; gap: var(--space-3, 12px); min-height: var(--od-row-min); padding: 10px var(--space-4, 16px); color: var(--fg); text-decoration: none; }
+.od-row { display: flex; align-items: center; gap: var(--space-3, 12px); min-height: var(--od-row-min); padding: 12px var(--space-4, 16px); color: var(--fg); text-decoration: none; }
 /* Hairlines between rows start at the text, not the edge (iOS grouped list): 16px, or past the lead. */
 .od-list > .od-row { position: relative; }
 .od-list > .od-row + .od-row::before { content: ""; position: absolute; top: 0; right: 0; left: var(--space-4, 16px); height: 1px; background: var(--border-soft, var(--border)); }
@@ -137,7 +137,7 @@
 .od-input { width: 100%; min-height: 48px; padding: 0 var(--space-4, 16px); border-radius: var(--radius-md, 12px); border: var(--od-control-border); background: var(--surface); color: var(--fg); font: var(--text-base, 16px) var(--font-body); box-sizing: border-box; }
 textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize: vertical; }
 .od-input:focus { outline: none; box-shadow: var(--focus-ring, 0 0 0 3px color-mix(in oklab, var(--accent), transparent 70%)); border-color: var(--accent); }
-.od-search { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 var(--space-4, 16px); border-radius: var(--radius-pill, 999px); background: var(--surface-warm, var(--surface)); border: 1px solid var(--border-soft, var(--border)); color: var(--muted); }
+.od-search { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 var(--space-4, 16px); border-radius: var(--radius-pill, 999px); background: var(--surface-warm, var(--surface)); border: 1px solid var(--border-soft, var(--border)); color: var(--muted); }
 .od-search > input { flex: 1; min-width: 0; border: 0; background: transparent; font: var(--text-base, 16px) var(--font-body); color: var(--fg); outline: none; }
 .od-search i[data-lucide], .od-search svg { width: 18px; height: 18px; flex: none; }
 .od-segmented { display: flex; padding: 3px; gap: 3px; border-radius: var(--radius-md, 12px); background: var(--surface-warm, var(--surface)); }
@@ -305,7 +305,7 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 .od-sheet__grabber { width: 36px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto; }
 .od-sheet__title { font: var(--od-heading-weight, 650) var(--text-lg, 18px)/1.2 var(--od-heading-font, var(--font-display)); margin: 0; color: var(--fg); text-align: center; }
 /* A detail screen's content sheet pulled up over the bottom edge of its photo hero. */
-.od-sheet--overlap { position: relative; margin-top: calc(-1 * var(--space-6, 24px)); padding-top: var(--space-3, 12px); box-shadow: none; }
+.od-sheet--overlap { position: relative; margin-top: calc(-1 * var(--space-6, 24px)); padding-top: var(--space-3, 12px); gap: var(--space-6, 24px); box-shadow: none; }
 .od-actions { display: flex; flex-direction: column; gap: var(--space-2, 8px); }
 .od-actions > .od-btn { width: 100%; }
 .od-actions--row { flex-direction: row; }
@@ -352,7 +352,7 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 
 /* exemplars-c additions */
 /* A first-run screen fills the phone; its last block (the actions) sits at the bottom, in thumb reach. */
-.od-page--fill { min-height: 100dvh; }
+.od-page--fill { min-height: 100dvh; padding-bottom: var(--space-8, 32px); }
 .od-page--fill > :last-child { margin-top: auto; }
 /* Page indicator: the current page is a short pill, the others dots. White on a photo. */
 .od-dots { display: flex; align-items: center; gap: 6px; }
@@ -366,7 +366,8 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 .od-feature--fill > .od-feature__body { gap: var(--space-3, 12px); padding-bottom: var(--space-6, 24px); }
 .od-feature--fill .od-feature__title { font-size: var(--text-2xl, 34px); }
 /* Art tile: the illustration of a first-run screen drawn from the kit — a soft accent wash around one big icon or figure; on a full page it takes the free height. */
-.od-page--fill > .od-art { flex: 1; }
+.od-page--fill > .od-art { flex: 1; margin-inline: calc(-1 * var(--space-4, 16px)); border-radius: 0; }
+.od-page--fill > .od-art:first-child { margin-top: calc(-1 * var(--space-4, 16px)); }
 .od-art { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4, 16px); min-height: 260px; padding: var(--space-6, 24px); border-radius: var(--radius-lg, 16px); background: color-mix(in oklab, var(--accent), var(--surface) 88%); color: var(--od-accent-text); text-align: center; }
 .od-art > i[data-lucide], .od-art > svg { width: 88px; height: 88px; stroke-width: 1.25; }
 /* Destructive row (Delete account, Sign out): danger text, never a filled red button in a list. */
@@ -384,3 +385,10 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
 /* A slider: the native range input, coloured by the accent; the value sits in its own trail. */
 .od-slider { display: block; width: 100%; min-width: 0; height: 44px; margin: 0; accent-color: var(--accent); }
 .od-row__trail .od-slider { width: 120px; }
+
+/* Measured against shipped apps (kit/REFERENCE.md). A titled section opens 30-34px below the block
+   above it, while stacked cards sit 12-18px apart: one gap for both read as a pile. The extra space
+   goes before a section or a group only, and at zero specificity so a page that spaces itself wins. */
+:where(.od-page, .od-stack) > :where(*) + :where(.od-section, .od-group) { margin-top: var(--space-3, 12px); }
+/* The last button of a flow (onboarding, a form's submit) is 50-56px tall in shipped apps; in-content buttons stay 48. */
+.od-btn--block, .od-actions > .od-btn:not(.od-btn--ghost, .od-btn--sm) { min-height: 52px; }
