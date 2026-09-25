@@ -5,6 +5,19 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### KIT-04 (davom): hech narsa ekrandan chiqmaydi; tab ekrani katta sarlavha bilan ochiladi, raqamlar kichraydi
+
+`autofixScreen` craft jadvaliga: `img, video, svg, canvas, iframe, input, select, textarea` telefon enidan
+kengaymaydi, uzun so'z sinadi (nol-spetsifiklik). Saqlangan 24 ekranda qayta o'ynatildi: 503px summa
+maydoni tuzaldi, toza 16 → 17. Haqiqiy ilovalarga (Gummble: Plazo ~56px, Ubank ~28px, Things/Apple Home —
+katta sarlavha) qarab: tab ekraniga majburiy 72–96px raqam o'rniga 32–34px sarlavha (`ScreenContext` ANCHOR);
+blueprint raqamlari 88–112/72–88/56–72 → 56–64/48–56/40–48 px (dashboard, detail, result, stats).
+
+Eval (claude-cli, 4 brief): audit 0.54 → 0.70, lint 0.58 → 0.56, kit ulushi 0.65 → 0.55 (run'lar orasida
+shovqin katta; 24 ekran), bitta ekran "incomplete HTML" bilan. Ko'z bilan: Plants tablari "5 / 3 / 8" o'rniga
+sarlavhalar bilan ochiladi. Fayllar: `src/lib/design-lint.ts`, `src/app/Services/ScreenContext.ts`,
+`blueprints/{dashboard,detail,result,stats}.json`, testlar. tsc va check toza.
+
 ### Model A/B uchun asboblar: Gemini 3.8 Flash, ekran thinking kaliti, eval `--model`
 
 Foydalanuvchi so'rovi: bir xil brief'ni DeepSeek (thinking off/on), Gemini 3.8 Flash va Gemini 3.1

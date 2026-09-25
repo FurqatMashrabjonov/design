@@ -138,11 +138,11 @@ export function screenSpec(s: PlannedScreen, seed?: string): string {
     s.linksTo.length > 0 && `Taps that open another screen: put data-od-link="<exact screen name>" on the element that opens it. Targets from this screen: ${s.linksTo.map((l) => `"${l}"`).join(', ')}.`,
     // The archetype's structural pattern (blueprints/<archetype>.json); the plan's sections above say what content fills it.
     s.archetype && BlueprintService.brief(s.archetype) && `\n${BlueprintService.brief(s.archetype, seed)}`,
-    // GQ-15: a tab's root screen is a destination and carries the app's headline number whatever
-    // its archetype. The planner filed a habit tracker's Today as a `list`, whose blueprint is
-    // quiet by design, and the home screen came out with nothing bigger than 28px.
+    // GQ-15: a tab's root screen is a destination and needs an anchor — a home screen once came out
+    // with nothing bigger than 28px. KIT-04: the anchor is the tab's large title, as shipped apps do
+    // (Things, Apple Home); a forced 72–96px figure put "27 total streak days" on every tab.
     s.screenType === 'root-tab' && s.archetype && !QUIET_ROOTS.has(s.archetype) && !BlueprintService.find(s.archetype)?.hero &&
-      'HERO MOMENT: the one number that says how this tab is going right now (a streak, a count done today, a total), with its label under it. Draw it as a display figure of 72–96px on its own line above the list — the largest thing on the screen by a clear margin; the list under it is one step quieter.',
+      'ANCHOR: open with the tab\'s large title (32–34px, bold) and one quiet line under it. Add a figure only if this tab has one number that matters, at 40–56px; never a big number just to fill the top.',
   ]
     .filter(Boolean)
     .join('\n')

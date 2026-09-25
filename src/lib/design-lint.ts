@@ -465,6 +465,11 @@ export function autofixScreen(html: string): string {
       // A photo on a surface of nearly its own colour has no edge; 10% of the page's ink gives it
       // one without a visible border.
       ':where(img[data-od-img-resolved],img[data-od-avatar-resolved]){outline:1px solid color-mix(in oklab, var(--fg) 10%, transparent);outline-offset:-1px}',
+      // Nothing is wider than the phone: a replaced element or a form control keeps its intrinsic
+      // width otherwise (an amount field drew at 503px on a 390px screen, a range input ran off the
+      // edge), and a word longer than its line breaks instead of pushing the page sideways.
+      ':where(img,video,svg,canvas,iframe,input,select,textarea){max-width:100%}',
+      ':where(body){overflow-wrap:break-word}',
       // Keyboard focus must be visible — the linter cannot see a missing focus ring in a screenshot.
       ':where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}',
       // Press feedback: 0.96 reads as a press, 0.95 and below reads as a glitch.

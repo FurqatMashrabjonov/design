@@ -534,6 +534,7 @@ assert.ok(!/min-height:\s*44px/.test(big), 'the fix never inflates the drawn box
   assert.ok(craft.includes(':where(h1,h2,h3){text-wrap:balance}') && craft.includes('text-wrap:pretty'), 'headings balance, body copy gets orphan control')
   assert.ok(craft.includes(':focus-visible{outline:2px solid var(--accent)'), 'keyboard focus is visible')
   assert.ok(craft.includes('scale(.96)') && craft.includes('prefers-reduced-motion:no-preference'), 'press feedback, and only when motion is welcome')
+  assert.ok(craft.includes(':where(img,video,svg,canvas,iframe,input,select,textarea){max-width:100%}') && craft.includes('overflow-wrap:break-word'), 'nothing is wider than the phone')
   assert.ok(craft.includes('color-mix(in oklab, var(--fg) 10%, transparent)'), 'a resolved photo gets an edge')
   assert.ok(/:where\(/.test(craft) && !craft.includes('!important'), 'craft defaults never outrank the page')
   assert.equal(autofixScreen(craft), craft, 'the craft sheet is added once')
