@@ -5,6 +5,19 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Kit 2026: sheet/drawer, menyu, swipe, toast, glass, dialog, skeleton, chat, kirish (KIT-07)
+
+Tadqiqot (2026 mobil + iOS 26 Liquid Glass): bottom sheet ikkinchi darajali kontent uchun asosiy konteyner, glass
+faqat suzuvchi navigatsiya qatlamida, qidiruv pastga ko'chdi. Kit'ga (har biri samples.ts + README + REFERENCE
+o'lchovlari, Gummble'dagi ~16 ekrandan): `od-scrim`, `od-sheet--overlay` (`--medium`/`--large` detent,
+`__head`), `od-drawer`, `od-action-sheet`, `od-menu` + `od-anchor`, `od-row--swiped` + `od-swipe`, `od-toast`,
+`od-glass`/`od-glass-btn`/`od-float`/`od-toolbar`/`od-search--floating`, `od-dialog`, `od-skeleton`,
+suriladigan `od-segmented--underline`, `od-chat`/`od-bubble`/`od-typing`/`od-composer` (AI varianti),
+`od-btn--social` + `od-divider--label`; `od-carousel` scroll-padding tuzatildi. Yangi namunalar: `map-a`,
+`chat-a`, `chat-c`, `auth-a`, `notifications-a`. Overlay ekran bir telefon balandligida bo'lishi README'da.
+Ma'lum: `od-btn--danger` graphite'da past kontrast (eski); xarita baland konteynerda kattalashadi (`lib/maps.ts`).
+Tekshirildi: tsc, check toza; nova va graphite'da har PNG ko'rildi.
+
 ### KIT-04 (davom): kit geometriyasi haqiqiy ilovalar bilan o'lchandi
 
 22 ta haqiqiy iOS ekran (Gummble; dashboard, list, detail, onboarding) o'lchandi, jadval `kit/REFERENCE.md`da.
