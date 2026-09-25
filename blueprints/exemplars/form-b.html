@@ -1,0 +1,21 @@
+<!-- Halves — a shared expenses app for flatmates. Form, layout b: inset rows that hold or open a value, one text area. -->
+<div class="od-page">
+  <h1 class="od-hero__title">New expense</h1>
+  <div class="od-form">
+    <label class="od-form__field"><span class="od-form__label">What was it</span><input value="Groceries at Korzinka"></label>
+    <label class="od-form__field od-form__field--inline"><span class="od-form__label">Amount</span><input inputmode="decimal" value="486 000 so'm"></label>
+  </div>
+  <div class="od-list">
+    <a class="od-row od-row--compact od-row--chevron"><span class="od-row__lead"><i data-lucide="wallet"></i></span><span class="od-row__body"><span class="od-row__title">Paid by</span></span><span class="od-row__trail"><span class="od-row__value">You</span></span></a>
+    <a class="od-row od-row--compact od-row--chevron"><span class="od-row__lead"><i data-lucide="users"></i></span><span class="od-row__body"><span class="od-row__title">Split</span></span><span class="od-row__trail"><span class="od-avatars"><span class="od-avatar od-avatar--sm"><img data-od-avatar="Aziz Karimov" alt="Aziz Karimov"></span><span class="od-avatar od-avatar--sm"><img data-od-avatar="Laylo Rashidova" alt="Laylo Rashidova"></span><span class="od-avatar od-avatar--sm"><img data-od-avatar="Bekzod Tursunov" alt="Bekzod Tursunov"></span></span><span class="od-row__value">Equally</span></span></a>
+    <a class="od-row od-row--compact od-row--chevron"><span class="od-row__lead"><i data-lucide="shopping-basket"></i></span><span class="od-row__body"><span class="od-row__title">Category</span></span><span class="od-row__trail"><span class="od-row__value">Food</span></span></a>
+    <a class="od-row od-row--compact od-row--chevron"><span class="od-row__lead"><i data-lucide="calendar"></i></span><span class="od-row__body"><span class="od-row__title">Date</span></span><span class="od-row__trail"><span class="od-row__value">Today</span></span></a>
+  </div>
+  <div class="od-group">
+    <div class="od-form">
+      <label class="od-form__field"><span class="od-form__label">Note</span><textarea rows="3" placeholder="Anything the others should know"></textarea></label>
+    </div>
+    <p class="od-group__note">Each of you owes 162 000 so'm. Aziz and Laylo get a notification.</p>
+  </div>
+</div>
+<div class="od-bottom-bar"><button class="od-btn">Add expense</button></div>
