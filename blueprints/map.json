@@ -1,7 +1,7 @@
 {
   "id": "map",
   "purpose": "See where things are and pick one.",
-  "layout": "A full-bleed map with pins, a floating search or filter bar at the top, and a bottom sheet listing the nearby items (the first one peeking).",
+  "layout": "A full-bleed map (the `data-od-map` slot with its pins), a floating search or filter bar at the top, and a bottom sheet listing the nearby items (the first one peeking).",
   "sections": {
     "required": [
       "Full-bleed map with pins",
@@ -21,7 +21,8 @@
   "avoid": [
     "A small map in a card",
     "Pins with no list",
-    "Controls covering the pins"
+    "Controls covering the pins",
+    "Drawing the map yourself (SVG, positioned divs or a photo) instead of the data-od-map slot"
   ],
   "hig": [
     "map",
@@ -32,15 +33,15 @@
   "variants": [
     {
       "id": "a",
-      "layout": "Full-bleed map, floating search on top, bottom sheet with nearby items."
+      "layout": "Full-bleed map, floating search on top, bottom sheet with nearby items. The map is the `data-od-map` slot, never drawn by hand."
     },
     {
       "id": "b",
-      "layout": "Full-bleed map with a horizontal carousel of item cards floating near the bottom."
+      "layout": "Full-bleed map with a horizontal carousel of item cards floating near the bottom. The map is the `data-od-map` slot, never drawn by hand."
     },
     {
       "id": "c",
-      "layout": "Map in the top half, a scrollable list of items in the bottom half with distance on each row."
+      "layout": "Map in the top half, a scrollable list of items in the bottom half with distance on each row. The map is the `data-od-map` slot, never drawn by hand."
     }
   ],
   "kit": "<div class=\"od-media\" style=\"aspect-ratio:auto;height:60vh\"><img data-od-img=\"[city street map]\" alt=\"\"></div><div class=\"od-page\"><div class=\"od-search\"><i data-lucide=\"search\"></i><input placeholder=\"[search]\"></div><div class=\"od-list\"><a class=\"od-row od-row--chevron\"><span class=\"od-row__lead\"><i data-lucide=\"map-pin\"></i></span><span class=\"od-row__body\"><span class=\"od-row__title\">[place]</span><span class=\"od-row__sub\">[distance · status]</span></span><span class=\"od-row__trail\"></span></a></div></div>"

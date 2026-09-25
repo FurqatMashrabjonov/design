@@ -28,8 +28,13 @@ function rng(seed: string) {
   }
 }
 
+// The plan is drawn for a whole phone (390×844) and a slot shows the part it has room for, centred
+// (`slice`). It used to be drawn at 390×260, so a map filling the screen was that picture zoomed 3×:
+// 40px street labels. Everything that must be seen — pins, "you", the route — sits in the middle band
+// a 260px-tall slot shows, so a small map card and a full-screen map show the same place at one scale.
 const W = 390
-const H = 260
+const H = 844
+const BAND = { top: (H - 260) / 2, bottom: (H + 260) / 2 }
 const r1 = (n: number) => Math.round(n * 10) / 10
 
 function draw(pins: string[], route: boolean, you: boolean, seed: string): string {
@@ -37,7 +42,7 @@ function draw(pins: string[], route: boolean, you: boolean, seed: string): strin
   const roads: string[] = []
   // A tilted street grid: a few long avenues each way, one diagonal boulevard.
   const tilt = (rand() - 0.5) * 16
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 15; i++) {
     const y = 20 + i * 55 + rand() * 20
     roads.push(`M-40 ${r1(y)} L${W + 40} ${r1(y + tilt)}`)
   }
@@ -46,14 +51,16 @@ function draw(pins: string[], route: boolean, you: boolean, seed: string): strin
     roads.push(`M${r1(x)} -40 L${r1(x - tilt)} ${H + 40}`)
   }
   const diag = `M-40 ${r1(H * (0.7 + rand() * 0.3))} L${W + 40} ${r1(H * rand() * 0.3)}`
-  const park = { x: r1(40 + rand() * 180), y: r1(30 + rand() * 120), w: r1(70 + rand() * 60), h: r1(50 + rand() * 40) }
-  const water = rand() > 0.5 ? `M${W} ${r1(H * 0.55)} C ${W - 70} ${r1(H * 0.65)}, ${W - 40} ${H - 20}, ${W - 110} ${H} L${W} ${H} Z` : `M0 ${r1(H * 0.72)} C 60 ${r1(H * 0.66)}, 120 ${H - 10}, 170 ${H} L0 ${H} Z`
+  const park = { x: r1(40 + rand() * 180), y: r1(BAND.top + 30 + rand() * 120), w: r1(70 + rand() * 60), h: r1(50 + rand() * 40) }
+  const park2 = { x: r1(30 + rand() * 200), y: r1(80 + rand() * 120), w: r1(90 + rand() * 60), h: r1(60 + rand() * 40) }
+  const b = BAND.bottom
+  const water = rand() > 0.5 ? `M${W} ${r1(b - 117)} C ${W - 70} ${r1(b - 91)}, ${W - 40} ${b - 20}, ${W - 110} ${b + 60} L${W - 150} ${H} L${W} ${H} Z` : `M0 ${r1(b - 73)} C 60 ${r1(b - 88)}, 120 ${b - 10}, 170 ${b + 60} L200 ${H} L0 ${H} Z`
 
   // Pins spread over the middle of the map, left to right in the order given.
   const n = Math.min(pins.length, 5)
   const points = Array.from({ length: n }, (_, i) => ({
     x: r1(n === 1 ? W / 2 : 60 + (i * (W - 120)) / (n - 1) + (rand() - 0.5) * 30),
-    y: r1(70 + rand() * (H - 130)),
+    y: r1(BAND.top + 70 + rand() * 130),
   }))
   const routePath =
     route && points.length >= 2
@@ -72,7 +79,7 @@ function draw(pins: string[], route: boolean, you: boolean, seed: string): strin
     `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map${n ? `: ${escapeHtml(pins.slice(0, n).join(', '))}` : ''}" style="display:block;width:100%;height:100%">`,
     `<rect width="${W}" height="${H}" fill="color-mix(in oklab, var(--surface) 80%, var(--border))"/>`,
     `<path d="${water}" fill="color-mix(in oklab, var(--accent) 14%, var(--surface))"/>`,
-    `<rect x="${park.x}" y="${park.y}" width="${park.w}" height="${park.h}" rx="10" fill="color-mix(in oklab, var(--success) 22%, var(--surface))"/>`,
+    ...[park, park2].map((p) => `<rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="10" fill="color-mix(in oklab, var(--success) 22%, var(--surface))"/>`),
     `<g fill="none" stroke-linecap="round"><path d="${roads.join(' ')} ${diag}" stroke="var(--border)" stroke-width="12"/><path d="${roads.join(' ')} ${diag}" stroke="var(--bg)" stroke-width="8"/></g>`,
     routePath ? `<path d="${routePath}" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>` : '',
     me ? `<circle cx="${me.x}" cy="${me.y}" r="16" fill="var(--accent)" opacity=".18"/><circle cx="${me.x}" cy="${me.y}" r="7" fill="var(--accent)" stroke="var(--bg)" stroke-width="3"/>` : '',

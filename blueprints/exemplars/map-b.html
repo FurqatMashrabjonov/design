@@ -1,0 +1,28 @@
+<!-- Velo — bike share: the map fills the screen, a glass search floats on top, station cards float in a carousel near the bottom -->
+<div class="od-media" style="aspect-ratio:auto;height:100dvh;border-radius:0">
+  <div data-od-map data-pins="Amir Temur Square, Mustaqillik, Tashkent City, Chorsu" data-you></div>
+  <div class="od-float">
+    <label class="od-search od-glass" style="flex:1"><i data-lucide="search"></i><input placeholder="Where to?"></label>
+    <button class="od-glass-btn" aria-label="Locate me"><i data-lucide="locate-fixed"></i></button>
+  </div>
+</div>
+<div class="od-carousel" style="position:absolute;left:0;right:0;bottom:120px">
+  <div class="od-card od-card--carousel">
+    <p class="od-label">Nearest · 180 m</p>
+    <p class="od-card__title">Amir Temur Square</p>
+    <p class="od-card__meta">7 bikes · 3 e-bikes · 5 free docks</p>
+    <button class="od-btn od-btn--sm">Unlock a bike</button>
+  </div>
+  <div class="od-card od-card--carousel">
+    <p class="od-label">450 m</p>
+    <p class="od-card__title">Mustaqillik</p>
+    <p class="od-card__meta">2 bikes · 1 e-bike · 11 free docks</p>
+    <button class="od-btn od-btn--sm od-btn--secondary">Reserve</button>
+  </div>
+  <div class="od-card od-card--carousel">
+    <p class="od-label">1.1 km</p>
+    <p class="od-card__title">Tashkent City</p>
+    <p class="od-card__meta">12 bikes · 6 e-bikes</p>
+    <button class="od-btn od-btn--sm od-btn--secondary">Reserve</button>
+  </div>
+</div>
