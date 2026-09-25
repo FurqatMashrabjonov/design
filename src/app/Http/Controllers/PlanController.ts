@@ -203,7 +203,11 @@ export const PlanController = {
                 }
               }
               const { title, html } = extractArtifact(text)
-              if (!/<\/html>/i.test(html)) throw new Error('Model returned incomplete HTML')
+              if (!/<\/html>/i.test(html)) {
+                // The tail says which failure it was: a stream cut mid-tag, or a finished page without </html>.
+                console.warn(`[plan] incomplete HTML on "${s.name}": ${text.length} chars, ends ${JSON.stringify(text.slice(-160))}`)
+                throw new Error('Model returned incomplete HTML')
+              }
 
               const normalized = autofixScreen(
                 normalizeScreen(html, {
