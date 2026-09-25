@@ -5,6 +5,16 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### `sheet` arxetipi, xarita telefon balandligida, map namunalari (KIT-07 tugadi)
+
+Planner'ga `sheet` arxetipi: ota ekran xiralashgan `od-scrim` ostida, ustida filtr/ulashish/tez qo'shish paneli yoki
+side drawer; `modal-flow`, header va tab bar yo'q, bir telefon balandligi, variant ekran nomidan. `blueprints/sheet.json`
++ 4 namuna. `lib/maps.ts`: xarita 390×844 tuvalda, pinlar o'rta tasmada — to'liq ekranda 3× kattalashish yo'qoldi.
+`map.json` har variantida `data-od-map` sloti nomlandi, `map-b`/`map-c` namunalari. Incomplete HTML bo'lsa javob oxiri log'ga.
+Eval (claude-cli; recipe-book, shop-sneakers, hotel-booking, courier-map; 27 ekran, 0 xato): planner "Filter Sheet"
+rejaladi va u scrim + overlay sheet bilan chizildi; kuryer xaritasi 2 ekranda slot bilan chizildi; audit 0.89, kit 0.60.
+CLAUDE.md'ga ikki qoida: namunalar va overlay/lint/xarita.
+
 ### Linter faqat modelning CSS'ini baholaydi, injeksiya qilingan jadvallarni emas (KIT-07)
 
 `lintScreen` `<style data-od-*>` (kit, craft, slots, shell) jadvallarini ham tekshirardi: kit'ga `opacity:.75`li
