@@ -1,0 +1,53 @@
+{
+  "id": "sheet",
+  "purpose": "Do one secondary task without leaving the screen underneath: filter, share, quick add, pick an option, or move around the app.",
+  "layout": "The parent screen, short and dimmed under a scrim, then one overlay drawn open on top: a bottom sheet with a grabber, a head row (title centred, close on the right) and its controls, ending in the one primary button; or a side drawer from the left.",
+  "sections": {
+    "required": [
+      "The parent screen's title and a few rows, dimmed under the scrim",
+      "A sheet head: grabber, centred title, close button",
+      "The sheet's controls (chips, options, one field group, or actions)",
+      "One primary action at the foot of the sheet"
+    ],
+    "optional": [
+      "A ghost Reset or Cancel on the left of the head",
+      "A count on the primary button (\"Show 24 places\")",
+      "A detent: half height for quick choices, large for a longer task"
+    ]
+  },
+  "primaryAction": {
+    "placement": "inline",
+    "note": "The last thing in the sheet, full width (od-actions or od-btn--block), naming the result: \"Show 24 places\", \"Add expense\"."
+  },
+  "avoid": [
+    "A tab bar or a header over the scrim",
+    "A screen taller than the phone, or a sheet with nothing behind it",
+    "More than one filled button in the sheet",
+    "A hero, a big figure or a photo in the sheet"
+  ],
+  "hig": [
+    "sheet",
+    "chip",
+    "segmented",
+    "toggle"
+  ],
+  "variants": [
+    {
+      "id": "a",
+      "layout": "Filter sheet at a medium or large detent: Reset left, title, close right; groups of chips, a segmented sort and a switch row, each under a small label; Apply naming the result count at the foot."
+    },
+    {
+      "id": "b",
+      "layout": "Share or action sheet: the item it is about as one row on top, a row of 4 share targets (icon over a word), then 2–3 action rows with a destructive one last in red text; for a bare choice, an action sheet with Cancel alone in the last card."
+    },
+    {
+      "id": "c",
+      "layout": "Quick-add sheet, content-high: title and close, one large value or one field group in an od-form, a row of chips for the category, then the one primary button."
+    },
+    {
+      "id": "d",
+      "layout": "Side drawer from the left over the scrim: profile head (avatar, name, plan), the app's destinations as rows with the current one tinted, a small label over a second group, settings in the footer."
+    }
+  ],
+  "kit": "<div class=\"od-page\"><header class=\"od-header\"><h1 class=\"od-header__title\">[parent title]</h1></header><div class=\"od-list\"><div class=\"od-row\"><span class=\"od-row__body\"><span class=\"od-row__title\">[parent row]</span></span></div></div></div><div class=\"od-scrim\"></div><div class=\"od-sheet od-sheet--overlay\"><div class=\"od-sheet__grabber\"></div><div class=\"od-sheet__head\"><button class=\"od-btn od-btn--ghost\">[reset]</button><h2 class=\"od-sheet__title\">[sheet title]</h2><button class=\"od-icon-btn\" aria-label=\"Close\"><i data-lucide=\"x\"></i></button></div><span class=\"od-label\">[group]</span><div class=\"od-chips\"><button class=\"od-chip is-active\">[option]</button><button class=\"od-chip\">[option]</button></div><button class=\"od-btn od-btn--block\">[apply]</button></div>"
+}

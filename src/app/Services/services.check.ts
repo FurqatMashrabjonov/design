@@ -139,6 +139,32 @@ const screens = [{ name: 'Home', description: 'Today view' }]
   assert.ok(shellPartsFor({ screenType: 'detail-view', name: 'Habit Detail', archetype: 'detail' }, p.navigation, 'Habit Detail').header, 'other pushed screens keep their header')
 }
 
+// KIT-07: a sheet is a modal step drawn open over its parent — no header, no tab bar, a scrim.
+{
+  const { inferArchetype } = await import('./PlannerService.ts')
+  const { shellPartsFor, shellContract, screenSpec } = await import('./ScreenContext.ts')
+  const nav = { type: 'bottom-tabs', tabs: [{ id: 'home', label: 'Home' }, { id: 'search', label: 'Search' }] }
+  const p = parsePlan(JSON.stringify({ appName: 'Uyjoy', navigation: nav, screens: [
+    { name: 'Home', archetype: 'list', screenType: 'root-tab', activeTabId: 'home' },
+    { name: 'Search', archetype: 'sheet', screenType: 'root-tab', activeTabId: 'search' },
+    { name: 'Filters', archetype: 'sheet', screenType: 'detail-view', parentScreen: 'Home' },
+    { name: 'Side Menu', archetype: 'sheet', screenType: 'modal-flow', parentScreen: 'Home' },
+  ] }))
+  const [, search, filters, menu] = p.screens
+  assert.ok(search!.screenType === 'root-tab' && search!.archetype === 'search', 'a tab is never a sheet: its archetype is inferred again')
+  assert.equal(filters!.screenType, 'modal-flow', 'a sheet pushed as a detail becomes a modal step')
+  assert.equal(menu!.screenType, 'modal-flow')
+  assert.equal(inferArchetype('Filters', 'modal-flow'), 'sheet')
+  assert.equal(inferArchetype('Share', 'detail-view'), 'sheet')
+  assert.notEqual(inferArchetype('Filters', 'root-tab'), 'sheet')
+  assert.deepEqual(shellPartsFor(filters!, p.navigation, filters!.name), {}, 'no header and no tab bar are injected over a sheet')
+  const contract = shellContract(filters!, p.navigation)
+  assert.ok(contract.includes('od-scrim') && contract.includes('844px') && contract.includes('data-od-link="Home"'), 'the contract draws the parent under a scrim, one phone high, and links back')
+  assert.ok(!/is added to your page automatically/.test(contract), 'the contract promises no injected chrome')
+  assert.ok(screenSpec(filters!, 'Uyjoy').includes('Screen pattern (sheet, layout a)'), 'a Filters sheet is the filter kind, whatever the app seed')
+  assert.ok(screenSpec(menu!, 'Uyjoy').includes('Screen pattern (sheet, layout d)'), 'a side menu is the drawer kind')
+}
+
 // pool: never exceeds the concurrency limit, still runs every item, preserves result order
 let inFlight = 0
 let maxInFlight = 0

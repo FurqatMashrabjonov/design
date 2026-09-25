@@ -5,7 +5,7 @@ import { ICON_NAMES, isActionIcon, resolveIcon } from './ShellService.ts'
 
 // What a screen is *for*. The vocabulary is closed so code can reason about a plan: pick a blueprint,
 // check that the brief's screens are covered, measure plans in the eval.
-export const ARCHETYPES = ['dashboard', 'feed', 'list', 'detail', 'search', 'form', 'checkout', 'result', 'stats', 'profile', 'settings', 'chat', 'player', 'map', 'camera', 'calendar', 'notifications', 'onboarding', 'auth', 'paywall'] as const
+export const ARCHETYPES = ['dashboard', 'feed', 'list', 'detail', 'search', 'form', 'checkout', 'result', 'stats', 'profile', 'settings', 'chat', 'player', 'map', 'camera', 'calendar', 'notifications', 'onboarding', 'auth', 'paywall', 'sheet'] as const
 export type Archetype = (typeof ARCHETYPES)[number]
 
 const PLANNER_PROMPT = `You are a principal product designer planning a coherent multi-screen phone app from a brief.
@@ -16,6 +16,7 @@ Work in this order.
 2. SCREENS. Plan 4 to 6 screens. Every requested screen gets a screen of its own — they come first. Only if fewer than 5 were requested, add the screens the core task still needs (the detail, the editor, the result), and only then supporting ones (profile, settings). Each screen lists the indexes of the requested items it delivers in "covers".
 3. NAVIGATION. Bottom tabs: 2 to 5 destinations, one word each. A tab exists only if one of your screens is its root. Tabs are destinations, never actions.
 4. TYPES. A screen is a "root-tab" (THE one primary view of a tab; give it that tab's activeTabId), a "detail-view" (opened by tapping something inside another screen; names its parentScreen) or a "modal-flow" (a step of a focused task: checkout, compose, onboarding; names its parentScreen). An item's detail, an editor, a form, a result, a confirmation, a tracking view are never root-tab.
+   A "sheet" is a modal-flow drawn open over its parentScreen: a bottom sheet or side drawer for a secondary task apps keep in one (filters or sort over a list, share or actions from a detail, quick add from a home, pick one option, a side menu). Use it only when the brief or the flow implies one, at most two per app, never for a tab.
 5. SPEC. For each screen: its archetype, the user's goal in one sentence, the ONE primary action, 3 to 6 sections from top to bottom (each a short phrase naming the content, e.g. "Order summary with item thumbnails"), and "linksTo": the other screens a tap on this screen opens.
 6. DATA. "entities": the real things this app is about — 1 to 3 kinds, 4 to 6 items each, with 2 to 5 short fields. Concrete, specific, mutually consistent (prices, times, counts that make sense together). Every screen will draw from exactly this data, so an item shown in a list is the same item, with the same values, on its detail screen. Write names and values in the brief's language.
 
@@ -210,6 +211,13 @@ export function editPlan(plan: Plan, edits: { keep?: number[]; names?: Record<nu
 
 export function settleScreens(drafted: PlannedScreen[], navigation: AppNavigation, appName: string): PlannedScreen[] {
   const screens = assignScreenSlots(drafted, navigation)
+  // A sheet is drawn open over another screen: one that holds a tab is not a sheet, and one that
+  // is not a tab is a modal step, whatever type the model gave it.
+  for (const s of screens) {
+    if (s.archetype !== 'sheet') continue
+    if (s.screenType === 'root-tab') s.archetype = inferArchetype(s.name, 'root-tab')
+    else s.screenType = 'modal-flow'
+  }
   // A link only means something if it names another screen of this plan.
   for (const s of screens) {
     s.linksTo = [...new Set(s.linksTo.map((l) => screens.find((o) => o.name.toLowerCase() === l.toLowerCase() && o.name !== s.name)?.name).filter((n): n is string => Boolean(n)))]
@@ -371,6 +379,7 @@ function parseEntities(raw: unknown): Entity[] {
 // When the planner leaves the archetype out or invents one, the screen's name usually says it.
 const ARCHETYPE_HINTS: [RegExp, Archetype][] = [
   [/check\s?out|cart|basket|payment|pay\b|order summary/i, 'checkout'],
+  [/filters?\b|\bsort\b|\bshare\b|side ?menu|drawer|quick ?add|\bactions\b/i, 'sheet'], // never for a tab: see inferArchetype
   [/profile|account/i, 'profile'],
   [/setting|preference/i, 'settings'],
   [/search|explore|discover|browse|filter/i, 'search'],
@@ -391,7 +400,8 @@ const ARCHETYPE_HINTS: [RegExp, Archetype][] = [
   [/detail/i, 'detail'],
 ]
 export function inferArchetype(name: string, screenType: string): Archetype {
-  return ARCHETYPE_HINTS.find(([re]) => re.test(name))?.[1] ?? (screenType === 'root-tab' ? 'list' : 'detail')
+  const root = screenType === 'root-tab'
+  return ARCHETYPE_HINTS.find(([re, a]) => re.test(name) && !(root && a === 'sheet'))?.[1] ?? (root ? 'list' : 'detail')
 }
 
 /**
