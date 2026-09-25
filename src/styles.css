@@ -372,3 +372,28 @@ svg.lucide { stroke-width: 1.75; }
     transition: background-color 220ms ease-out, border-color 220ms ease-out, color 220ms ease-out, fill 220ms ease-out !important;
 }
 /* /UI-25 motion */
+
+/* SHR-03 preview */
+/* Every screen of the preview has its own frame, stacked; a tap only changes which one is shown. A tab
+   cross-fades, a link pushes in from the right over the screen it came from, back pops it off to the
+   right (iOS). Only transform and opacity move; with reduced motion the switch is instant. */
+.od-preview-stage { position: relative; overflow: hidden; }
+.od-preview-stage > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--card); }
+.od-preview-stage > iframe[data-state='shown'] { z-index: 2; }
+.od-preview-stage > iframe:not([data-state='shown']) { visibility: hidden; pointer-events: none; }
+@keyframes od-pv-in-right { from { transform: translateX(100%); } }
+@keyframes od-pv-out-left { to { transform: translateX(-30%); opacity: .6; } }
+@keyframes od-pv-in-left { from { transform: translateX(-30%); opacity: .6; } }
+@keyframes od-pv-out-right { to { transform: translateX(100%); } }
+@keyframes od-pv-fade-in { from { opacity: 0; } }
+@keyframes od-pv-fade-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+    .od-preview-stage > iframe[data-state='leaving'] { visibility: visible; z-index: 1; }
+    .od-preview-stage[data-motion='push'] > iframe[data-state='shown'] { animation: od-pv-in-right var(--duration-slow) var(--motion-ease-out) both; box-shadow: -12px 0 32px rgb(0 0 0 / .12); }
+    .od-preview-stage[data-motion='push'] > iframe[data-state='leaving'] { animation: od-pv-out-left var(--duration-slow) var(--motion-ease-out) both; }
+    .od-preview-stage[data-motion='pop'] > iframe[data-state='shown'] { z-index: 1; animation: od-pv-in-left var(--duration-slow) var(--motion-ease-out) both; }
+    .od-preview-stage[data-motion='pop'] > iframe[data-state='leaving'] { z-index: 3; animation: od-pv-out-right var(--duration-slow) var(--motion-ease-out) both; box-shadow: -12px 0 32px rgb(0 0 0 / .12); }
+    .od-preview-stage[data-motion='fade'] > iframe[data-state='shown'] { animation: od-pv-fade-in var(--duration-base) var(--motion-ease-out) both; }
+    .od-preview-stage[data-motion='fade'] > iframe[data-state='leaving'] { animation: od-pv-fade-out var(--duration-base) var(--motion-ease-out) both; }
+}
+/* /SHR-03 preview */

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Link2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { getProject, getSession } from '../server/fns'
@@ -23,15 +23,26 @@ export const Route = createFileRoute('/preview/$projectId')({
   component: PreviewPage,
 })
 
+// SHR-03: moving between screens is local state, never a route navigation. A navigation re-ran the
+// session check and the loader (every screen's HTML from the server) and remounted the frame: ~1 s and a
+// white flash per tap. Every screen keeps its own iframe, mounted once and kept, so a tap only changes
+// which one is shown — the page inside never reloads, and its Tailwind/icon scripts run once.
+type Motion = 'push' | 'pop' | 'fade'
+
 function PreviewPage() {
   const { project, screens: rows } = Route.useLoaderData()
   const search = Route.useSearch()
-  const navigate = useNavigate()
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const frames = useRef(new Map<string, HTMLIFrameElement>())
 
   const screens = useMemo(() => orderScreens(rows.filter((sc) => sc.html)), [rows])
-  const currentIndex = Math.max(0, screens.findIndex((s) => s.id === search.s))
+  const [shownId, setShownId] = useState(() => screens.find((s) => s.id === search.s)?.id ?? screens[0]?.id)
+  const currentIndex = Math.max(0, screens.findIndex((s) => s.id === shownId))
   const current = screens[currentIndex]
+  const [leaving, setLeaving] = useState<{ id: string; motion: Motion } | null>(null)
+  const [motion, setMotion] = useState<Motion>('fade')
+  // Frames are mounted as they are needed and never unmounted: the shown one and its neighbours first,
+  // then the rest once the first has loaded, so a later tap finds its screen already drawn.
+  const [mounted, setMounted] = useState<Set<string>>(() => new Set([shownId, screens[currentIndex - 1]?.id, screens[currentIndex + 1]?.id].filter(Boolean) as string[]))
 
   const [viewport, setViewport] = useState({ w: 1280, h: 800 })
 
@@ -43,37 +54,47 @@ function PreviewPage() {
   }, [])
 
   const goTo = useCallback(
-    (id: string) => navigate({ to: '.', search: { s: id }, replace: true }),
-    [navigate],
+    (id: string, how: Motion) => {
+      if (id === shownId) return
+      setMounted((m) => (m.has(id) ? m : new Set(m).add(id)))
+      if (shownId) setLeaving({ id: shownId, motion: how })
+      setMotion(how)
+      setShownId(id)
+      // The address bar is left alone: the router notices even a replaceState and reloads the project
+      // (~1 s). "Copy preview link" builds the link to the screen on show instead.
+    },
+    [shownId],
   )
   const step = useCallback(
     (delta: number) => {
       const next = screens[currentIndex + delta]
-      if (next) goTo(next.id)
+      if (next) goTo(next.id, delta > 0 ? 'push' : 'pop')
     },
     [screens, currentIndex, goTo],
   )
+  const warmAll = useCallback(() => setMounted((m) => (m.size >= screens.length ? m : new Set(screens.map((s) => s.id)))), [screens])
 
   // The shell inside the frame reports tab and back taps; only trust our own iframe.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.source !== iframeRef.current?.contentWindow || !e.data) return
+      // Every frame is live; only the one on show may navigate.
+      if (!shownId || e.source !== frames.current.get(shownId)?.contentWindow || !e.data) return
       if (e.data.type === 'od:navigate_tab') {
         const target = screenForTab(screens, e.data.tabId)
-        if (target) goTo(target.id)
+        if (target) goTo(target.id, 'fade')
         else toast.info(`No screen was designed for the "${e.data.tabId}" tab`)
       } else if (e.data.type === 'od:navigate_back') {
         const target = screenForBack(screens, e.data.parentName)
-        if (target) goTo(target.id)
+        if (target) goTo(target.id, 'pop')
       } else if (e.data.type === 'od:navigate_link' && typeof e.data.name === 'string') {
         // Links to screens that were never designed stay quiet: most rows in a list have no screen behind them.
         const target = screenByName(screens, e.data.name)
-        if (target && target.id !== screens[currentIndex]?.id) goTo(target.id)
+        if (target) goTo(target.id, 'push')
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [screens, goTo, currentIndex])
+  }, [screens, goTo, shownId])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -94,14 +115,13 @@ function PreviewPage() {
 
   // The project's own theme override — distinct from the studio's light/dark, which the stage follows.
   const appTheme = useMemo(() => parseTheme(project.theme), [project.theme])
-  const srcDoc = useMemo(
-    () => (current ? withPreviewBridge(applyThemeOverride(current.html, appTheme)) : ''),
-    [current, appTheme],
-  )
+  const docs = useMemo(() => new Map(screens.map((s) => [s.id, withPreviewBridge(applyThemeOverride(s.html, appTheme))])), [screens, appTheme])
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      const url = new URL(window.location.href)
+      if (shownId) url.searchParams.set('s', shownId)
+      await navigator.clipboard.writeText(url.toString())
       toast.success('Preview link copied')
     } catch {
       toast.error('Could not copy — clipboard access was blocked')
@@ -156,14 +176,25 @@ function PreviewPage() {
         </Arrow>
 
         <PhoneFrame width={frameW}>
-          <iframe
-            key={current.id}
-            ref={iframeRef}
-            title={current.name}
-            srcDoc={srcDoc}
-            sandbox="allow-scripts"
-            style={{ width: native.width, height: native.height, border: 0, transform: `scale(${scale})`, transformOrigin: 'top left' }}
-          />
+          <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            {screens.filter((s) => mounted.has(s.id)).map((s) => (
+              <iframe
+                key={s.id}
+                ref={(el) => {
+                  if (el) frames.current.set(s.id, el)
+                  else frames.current.delete(s.id)
+                }}
+                title={s.name}
+                srcDoc={docs.get(s.id)}
+                sandbox="allow-scripts"
+                onLoad={s.id === shownId ? warmAll : undefined}
+                data-state={s.id === shownId ? 'shown' : s.id === leaving?.id ? 'leaving' : 'hidden'}
+                onAnimationEnd={s.id === leaving?.id ? () => setLeaving(null) : undefined}
+                aria-hidden={s.id !== shownId}
+                tabIndex={s.id === shownId ? 0 : -1}
+              />
+            ))}
+          </div>
         </PhoneFrame>
 
         <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)}>

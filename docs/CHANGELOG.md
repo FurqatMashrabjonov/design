@@ -5,6 +5,18 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 ## 2026-09-25
 
+### Preview: ekranlar orasida lag'siz o'tish (SHR-03)
+
+O'lchandi: har o'tish router navigatsiyasi edi (sessiya + loader barcha ekran HTML'i bilan qayta) va `key={current.id}`
+iframe'ni qayta yaratardi — yangi ekran 465–1013 ms oq/bo'sh turardi (Tailwind Play CDN, Lucide, shriftlar qayta).
+Endi ko'rsatilgan ekran lokal state, har ekranning o'z iframe'i bir marta yuklanadi va saqlanadi (avval joriy va
+qo'shnilar, birinchi yuklangach qolganlari); o'tish faqat ko'rinishni almashtiradi: **1–6 ms** (MutationObserver bilan
+o'lchandi), server chaqiruvi 0. Tab — crossfade, havola — o'ngdan push, orqaga — pop (`od-preview-stage`, reduced
+motion'da darhol). URL o'zgartirilmaydi (router `replaceState`ni ham sezib loyihani qayta yuklardi); "Copy preview
+link" joriy ekran havolasini yasaydi. Faqat ko'rsatilgan iframe xabarlari qabul qilinadi.
+Fayllar: `src/routes/preview.$projectId.tsx`, `src/styles.css`. Tekshirildi: brauzerda tab bosish (Home → Stats →
+Transactions), strelkalar, ekran ichidagi havola (Transaction Detail) va orqaga, noma'lum `?s=`; tsc va check toza.
+
 ### `sheet` arxetipi, xarita telefon balandligida, map namunalari (KIT-07 tugadi)
 
 Planner'ga `sheet` arxetipi: ota ekran xiralashgan `od-scrim` ostida, ustida filtr/ulashish/tez qo'shish paneli yoki
