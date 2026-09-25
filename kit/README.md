@@ -76,4 +76,10 @@ Format: block — variants/elements — when to use.
 - `od-empty` — `__icon`, `__title`, `__text`; `--card` (dashed box), `--inline` (icon left, one line) — nothing here yet.
 - `od-sheet` — `__grabber`, `__title` + content — a bottom sheet or confirm dialog; `--overlap` pulls it 24px up over a photo hero (detail).
 - `od-actions` / `--row` — stacked full-width buttons, or two side by side — the end of a sheet or flow.
-- `od-bottom-bar` / `--stack` — sticky bar with the primary action (price + button, or two stacked buttons).
+- `od-bottom-bar` / `--stack` — sticky bar with the primary action (price + button, or two stacked buttons). A body that holds one becomes a full-height column, so the bar sits at the foot of a short screen.
+
+## First run
+- `od-page--fill` — a page that fills the phone; its last block (the actions) sits at the bottom. `od-feature--fill` — a photo that is the whole screen, copy and button over the scrim.
+- `od-art` — the illustration drawn from the kit: an accent wash around one big icon or figure (a ring, chips); in `od-page--fill` it takes the free height.
+- `od-dots` — `<i>` per page, `is-active` on the current one — the page indicator.
+- `od-row--danger` — a destructive row (Delete account, Sign out) in danger text, never a filled red button.

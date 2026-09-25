@@ -1,0 +1,34 @@
+<!-- Sprout — a plant care app. Form, layout a: titled sections of labelled fields, save at the bottom. -->
+<div class="od-page">
+  <div>
+    <h1 class="od-hero__title">Add a plant</h1>
+    <p class="od-hero__sub">We will work out a watering plan from this.</p>
+  </div>
+  <div class="od-group">
+    <span class="od-label od-group__label">The plant</span>
+    <div class="od-form">
+      <label class="od-form__field"><span class="od-form__label">Name</span><input value="Monstera by the window"></label>
+      <label class="od-form__field"><span class="od-form__label">Species</span><input placeholder="e.g. Monstera deliciosa"></label>
+      <label class="od-form__field od-form__field--inline"><span class="od-form__label">Room</span><select><option>Living room</option></select></label>
+    </div>
+  </div>
+  <div class="od-group">
+    <span class="od-label od-group__label">Light it gets</span>
+    <div class="od-options">
+      <button class="od-option"><i data-lucide="cloud"></i>Shade</button>
+      <button class="od-option is-active"><i data-lucide="cloud-sun"></i>Bright, indirect</button>
+      <button class="od-option"><i data-lucide="sun"></i>Direct sun</button>
+    </div>
+  </div>
+  <div class="od-group">
+    <span class="od-label od-group__label">Care</span>
+    <div class="od-form">
+      <label class="od-form__field od-form__field--inline"><span class="od-form__label">Water every</span><select><option>7 days</option></select></label>
+      <label class="od-form__field od-form__field--inline"><span class="od-form__label">Last watered</span><input type="text" value="Yesterday"></label>
+    </div>
+    <div class="od-list">
+      <label class="od-row"><span class="od-row__body"><span class="od-row__title">Remind me</span><span class="od-row__sub">At 8:00 on watering days</span></span><input type="checkbox" class="od-switch" role="switch" checked></label>
+    </div>
+  </div>
+</div>
+<div class="od-bottom-bar"><button class="od-btn">Add plant</button></div>

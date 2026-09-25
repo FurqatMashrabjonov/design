@@ -349,3 +349,28 @@ textarea.od-input { min-height: 96px; padding: 12px var(--space-4, 16px); resize
   .od-switch::after { transition: transform var(--motion-base, 220ms) var(--ease-spring, cubic-bezier(.34, 1.3, .64, 1)); }
   .od-progress > span { transition: width var(--motion-base, 220ms) var(--ease-standard, ease-out); }
 }
+
+/* exemplars-c additions */
+/* A first-run screen fills the phone; its last block (the actions) sits at the bottom, in thumb reach. */
+.od-page--fill { min-height: 100dvh; }
+.od-page--fill > :last-child { margin-top: auto; }
+/* Page indicator: the current page is a short pill, the others dots. White on a photo. */
+.od-dots { display: flex; align-items: center; gap: 6px; }
+.od-dots > i { width: 6px; height: 6px; border-radius: 3px; background: var(--border); }
+.od-dots > i.is-active { width: 20px; background: var(--fg); }
+.od-feature .od-dots > i { background: rgba(255, 255, 255, .45); }
+.od-feature .od-dots > i.is-active { background: #fff; }
+/* A feature photo that is the whole screen (a welcome), with a deeper scrim for the copy and the button. */
+.od-feature--fill { aspect-ratio: auto; min-height: 100dvh; border-radius: 0; }
+.od-feature--fill::before { background: linear-gradient(to top, rgba(0, 0, 0, .85), rgba(0, 0, 0, .45) 40%, transparent 68%); }
+.od-feature--fill > .od-feature__body { gap: var(--space-3, 12px); padding-bottom: var(--space-6, 24px); }
+.od-feature--fill .od-feature__title { font-size: var(--text-2xl, 34px); }
+/* Art tile: the illustration of a first-run screen drawn from the kit — a soft accent wash around one big icon or figure; on a full page it takes the free height. */
+.od-page--fill > .od-art { flex: 1; }
+.od-art { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4, 16px); min-height: 260px; padding: var(--space-6, 24px); border-radius: var(--radius-lg, 16px); background: color-mix(in oklab, var(--accent), var(--surface) 88%); color: var(--od-accent-text); text-align: center; }
+.od-art > i[data-lucide], .od-art > svg { width: 88px; height: 88px; stroke-width: 1.25; }
+/* Destructive row (Delete account, Sign out): danger text, never a filled red button in a list. */
+.od-row--danger { color: var(--od-danger-text); }
+.od-row--danger .od-row__lead { background: color-mix(in oklab, var(--danger), transparent 88%); color: inherit; }
+/* The bottom bar's margin-top:auto needs a column to push against: a short form keeps its button at the foot of the phone, not under the last field. Zero specificity, so a page that lays out its body wins. */
+:where(body:has(> .od-bottom-bar)) { display: flex; flex-direction: column; min-height: 100dvh; }
