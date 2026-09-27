@@ -1,8 +1,65 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-25 (kechqurun). Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §0 — generatsiyani super optimallashtirish.**
+> Yozilgan: 2026-09-21, yangilangan 2026-09-27. Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
 
-## 0. 2026-09-25 kechki holat — shu yerdan davom et
+## 00. YANGI YO'NALISH (2026-09-27): Konsta UI + to'liq JSX — shu yerdan davom et
+
+**Qaror (foydalanuvchi, KON-00):** ekranlar endi HTML emas — model **React JSX** yozadi, komponentlar
+**Konsta UI v5** (iOS 26 + Material 2025, Tailwind v4). Eski HTML yo'li mavjud loyihalar uchun qoladi
+(`screens.format = 'html'`), yangilari `jsx`. Maqsad: $1k MRR.
+
+**Nega (o'lchangan, 2026-09-27):**
+- Sinovlar (bir xil 4 brief, Haiku): daisyUI 5 — barqaror, lekin shablon; Framework7 v9 — MCP'dan olingan
+  rasmiy markup ma'lumotnomasi bilan juda yaxshi, lekin 1.3 MB va sandbox'da JS yiqiladi (localStorage/
+  serviceWorker shim kerak); **Konsta UI — eng chiroyli, ~110 KB gz, sandbox'da o'zi ishlaydi.**
+- Etalon: **`prototypes/vita-konsta/`** — qo'lda yozilgan to'liq ilova (odat + qadam + suv), 23 ekran,
+  jonli prototip (push/pop, dark mode, aksent, sheet/dialog/toast). `cd prototypes/vita-konsta && npm i && npm run dev`.
+  `src/ui.jsx` (Ring, Bars, Area, WaterGlass, Avatar, Tile, Confetti, CountUp) — `@od/kit` urug'i.
+- Token: ekran kodi ~2.8k belgi ≈ **850–950 token** (model uchun ~1 300 deb hisoblang) — HTML'da **~4 900**
+  (bazaviy o'lchov: 244 ekranda 1.2M). 20 ekranli ilova DeepSeek'da ~$0.03 (HTML ~$0.07), ekran ~4–5 s (HTML ~14 s).
+- Server build (o'lchangan, `@tailwindcss/node` + `@tailwindcss/oxide` + `rolldown/experimental` transform):
+  JSX→JS **2 ms**, Tailwind init 340 ms bir marta, keyin **2–22 ms**/ekran. Server model kodini **bajarmaydi**.
+- CDN'siz variant ham ishladi (sandbox ichida): React 19 esm.sh + `konsta@5/react` esm.sh + `htm` + `@tailwindcss/browser@4`.
+  Topilmalar: **React 19'da UMD yo'q** (faqat ESM); Konsta Vue/Svelte esm.sh'da 404; Konsta temasidagi
+  `@plugin "../plugin-colors.js"` brauzer Tailwind'ida ishlamaydi → `--k-color-*` ni server aksentdan hisoblaydi.
+  Bu yo'l faqat "bitta HTML eksport" uchun; mahsulotda runtime o'zimizning CDN'dan.
+- Muqobillar (GitHub ⭐): Ionic 52.7k (zaxira — shadow DOM tahrirni qiyinlashtiradi), Framework7 18.8k,
+  Vant 24.4k / Quasar 27.2k / Ant Mobile 12k (iOS emas), Konsta 4.3k (muallif nolimits4web — Framework7/Swiper).
+  Konsta'ning rasmiy MCP'si yo'q (faqat community "capacitor-stack") — API'ni `node_modules/konsta/react/types` dan o'qing.
+
+**Arxitektura (qisqa):**
+1. Planner (o'zgarmaydi) → har ekran uchun model JSX yozadi (Konsta + `@od/kit`, ma'lumot rejadan).
+2. `ScreenCompiler` (server): oxc parse → import whitelist (`react`, `konsta/react`, `@od/kit`, ikonlar) →
+   JSX→JS → Tailwind (warm compiler, ilova bo'yicha bitta CSS). Saqlanadi: `source_jsx` (haqiqat),
+   `compiled_js` (kesh), `runtime_version` (abadiy), `projects.app_css`.
+3. `runtime.vN.[hash].js` (React+ReactDOM+Konsta+od-kit, ≤150 KB gz) — deploy'da Vite bilan, immutable CDN, CORS `*`.
+4. Ko'rsatish: `<iframe sandbox="allow-scripts" src="https://screens.<domen>/s/:id">` (same-origin YO'Q) +
+   header `Content-Security-Policy: sandbox allow-scripts; connect-src 'none'; …`. Tema render paytida.
+5. Preview = bitta iframe'da butun ilova + navigator (Vita kabi). Eksport = React+Vite zip yoki bitta HTML.
+
+**Navbat (Notion, Tartib bo'yicha):** KON-01 sinov → KON-02 runtime → KON-03 compiler → KON-04 /s/:id + CSP →
+KON-05 prompt + Konsta ma'lumotnomasi → KON-06 DB + flag → KON-07 kanvas/preview → KON-08 tahrir/undo →
+KON-09 eksport → KON-10 thumbnail/eval. KON-11 (Android) — Keyin. EVAL-05 (hakam) KON-01 ni baholash uchun.
+
+**KON-01 sinovi — aniq qadamlar:**
+1. `@od/kit` = `prototypes/vita-konsta/src/ui.jsx` + `nav.jsx` + mount (App theme="ios", aksent, dark).
+2. Konsta API ma'lumotnomasi: `node_modules/konsta/react/types/*.d.ts` dan qisqa hujjat (props + 1 misol har komponentga)
+   — Framework7'da xuddi shunday ma'lumotnoma xatolarni keskin kamaytirgan edi.
+3. Model (DeepSeek; balans tugagan bo'lsa `LLM_PROVIDER=claude-cli`) Vita'ning 8+ ekranini JSX'da yozadi.
+4. ScreenCompiler (scratch) → sandbox iframe → skrinshot (`prototypes/vita-konsta/shoot.sh` usuli).
+5. Solishtirish: etalon (qo'lda) · model JSX · hozirgi HTML pipeline. Mezon: ≥95% kompilyatsiya, ≤1.5k token/ekran,
+   hakamda HTML'dan yutish. Natijani foydalanuvchiga rasm bilan ko'rsat.
+
+**Qolgan holat:**
+- **DeepSeek balansi tugagan** (2026-09-25) — to'ldirilishi kerak. Gemini kaliti bepul tarifda (3.8 Flash 20 so'rov/kun).
+- `html-wip` branch (push qilingan, birlashtirilmagan): 32 ta STYLE.md tuzatishi (mono raqam / caps eyebrow
+  ziddiyati) + GQ-41 RepairService (`GEN_REPAIR=1`) — o'lchanmagan. HTML yo'li uchun kerak bo'lsa o'lchab birlashtiring.
+- `lp06-precompile` branch — to'xtatilgan (LP-06 Keyin).
+- Hakam: `eval/judge.ts` endi juftlikni ikkala tartibda so'raydi, `--vs best` / `--best` (eval/out/BEST).
+- Framework7 MCP shu kompyuterda o'rnatilgan (`claude mcp add --transport http framework7 https://framework7.io/mcp`) —
+  endi kerak emas, Konsta tanlandi.
+
+## 0. (oldingi) 2026-09-25 kechki holat
 
 Eng yangi ish: **`canvas-planner`** (oxirgi commit `b9d5b16`, push qilingan). Alohida WIP branch: **`lp06-precompile`**
 (`b398a4d`, push qilingan, **birlashtirilmagan**).

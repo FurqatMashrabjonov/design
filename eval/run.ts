@@ -198,16 +198,20 @@ const metrics = computeMetrics(screenInputs, results.map((r) => r.ms), errorCoun
 // screens this run just drew. Set OD_SKIP_AUDIT=1 to skip it while iterating.
 if (!process.env.OD_SKIP_AUDIT) {
   try {
-    const { auditHtml } = await import('./audit.ts')
+    const { auditOrNull } = await import('./audit.ts')
     const byRule: Record<string, number> = {}
-    let withFindings = 0
+    let withFindings = 0, unmeasured = 0
     for (const s of screenInputs) {
-      const findings = auditHtml(s.html)
+      const findings = auditOrNull(s.html)
+      if (!findings) {
+        unmeasured++
+        continue
+      }
       if (findings.length) withFindings++
       for (const f of findings) byRule[f.rule] = (byRule[f.rule] ?? 0) + 1
     }
-    const n = screenInputs.length
-    ;(metrics as Record<string, unknown>).audit = { cleanShare: n ? Number(((n - withFindings) / n).toFixed(3)) : 0, byRule }
+    const n = screenInputs.length - unmeasured
+    ;(metrics as Record<string, unknown>).audit = { cleanShare: n ? Number(((n - withFindings) / n).toFixed(3)) : 0, byRule, ...(unmeasured ? { unmeasured } : {}) }
   } catch (e) {
     console.warn('[audit] skipped:', (e as Error).message)
   }

@@ -34,19 +34,39 @@ export function auditHtml(html: string): AuditFinding[] {
   return parseAudit(JSON.parse(json.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')))
 }
 
+/**
+ * One screen that Chrome could not finish (a timeout on a loaded machine) must not throw away the
+ * whole run's audit. It is tried once more; if it still fails it is reported as unmeasured — counted
+ * and shown, never folded into the clean share.
+ */
+export function auditOrNull(html: string): AuditFinding[] | null {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return auditHtml(html)
+    } catch (e) {
+      if (attempt === 1) console.warn('[audit] unmeasured:', (e as Error).message.split('\n')[0])
+    }
+  }
+  return null
+}
+
 // Only when run directly; eval/run.ts imports auditHtml.
 if (run && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const dir = join('eval', 'out', run, 'screens')
   const byRule: Record<string, number> = {}
-  let screens = 0, withFindings = 0
+  let screens = 0, withFindings = 0, unmeasured = 0
   const all: Record<string, AuditFinding[]> = {}
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.html'))) {
-    const findings = auditHtml(readFileSync(join(dir, f), 'utf8'))
+    const findings = auditOrNull(readFileSync(join(dir, f), 'utf8'))
+    if (!findings) {
+      unmeasured++
+      continue
+    }
     screens++
     if (findings.length) withFindings++
     for (const x of findings) byRule[x.rule] = (byRule[x.rule] ?? 0) + 1
     all[f] = findings
   }
   if (process.argv.includes('--json')) console.log(JSON.stringify(all, null, 2))
-  console.log(JSON.stringify({ run, screens, cleanShare: Number(((screens - withFindings) / screens).toFixed(3)), byRule }))
+  console.log(JSON.stringify({ run, screens, unmeasured, cleanShare: Number(((screens - withFindings) / screens).toFixed(3)), byRule }))
 }

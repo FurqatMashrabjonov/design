@@ -3,6 +3,29 @@
 Newest first. One entry per completed change: what changed, files touched, how it was verified.
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
+
+## 2026-09-27
+
+### Qaror: Konsta UI + to'liq JSX (KON-00) — sinovlar, etalon ilova, reja
+
+- Sinovlar (bir xil 4 brief, Claude Code provayderi): daisyUI 5, Framework7 v9 (ma'lumotnomasiz va Framework7 MCP'dan
+  olingan rasmiy core demolar asosidagi ma'lumotnoma bilan; sandbox uchun localStorage/serviceWorker/cookie shim),
+  Konsta UI v5. Natija: Konsta — eng yaxshi ko'rinish, ~110 KB gz, sandbox'da o'zi ishlaydi.
+- `prototypes/vita-konsta/` (yangi): qo'lda yozilgan etalon ilova — odat + qadam + suv, 23 ekran, jonli prototip
+  (push/pop o'tishlari, dark mode, aksent, sheet/dialog/toast/actions, konfetti). Asosiy build'ga kirmaydi.
+- O'lchovlar: ekran kodi ~850–950 token (HTML ~4 900); server build JSX→JS 2 ms, Tailwind 2–22 ms (init 340 ms);
+  CDN'siz yo'l (esm.sh React 19 + konsta/react + htm + @tailwindcss/browser) sandbox'da ishladi; React 19'da UMD yo'q;
+  Konsta `@plugin` brauzer Tailwind'ida ishlamaydi → rang o'zgaruvchilari serverda hisoblanadi.
+- Reja: Notion KON-00…KON-11 (KON-00 Tayyor, KON-01…10 MVP, KON-11 Keyin). O'rni almashgan qatorlar: KIT-04, GQ-40,
+  GQ-45 → Bekor; GQ-41, GQ-43, LP-06 → Keyin; KIT-08 → Tayyor; EVAL-05 → Rejada. ROADMAP snapshot yangilandi.
+- `eval/judge.ts`: juftlik hukmi ikkala tartibda so'raladi, faqat mos kelgani sanaladi; `--vs best` / `--best`
+  (eval/out/BEST); o'lchov bo'yicha ball deltasi. `eval/audit.ts` + `eval/run.ts`: bitta sekin ekran (Chrome timeout)
+  butun audit'ni o'chirmaydi — bir marta qayta urinadi, keyin `unmeasured` deb sanaladi.
+- `html-wip` branch (alohida, o'lchanmagan): 32 ta STYLE.md tuzatishi + GQ-41 RepairService.
+- Hujjatlar: `docs/HANDOFF.md` §00, `CLAUDE.md` (yo'nalish qoidasi).
+
+Tekshiruv: `npx tsc --noEmit` toza; `npm run check` — ushbu commit'da kod faqat eval asboblarida o'zgargan.
+
 ## 2026-09-25
 
 ### Ekran havolalari studioga olib bormaydi; katta raqam qutiga sig'adi; stickerlar o'chirildi

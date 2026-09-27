@@ -4,6 +4,23 @@
 
 Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: `Tayyor` · `Jarayonda` · `Rejada` · `Bloklangan`. Qatorlar qurish tartibida.
 
+## KON · Konsta UI + JSX (2026-09-27 qarori — navbatda birinchi)
+
+| ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
+|---|---|---|---|---|---|---|---|
+| KON-00 | QAROR: generatsiya Konsta UI + to'liq JSX (React); HTML yo'li eski loyihalar uchun qoladi | Generatsiya / Qarorlar | MVP | Tayyor | Kichik |  | Qaror yozilgan; HANDOFF va CLAUDE.md moslangan |
+| KON-01 | Sinov: model Vita ekranlarini Konsta JSX'da yozadi → server build → sandbox render; etalon va HTML bilan solishtirish | Generatsiya / Asosiy | MVP | Rejada | O'rta | KON-00 | ≥95% kompilyatsiya, ≤1.5k token/ekran, hakamda HTML'dan yutadi |
+| KON-02 | @od/kit runtime: React + Konsta + ikonlar + Ring/Bars/Area/WaterGlass + navigator/store; versiyalangan CDN build | Generatsiya / Render | MVP | Rejada | O'rta | KON-01 | ≤150 KB gz, CORS *, ekran runtime versiyasini saqlaydi |
+| KON-03 | ScreenCompiler: oxc parse + import whitelist + JSX→JS + Tailwind (ilova bo'yicha bitta CSS) | Generatsiya / Render | MVP | Rejada | O'rta | KON-01 | Model kodi serverda bajarilmaydi; build ≤50 ms; testlar |
+| KON-04 | Ekran hujjati /s/:id + screens. domeni + CSP sandbox | Generatsiya / Render | MVP | Rejada | Kichik | KON-02, KON-03 | sandbox=allow-scripts, connect-src none, tema render paytida |
+| KON-05 | JSX prompti + Konsta API ma'lumotnomasi + planner/blueprint moslash | Generatsiya / Sifat | MVP | Rejada | O'rta | KON-01 | To'liq eval: kompilyatsiya ≥98%, hakamda yutadi |
+| KON-06 | DB: format/source_jsx/compiled_js/runtime_version, app_css; ikki renderer flag bilan | Generatsiya / Ma'lumotlar bazasi | MVP | Rejada | O'rta | KON-03 | Eski loyihalar html bo'lib qoladi |
+| KON-07 | Kanvas + Preview jsx uchun (Preview'da butun ilova jonli) | Generatsiya / Kanvas | MVP | Rejada | O'rta | KON-04, KON-06 | 20 ekran silliq; push/pop/tab; dark/aksent |
+| KON-08 | Tahrir, undo, versiyalar JSX ustida | Generatsiya / Tahrirlash | MVP | Rejada | Katta | KON-07 | Element tahriri, chat, Cmd+Z, ‹ › ishlaydi |
+| KON-09 | Eksport: React + Vite zip va bitta faylli HTML | Generatsiya / Fayllar | MVP | Rejada | O'rta | KON-07 | npm run dev ishlaydi; HTML internetsiz |
+| KON-10 | Thumbnail (headless PNG) + eval/hakam jsx ekranlarda | Generatsiya / Render | MVP | Rejada | Kichik | KON-04 | Dashboard va eval sheet'lari jsx'dan |
+| KON-11 | Material (Android) ko'rinishi: theme=material | Generatsiya / Tema | Keyin | Rejada | Kichik | KON-07 | iOS/Android almashadi |
+
 ## B0 · Tayyor
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
@@ -66,10 +83,11 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-01 | od-kit.css: tokenlar bilan ishlaydigan ~30 komponent | Generatsiya / Izchillik | MVP | Tayyor | Katta |  | Har komponent 33 tizimda galereyada to'g'ri ko'rinadi |
 | KIT-02 | Tizim shaxsiyati tokenlar orqali (chegara, soya, zichlik, karta uslubi) | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | KIT-01 | Bitta markup'dan duolingo 'chunky', minimal 'plain' |
 | KIT-03 | Grafiklar kodda: data-od-chart → SVG | Generatsiya / Render | MVP | Tayyor | O'rta |  | Model div'dan grafik chizmaydi; har tur testlangan |
-| KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | MVP | Jarayonda | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
+| KIT-04 | Skill: 'avval to'plamdan ol' + har arxetipga oltin namuna | Generatsiya / Sifat | Bekor | Rejada | O'rta | KIT-01, UX-01 | Chiqish tokenlari ~40% kam; lint o'tish ≥95% |
 | KIT-05 | Har tizim uchun komponent qiymatlari (COMPONENTS.md) brifga | Generatsiya / Dizayn tizimlari | Bekor | Tayyor | O'rta | KIT-01, KIT-04 | Sinovdan o'tmadi, qaytarildi: kit ishlatgan ekran 0.609 → 0.240, lint toza 0.652 → 0.480 |
 | KIT-06 | Qat'iy kit rejimi: model kontent + navigatsiya, ekranni kod yig'adi | Generatsiya / Izchillik | Keyin | Rejada | Katta | KIT-01, KIT-04 | Erkin yo'l bilan yonma-yon o'lchanadi: lint, tells, sameness va ko'z bilan |
 | KIT-07 | Kit 2026: sheet/drawer, menyu, toast, swipe, glass tugmalar, dialog, skeleton, chat | Generatsiya / Izchillik | MVP | Tayyor | O'rta | KIT-04 | Har blok samples.ts + README + 5 tizim galereyasi; namunalar ularni ko'rsatadi; eval'da kit ulushi tushmaydi |
+| LP-06 | Yengil ekranlar: Tailwind CSS va Lucide saqlashda kompilyatsiya (CDN skriptlarisiz) | Generatsiya / Render | Keyin | Rejada | O'rta | SHR-03 | To'xtatildi: JSX yo'lida kompilyatsiya o'zi bor (KON-03); lp06-precompile branch'i |
 | EYE-05 | Render auditni eval metrikasiga qo'shish va uch teshikni yopish | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-01, KIT-01 | audit cleanShare 0.25 → 0.50, small-target 9 → 2, generatsiyasiz o'lchandi |
 | EYE-06 | Qolgan past kontrastlarning sababi: brend rangi matnda, surface-warm, rangli chip, skrim | Generatsiya / Sifat | MVP | Tayyor | O'rta | EYE-05 | audit cleanShare 0.50 → 0.833, low-contrast 17 → 1 |
 | EYE-07 | Audit haqiqiy 390px'da o'lchasin, prob jim xato qaytarmasin | Generatsiya / Sifat | MVP | Tayyor | Kichik | EYE-06 | 500px'da o'lchanardi; iframe bilan 390px, prob javob bermasa throw |
@@ -276,13 +294,14 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-25 | Kanvas harakati: panellar, chat, tanlov, xabarlar va kontent animatsiya bilan | Muharrir / Kanvas | MVP | Tayyor | O'rta | UI-10, UI-20…24 | Tokenlar bilan 120–320ms, reduced-motion'da o'chadi |
 | GQ-38 | Onboarding standart: noaniq brief'da reja onboarding bilan boshlanadi | Generatsiya / Kontent | MVP | Tayyor | O'rta |  | Eval'da ≥90% onboarding, so'ralgan ekran tushmaydi |
 | GQ-39 | Har bir dizayn tizimi uchun bar tavsifi va 3 yangi shakl | Generatsiya / Izchillik | MVP | Tayyor | O'rta |  | 30 ilovada ≥4 xil bar |
-| GQ-40 | Bar hunari: aktiv tab to'ldirilgan ikonka, tizimning o'z bar tokenlari, haqiqiy glass | Generatsiya / Izchillik | Keyin | Rejada | O'rta | GQ-39 | Aktiv tab to'ldirilgan glif; tizim bar tokenlari tokens.css da; bar galereyasi; eval'da bar bahosi o'sadi |
-| EVAL-05 | Hakamni kuchaytirish: ko'p o'lchovli rubrika + langarli juftlik, 👍/👎 bilan kalibrlash | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Hakam har eval'da; juftlik g'olib foizi; FB-01 bilan kelishuv o'lchangan |
+| GQ-40 | Bar hunari: aktiv tab to'ldirilgan ikonka, tizimning o'z bar tokenlari, haqiqiy glass | Generatsiya / Izchillik | Bekor | Rejada | O'rta | GQ-39 | Aktiv tab to'ldirilgan glif; tizim bar tokenlari tokens.css da; bar galereyasi; eval'da bar bahosi o'sadi |
+| EVAL-05 | Hakamni kuchaytirish: ko'p o'lchovli rubrika + langarli juftlik, 👍/👎 bilan kalibrlash | Generatsiya / Sifat | MVP | Rejada | Kichik |  | Hakam har eval'da; juftlik g'olib foizi; FB-01 bilan kelishuv o'lchangan |
 | GQ-41 | Topilma → tuzatish: lint + audit topilmalari rubrika sifatida, bitta bo'lakli tahrir | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | audit ≥90%, lint ≥90%, hakam g'olib; vaqt +≤25%, narx +≤30% |
 | GQ-42 | Ixcham system prompt A/B (24k → ~8k) | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Metrikalar va hakamda teng/yaxshi; prompt tokenlari −60% |
 | GQ-43 | Kontent qoidalari kodda: raqamlar, sentence case, tugmada fe'l, haqiqiy ma'lumot | Generatsiya / Kontent | Keyin | Rejada | Kichik |  | Har qoidaga hisoblagich; bitta javobli bo'lsa autofix |
 | GQ-44 | Birinchi tab ekrani uchun best-of-2 + juftlik hakam | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | Bosh ekran g'olibligi ≥65%; narx +1 ekran |
-| GQ-45 | Tajriba: blok-JSON oraliq ko'rinish — kod chizadi, model faqat hero | Generatsiya / Izchillik | Keyin | Rejada | Katta |  | Chiqish tokenlari −40%, lint ≥95%, hakamda yutqazmaydi |
+| GQ-45 | Tajriba: blok-JSON oraliq ko'rinish — kod chizadi, model faqat hero | Generatsiya / Izchillik | Bekor | Rejada | Katta |  | Chiqish tokenlari −40%, lint ≥95%, hakamda yutqazmaydi |
+| KIT-08 | Tajriba: daisyUI 5 komponent qatlami + dizayn tizimlarimiz daisy temasi sifatida | Generatsiya / Izchillik | MVP | Tayyor | Katta |  | Hakamda yutqazmaydi, chiqish tokenlari −40%, audit ≥ hozirgi |
 | UI-26 | Kirgan foydalanuvchida / avval landing bo'lib chiziladi — yozilgan prompt yo'qoladi | Interfeys / Bosh sahifa | Keyin | Rejada | Kichik |  | Landing ko'rinmaydi, matn saqlanadi |
 | TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
 | SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |

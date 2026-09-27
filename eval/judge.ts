@@ -3,7 +3,12 @@
 // see it), shows each app's screens to a vision model with a fixed rubric, and — with --vs — asks
 // which of two runs is better for the same brief, in random order.
 //
-//   node --import ./eval/alias-hook.mjs eval/judge.ts <run-label> [--vs <other-label>] [--concurrency 3]
+//   node --import ./eval/alias-hook.mjs eval/judge.ts <run-label> [--vs <other-label>|best] [--concurrency 3] [--best]
+//
+// EVAL-05: a pairwise verdict is asked twice, once in each order, and counts only when both agree —
+// a judge prefers whichever set it read first or last, and one sample per brief is mostly that bias.
+// `--vs best` compares with the run recorded in eval/out/BEST; `--best` records this run there when
+// it did not lose. Scores are also shown per dimension against the other run's own judge.json.
 //
 // Local only: it runs on the developer's Claude Code login (`claude -p`), like LLM_PROVIDER=claude-cli.
 // Scores are written to eval/out/<run>/judge.json. Judge runs are compared only with judge runs.
@@ -110,8 +115,14 @@ function shoot(label: string): { brief: BriefResult; shots: string[] }[] {
 const mean = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : 0)
 
 async function main() {
-  const { values: args, positionals } = parseArgs({ allowPositionals: true, options: { vs: { type: 'string' }, concurrency: { type: 'string', default: '3' } } })
+  const { values: args, positionals } = parseArgs({ allowPositionals: true, options: { vs: { type: 'string' }, concurrency: { type: 'string', default: '3' }, best: { type: 'boolean', default: false } } })
   const label = positionals[0] ?? readdirSync(OUT_ROOT).sort().at(-1)!
+  const bestFile = join(OUT_ROOT, 'BEST')
+  if (args.vs === 'best') {
+    if (!existsSync(bestFile)) throw new Error('No eval/out/BEST yet: judge a run with --best first')
+    args.vs = readFileSync(bestFile, 'utf8').trim()
+    console.log(`[judge] best so far: ${args.vs}`)
+  }
   const n = Number(args.concurrency)
   const runs = shoot(label)
   console.log(`[judge] ${label}: ${runs.reduce((k, r) => k + r.shots.length, 0)} screens in ${runs.length} apps`)
@@ -142,14 +153,20 @@ async function main() {
     const shared = runs.filter((r) => other.get(r.brief.id)?.length && r.shots.length)
     pairwise = (
       await pool(shared, n, async ({ brief, shots }) => {
-        const flip = Math.random() < 0.5 // the judge must not learn which side is new
-        const [a, b] = flip ? [other.get(brief.id)!, shots] : [shots, other.get(brief.id)!]
-        const prompt = `Brief: ${brief.brief}\n\nSet A (read each):\n${a.map((p) => `- ${p}`).join('\n')}\n\nSet B (read each):\n${b.map((p) => `- ${p}`).join('\n')}`
-        const j = parseJudgement<{ winner: string; margin: string; reason: string }>(await ask(PAIRWISE, prompt, OUT_ROOT).catch(() => ''))
-        if (!j) return null
-        // Report from this run's side: "this" won, "other" won, or a tie.
-        const winner = j.winner === 'tie' ? 'tie' : (j.winner === 'A') !== flip ? 'this' : 'other'
-        return { id: brief.id, winner, margin: j.margin, reason: j.reason }
+        // Both orders; a side wins only when it wins in both, anything else is a tie.
+        const once = async (flip: boolean) => {
+          const [a, b] = flip ? [other.get(brief.id)!, shots] : [shots, other.get(brief.id)!]
+          const prompt = `Brief: ${brief.brief}\n\nSet A (read each):\n${a.map((p) => `- ${p}`).join('\n')}\n\nSet B (read each):\n${b.map((p) => `- ${p}`).join('\n')}`
+          const j = parseJudgement<{ winner: string; margin: string; reason: string }>(await ask(PAIRWISE, prompt, OUT_ROOT).catch(() => ''))
+          if (!j) return null
+          // From this run's side: "this" won, "other" won, or a tie.
+          return { winner: j.winner === 'tie' ? 'tie' : (j.winner === 'A') !== flip ? 'this' : 'other', margin: j.margin, reason: j.reason }
+        }
+        const [x, y] = await Promise.all([once(false), once(true)])
+        if (!x || !y) return null
+        const winner = x.winner === y.winner ? x.winner : 'tie'
+        const margin = winner === 'tie' ? (x.winner === y.winner ? 'tie' : 'split') : x.margin === 'clear' && y.margin === 'clear' ? 'clear' : 'slight'
+        return { id: brief.id, winner, margin, reason: winner === 'other' ? y.reason : x.reason }
       })
     ).filter((x): x is NonNullable<typeof x> => x !== null)
   }
@@ -162,6 +179,21 @@ async function main() {
     const tie = pairwise.filter((p) => p.winner === 'tie').length
     console.log(`[judge] vs ${args.vs}: won ${won}, tied ${tie}, lost ${pairwise.length - won - tie} of ${pairwise.length}`)
     for (const p of pairwise) console.log(`  ${p.id}: ${p.winner} (${p.margin}) — ${p.reason}`)
+    // The other run's own scores, dimension by dimension, when it was judged too.
+    const theirs = join(OUT_ROOT, args.vs!, 'judge.json')
+    if (existsSync(theirs)) {
+      const o = (JSON.parse(readFileSync(theirs, 'utf8')) as { summary: typeof summary }).summary
+      const keys = ['overall', 'hierarchy', 'spacing', 'polish', 'fidelity', 'coherence'] as const
+      console.log(`[judge] scores vs ${args.vs}: ${keys.map((k) => `${k} ${o[k]} → ${summary[k]}`).join(' · ')}`)
+    }
+  }
+  if (args.best) {
+    const lost = pairwise ? pairwise.filter((p) => p.winner === 'other').length : 0
+    const won = pairwise ? pairwise.filter((p) => p.winner === 'this').length : 0
+    if (!pairwise || won >= lost) {
+      writeFileSync(bestFile, label + '\n')
+      console.log(`[judge] ${label} is now eval/out/BEST`)
+    } else console.log(`[judge] not recorded as best: lost ${lost}, won ${won}`)
   }
 }
 
