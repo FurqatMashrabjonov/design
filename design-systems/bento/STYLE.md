@@ -11,7 +11,7 @@ Colour energy: medium — accent blue appears on one primary action per screen, 
 - Dividers use var(--border-soft); card outlines use var(--border).
 
 ## Type
-- One family throughout: var(--font-body) for everything, var(--font-display) for headings; numerals and code use var(--font-mono).
+- One family throughout: var(--font-body) for everything, var(--font-display) for headings; figures use var(--font-body) with tabular numerals (font-variant-numeric: tabular-nums); var(--font-mono) only for code.
 - Screen title: var(--text-2xl), weight 700, line-height var(--leading-tight), tracking var(--tracking-display).
 - Section heading: var(--text-lg), weight 600.
 - Body and list rows: var(--text-base), weight 400, line-height var(--leading-body).

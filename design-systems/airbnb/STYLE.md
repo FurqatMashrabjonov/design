@@ -11,7 +11,7 @@ Colour energy: low — under 10% of a screen carries accent colour; one coral el
 - Never introduce a second accent hue; no gradient surfaces.
 
 ## Type
-- One family for everything: var(--font-display) for headings, var(--font-body) for copy; var(--font-mono) only for numeric codes.
+- One family for everything: var(--font-display) for headings, var(--font-body) for copy; var(--font-mono) only for code; figures stay in the body face with tabular numerals.
 - Body weight is 500, not 400. Headings 600–700.
 - Screen title: var(--text-2xl) at 700, leading var(--leading-tight).
 - Section heading: var(--text-xl) at 500, tracking -0.44px.

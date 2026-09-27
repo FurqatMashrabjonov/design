@@ -10,7 +10,7 @@ Colour energy: low — accent colour appears in at most two small moments per sc
 - Status colour only where a state genuinely exists: var(--success), var(--warn), var(--danger).
 
 ## Type
-- One family for everything: var(--font-display) / var(--font-body); var(--font-mono) only for code, numbers and uppercase technical labels.
+- One family for everything: var(--font-display) / var(--font-body); var(--font-mono) only for code; numbers use tabular numerals in the body face.
 - Three weights only: 400 for reading, 500 for interactive labels, 600 for headings. Never 700 except a 12px uppercase micro-badge.
 - Screen title: var(--text-3xl) at weight 600, line-height var(--leading-tight), letter-spacing var(--tracking-display).
 - Section heading: var(--text-2xl) weight 600, tracking -0.04em. Card title: var(--text-xl) weight 600, tracking -0.04em.
@@ -39,7 +39,7 @@ Colour energy: low — accent colour appears in at most two small moments per sc
 - A screen title at var(--text-3xl) weight 600 with var(--tracking-display) compression, sitting in a large pocket of white space.
 - A dark filled primary button (var(--fg) background, var(--accent-on) label, var(--radius-sm)) paired with a white shadow-ringed secondary button of the same height.
 - A var(--radius-pill) badge with a tinted background and var(--text-xs) weight 500 label used as the only chromatic moment on the screen.
-- Uppercase var(--font-mono) labels at var(--text-xs) weight 500 for numbers, codes and step markers.
+- var(--font-mono) at var(--text-sm) weight 500 for code and step markers; numbers stay in the body face.
 
 ## Avoid
 - No warm or saturated background tints, no gradient washes, no coloured section backgrounds.

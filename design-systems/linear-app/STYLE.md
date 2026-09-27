@@ -10,12 +10,12 @@ Colour energy: low — under 10% of a screen carries accent; the rest is near-bl
 - Dividers are var(--border-soft); card and input outlines are var(--border). Never a solid dark border on dark.
 
 ## Type
-- One family for everything: var(--font-display) / var(--font-body); var(--font-mono) only for code, IDs and numeric readouts.
+- One family for everything: var(--font-display) / var(--font-body); var(--font-mono) only for code and IDs; numeric readouts use tabular numerals in the body face.
 - Weights: 400 reading, 510 default emphasis and UI labels, 590 strong emphasis. Never 700.
 - Sizes: var(--text-xs) micro labels, var(--text-sm) captions, var(--text-base) body, var(--text-lg) intro, var(--text-xl) card titles, var(--text-2xl) screen titles, var(--text-3xl) large display, var(--text-4xl) maximum display.
 - Line height var(--leading-body) for body; var(--leading-tight) for anything at var(--text-2xl) and above.
 - Negative tracking on display only: var(--tracking-display) at var(--text-3xl) and var(--text-4xl); normal tracking at var(--text-base) and below.
-- Sentence case for titles and buttons; uppercase only for var(--text-xs) overlines.
+- Sentence case for titles and buttons; no uppercase labels.
 
 ## Shape and depth
 - Radii: var(--radius-sm) buttons and inputs, var(--radius-md) cards, var(--radius-lg) panels and sheets, var(--radius-pill) chips and filters.
@@ -34,7 +34,7 @@ Colour energy: low — under 10% of a screen carries accent; the rest is near-bl
 - Cards are translucent light-on-dark: var(--surface) fill plus a 1px var(--border) hairline, no drop shadow.
 - Primary CTA is a solid var(--accent) pill-free rectangle at var(--radius-sm) with var(--accent-on) label at weight 510.
 - Display headlines are tight: var(--leading-tight) with var(--tracking-display), weight 510, in var(--fg).
-- Metadata rows pair a var(--text-xs) uppercase overline in var(--muted) with a var(--text-sm) value in var(--fg-2).
+- Metadata rows pair a var(--text-sm) sentence-case label in var(--muted) with a var(--text-sm) value in var(--fg-2).
 - Status is a small dot or chip in var(--success) / var(--warn) / var(--danger) with a var(--radius-pill) outline, never a filled banner.
 
 ## Avoid

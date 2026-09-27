@@ -11,7 +11,7 @@ Colour energy: low — under 10% of a screen carries accent or semantic colour; 
 - Never tint the page background; never use gradients or coloured surfaces beyond a small status pill.
 
 ## Type
-- One family for all UI: var(--font-body). Code, IDs, and numeric strings use var(--font-mono).
+- One family for all UI: var(--font-body). Code and IDs use var(--font-mono); numbers stay in the body face with tabular numerals.
 - Body and default UI text is var(--text-sm) at weight 400, line-height var(--leading-body). Never 16px body.
 - Captions and metadata are var(--text-xs) at weight 400.
 - Panel headers are var(--text-lg) weight 600; section headings var(--text-xl) weight 600; screen titles var(--text-2xl) weight 600.
@@ -36,7 +36,7 @@ Colour energy: low — under 10% of a screen carries accent or semantic colour; 
 - A full-width row list where each row is a hairline-bordered rectangle with a leading status pill and a trailing muted timestamp.
 - A status pill in var(--radius-pill) carrying a single semantic colour (var(--success), var(--danger), var(--warn), or var(--muted)) with white text at var(--text-xs) weight 600.
 - A panel whose header strip is var(--surface) with a bottom border and whose body is var(--bg), both at var(--radius-sm).
-- Monospace var(--font-mono) at var(--text-xs) for identifiers, counts, and code-like values, set inline against sans body text.
+- Monospace var(--font-mono) at var(--text-sm) for identifiers and code, set inline against sans body text; counts stay in the body face.
 - A primary action button in var(--accent) with var(--accent-on) text, 1px var(--border), var(--radius-sm), and a 44px minimum height.
 
 ## Avoid

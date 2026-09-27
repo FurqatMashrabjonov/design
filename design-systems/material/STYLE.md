@@ -14,7 +14,7 @@ Colour energy: medium — roughly one tenth of a screen carries var(--accent); e
 ## Type
 - Display and headings: var(--font-display) at weight 500–600, tracking var(--tracking-display), line-height var(--leading-tight).
 - Body, labels, buttons: var(--font-body) at weight 400; button and tab labels at weight 500.
-- Numerals, codes, and quantities: var(--font-mono).
+- Numerals and quantities: var(--font-body) with tabular numerals; var(--font-mono) only for code.
 - Screen title: var(--text-xl) or var(--text-2xl). Section heading: var(--text-lg). Body: var(--text-base) with line-height var(--leading-body). Captions and helper text: var(--text-sm); the smallest legal label is var(--text-xs).
 - Never set two adjacent text levels at the same size and weight; step at least one level between a heading and its support text.
 

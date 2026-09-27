@@ -14,8 +14,8 @@ Colour energy: low — accent colour touches under 5% of a screen: one primary a
 - Display and UI text use var(--font-display) at weight 400 only — hierarchy comes from size and tracking, never from bolding.
 - Headings: var(--text-3xl) with letter-spacing var(--tracking-display) and line-height var(--leading-tight); step down to var(--text-2xl), var(--text-xl), var(--text-lg) keeping the negative tracking proportional to size.
 - Body and long-form copy use var(--font-body) at var(--text-base) or var(--text-sm), line-height var(--leading-body).
-- Numerals, codes, IDs and technical labels use var(--font-mono) at var(--text-xs) or var(--text-sm).
-- Buttons and captions use var(--font-display) at var(--text-sm); micro labels at var(--text-xs) in uppercase with 0.05em tracking.
+- Code and IDs use var(--font-mono) at var(--text-sm); numerals stay in the body face with tabular numerals.
+- Buttons and captions use var(--font-display) at var(--text-sm); small labels at var(--text-sm) in sentence case, weight 500.
 - Never set display type below var(--text-lg); never set serif body below var(--text-sm).
 
 ## Shape and depth

@@ -21,6 +21,7 @@ import { annotateHtml } from '@/lib/element-annotator'
 import { normalizeScreen } from '@/lib/screen-normalizer'
 import { componentSheet } from '@/app/Services/ComponentSheetService'
 import { autofixScreen, lintScreen } from '@/lib/design-lint'
+import { findingScore, repairEnabled, repairScreen } from '@/app/Services/RepairService'
 import { contentBlock, contentSeed, localeOf } from '@/lib/content-seed'
 import { Message } from '@/app/Models/Message'
 import { PlanRuns } from '@/app/Services/PlanRuns'
@@ -219,10 +220,29 @@ export const PlanController = {
                   kitCss: KitService.css(),
                 }),
               )
-              const withImages = await resolveImages(normalized, abort.signal, { name: plan.appName })
-              const findings = lintScreen(withImages, { leakTerms, colorEnergy })
+              let withImages = await resolveImages(normalized, abort.signal, { name: plan.appName })
+              let findings = lintScreen(withImages, { leakTerms, colorEnergy })
               if (findings.length > 0) {
                 console.warn(`[lint] ${s.name}:`, findings.map((f) => `${f.rule}(${f.samples.length})`).join(' '))
+              }
+              // GQ-41: the findings go back once as a rubric; the repair is kept only if it lints better.
+              if (findings.length > 0 && repairEnabled() && !abort.signal.aborted) {
+                const before = findings.map((f) => f.rule)
+                try {
+                  const fixed = await repairScreen(withImages, findings, { system, signal: abort.signal, onUsage: tally })
+                  if (fixed) {
+                    const again = autofixScreen(normalizeScreen(fixed.html, { tokensCss, fontUrls, iconStroke, shell: shellPartsFor(s, plan.navigation, s.name, bar), navClearance: navClearance(bar), kitCss: KitService.css() }))
+                    const repaired = await resolveImages(again, abort.signal, { name: plan.appName })
+                    const after = lintScreen(repaired, { leakTerms, colorEnergy })
+                    if (/<\/html>/i.test(repaired) && findingScore(after) < findingScore(findings)) {
+                      withImages = repaired
+                      findings = after
+                      console.warn(`[repair] ${s.name}: ${before.join(', ')} → ${after.map((f) => f.rule).join(', ') || 'clean'} (${fixed.applied.length} edits)`)
+                    } else console.warn(`[repair] ${s.name}: not kept (${before.length} → ${after.length} findings)`)
+                  }
+                } catch (e) {
+                  if (!abort.signal.aborted) console.warn(`[repair] ${s.name}: failed — ${e instanceof Error ? e.message : e}`)
+                }
               }
               const screen = await Screen.create({
                 id: screenIds[i]!,

@@ -15,8 +15,8 @@ Colour energy: low — accent colour covers under 5% of a screen: one link, one 
 - Editorial display headlines use var(--font-display) at 400, size var(--text-4xl), line-height var(--leading-tight), tracking var(--tracking-display).
 - Screen heading: var(--text-3xl) / 600. Section heading: var(--text-2xl) / 600. Sub-section: var(--text-xl) / 600.
 - Reading text: var(--text-base) / 400 with line-height var(--leading-body); lede paragraphs var(--text-lg).
-- Metadata and badges: var(--text-sm) / 500. Eyebrow and uppercase labels: var(--text-xs) / 500 with 0.04em tracking.
-- Code or numeric readouts use var(--font-mono) at var(--text-sm).
+- Metadata and badges: var(--text-sm) / 500. Small labels: var(--text-sm) / 500, sentence case.
+- Code uses var(--font-mono) at var(--text-sm); numeric readouts stay in the body face with tabular numerals.
 - Hierarchy comes from size and colour, not weight.
 
 ## Shape and depth

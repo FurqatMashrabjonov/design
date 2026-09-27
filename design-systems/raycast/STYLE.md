@@ -12,7 +12,7 @@ Colour energy: low — accent colour appears on roughly 5% of a screen: one stri
 - Focus and selection use var(--focus-ring), not the accent.
 
 ## Type
-- Everything is var(--font-display) / var(--font-body); var(--font-mono) only for code, IDs, amounts in a terminal-like readout.
+- Everything is var(--font-display) / var(--font-body); var(--font-mono) only for code and IDs; amounts use tabular numerals in the body face.
 - Body copy at var(--text-base), weight 500, line-height var(--leading-body), letter-spacing +0.2px. Never weight 400 for body.
 - Screen title at var(--text-2xl), weight 500, letter-spacing +0.2px.
 - One hero number or headline per screen may reach var(--text-3xl), weight 600, line-height var(--leading-tight), letter-spacing var(--tracking-display).

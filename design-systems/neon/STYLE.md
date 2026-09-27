@@ -12,7 +12,7 @@ Colour energy: high — the accent lilac carries roughly a fifth of the screen: 
 - Never place two accent-filled elements side by side; one accent action per viewport.
 
 ## Type
-- One family for everything: var(--font-display) for headings and var(--font-body) for text; numerals in var(--font-mono) when they must align in columns.
+- One family for everything: var(--font-display) for headings and var(--font-body) for text; numerals that must align use tabular numerals.
 - Sizes: var(--text-xs) for badges, var(--text-sm) for captions and helper text, var(--text-base) for body, var(--text-lg) for list titles, var(--text-xl) for screen titles, var(--text-2xl) for the single hero number or headline.
 - Headings at weight 700–800 with letter-spacing var(--tracking-display) and line-height var(--leading-tight); body at weight 400 with line-height var(--leading-body).
 - Uppercase only for badges and section labels at var(--text-xs), tracked wide; never uppercase body copy.

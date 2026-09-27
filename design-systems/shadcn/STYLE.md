@@ -11,7 +11,7 @@ Colour energy: low — accent colour appears only on primary buttons, focus ring
 - All edges and dividers are var(--border) at 1px. No coloured borders, no gradient fills.
 
 ## Type
-- One family for everything: var(--font-display) for headings, var(--font-body) for text. var(--font-mono) only for code, keys, or numeric IDs.
+- One family for everything: var(--font-display) for headings, var(--font-body) for text. var(--font-mono) only for code and keys; figures use tabular numerals.
 - Sizes: var(--text-xs) captions/badges, var(--text-sm) buttons and inputs, var(--text-base) body, var(--text-lg) lede, var(--text-xl) card titles, var(--text-2xl) screen titles, var(--text-3xl) top headline.
 - Weights: 400 body, 500 labels and buttons, 600 headings. Do not go above 600.
 - Headings: var(--leading-tight) with var(--tracking-display). Body: var(--leading-body).

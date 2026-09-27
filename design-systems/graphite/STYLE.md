@@ -12,8 +12,8 @@ Colour energy: low — the amber carries the primary action and one figure per s
 - Light palette (a light var(--bg)): the same rules hold; the hairline stays and the amber darkens so it still reads as a signal.
 
 ## Type
-- One face for text: var(--font-body). Figures — prices, times, counts, IDs, deltas, percentages — are var(--font-mono) with tabular figures.
-- Hero figure: var(--text-3xl) or var(--text-4xl) in var(--font-mono), weight 500, line-height var(--leading-tight); its label under it at var(--text-xs) in var(--muted).
+- One face for text: var(--font-body). Figures — prices, times, counts, deltas, percentages — are var(--font-body) with tabular numerals; var(--font-mono) only for code and IDs.
+- Hero figure: var(--text-3xl) or var(--text-4xl) in var(--font-display), weight 600, tabular numerals, line-height var(--leading-tight); its label under it at var(--text-xs) in var(--muted).
 - Screen title: var(--text-xl), weight 600. Section heading: var(--text-sm), weight 600, in var(--muted).
 - Body and rows: var(--text-base), weight 400 or 450. Meta: var(--text-xs), weight 450.
 - Labels stay sentence case; the density does the work, not capitals.

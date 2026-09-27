@@ -12,12 +12,12 @@ Colour energy: medium — roughly one accent element per screen block; accent co
 - var(--meta) is for small numeric or timestamp labels, not for buttons.
 
 ## Type
-- One family throughout: var(--font-display) for headings, var(--font-body) for copy. Numerals and code-like values use var(--font-mono).
+- One family throughout: var(--font-display) for headings, var(--font-body) for copy. Numerals use var(--font-body) with tabular numerals; var(--font-mono) only for code.
 - Screen title: var(--text-2xl) at weight 700, line-height var(--leading-tight), tracking var(--tracking-display).
 - Section heading: var(--text-lg) at weight 600.
 - Body: var(--text-base) at weight 400, line-height var(--leading-body).
 - Labels and captions: var(--text-sm) at weight 500, colour var(--muted).
-- Micro labels and badges: var(--text-xs) at weight 600, uppercase, letter-spacing 0.04em.
+- Micro labels and badges: var(--text-sm) at weight 600, sentence case.
 - Big single metrics: var(--text-3xl) or var(--text-4xl) at weight 700, tracking var(--tracking-display).
 - Never set two adjacent text blocks at the same size and weight.
 
@@ -36,9 +36,9 @@ Colour energy: medium — roughly one accent element per screen block; accent co
 - Grids of two or three equal tiles are allowed; keep gutters at var(--space-3).
 
 ## Signature moves
-- A top summary strip of two to four metric tiles on var(--surface) with var(--elev-ring), each showing a var(--text-xs) uppercase label above a var(--text-2xl) number.
+- A top summary strip of two to four metric tiles on var(--surface) with var(--elev-ring), each showing a var(--text-sm) sentence-case label above a var(--text-2xl) number.
 - A segmented control or tab row where the active item is filled with var(--accent) and var(--accent-on) text, inactive items are var(--fg-2) on var(--surface-warm).
-- Status pills: var(--radius-pill), var(--text-xs) uppercase, tinted background with the matching status colour as text.
+- Status pills: var(--radius-pill), var(--text-xs) weight 600, tinted background with the matching status colour as text.
 - A single raised sheet or floating action panel using var(--elev-raised) and var(--radius-lg), anchored to the bottom of the screen.
 - Progress and completion bars drawn as var(--radius-pill) tracks in var(--border-soft) with a var(--accent) fill.
 

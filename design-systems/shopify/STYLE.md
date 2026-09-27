@@ -11,12 +11,12 @@ Colour energy: low — accent colour appears on under 5% of a screen, reserved f
 
 ## Type
 - Display and headings use var(--font-display) at weights 330–400 only. Never exceed 500 on display.
-- Body and UI text use var(--font-body) at weights 400–550. Code and data labels use var(--font-mono).
+- Body and UI text use var(--font-body) at weights 400–550. Code uses var(--font-mono); data stays in the body face with tabular numerals.
 - Screen title: var(--text-3xl) at weight 330, line-height var(--leading-tight), tracking var(--tracking-display).
 - Section heading: var(--text-2xl) at weight 330, line-height 1.14.
 - Card heading: var(--text-xl) at weight 360, line-height 1.14.
 - Body: var(--text-base) at weight 400, line-height var(--leading-body).
-- Caption: var(--text-sm) at weight 500. Labels: var(--text-xs) uppercase at weight 400 with 0.72px tracking.
+- Caption: var(--text-sm) at weight 500. Labels: var(--text-sm) at weight 500, sentence case.
 - Never mix display and body fonts at the same size and role.
 
 ## Shape and depth

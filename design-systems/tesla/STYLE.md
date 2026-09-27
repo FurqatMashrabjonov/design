@@ -16,7 +16,7 @@ Colour energy: low — accent colour appears on roughly one element per screen, 
 - Only two weights exist: 400 and 500. No bold, no light, no italics.
 - Letter-spacing stays normal at every size; no uppercase transforms on titles, buttons, or labels.
 - Body copy line-height var(--leading-body); button and label line-height var(--leading-tight).
-- Numeric or code-like values may use var(--font-mono) at var(--text-sm).
+- Numeric values use tabular numerals in the body face; var(--font-mono) only for code.
 
 ## Shape and depth
 - Interactive elements use var(--radius-sm). Larger image panels use var(--radius-md). Nothing else is rounded; var(--radius-pill) is limited to carousel dots and avatars.

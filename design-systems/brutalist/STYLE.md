@@ -11,7 +11,7 @@ Colour energy: high — accent yellow covers roughly a third of a screen; one se
 - Body copy is var(--fg); secondary copy var(--muted); timestamps and captions var(--meta).
 
 ## Type
-- Everything is var(--font-display); numbers use var(--font-mono) when they need to align.
+- Everything is var(--font-display); numbers that must align use tabular numerals (font-variant-numeric: tabular-nums).
 - Body var(--text-base) at var(--leading-body); labels var(--text-sm); tags var(--text-xs) uppercase 700.
 - Screen titles var(--text-2xl) or var(--text-3xl), weight 700, uppercase, var(--tracking-display), var(--leading-tight).
 - Section headings var(--text-lg) or var(--text-xl), weight 700.

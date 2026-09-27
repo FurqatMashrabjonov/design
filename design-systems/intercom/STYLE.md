@@ -11,10 +11,10 @@ Colour energy: low — under 10% of a screen carries accent colour; the rest is 
 - Status uses var(--success), var(--warn), var(--danger) as small dots or 12px labels only, never as fills.
 
 ## Type
-- Everything is var(--font-display) / var(--font-body); technical labels and uppercase eyebrows use var(--font-mono).
+- Everything is var(--font-display) / var(--font-body); technical labels use var(--font-body) at weight 600, sentence case; var(--font-mono) only for code.
 - Headings: weight 400, line-height var(--leading-tight), letter-spacing var(--tracking-display). Screen title 32px (var(--text-2xl)); section heading 24px (var(--text-xl)).
 - Body 16px (var(--text-base)) at var(--leading-body); secondary body 14px (var(--text-sm)) at weight 300.
-- Mono labels: 12px (var(--text-xs)), uppercase, letter-spacing 0.6px–1.2px.
+- Small labels: 13px (var(--text-sm)), weight 600, sentence case, no extra tracking.
 - Hierarchy comes from size and tracking, not from tonal shifts: headings and body share var(--fg).
 
 ## Shape and depth
@@ -36,7 +36,7 @@ Colour energy: low — under 10% of a screen carries accent colour; the rest is 
 - Oversized headings set at line-height 1.00 with aggressive negative tracking, so two lines almost touch.
 - Near-rectangular 4px-radius buttons: solid off-black fill with white label for primary, 1px off-black outline for secondary.
 - Exactly one hot orange element per screen — the primary CTA or an AI moment — against an otherwise neutral palette.
-- 12px uppercase mono labels with wide tracking used as eyebrows above headings and as row metadata.
+- 13px weight-600 sentence-case labels as row metadata; sections open on a real heading, not an eyebrow.
 
 ## Avoid
 - No cool grey borders or cool grey surfaces anywhere.

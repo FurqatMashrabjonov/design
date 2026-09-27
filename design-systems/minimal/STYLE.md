@@ -10,7 +10,7 @@ Colour energy: low — accent appears on roughly one element per screen (a prima
 - Status only where meaningful: `var(--success)`, `var(--warn)` (alias `var(--warning)`), `var(--danger)`. One accent colour per screen; status colours do not decorate.
 
 ## Type
-- Family: `var(--font-display)` and `var(--font-body)` are both Inter; `var(--font-mono)` for codes and numeric IDs.
+- Family: `var(--font-display)` and `var(--font-body)` are both Inter; `var(--font-mono)` only for codes and IDs; figures use tabular numerals in the body face.
 - Sizes: `var(--text-xs)` captions, `var(--text-sm)` body, `var(--text-base)` emphasised body, `var(--text-lg)` card titles, `var(--text-xl)` screen titles, `var(--text-2xl)` and above for hero numbers.
 - Weights: 400 body, 500 labels and buttons, 600 headings. Headings use `var(--leading-tight)` and `var(--tracking-display)`; body uses `var(--leading-body)`.
 - Numeric columns, timers and balances use tabular figures.

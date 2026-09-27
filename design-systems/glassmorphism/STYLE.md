@@ -11,7 +11,7 @@ Colour energy: medium — accent blue appears on primary actions, active states 
 - Keep accent coverage under roughly one fifth of the screen; the rest is pale background and translucent white.
 
 ## Type
-- One family throughout: var(--font-display) for headings, var(--font-body) for text; numerals and codes use var(--font-mono).
+- One family throughout: var(--font-display) for headings, var(--font-body) for text; figures use var(--font-body) with tabular numerals (font-variant-numeric: tabular-nums); var(--font-mono) only for code.
 - Sizes: var(--text-xs) for labels, var(--text-sm) for captions, var(--text-base) for body, var(--text-lg) for list titles, var(--text-xl) for screen titles, var(--text-2xl) for large numbers, var(--text-3xl) and var(--text-4xl) for hero figures only.
 - Body line height var(--leading-body); display line height var(--leading-tight) with tracking var(--tracking-display).
 - Weights: 400 body, 500 labels and buttons, 600 list titles, 700–800 screen titles and hero numbers.
@@ -34,7 +34,7 @@ Colour energy: medium — accent blue appears on primary actions, active states 
 - Frosted panels: var(--surface) fill over var(--bg) with a var(--border) hairline, so background colour shows faintly through every card.
 - Large soft blue glow under floating panels via var(--elev-raised), never a hard grey drop shadow.
 - Pill-shaped primary button in var(--accent) with var(--accent-on) label, sitting alone at the bottom of the content column.
-- Oversized display numbers in var(--text-2xl) to var(--text-4xl) with var(--tracking-display), paired with a var(--text-xs) uppercase label in var(--muted).
+- Oversized display numbers in var(--text-2xl) to var(--text-4xl) with var(--tracking-display), paired with a var(--text-sm) sentence-case label in var(--muted).
 - Status chips: var(--radius-pill), translucent fill, and a single status colour used only for the dot or the value.
 
 ## Avoid

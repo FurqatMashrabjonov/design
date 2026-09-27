@@ -15,7 +15,7 @@ Colour energy: medium — the accent covers roughly one button, one badge and on
 - Screen title var(--text-2xl); hero number or big stat var(--text-3xl) or var(--text-4xl).
 - Section headings var(--text-lg) in var(--font-display) uppercase; card titles var(--text-base) weight 700.
 - Body var(--font-body) at var(--text-base) with leading var(--leading-body); secondary copy var(--text-sm).
-- Labels, units and counters var(--text-xs) uppercase in var(--font-mono).
+- Labels, units and counters var(--text-sm) weight 700 in var(--font-body), sentence case.
 - Never set body copy in the display face; never use a weight below 400 for text under 16px.
 
 ## Shape and depth
@@ -36,7 +36,7 @@ Colour energy: medium — the accent covers roughly one button, one badge and on
 ## Signature moves
 - Primary button: var(--accent) fill, var(--accent-on) uppercase label in var(--font-display), var(--radius-md), var(--elev-raised) shadow, 52px tall.
 - Cards and stat tiles carry the same hard offset shadow and a 1px var(--border) outline, so they read as physical tiles.
-- Big numeric readouts in var(--font-display) at var(--text-3xl)+ with a var(--font-mono) uppercase unit label directly beneath.
+- Big numeric readouts in var(--font-display) at var(--text-3xl)+ with a var(--text-sm) weight-700 unit label directly beneath.
 - Status pills: var(--radius-pill), var(--surface-warm) fill, var(--border) outline, var(--text-xs) uppercase mono text.
 - Selected tab or chip flips to var(--accent) fill with var(--accent-on) text and keeps the offset shadow.
 

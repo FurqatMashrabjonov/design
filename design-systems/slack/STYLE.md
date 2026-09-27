@@ -11,7 +11,7 @@ Colour energy: medium — one large aubergine region (top bar or drawer) plus sm
 - Dividers are var(--border); row separators inside lists use var(--border-soft).
 
 ## Type
-- UI text uses var(--font-body); code and numeric IDs use var(--font-mono) at var(--text-xs).
+- UI text uses var(--font-body); code and IDs use var(--font-mono) at var(--text-sm); figures stay in the body face.
 - Default body size is var(--text-base) at weight 400, line-height var(--leading-body).
 - Screen and modal titles: var(--text-2xl) at weight 700, line-height 1.25.
 - Card and section titles: var(--text-xl) at weight 700.

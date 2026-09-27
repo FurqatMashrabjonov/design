@@ -11,7 +11,7 @@ Colour energy: low — under 10% of a screen carries accent colour; blue appears
 - No gradients in UI chrome; richness comes from imagery and surface stepping.
 
 ## Type
-- Headlines use var(--font-display) at weight 600, body and controls use var(--font-body) at 400–600; var(--font-mono) only for numeric/code readouts.
+- Headlines use var(--font-display) at weight 600, body and controls use var(--font-body) at 400–600; var(--font-mono) only for code; figures stay in the body face with tabular numerals.
 - Screen title: var(--text-2xl) at 600, line-height var(--leading-tight), letter-spacing var(--tracking-display).
 - Section heading: var(--text-xl) at 600; card title: var(--text-lg) at 600.
 - Body: var(--text-base) at 400, line-height var(--leading-body); emphasised body same size at 600.

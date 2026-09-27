@@ -13,7 +13,7 @@ Colour energy: low — accent colour appears only on one primary action, focus r
 - Everything is var(--font-display) / var(--font-body) at weights 400, 500, 600. Headings 600 with var(--tracking-display).
 - Body copy at var(--text-sm) with var(--leading-body); dense list rows and metadata at var(--text-xs).
 - Screen titles at var(--text-xl) or var(--text-2xl), var(--leading-tight).
-- Numerals, codes, IDs and any figure that should align use var(--font-mono) at 500.
+- Figures that should align use var(--font-body) at 500 with tabular numerals; var(--font-mono) only for code and IDs.
 - Secondary labels: var(--text-xs), weight 500, colour var(--muted).
 
 ## Shape and depth
@@ -32,7 +32,7 @@ Colour energy: low — accent colour appears only on one primary action, focus r
 - A three-step dark surface ladder (var(--bg) → var(--surface) → var(--surface-warm)) where each step is separated by a 1px var(--border) hairline, never by a shadow.
 - Raised cards carry var(--elev-raised): a 1px inset top highlight plus a hairline ring, so surfaces look lit from above.
 - Exactly one var(--accent) filled action per screen, with white label text at var(--text-sm) weight 600.
-- Monospaced var(--font-mono) numerals for any metric, count or code, set against Inter labels.
+- Metrics and counts in the body face with tabular numerals, one step heavier than their labels.
 - Small bordered chips at var(--text-xs) for status and metadata, tinted with a semantic colour at 15% opacity.
 
 ## Avoid

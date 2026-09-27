@@ -94,3 +94,59 @@ Rules:
 3. Keep using the same CSS classes, tokens (var(--…)), icons (<i data-lucide>) and image slots (<img data-od-img>) as the rest of the screen. If you need a new style, put it in an inline style attribute.
 4. Never target the injected shell (the tab bar or the top header); it has no data-od-id.
 5. Answer instead with the complete document in <artifact title="…">…</artifact> when the request changes the whole layout, or when it changes values that the page's own <script> computes or sets (scripts cannot be edited by parts, and would overwrite your change when the page loads).`
+
+// GQ-41: a repair can also rewrite one rule of the page's own stylesheet, addressed by its selector:
+//   <css selector=".eyebrow">font-size:13px;font-weight:600</css>     (the rule's new declarations)
+//   <css selector=".dim" op="delete"></css>
+// Only the page's own <style> (not one we inject, which carries data-od-*) is touched, and only the
+// first rule whose selector matches; a selector not found is appended as a new rule. So a finding
+// that lives in CSS is fixed where it lives — an override stacked on top would leave the linter,
+// and the next person to read the source, looking at the rule that is still wrong.
+export type CssEdit = { selector: string; body: string; op: 'replace' | 'delete' }
+
+// Attributes may quote a `>` (".card > .meta"), so the tag ends at the first `>` outside quotes.
+const CSS_EDIT = /<css\b((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/css>/gi
+const normSel = (s: string) => s.replace(/\s+/g, ' ').replace(/\s*([>+~,])\s*/g, '$1').trim()
+
+export function parseCssEdits(text: string): CssEdit[] {
+  const out: CssEdit[] = []
+  for (const m of text.matchAll(CSS_EDIT)) {
+    const selector = ATTR(m[1]!, 'selector')?.trim()
+    // A selector is one rule's prelude: no braces, no at-rules, nothing that could close the sheet.
+    if (!selector || selector.length > 200 || /[{}<@]/.test(selector)) continue
+    const del = /^delete$/i.test(ATTR(m[1]!, 'op') ?? '')
+    const body = m[2]!.trim().replace(/^\{|\}$/g, '').trim()
+    if (/[{}<]/.test(body)) continue
+    if (!del && !body) continue
+    out.push({ selector, body, op: del ? 'delete' : 'replace' })
+  }
+  return out
+}
+
+export function applyCssEdits(html: string, edits: CssEdit[]): { html: string; applied: string[]; skipped: string[] } {
+  const applied: string[] = []
+  const skipped: string[] = []
+  const own = /(<style(?![^>]*\bdata-od)[^>]*>)([\s\S]*?)(<\/style>)/i
+  const m = html.match(own)
+  if (!m) return { html, applied, skipped: edits.map((e) => `${e.selector}: the page has no stylesheet of its own`) }
+  let css = m[2]!
+  for (const e of edits) {
+    const want = normSel(e.selector)
+    // Top-level and @media rules alike: a prelude is whatever sits between the last `}` or `{` and this `{`.
+    let hit: { from: number; to: number } | null = null
+    for (const r of css.matchAll(/(^|[{}])([^{}@]+)\{([^{}]*)\}/g)) {
+      if (normSel(r[2]!) !== want) continue
+      const from = r.index! + r[1]!.length
+      hit = { from, to: from + r[2]!.length + r[3]!.length + 2 }
+      break
+    }
+    if (hit) {
+      css = css.slice(0, hit.from) + (e.op === 'delete' ? '' : `${e.selector}{${e.body}}`) + css.slice(hit.to)
+      applied.push(`${e.op} ${e.selector}`)
+    } else if (e.op === 'replace') {
+      css += `\n${e.selector}{${e.body}}`
+      applied.push(`add ${e.selector}`)
+    } else skipped.push(`delete ${e.selector}: no such rule`)
+  }
+  return { html: html.replace(own, (_, open: string, __: string, close: string) => open + css + close), applied, skipped }
+}

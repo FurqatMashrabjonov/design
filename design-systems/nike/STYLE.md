@@ -16,7 +16,7 @@ Colour energy: low — accent/brand colour covers under 5% of a screen; the inte
 - Card titles and buttons: var(--font-body) at var(--text-base), weight 500, line-height 1.5.
 - Body copy: var(--font-body) at var(--text-base), weight 400, line-height var(--leading-body).
 - Captions, prices, timestamps: var(--text-sm) or var(--text-xs), weight 500, line-height 1.5.
-- Numeric or code-like values: var(--font-mono).
+- Numeric values: var(--font-display) or var(--font-body) with tabular numerals; var(--font-mono) only for code.
 - Interactive text is always weight 500, never 400.
 
 ## Shape and depth

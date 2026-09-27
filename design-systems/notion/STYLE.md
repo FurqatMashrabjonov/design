@@ -11,7 +11,7 @@ Colour energy: low — under 10% of a screen carries accent colour; the rest is 
 - Every division line is var(--border); row dividers inside lists use var(--border-soft).
 
 ## Type
-- One family for everything: var(--font-display) for headings, var(--font-body) for text. Numerals and codes: var(--font-mono).
+- One family for everything: var(--font-display) for headings, var(--font-body) for text. Numerals: tabular numerals in the body face; var(--font-mono) only for code.
 - Screen title: var(--text-2xl), weight 700, line-height var(--leading-tight), letter-spacing var(--tracking-display).
 - Section heading: var(--text-xl), weight 700, line-height 1.23, letter-spacing -0.625px.
 - Card title: 22px, weight 700, line-height 1.27, letter-spacing -0.25px.

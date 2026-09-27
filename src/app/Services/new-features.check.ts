@@ -1361,5 +1361,24 @@ console.log('Testing Provider Adapters and Per-Site Models (LLM-04, LLM-07)...')
   }
 }
 
+console.log('Testing Repair by CSS rule (GQ-41)...')
+{
+  const { parseCssEdits, applyCssEdits } = await import('../../lib/screen-patch.ts')
+  const { findingScore } = await import('./RepairService.ts')
+  const page = '<html><head><style data-od-kit>.od-btn{color:red}</style><style>.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase}\n@media (min-width:1px){ .card > .meta{opacity:.6} }\n.price{font-family:ui-monospace}</style></head><body></body></html>'
+  const edits = parseCssEdits('<css selector=".eyebrow">font-size:13px;font-weight:600;text-transform:none</css><css selector=".card>.meta">color:var(--muted)</css><css selector=".price" op="delete"></css><css selector=".new">gap:8px</css><css selector="}body{">x</css><css selector=".x">a{b}</css>')
+  assert.equal(edits.length, 4, 'a selector or body that could break out of its rule is refused')
+  const r = applyCssEdits(page, edits)
+  assert.ok(r.html.includes('.eyebrow{font-size:13px;font-weight:600;text-transform:none}'), 'the rule is rewritten where it is')
+  assert.ok(!r.html.includes('letter-spacing:.12em'), 'the old declarations are gone, not overridden')
+  assert.ok(r.html.includes('.card>.meta{color:var(--muted)}') && r.html.includes('@media (min-width:1px){'), 'a rule inside @media is found with its selector spacing normalised')
+  assert.ok(!r.html.includes('ui-monospace'), 'a rule can be deleted')
+  assert.ok(r.html.includes('.new{gap:8px}'), 'an unknown selector becomes a new rule')
+  assert.ok(r.html.includes('<style data-od-kit>.od-btn{color:red}</style>'), 'a stylesheet we inject is never edited')
+  assert.equal(applyCssEdits('<html><body></body></html>', edits).skipped.length, 4, 'no own stylesheet: every edit is skipped, nothing is added')
+  const f = (rule: string, severity: 'error' | 'warn') => ({ rule, severity, message: '', samples: [] })
+  assert.ok(findingScore([f('undefined-token', 'error')]) > findingScore([f('caps-eyebrow', 'warn'), f('mono-for-data', 'warn')]), 'an error outweighs two warnings')
+}
+
 console.log('All new features and App Coherence verified successfully! \u2705')
 

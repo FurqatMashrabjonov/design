@@ -15,7 +15,7 @@ Colour energy: low — under 10% of a screen carries accent colour; the rest is 
 ## Type
 - Display and headings use var(--font-display) at weight 400–500 only; never bold serif.
 - Body, labels and buttons use var(--font-body) at weight 400–500.
-- Numerals, codes and tabular values use var(--font-mono).
+- Numerals and tabular values use var(--font-body) with tabular numerals; var(--font-mono) only for code.
 - Screen title: var(--text-xl), var(--leading-tight), letter-spacing var(--tracking-display).
 - Hero figure (balance, streak count, big stat): var(--text-2xl) or var(--text-3xl) in var(--font-display), var(--leading-tight).
 - Section heading: var(--text-lg) in var(--font-display).

@@ -15,7 +15,7 @@ Colour energy: low — under 10% of a screen carries accent colour; emerald appe
 - Weights: 400 for all prose, headings and values; 500 only for button labels, tab labels and nav items. Never 700.
 - Sizes: var(--text-4xl) for a single screen-defining number or headline, var(--text-3xl) for section headings, var(--text-xl) for card titles, var(--text-base) for body, var(--text-sm) for buttons, captions and nav, var(--text-xs) for fine print.
 - Line height: var(--leading-tight) on the largest headline so lines stack with no air; var(--leading-body) everywhere else. Tracking stays var(--tracking-display) except card titles, which tighten slightly.
-- Technical labels use var(--font-mono) at var(--text-xs), uppercase, with 1.2px letter-spacing, in var(--muted). Use them for one or two small markers per screen, not for body copy.
+- Technical labels use var(--font-mono) at var(--text-sm) in var(--muted), for code and IDs only — one or two per screen, never as a heading's eyebrow.
 
 ## Shape and depth
 - Radii: var(--radius-pill) for the primary action and for tab indicators, var(--radius-sm) for ghost and secondary controls, var(--radius-md) for cards, var(--radius-lg) for large feature panels. Buttons take pill or var(--radius-sm) only — nothing between.
@@ -34,7 +34,7 @@ Colour energy: low — under 10% of a screen carries accent colour; emerald appe
 - A screen-defining headline or metric set at var(--text-4xl) with var(--leading-tight), sitting directly on var(--bg) with no container.
 - One emerald pill action with var(--accent-on) label, paired with a ghost or hairline-bordered secondary of the same height.
 - Cards defined by a 1px var(--border) edge and var(--radius-md), with no drop shadow at rest.
-- A small uppercase monospace label in var(--muted) above a heading or value, acting as a technical marker.
+- A small monospace ID or code in var(--muted) beside a value, acting as a technical marker.
 - A single emerald hairline or 1px accent border marking the one element that matters on the screen.
 
 ## Avoid

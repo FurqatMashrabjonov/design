@@ -13,7 +13,7 @@ Colour energy: medium — accent orange appears on one primary action per screen
 
 ## Type
 - Display and body share var(--font-display); use it for headings, buttons and labels.
-- Numerals, codes and tabular values: var(--font-mono).
+- Numerals and tabular values: var(--font-body) with tabular numerals; var(--font-mono) only for code.
 - Screen title: var(--text-2xl) at weight 700, tracking var(--tracking-display), leading var(--leading-tight).
 - Section heading: var(--text-xl) weight 700; card title: var(--text-lg) weight 600.
 - Body: var(--text-base) weight 400, leading var(--leading-body).

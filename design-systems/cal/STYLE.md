@@ -15,7 +15,7 @@ Colour energy: low — under 5% of a screen carries accent colour; the only chro
 - Below 24px, switch headings to var(--font-body) at weight 600 — the display face cramps small.
 - Body and UI text: var(--font-body) at var(--text-base), weight 400–500, line-height var(--leading-body).
 - Captions: var(--text-sm) or var(--text-xs) in var(--font-body) weight 500, colour var(--muted).
-- Numeric or code readouts: var(--font-mono) at var(--text-sm) weight 600.
+- Numeric readouts: var(--font-body) at weight 600 with tabular numerals; var(--font-mono) only for code.
 - Screen title: var(--text-2xl) or var(--text-3xl) in var(--font-display) weight 600.
 
 ## Shape and depth

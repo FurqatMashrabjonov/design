@@ -13,9 +13,9 @@ Colour energy: low — accent colour appears on roughly one element per screen; 
 
 ## Type
 - All headings use var(--font-display) at weight 500 only — never bolder, never lighter.
-- All UI, body, labels and buttons use var(--font-body). var(--font-mono) only for code or numeric readouts.
+- All UI, body, labels and buttons use var(--font-body). var(--font-mono) only for code.
 - Screen title: var(--text-3xl), line-height var(--leading-tight). Section heading: var(--text-2xl). Card title: var(--text-xl).
-- Body copy: var(--text-base) at line-height var(--leading-body); intro paragraph var(--text-lg). Captions var(--text-sm); uppercase overline labels var(--text-xs) with 0.5px letter-spacing.
+- Body copy: var(--text-base) at line-height var(--leading-body); intro paragraph var(--text-lg). Captions var(--text-sm); overline labels var(--text-sm) in sentence case at weight 600.
 - Headings use var(--leading-tight); body never drops below 1.40 line-height.
 - Buttons and labels: var(--text-base) at weight 500.
 

@@ -11,7 +11,7 @@ Colour energy: medium — accent green appears only on one primary action per sc
 - No second brand hue. Any other colour on screen comes from user content imagery.
 
 ## Type
-- Display and body both use var(--font-display) / var(--font-body); numerals and codes use var(--font-mono).
+- Display and body both use var(--font-display) / var(--font-body); figures use var(--font-body) with tabular numerals (font-variant-numeric: tabular-nums); var(--font-mono) only for code.
 - Sizes: var(--text-2xl) for screen titles at weight 700, var(--text-lg) for section headings at weight 600, var(--text-base) for body at 400 or 700, var(--text-sm) for tags and counts, var(--text-xs) for badges.
 - Nothing renders above var(--text-2xl); var(--text-3xl) and var(--text-4xl) resolve to the same 24px cap.
 - Body leading var(--leading-body); headings and button labels var(--leading-tight).
