@@ -69,14 +69,14 @@ Anything a real app shows as a picture is a real photo: dishes, products, places
 
 ## Visual vocabulary (combine; do not stack the same one)
 
-- **Hero figure** — one big number or ring that says what the screen is about: `Ring`/`Rings` 140–220px with the figure inside, or `text-[44px] font-bold` with a small unit and a "of goal" line.
-- **Gradient tiles** — two side-by-side (`grid grid-cols-2 gap-3 px-4`) `rounded-[24px] p-4 text-white` buttons on `gradient(...)`: icon, big figure, one line under it.
+- **Hero figure** — one big number or ring that says what the screen is about: `Ring`/`Rings` 140–220px with the figure inside, or `text-figure` with a small unit and a "of goal" line.
+- **Gradient tiles** — two side-by-side (`grid grid-cols-2 gap-3 px-4`) `<Hero as="button" color=…>`: icon, `text-title1` figure, one `text-subhead opacity-80` line under it.
 - **Stat triplet** — `grid grid-cols-3 gap-3 px-4`, each `rounded-2xl p-3 bg-white dark:bg-[#1c1c1e]`: label, coloured value, small unit.
 - **Rows with character** — `List strong inset dividers`; `media` is a `Tile` (solid + white lucide icon for settings, `tinted` + emoji for content) or a small `Ring`; `after` is a coloured value, a streak (`<Flame/> 23`), a `Toggle`, a `Checkbox` or a `Meter`.
 - **Charts** — `Bars` (last bar highlighted, dashed goal), `Area` in 2-up cards with a label and figure above, `Heatmap` for streak history, `Meter` for progress in rows. Put a chart in `Block strong inset` or a `Card` with its figure and a delta (`▲ 12% vs last week` in green).
 - **Filters** — `Segmented strong rounded` (Day/Week/Month, All/Morning/Evening), `Searchbar` in the navbar's `subnavbar`, horizontal `Chip`s in `flex gap-2 overflow-x-auto`.
 - **Grids** — cards in `grid grid-cols-2|3 gap-3 px-4`: product tiles, award `Medal`s (locked ones greyed), category tiles with an emoji.
-- **Promo card** — one per screen at most: a `gradient` card (e.g. premium, a streak milestone) with a line and a chevron.
+- **Promo card** — one per screen at most: a `Hero` card (e.g. premium, a streak milestone) with a line and a chevron.
 - **Overlays** — `Sheet`, `Actions` (edit/delete menus), `Dialog` (confirm), `Toast` (undo), `Notification`, `Popover`; kept closed at first render, opened from state.
 - **Forms** — `List strong inset` of `ListInput` with `media` icons and `label`s, `Stepper`, `Range`, `Radio`, `Checkbox`, colour dots for a choice; one `Button large rounded` to submit.
 - **Chat** — `Messages`, `Message` (sent/received), `Messagebar`.

@@ -136,6 +136,11 @@ function summary(results: BriefResult[]) {
     outTokensPerScreen: Math.round(results.reduce((a, r) => a + r.tokens.out, 0) / Math.max(1, all.length)),
     konsta: mean('konsta'), photos: mean('photos'), kitFigures: mean('kitFigures'), emoji: mean('emoji'), colors: mean('colors'), gradients: mean('gradients'), nav: mean('nav'), motion: mean('motion'), hardWhite: mean('hardWhite'), chars: mean('chars'),
     crashRate: +(ok.filter((s) => s.crashed).length / Math.max(1, ok.length)).toFixed(3),
+    // HIG-10: lint findings left after its fixes — per screen, and which rules.
+    hig: mean('hig'),
+    adHocText: mean('adHocText'),
+    namedText: mean('namedText'),
+    higByRule: ok.flatMap((s) => s.higRules ?? []).reduce<Record<string, number>>((m, r) => ((m[r] = (m[r] ?? 0) + 1), m), {}),
     firstRun: results.filter((r) => r.screens.some((s) => s.kind === 'first-run')).length,
   }
 }

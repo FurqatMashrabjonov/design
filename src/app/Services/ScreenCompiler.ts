@@ -56,7 +56,9 @@ function tailwindInput() {
     .filter((f) => f.endsWith('.css'))
     .flatMap((f) => [...readFileSync(join(dir, f), 'utf8').matchAll(/@theme\s*\{([^}]*)\}/g)].map((m) => m[1]))
     .join('\n')
-  cssInput = `@import "tailwindcss/theme.css" theme(reference);\n@import "tailwindcss/utilities.css";\n@custom-variant dark (&:where(.dark, .dark *));\n@theme reference {\n${theme}\n}\n`
+  // HIG-12: the type scale (text-title1 …), the same file runtime.css emits the tokens from.
+  const scale = readFileSync(join(ROOT, 'runtime', 'type-scale.css'), 'utf8').match(/@theme static\s*\{([^}]*)\}/)?.[1] ?? ''
+  cssInput = `@import "tailwindcss/theme.css" theme(reference);\n@import "tailwindcss/utilities.css";\n@custom-variant dark (&:where(.dark, .dark *));\n@theme reference {\n${theme}\n${scale}\n}\n`
   return cssInput
 }
 
@@ -69,43 +71,70 @@ export type Compiled = { ok: true; js: string; css: string } | { ok: false; erro
  * project builds too. A source that does not parse is returned as it is (the compiler reports it).
  */
 export function completeImports(source: string): string {
+  return resolveNames(source).source
+}
+
+/** Every name a binding pattern declares: `x`, `{ a: B, ...rest }`, `[first = 1]`. */
+function patternNames(p: unknown, out: Set<string>): void {
+  const n = p as { type?: string; name?: string; value?: unknown; left?: unknown; argument?: unknown; properties?: unknown[]; elements?: unknown[] } | null
+  if (!n) return
+  if (n.type === 'Identifier' && n.name) out.add(n.name)
+  else if (n.type === 'ObjectPattern') for (const q of n.properties ?? []) patternNames((q as { type: string }).type === 'RestElement' ? q : (q as { value: unknown }).value, out)
+  else if (n.type === 'ArrayPattern') for (const q of n.elements ?? []) patternNames(q, out)
+  else if (n.type === 'AssignmentPattern') patternNames(n.left, out)
+  else if (n.type === 'RestElement') patternNames(n.argument, out)
+}
+
+/** completeImports, plus the names used as components that nothing declares and the runtime does not have. */
+function resolveNames(source: string): { source: string; missing: string[] } {
   const { allowed, lucide } = runtimeExports()
   let ast: ReturnType<typeof parse>
   try {
     ast = parse(source, { sourceType: 'module', plugins: ['jsx'] })
   } catch {
-    return source
+    return { source, missing: [] }
   }
   const declared = new Set<string>()
   const used = new Set<string>()
+  const tags = new Set<string>() // names used as <Tag> — only these can be a missing component (Number(), Date() are not)
   ;(function walk(n: unknown, parentKey?: string): void {
     if (!n || typeof n !== 'object') return
     if (Array.isArray(n)) return n.forEach((c) => walk(c, parentKey))
     const node = n as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
     if (node.type === 'ImportSpecifier' || node.type === 'ImportDefaultSpecifier') declared.add((node.local as { name: string }).name)
     if ((node.type === 'VariableDeclarator' || node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && (node.id as { type?: string })?.type === 'Identifier') declared.add((node.id as { name: string }).name)
-    if (node.type === 'VariableDeclarator') for (const k of JSON.stringify(node.id).matchAll(/"type":"Identifier"[^}]*?"name":"([^"]+)"/g)) declared.add(k[1]!)
-    if (node.type === 'Identifier' && node.name && parentKey === 'params') declared.add(node.name)
-    if (node.type === 'JSXOpeningElement' && (node.name as { type: string }).type === 'JSXIdentifier') used.add((node.name as { name: string }).name)
+    if (node.type === 'VariableDeclarator') patternNames(node.id, declared)
+    // Parameters — plain, destructured ({ icon: Icon }) or defaulted — and catch clauses declare their names.
+    if (Array.isArray(node.params)) for (const q of node.params) patternNames(q, declared)
+    if (node.type === 'CatchClause') patternNames(node.param, declared)
+    if (node.type === 'JSXOpeningElement' && (node.name as { type: string }).type === 'JSXIdentifier') {
+      used.add((node.name as { name: string }).name)
+      tags.add((node.name as { name: string }).name)
+    }
     if (node.type === 'CallExpression' && (node.callee as { type: string }).type === 'Identifier') used.add((node.callee as { name: string }).name)
     for (const [k, v] of Object.entries(node)) if (k !== 'loc' && k !== 'start' && k !== 'end' && typeof v === 'object') walk(v, k)
   })(ast.program)
   const add: Record<string, string[]> = { 'konsta/react': [], '@od/kit': [], 'lucide-react': [] }
+  const missing: string[] = []
   for (const name of used) {
     if (declared.has(name) || !/^[A-Za-z]/.test(name)) continue
     if (allowed['konsta/react']!.has(name)) add['konsta/react']!.push(name)
     else if (allowed['@od/kit']!.has(name)) add['@od/kit']!.push(name)
     else if (/^[A-Z]/.test(name) && lucide[name]) add['lucide-react']!.push(name)
+    // HIG-10: a capitalised name nothing declares is a component that does not exist — the frame would crash on it.
+    else if (/^[A-Z]/.test(name) && tags.has(name)) missing.push(name)
   }
   const lines = Object.entries(add).filter(([, names]) => names.length).map(([spec, names]) => `import { ${names.sort().join(', ')} } from '${spec}'`)
-  return lines.length ? `${lines.join('\n')}\n${source}` : source
+  return { source: lines.length ? `${lines.join('\n')}\n${source}` : source, missing }
 }
 
 /** Static checks, JSX → JS and this screen's CSS. */
 export async function compileScreen(input: string): Promise<Compiled> {
   const { allowed, lucide: lucideFiles } = runtimeExports()
-  const source = completeImports(input)
+  const resolved = resolveNames(input)
+  const source = resolved.source
   const errors: string[] = []
+  if (resolved.missing.length) errors.push(`these components do not exist in konsta/react, @od/kit or lucide-react: ${resolved.missing.join(', ')}`)
   let ast: ReturnType<typeof parse>
   try {
     ast = parse(source, { sourceType: 'module', plugins: ['jsx'], tokens: true })

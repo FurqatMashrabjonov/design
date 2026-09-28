@@ -41,6 +41,7 @@ function styles(accent: string): string {
   const rules = runtime.slice(runtime.indexOf('html, body, #root'))
   return `@import 'tailwindcss';
 @import 'konsta/react/theme.css';
+@import './type-scale.css';
 @source './';
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -166,6 +167,8 @@ The code is yours.
     { name: 'src/photos.json', data: JSON.stringify(photos, null, 2) + '\n' },
     { name: 'src/kit/ui.jsx', data: read('runtime/kit/ui.jsx') },
     { name: 'src/kit/nav.jsx', data: read('runtime/kit/nav.jsx') },
+    { name: 'src/kit/on-color.js', data: read('runtime/kit/on-color.js') },
+    { name: 'src/type-scale.css', data: read('runtime/type-scale.css') },
     { name: 'src/kit/index.js', data: `export * from './ui.jsx'\nexport { useNav, AppTabbar, usePhotos } from './nav.jsx'\nexport { ListItem } from './konsta.js'\n` },
     { name: 'src/kit/konsta.js', data: read('runtime/konsta.js').replace("export * from 'konsta/react'\n", '') },
     { name: 'src/screens/index.js', data: screens.map((s) => `import ${importName(s.id)} from './${s.id}.jsx'`).join('\n') + `\n\nexport const screens = {\n${screens.map((s) => `  '${s.id}': ${importName(s.id)},`).join('\n')}\n}\n` },

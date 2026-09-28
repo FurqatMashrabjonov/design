@@ -10,6 +10,14 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 |---|---|---|---|---|---|---|---|
 | KON-00 | QAROR: generatsiya Konsta UI + to'liq JSX (React); HTML yo'li eski loyihalar uchun qoladi | Generatsiya / Qarorlar | MVP | Tayyor | Kichik |  | Qaror yozilgan; HANDOFF va CLAUDE.md moslangan |
 | KON-01 | Sinov: model Vita ekranlarini Konsta JSX'da yozadi → server build → sandbox render; etalon va HTML bilan solishtirish | Generatsiya / Asosiy | MVP | Tayyor | O'rta | KON-00 | ≥95% kompilyatsiya, ≤1.5k token/ekran, hakamda HTML'dan yutadi |
+| HIG-10 | JSX lint (AST) ScreenCompiler'da: HIG va Konsta qoidalari, autofix; mavjud bo'lmagan komponent = rad | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | Qoidalar + eval hisoblagichlari (hig, higByRule) |
+| HIG-12 | Kit'ni xatoga chidamli qilish: type scale klasslari, avtomatik kontrastli kartalar | Generatsiya / Izchillik | MVP | Tayyor | O'rta | HIG-10 | Kontrast xatosi 0; text-[Npx] o'rniga nomli uslublar |
+| HIG-11 | Skill'ni HIG-first qayta yozish (≤8k), platform-neytral | Generatsiya / Sifat | MVP | Jarayonda | O'rta | HIG-10 | HIG topilmalari −60%, hakamda yutqazmaydi |
+| HIG-13 | HIG → Konsta foydalanish kartalari (kitchen-sink + ehmo formati) | Generatsiya / Sifat | MVP | Rejada | O'rta | HIG-11 | Komponent xatolari eval'da ~0 |
+| HIG-14 | Eval: HIG metrikalari + hakam rubrikasi (dickwu 5 linza) | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Har run'da HIG jadvali va linza ballari |
+| HIG-15 | Lint topilmalari → bitta tuzatish chaqiruvi | Generatsiya / Ishonchlilik | Keyin | Rejada | Kichik | HIG-10 | Yiqilgan ekranlar ≤2% |
+| HIG-16 | Material 3 paritet (platform-neytral ekran kodi) | Generatsiya / Tema | Keyin | Rejada | Kichik |  | iOS va Material'da lint'dan o'tadi |
+| HIG-17 | Planner ma'lumot izchilligi: sanalar, palitra kalitlari | Generatsiya / Kontent | Keyin | Rejada | Kichik |  | Eskirgan sana 0 |
 | KON-02 | @od/kit runtime: React + Konsta + ikonlar + Ring/Bars/Area/WaterGlass + navigator/store; versiyalangan CDN build | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | ≤150 KB gz, CORS *, ekran runtime versiyasini saqlaydi |
 | KON-03 | ScreenCompiler: oxc parse + import whitelist + JSX→JS + Tailwind (ilova bo'yicha bitta CSS) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | Model kodi serverda bajarilmaydi; build ≤50 ms; testlar |
 | KON-04 | Ekran hujjati /s/:id + screens. domeni + CSP sandbox | Generatsiya / Render | MVP | Tayyor | Kichik | KON-02, KON-03 | sandbox=allow-scripts, connect-src none, tema render paytida |

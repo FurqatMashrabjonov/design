@@ -25,8 +25,15 @@ Surfaces and marks
 - `Dots({ count, active })` — onboarding pager dots.
 - `Confetti({ run })` — a burst when something is completed.
 
+- `Hero({ color, to?, as?, className, children })` — a hero or promo card on a gradient of `color` (→ `to`). It sets its own text colour (white, or ink on yellow, mint, orange), so give its text no colour class; `as="button"` with `onClick` when it opens something. Default corners `rounded-[24px]` and `p-4`; `className` may change them.
+
 Helpers (functions returning CSS strings)
-- `tint(color, pct = 16)` — a soft wash: `style={{ background: tint(C.mind) }}`.
-- `gradient(color, to?)` — a hero-card gradient: `style={{ background: gradient(C.steps, '#ff6b35') }}`; white text on it.
+- `tint(color, pct = 16)` — a soft wash: `style={{ background: tint(C.mind) }}`. Text on it stays the label colour, never white.
+- `gradient(color, to?)` — the gradient `Hero` uses, for art that is not a card. Text on a filled colour takes `onColor(color)`.
+
+Type scale (Tailwind classes; Apple's text styles — use these, not `text-[Npx]`)
+- `text-large-title` 34 bold (a tab screen's own big title) · `text-title1` 28 bold · `text-title2` 22 bold · `text-title3` 20 semibold
+- `text-headline` 17 semibold (row / card title) · `text-body` 17 · `text-callout` 16 · `text-subhead` 15 · `text-footnote` 13 · `text-caption1` 12 · `text-caption2` 11 (the smallest)
+- `text-figure` 44 bold, tight — the one hero number of a screen. A weight class next to a style (`text-body font-semibold`) wins.
 
 Motion classes (in the runtime stylesheet): `vs-rise` (entrance; stagger with `animationDelay`), `vs-float` (gentle bob for art), `vs-bounce` (a pop when checked).

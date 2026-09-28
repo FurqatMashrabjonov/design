@@ -5,6 +5,7 @@ import { CreditService } from '@/app/Services/CreditService'
 import { PlanRuns } from '@/app/Services/PlanRuns'
 import { mapLimit } from '@/app/Services/Pool'
 import { compileScreen } from '@/app/Services/ScreenCompiler'
+import { lintJsx } from '@/lib/jsx-lint'
 import { resolvePhotos } from '@/app/Services/PhotoService'
 import { planApp, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { frameSize, FRAME_GAP } from '@/canvas'
@@ -16,12 +17,19 @@ import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/li
 // The run is not tied to the response: if the page goes away the events stop, the drawing does not; only
 // Stop (PlanRuns.stop) ends it. `onFinish` is called when the run is really over.
 
-/** One screen: written, compiled, and if the compiler refused it, rewritten once with its errors. */
+/** HIG-10: the lint's one-right-answer fixes applied, its findings logged (Telescope keeps them). */
+function linted(jsx: string): string {
+  const r = lintJsx(jsx)
+  if (r.fixed.length || r.findings.length) console.warn(`[jsx-lint] fixed ${r.fixed.length}: ${r.fixed.join('; ') || '—'} · found ${r.findings.length}: ${r.findings.map((f) => f.rule).join(', ') || '—'}`)
+  return r.source
+}
+
+/** One screen: written, linted, compiled, and if the compiler refused it, rewritten once with its errors. */
 export async function drawScreen(user: string, tally: (u: import('@/app/Services/LlmService').LlmUsage) => void, signal: AbortSignal, site: 'screen' | 'edit' = 'screen'): Promise<string> {
-  let jsx = await writeScreen(user, tally, signal, site)
+  let jsx = linted(await writeScreen(user, tally, signal, site))
   let built = await compileScreen(jsx)
   if (!built.ok) {
-    jsx = await writeScreen(`${user}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`jsx\n${jsx}\`\`\`\nThe compiler said: ${built.errors.join('; ')}\nWrite the whole file again with those fixed.`, tally, signal, site)
+    jsx = linted(await writeScreen(`${user}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`jsx\n${jsx}\`\`\`\nThe compiler said: ${built.errors.join('; ')}\nWrite the whole file again with those fixed.`, tally, signal, site))
     built = await compileScreen(jsx)
     if (!built.ok) throw new Error(`The screen did not build: ${built.errors.join('; ').slice(0, 300)}`)
   }

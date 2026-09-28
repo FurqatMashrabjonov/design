@@ -29,12 +29,12 @@ export default function Screen() {
       <List strong inset dividers>
         {books.map((b) => (
           <ListItem key={b.id} link linkProps={{ onClick: () => nav.push('book', { id: b.id }) }} title={b.title}
-            subtitle={<span className="text-[13px] opacity-70">{b.author} · {b.pages} pages</span>}
+            subtitle={<span className="text-footnote opacity-70">{b.author} · {b.pages} pages</span>}
             media={<Ring value={b.read / b.pages} size={42} stroke={4} color={b.color}><BookOpen className="w-4 h-4" style={{ color: b.color }} /></Ring>}
-            after={b.read === b.pages ? <Badge colors={{ bg: 'bg-green-500' }}>Done</Badge> : <span className="text-[15px] opacity-60">{Math.round((b.read / b.pages) * 100)}%</span>} />
+            after={b.read === b.pages ? <Badge colors={{ bg: 'bg-green-500' }}>Done</Badge> : <span className="text-subhead opacity-60">{Math.round((b.read / b.pages) * 100)}%</span>} />
         ))}
       </List>
-      <Block className="flex items-center gap-2 text-[13px] opacity-60"><Flame className="w-4 h-4" /> You read 38 pages yesterday.</Block>
+      <Block className="flex items-center gap-2 text-footnote opacity-60"><Flame className="w-4 h-4" /> You read 38 pages yesterday.</Block>
       <AppTabbar active="library" />
     </Page>
   )

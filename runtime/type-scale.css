@@ -1,0 +1,17 @@
+/* HIG-12: Apple's text styles as Tailwind utilities (text-large-title … text-caption2, plus text-figure for a hero
+   number), so a screen names a style instead of inventing a size. Read by runtime.css (emits the tokens) and by
+   ScreenCompiler (per-screen utilities). A weight class on the same element still wins (fewer properties sort later). */
+@theme static {
+  --text-large-title: 34px; --text-large-title--line-height: 41px; --text-large-title--font-weight: 700; --text-large-title--letter-spacing: 0.01em;
+  --text-title1: 28px; --text-title1--line-height: 34px; --text-title1--font-weight: 700;
+  --text-title2: 22px; --text-title2--line-height: 28px; --text-title2--font-weight: 700;
+  --text-title3: 20px; --text-title3--line-height: 25px; --text-title3--font-weight: 600;
+  --text-headline: 17px; --text-headline--line-height: 22px; --text-headline--font-weight: 600;
+  --text-body: 17px; --text-body--line-height: 22px;
+  --text-callout: 16px; --text-callout--line-height: 21px;
+  --text-subhead: 15px; --text-subhead--line-height: 20px;
+  --text-footnote: 13px; --text-footnote--line-height: 18px;
+  --text-caption1: 12px; --text-caption1--line-height: 16px;
+  --text-caption2: 11px; --text-caption2--line-height: 13px;
+  --text-figure: 44px; --text-figure--line-height: 1; --text-figure--font-weight: 700; --text-figure--letter-spacing: -0.02em;
+}

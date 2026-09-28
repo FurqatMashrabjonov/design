@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Page, Button, Block, Link } from 'konsta/react'
 import { Footprints } from 'lucide-react'
-import { useNav, Rings, Glow, Dots, gradient, tint } from '@od/kit'
+import { useNav, Rings, Glow, Dots, Hero, tint } from '@od/kit'
 
 const C = { steps: '#ff9f0a', water: '#0a84ff', habits: '#30d158', mind: '#bf5af2' }
 
@@ -27,11 +27,11 @@ const SLIDES = [
     art: (
       <div className="relative w-64 h-64 mx-auto flex items-center justify-center">
         <div className="absolute inset-4 rounded-[48px] rotate-6" style={{ background: tint(C.steps, 22) }} />
-        <div className="absolute inset-4 rounded-[48px] -rotate-6 flex flex-col items-center justify-center vs-float" style={{ background: gradient(C.steps, '#ff6b35') }}>
-          <Footprints className="w-16 h-16 text-white" />
-          <div className="text-white text-4xl font-bold mt-2">7,843</div>
-          <div className="text-white/80 text-sm">steps today</div>
-        </div>
+        <Hero color={C.steps} to="#ff6b35" className="absolute inset-4 rounded-[48px] -rotate-6 flex flex-col items-center justify-center vs-float">
+          <Footprints className="w-16 h-16" />
+          <div className="text-figure mt-2">7,843</div>
+          <div className="text-subhead opacity-80">steps today</div>
+        </Hero>
       </div>
     ),
   },
@@ -64,14 +64,14 @@ export default function Screen() {
       <div key={i} className="flex-1 flex flex-col justify-center vs-rise">
         {s.art}
         <Block className="text-center !mt-10">
-          <h1 className="text-[34px] leading-[1.1] font-bold tracking-tight whitespace-pre-line">{s.title}</h1>
-          <p className="mt-4 text-[17px] opacity-60 leading-snug">{s.text}</p>
+          <h1 className="text-large-title whitespace-pre-line">{s.title}</h1>
+          <p className="mt-4 text-body opacity-60">{s.text}</p>
         </Block>
       </div>
       <div className="mb-6"><Dots count={SLIDES.length} active={i} /></div>
       <Block className="!mb-12">
         <Button large rounded onClick={() => (last ? nav.push('sign-up') : setI(i + 1))}>{last ? 'Get started' : 'Continue'}</Button>
-        <div className="text-center mt-4 text-[15px]">
+        <div className="text-center mt-4 text-subhead">
           <span className="opacity-60">Already have an account? </span>
           <Link onClick={() => nav.push('log-in')}>Log in</Link>
         </div>

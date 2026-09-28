@@ -1,6 +1,44 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-27. Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
+> Yozilgan: 2026-09-21, yangilangan 2026-09-28. Eng yangi ish: **`konsta`** branch. **Boshlash: §0000 — HIG ishi (HIG-11 navbatda).**
+> (Eskisi: `canvas-planner` branch — HTML davri.) Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
+
+## 0000. ENG SO'NGGI (2026-09-28 kech): Apple HIG bo'yicha generatsiyani to'g'rilash — branch `konsta`
+
+**Muammo:** model Konsta komponentlarini nomini biladi, lekin to'g'ri ishlatmaydi (ListItem List'dan tashqarida,
+BlockTitle Block ichida, ikki marta chevron, sariq kartada oq matn, `text-[13px]` o'ylab topilgan o'lchamlar).
+**Tadqiqot:** Apple HIG (rasmiy), `ehmo/platform-design-skills` (HIG → skill, 10 bo'lim, Correct/Incorrect juftliklari),
+`dickwu/apple-design-skill` (5 linzali review), Konsta kitchen-sink (36 ta rasmiy React misol). Nusxalar
+scratchpad'da edi — yangi laptopda kerak bo'lsa GitHub'dan qayta oling. Reja Notion'da: **HIG-10…17**.
+
+**Tayyor:**
+- **HIG-10 — JSX lint** (`src/lib/jsx-lint.ts`, `drawScreen`da compile'dan oldin). Bitta to'g'ri javobli xatolar
+  kodda tuzatiladi (ikkinchi chevron, tint/Hero ustida `text-white`, Block'da `px-4`, yolg'iz `bg-white`, <11px matn);
+  qarorli xatolar `[jsx-lint]` log + eval'da `hig`/`higByRule`. Compiler mavjud bo'lmagan `<Komponent/>` ni rad etadi
+  (bitta retry). 9 ta Streakflow ekranida: 5 tuzatish, 4 haqiqiy topilma, 9/9 compile.
+- **HIG-12 — kit xatoga chidamli**: `runtime/type-scale.css` (`text-large-title`…`text-caption2`, `text-figure`),
+  `runtime/kit/on-color.js` (`onColor`: oq ≥3:1 bo'lsa oq, aks holda qora), `<Hero color as="button">` (matn rangini
+  o'zi tanlaydi), Tile va `gradient()` ham shunga o'tdi. KIT.md, SKILL.md, misollar yangilandi. Eval: `adHocText`,
+  `namedText`. Headless Chrome'da tekshirildi.
+
+**Keyingi (Notion tartibida):**
+1. **HIG-11 (Jarayonda)** — `skills/mobile-screen-jsx/SKILL.md` ni HIG-first qayta yozish, ≤8k belgi, platform-neytral
+   (iOS va Material). Hozirgi skill "Dribbble / rang bilan jasur / gradient / emoji" ga undaydi — HIG bilan zid joylarini
+   olib tashlash: 1–2 prominent tugma, inset grouped list, chevron faqat navigatsiyaga, tab screen'da large title,
+   44pt tap, 4.5:1 kontrast, onboarding ≤3 sahifa. Mezon: eval'da HIG topilmalari −60%, hakamda yutqazmaydi.
+   `npm run eval -- --label hig11 --vs <oldingi>` + `npm run judge`.
+2. **HIG-13** — HIG → Konsta foydalanish kartalari (kitchen-sink misollari + ehmo formati: qoida, to'g'ri/noto'g'ri JSX).
+3. Keyin (Doira=Keyin): HIG-14 eval HIG jadvali + hakam linzalari, HIG-15 lint topilmalari → bitta tuzatish chaqiruvi,
+   HIG-16 Material paritet, HIG-17 planner ma'lumot izchilligi (sanalar, palitra kalitlari).
+
+**Eslatmalar:**
+- Yangi laptopda: `git checkout konsta && git pull`, `npm install`, **`npm run build:runtime`** (runtime/dist gitignored —
+  qurilmasa hamma ekran "runtime is not built" bilan yiqiladi), `LLM_PROVIDER=claude-cli npm run dev`.
+- Eval'dagi headless Chrome tekshiruvini O'CHIRMANG (foydalanuvchi qarori).
+- DeepSeek balansi tugagan — eval/sinov `LLM_PROVIDER=claude-cli` (Haiku) bilan.
+- `controllers.check.ts:261` (admin overview `newUsers`) ba'zan vaqt oynasi sabab yiqiladi — qayta ishga tushirsa o'tadi.
+- Headless Chrome'da `screenDocument` sahifasini lokal ko'rish uchun blob import ishlamaydi: kodni alohida `.js` qilib
+  bering va `/api/rt/v*/…` ni `runtime/dist` ga (ikonlar uchun `.js` qo'shib) moslovchi statik server ishlating.
 
 ## 000. HOZIRGI HOLAT (2026-09-28): faqat Konsta, HTML pipeline o'chirildi — branch `konsta`
 

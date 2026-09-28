@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Page, Navbar, Block, BlockTitle, List, ListItem, Card, Link, Checkbox, Badge } from 'konsta/react'
 import { Bell, Footprints, Droplets, Plus, ChevronRight, Flame } from 'lucide-react'
-import { useNav, AppTabbar, Rings, CountUp, Avatar, Tile, Confetti, gradient, tint } from '@od/kit'
+import { useNav, AppTabbar, Rings, CountUp, Avatar, Tile, Confetti, Hero, tint } from '@od/kit'
 
 const C = { steps: '#ff9f0a', water: '#0a84ff', habits: '#30d158', mind: '#bf5af2', pink: '#ff375f' }
 const STEPS = { today: 7843, goal: 10000 }
@@ -28,7 +28,7 @@ export default function Screen() {
         left={<Link iconOnly onClick={() => nav.push('profile')}><Avatar name="Aziza Karimova" color={C.steps} size={32} /></Link>}
         right={<Link iconOnly onClick={() => nav.push('inbox')} className="relative"><Bell className="w-6 h-6" /><Badge className="absolute -top-1 -right-1" colors={{ bg: 'bg-red-500' }}>4</Badge></Link>} />
 
-      <Block className="!mt-1 !mb-2 text-[15px] opacity-70">Good morning, Aziza. You are {Math.round((done.length / HABITS.length) * 100)}% through today.</Block>
+      <Block className="!mt-1 !mb-2 text-subhead opacity-70">Good morning, Aziza. You are {Math.round((done.length / HABITS.length) * 100)}% through today.</Block>
 
       <Card raised className="!mx-4 !rounded-[28px] vs-rise">
         <div className="flex items-center gap-5">
@@ -42,16 +42,16 @@ export default function Screen() {
       </Card>
 
       <div className="grid grid-cols-2 gap-3 px-4 mt-4">
-        <button onClick={() => nav.push('steps')} className="rounded-[24px] p-4 text-left text-white active:scale-[.97] transition vs-rise" style={{ background: gradient(C.steps, '#ff6b35') }}>
+        <Hero as="button" color={C.steps} to="#ff6b35" onClick={() => nav.push('steps')} className="active:scale-[.97] transition vs-rise">
           <Footprints className="w-7 h-7" />
-          <div className="text-[28px] font-bold mt-5 leading-none"><CountUp to={STEPS.today} /></div>
-          <div className="text-white/80 text-sm mt-1">2,157 to go</div>
-        </button>
-        <button onClick={() => nav.push('water')} className="rounded-[24px] p-4 text-left text-white active:scale-[.97] transition vs-rise" style={{ background: gradient(C.water, '#5ac8fa'), animationDelay: '80ms' }}>
+          <div className="text-title1 mt-5 leading-none"><CountUp to={STEPS.today} /></div>
+          <div className="text-subhead opacity-80 mt-1">2,157 to go</div>
+        </Hero>
+        <Hero as="button" color={C.water} to="#5ac8fa" onClick={() => nav.push('water')} className="active:scale-[.97] transition vs-rise" style={{ animationDelay: '80ms' }}>
           <Droplets className="w-7 h-7" />
-          <div className="text-[28px] font-bold mt-5 leading-none">1.5 L</div>
-          <div className="text-white/80 text-sm mt-1">of 2.5 L</div>
-        </button>
+          <div className="text-title1 mt-5 leading-none">1.5 L</div>
+          <div className="text-subhead opacity-80 mt-1">of 2.5 L</div>
+        </Hero>
       </div>
 
       <BlockTitle className="!mt-8 flex items-center justify-between">
@@ -63,7 +63,7 @@ export default function Screen() {
           const ok = done.includes(h.id)
           return (
             <ListItem key={h.id} title={<span className={ok ? 'opacity-50 line-through decoration-2' : ''}>{h.name}</span>}
-              subtitle={<span className="flex items-center gap-1 text-[13px]" style={{ color: h.color }}><Flame className="w-3.5 h-3.5" />{h.streak} day streak</span>}
+              subtitle={<span className="flex items-center gap-1 text-footnote" style={{ color: h.color }}><Flame className="w-3.5 h-3.5" />{h.streak} day streak</span>}
               media={<Tile tinted color={h.color} size={40}>{h.emoji}</Tile>}
               after={<Checkbox checked={ok} onChange={() => toggle(h.id)} />} />
           )
@@ -91,7 +91,7 @@ function Metric({ color, label, value, goal }) {
   return (
     <div>
       <div className="text-xs font-medium opacity-60 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: color }} />{label}</div>
-      <div className="text-[19px] font-bold leading-tight" style={{ color }}>{value}{goal && <span className="text-xs font-medium opacity-60"> / {goal}</span>}</div>
+      <div className="text-title3 font-bold leading-tight" style={{ color }}>{value}{goal && <span className="text-xs font-medium opacity-60"> / {goal}</span>}</div>
     </div>
   )
 }

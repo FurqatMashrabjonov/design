@@ -4,6 +4,55 @@ Newest first. One entry per completed change: what changed, files touched, how i
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
 
+
+
+## 2026-09-28 (11)
+
+### HIG-12: the kit holds legibility — Apple's type scale as classes, a Hero card that picks its own text colour
+
+- `runtime/type-scale.css` (new): `text-large-title` 34 · `title1` 28 · `title2` 22 · `title3` 20 · `headline` 17 semibold ·
+  `body` 17 · `callout` 16 · `subhead` 15 · `footnote` 13 · `caption1` 12 · `caption2` 11 · `figure` 44 (hero number), with
+  line heights and default weights (a weight class beside one still wins). Imported by `runtime/runtime.css`, merged into
+  `ScreenCompiler`'s per-screen Tailwind theme, copied into an export (`ExportService`).
+- `runtime/kit/on-color.js` (new, + `.d.ts`): `onColor(color)` — white while white clears 3:1, otherwise ink `#1c1c1e`;
+  unmeasurable colours (var(), mixes) keep white.
+- `runtime/kit/ui.jsx`: `Hero({ color, to?, as?, className })` — gradient card that sets its text colour; defaults
+  (`relative`, `rounded-[24px]`, `p-4`) give way to the same kind of class in `className`. A solid `Tile` uses `onColor`.
+  `gradient()` with no second stop now deepens a white-text colour and lightens an ink-text one.
+- `src/lib/jsx-lint.ts`: `white-on-hero` fix (drops `text-white` on a `Hero`).
+- `konsta/KIT.md`, `skills/mobile-screen-jsx/SKILL.md`, `konsta/examples/*`: Hero and the named text styles replace
+  `text-white` on `gradient()` and `text-[Npx]` (examples now use none, except one `!text-[15px]` override on a `Link`).
+- `eval/metrics.ts`, `eval/run.ts`: `adHocText` and `namedText` per screen.
+- `controllers.check.ts`: type scale compiles to Apple's sizes; `onColor` on blue/yellow/mint/ink/white/var(); lint drops
+  `text-white` on a Hero.
+
+Verified: `npm run check` and `npx tsc --noEmit` clean (one run failed on an unrelated time-window assertion in the admin
+overview test, line 261; the rerun passed). Runtime rebuilt. All four examples compile and lint clean. In headless
+Chrome at 390px: dashboard light and dark (the orange steps hero now carries ink text, the blue one white), onboarding,
+and an edge screen: Hero on yellow, mint, blue and the accent; a model's `text-white` on the yellow Hero removed by the
+lint; a yellow Tile with an ink icon; the full type scale.
+
+## 2026-09-28 (10)
+
+### HIG-10: JSX lint — Konsta and HIG mistakes fixed or reported in code; a component that does not exist is refused
+
+Why: generated screens used components they know by name but not by meaning (research 2026-09-28: Apple HIG,
+ehmo/platform-design-skills, dickwu/apple-design-skill, Konsta kitchen-sink; Notion HIG-10…17).
+- `src/lib/jsx-lint.ts` (new). Fixes (one right answer, the fixed source is saved): second chevron on a `ListItem link`,
+  `text-white` on a `tint()` wash, `px-4` on a `Block`, lone `bg-white` → `dark:bg-[#1c1c1e]`, text under 11px → 11px.
+  Class fixes on one element apply in one pass; an edit inside a removed element gives way. Reports: list item outside a
+  `List`, `BlockTitle`/`List`/`Card` inside a `Block`, >2 large buttons, emoji in a control, fixed bottom bar under the tab bar.
+- `PlanController.drawScreen`: lint before compile (and on the retry); findings logged as `[jsx-lint]`.
+- `ScreenCompiler`: a `<Tag>` that nothing declares and the runtime lacks is a compile error (the screen gets its retry);
+  binding patterns are walked properly (a `const { A: Big }` / `({ icon: Icon })` name was missed by the old regex).
+- `eval/metrics.ts`, `eval/run.ts`: `hig` (findings per screen) and `higByRule` in every run's summary.
+- `controllers.check.ts`: compiler (missing component refused; locals/params/`Number()` pass) and lint tests (each fix,
+  each report, parse-error passthrough, idempotence).
+
+Verified: `npm run check` and `npx tsc --noEmit` clean. On the 9 Streakflow screens: fixes in 5 (3× double gutter, 1×
+white on tint, 1× second chevron), 4 true reports (`ListInput`/`ListItem` inside a `Block` instead of a `List`), all 9
+compile before and after.
+
 ## 2026-09-28 (9)
 
 ### PRV-02 iPhone Duo: a foldable in the preview — the cover screen folded, list and detail side by side open

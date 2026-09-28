@@ -1,6 +1,7 @@
 /* Runtime stylesheet: Tailwind base + Konsta theme (every token emitted, so per-screen CSS can reference them) + the kit's own rules. */
 @import 'tailwindcss' source(none);
 @import 'konsta/react/theme.css' theme(static);
+@import './type-scale.css';
 @source './kit/ui.jsx';
 @source './kit/nav.jsx';
 @source './kit.jsx';

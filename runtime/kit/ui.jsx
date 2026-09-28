@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { usePhotos } from './nav.jsx'
+import { onColor } from './on-color.js'
+export { onColor }
 
 // A settled frame (thumbnails, screenshots: `?static`) draws every figure at its final value, with no motion.
 export const STATIC = typeof location !== 'undefined' && new URLSearchParams(location.search).has('static')
@@ -106,7 +108,7 @@ export function Avatar({ name, color, size = 44 }) {
 export function Tile({ color, children, size = 30, tinted = false }) {
   color = cssColor(color)
   return (
-    <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.5, background: tinted ? tint(color) : color, color: tinted ? color : 'white' }}>
+    <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.5, background: tinted ? tint(color) : color, color: tinted ? color : onColor(color) }}>
       {children}
     </span>
   )
@@ -142,8 +144,26 @@ export function WaterGlass({ value, color = '#0a84ff' }) {
 
 /** A soft wash of a colour, for tinted cards, chips and tiles: `style={{ background: tint(C.water) }}`. */
 export const tint = (color, pct = 16) => `color-mix(in oklab, ${cssColor(color)} ${pct}%, transparent)`
-/** A two-stop gradient for a hero card (white text on it): `style={{ background: gradient(C.steps, '#ff6b35') }}`. */
-export const gradient = (color, to) => `linear-gradient(150deg, ${cssColor(color)}, ${to ? cssColor(to) : `color-mix(in oklab, ${cssColor(color)} 62%, #ffffff)`})`
+/** A two-stop gradient for a hero card. With no second stop it deepens a colour that carries white text and
+ *  lightens one that carries ink, so the text on it keeps its contrast. Prefer <Hero>, which also sets the text colour. */
+export const gradient = (color, to) => {
+  const c = cssColor(color)
+  const end = to ? cssColor(to) : onColor(c) === '#ffffff' ? `color-mix(in oklab, ${c} 78%, #000000)` : `color-mix(in oklab, ${c} 62%, #ffffff)`
+  return `linear-gradient(150deg, ${c}, ${end})`
+}
+
+/** HIG-12: a hero / promo card (`as="button"` when it is tapped) on a gradient whose text colour is decided here (white or ink, whichever reads on
+ *  `color`), so a light brand colour never carries white text. Corners and padding are defaults `className` can change. */
+export function Hero({ as: Tag = 'div', color, to, className = '', style, children, ...rest }) {
+  const c = cssColor(color)
+  // A default the className sets itself is left out: two rounded-* on one element is a coin toss in Tailwind's order.
+  const defaults = [!/\b(absolute|fixed|sticky)\b/.test(className) && 'relative', !/\brounded/.test(className) && 'rounded-[24px]', !/\bp[xytblr]?-/.test(className) && 'p-4', 'overflow-hidden text-left'].filter(Boolean).join(' ')
+  return (
+    <Tag {...rest} className={`${defaults} ${className}`} style={{ background: gradient(c, to), color: onColor(c), ...style }}>
+      {children}
+    </Tag>
+  )
+}
 
 /** Concentric progress rings — the Activity look. `rings` outermost first: [{ value: 0–1, color }]. */
 export function Rings({ rings, size = 140, stroke = 14, gap = 3, children }) {

@@ -64,6 +64,49 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
   const forgot = await compileScreen("import { Page } from 'konsta/react'\nexport default function Screen() { return <Page><BlockTitle>Hi</BlockTitle><Flame />{[1].map((Icon) => <Icon key={Icon} />)}</Page> }")
   assert.ok(forgot.ok && /import \{ BlockTitle \} from "konsta\/react"/.test(forgot.js) && forgot.js.includes('lucide-react/icons/flame') && !/import Icon/.test(forgot.js), 'a runtime name used without its import is imported; a local one is not')
   assert.ok(!bad.ok && bad.errors.some((e) => /node:fs/.test(e)) && bad.errors.some((e) => /fetch/.test(e)), 'imports outside the whitelist and network calls are refused')
+  // HIG-10: a component that exists nowhere is refused (it would crash the frame); locals, params and built-ins are not.
+  const ghost = await compileScreen("import { Page } from 'konsta/react'\nexport default function Screen() { return <Page><FancyHero /></Page> }")
+  assert.ok(!ghost.ok && ghost.errors.some((e) => /FancyHero/.test(e)), 'a component that does not exist is refused, by name')
+  const locals = await compileScreen("import { Page, List, ListItem } from 'konsta/react'\nconst { A: Big } = { A: () => null }\nfunction Row({ icon: Icon, label }) { return <ListItem title={String(label)} media={<Icon />} after={Number('2')} /> }\nexport default function Screen() { return <Page><Big /><List><Row icon={() => null} label='x' /></List></Page> }")
+  assert.ok(locals.ok, `destructured names, params and Number()/String() are not missing components: ${locals.ok ? '' : locals.errors}`)
+  const { lintJsx } = await import('../../../lib/jsx-lint.ts')
+  const lint = lintJsx(`import { Page, Block, BlockTitle, List, ListItem, ListInput, Button, Card } from 'konsta/react'
+import { ChevronRight } from 'lucide-react'
+import { tint, AppTabbar } from '@od/kit'
+export default function Screen() {
+  return (
+    <Page>
+      <List strong inset>
+        <ListItem link title="Steps" after={<ChevronRight className="w-4 h-4" />} />
+        <ListItem link title="Water" after={<span>1.5 L <ChevronRight /></span>} />
+      </List>
+      <Block className="grid grid-cols-2 gap-3 px-4">
+        <div className="rounded-2xl p-4 text-white bg-white" style={{ background: tint('#0a84ff', 20) }}><span className="text-[9px]">Active</span></div>
+      </Block>
+      <Block strong inset><BlockTitle>Oops</BlockTitle><ListInput label="Name" /><List><ListItem title="x" /></List></Block>
+      <Button large>A</Button><Button large>B</Button><Button large>C 🎉</Button>
+      <div className="fixed bottom-0 left-0 right-0">bar</div>
+      <AppTabbar active="home" />
+    </Page>
+  )
+}`)
+  const src = lint.source
+  assert.ok(!/<ChevronRight/.test(src) && /<ListItem link title="Steps"\s*\/>/.test(src), 'a ListItem link loses its second chevron (the whole after when it held only the chevron)')
+  assert.ok(/<span>1\.5 L\s*<\/span>/.test(src), 'a chevron inside a richer after keeps the rest of the after')
+  assert.ok(!/text-white/.test(src), 'white text on a tint() wash is dropped')
+  assert.ok(/className="grid grid-cols-2 gap-3"/.test(src), 'px-4 on a Block is dropped (Block pads itself)')
+  assert.ok(src.includes('bg-white dark:bg-[#1c1c1e]') && src.includes('text-[11px]'), 'a lone bg-white gets its dark pair; text under 11px is raised to 11px')
+  const rules = lint.findings.map((f) => f.rule)
+  for (const r of ['blocktitle-in-block', 'list-item-outside-list', 'list-in-block', 'prominent-buttons', 'emoji-in-control', 'fixed-bottom-under-tabbar']) assert.ok(rules.includes(r), `the lint reports ${r}`)
+  assert.equal(lintJsx('this is not { valid').findings.length, 0, 'a source that does not parse is left to the compiler')
+  const again = lintJsx(src)
+  assert.equal(again.source, src, 'the lint is idempotent: fixing a fixed screen changes nothing')
+  // HIG-12: named text styles compile to Apple's sizes; Hero picks its text colour; text-white on a Hero is dropped.
+  const typed = await compileScreen("import { Page } from 'konsta/react'\nexport default function Screen() { return <Page><h1 className=\"text-large-title\">A</h1><p className=\"text-footnote\">b</p></Page> }")
+  assert.ok(typed.ok && /\.text-large-title\{[^}]*font-size:var\(--text-large-title,34px\)/.test(typed.css) && typed.css.includes('.text-footnote'), 'the type scale is a set of Tailwind utilities on every screen')
+  const { onColor } = await import('../../../../runtime/kit/on-color.js')
+  assert.deepEqual(['#0a84ff', '#ffd60a', '#30d158', '#1c1c1e', '#fff', 'var(--color-primary)'].map(onColor), ['#ffffff', '#1c1c1e', '#1c1c1e', '#ffffff', '#1c1c1e', '#ffffff'], 'white on dark and saturated blue, ink on yellow, mint and white; an unmeasurable colour keeps white')
+  assert.ok(!/text-white/.test(lintJsx('import { Hero } from \'@od/kit\'\nexport default function Screen() { return <Hero color="#ffd60a" className="text-white p-5">x</Hero> }').source), 'text-white on a Hero is dropped')
   const { photoQueries, cachedPhotos } = await import('../../Services/PhotoService.ts')
   const withPhotos = "const DISHES = [{ name: 'Salad', photo: 'Grilled  Chicken Salad' }, { name: 'x', photo: 'https://evil.example/a.jpg' }]\nexport default function Screen() { return <Page><Photo q=\"beach villa\" /><Photo q={DISHES[0].photo} /></Page> }"
   assert.deepEqual(photoQueries(withPhotos).sort(), ['beach villa', 'grilled chicken salad'], 'photo queries come from <Photo q> literals and photo data keys, normalised; URLs are never queries')
