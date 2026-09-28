@@ -1,0 +1,622 @@
+{
+  "opts": {
+    "dark": false,
+    "accent": "#e0532f"
+  },
+  "totals": {
+    "screens": 10,
+    "compiled": 10,
+    "rendered": 10,
+    "medianTransformMs": 1.8,
+    "medianCssMs": 36.6,
+    "medianChars": 7223,
+    "medianCssBytes": 2723
+  },
+  "screens": [
+    {
+      "name": "add-habit",
+      "chars": 6109,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Stepper",
+          "Toggle",
+          "Button",
+          "Actions",
+          "ActionsGroup",
+          "ActionsButton",
+          "ActionsLabel",
+          "Searchbar",
+          "Dialog",
+          "DialogButton"
+        ],
+        "lucide-react": [
+          "Plus",
+          "Flame",
+          "Bell",
+          "Clock",
+          "Repeat",
+          "Target",
+          "Pencil"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring"
+        ]
+      },
+      "transformMs": 1.3,
+      "cssMs": 36.8,
+      "jsBytes": 8180,
+      "cssBytes": 2308,
+      "rendered": true,
+      "painted": 74,
+      "consoleErrors": []
+    },
+    {
+      "name": "habit",
+      "chars": 7502,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Stepper",
+          "Toggle",
+          "Button",
+          "Actions",
+          "ActionsGroup",
+          "ActionsButton",
+          "ActionsLabel",
+          "Searchbar",
+          "Dialog",
+          "DialogButton"
+        ],
+        "lucide-react": [
+          "Plus",
+          "Flame",
+          "Bell",
+          "Clock",
+          "Repeat",
+          "Target",
+          "Pencil"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring"
+        ]
+      },
+      "transformMs": 10.9,
+      "cssMs": 36.6,
+      "jsBytes": 10725,
+      "cssBytes": 2505,
+      "rendered": true,
+      "painted": 202,
+      "consoleErrors": []
+    },
+    {
+      "name": "habits",
+      "chars": 5094,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Stepper",
+          "Toggle",
+          "Button",
+          "Actions",
+          "ActionsGroup",
+          "ActionsButton",
+          "ActionsLabel",
+          "Searchbar",
+          "Dialog",
+          "DialogButton"
+        ],
+        "lucide-react": [
+          "Plus",
+          "Flame",
+          "Bell",
+          "Clock",
+          "Repeat",
+          "Target",
+          "Pencil"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring"
+        ]
+      },
+      "transformMs": 2.5,
+      "cssMs": 35.5,
+      "jsBytes": 6759,
+      "cssBytes": 1129,
+      "rendered": true,
+      "painted": 207,
+      "consoleErrors": []
+    },
+    {
+      "name": "insights",
+      "chars": 7415,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "ListButton",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Toggle",
+          "Radio",
+          "Button",
+          "Card",
+          "Dialog",
+          "DialogButton",
+          "Notification"
+        ],
+        "lucide-react": [
+          "Bell",
+          "Moon",
+          "Palette",
+          "Ruler",
+          "CalendarDays",
+          "HeartPulse",
+          "Lock",
+          "CircleHelp",
+          "Star",
+          "LogOut",
+          "Crown",
+          "Mail",
+          "User",
+          "MapPin",
+          "Volume2",
+          "Trophy",
+          "Flame",
+          "Download",
+          "Trash2"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring",
+          "Bars",
+          "Area",
+          "Avatar",
+          "Tile",
+          "CountUp"
+        ]
+      },
+      "transformMs": 1.7,
+      "cssMs": 37.1,
+      "jsBytes": 11175,
+      "cssBytes": 2723,
+      "rendered": true,
+      "painted": 205,
+      "consoleErrors": []
+    },
+    {
+      "name": "premium",
+      "chars": 6878,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "ListButton",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Toggle",
+          "Radio",
+          "Button",
+          "Card",
+          "Dialog",
+          "DialogButton",
+          "Notification"
+        ],
+        "lucide-react": [
+          "Bell",
+          "Moon",
+          "Palette",
+          "Ruler",
+          "CalendarDays",
+          "HeartPulse",
+          "Lock",
+          "CircleHelp",
+          "Star",
+          "LogOut",
+          "Crown",
+          "Mail",
+          "User",
+          "MapPin",
+          "Volume2",
+          "Trophy",
+          "Flame",
+          "Download",
+          "Trash2"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring",
+          "Bars",
+          "Area",
+          "Avatar",
+          "Tile",
+          "CountUp"
+        ]
+      },
+      "transformMs": 1.8,
+      "cssMs": 37.1,
+      "jsBytes": 9725,
+      "cssBytes": 3056,
+      "rendered": true,
+      "painted": 80,
+      "consoleErrors": []
+    },
+    {
+      "name": "profile",
+      "chars": 7223,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "ListButton",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Toggle",
+          "Radio",
+          "Button",
+          "Card",
+          "Dialog",
+          "DialogButton",
+          "Notification"
+        ],
+        "lucide-react": [
+          "Bell",
+          "Moon",
+          "Palette",
+          "Ruler",
+          "CalendarDays",
+          "HeartPulse",
+          "Lock",
+          "CircleHelp",
+          "Star",
+          "LogOut",
+          "Crown",
+          "Mail",
+          "User",
+          "MapPin",
+          "Volume2",
+          "Trophy",
+          "Flame",
+          "Download",
+          "Trash2"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring",
+          "Bars",
+          "Area",
+          "Avatar",
+          "Tile",
+          "CountUp"
+        ]
+      },
+      "transformMs": 1.5,
+      "cssMs": 37.4,
+      "jsBytes": 10667,
+      "cssBytes": 3250,
+      "rendered": true,
+      "painted": 164,
+      "consoleErrors": []
+    },
+    {
+      "name": "settings",
+      "chars": 7412,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "ListInput",
+          "ListButton",
+          "Link",
+          "Segmented",
+          "SegmentedButton",
+          "Toggle",
+          "Radio",
+          "Button",
+          "Card",
+          "Dialog",
+          "DialogButton",
+          "Notification"
+        ],
+        "lucide-react": [
+          "Bell",
+          "Moon",
+          "Palette",
+          "Ruler",
+          "CalendarDays",
+          "HeartPulse",
+          "Lock",
+          "CircleHelp",
+          "Star",
+          "LogOut",
+          "Crown",
+          "Mail",
+          "User",
+          "MapPin",
+          "Volume2",
+          "Trophy",
+          "Flame",
+          "Download",
+          "Trash2"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring",
+          "Bars",
+          "Area",
+          "Avatar",
+          "Tile",
+          "CountUp"
+        ]
+      },
+      "transformMs": 1.3,
+      "cssMs": 12.7,
+      "jsBytes": 11466,
+      "cssBytes": 536,
+      "rendered": true,
+      "painted": 211,
+      "consoleErrors": []
+    },
+    {
+      "name": "steps",
+      "chars": 5782,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "Segmented",
+          "SegmentedButton",
+          "Button",
+          "Link",
+          "Sheet",
+          "Range",
+          "Toast"
+        ],
+        "lucide-react": [
+          "Flame",
+          "MapPin",
+          "Timer",
+          "Share",
+          "Settings2",
+          "GlassWater",
+          "CupSoda",
+          "Coffee"
+        ],
+        "@od/kit": [
+          "useNav",
+          "Ring",
+          "CountUp",
+          "Bars",
+          "Area",
+          "WaterGlass"
+        ]
+      },
+      "transformMs": 2,
+      "cssMs": 28.2,
+      "jsBytes": 8479,
+      "cssBytes": 2486,
+      "rendered": true,
+      "painted": 112,
+      "consoleErrors": []
+    },
+    {
+      "name": "today",
+      "chars": 8316,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "Card",
+          "Link",
+          "Checkbox",
+          "Badge"
+        ],
+        "lucide-react": [
+          "Bell",
+          "Footprints",
+          "Droplets",
+          "Plus",
+          "ChevronRight",
+          "Flame"
+        ],
+        "@od/kit": [
+          "useNav",
+          "AppTabbar",
+          "Ring",
+          "CountUp",
+          "Avatar",
+          "Confetti"
+        ]
+      },
+      "transformMs": 2,
+      "cssMs": 13.8,
+      "jsBytes": 11653,
+      "cssBytes": 5133,
+      "rendered": true,
+      "painted": 231,
+      "consoleErrors": []
+    },
+    {
+      "name": "water",
+      "chars": 5927,
+      "compiled": true,
+      "errors": [],
+      "unknown": [],
+      "imports": {
+        "react": [
+          "useState"
+        ],
+        "konsta/react": [
+          "Page",
+          "Navbar",
+          "NavbarBackLink",
+          "Block",
+          "BlockTitle",
+          "List",
+          "ListItem",
+          "Segmented",
+          "SegmentedButton",
+          "Button",
+          "Link",
+          "Sheet",
+          "Range",
+          "Toast"
+        ],
+        "lucide-react": [
+          "Flame",
+          "MapPin",
+          "Timer",
+          "Share",
+          "Settings2",
+          "GlassWater",
+          "CupSoda",
+          "Coffee"
+        ],
+        "@od/kit": [
+          "useNav",
+          "Ring",
+          "CountUp",
+          "Bars",
+          "Area",
+          "WaterGlass"
+        ]
+      },
+      "transformMs": 1.5,
+      "cssMs": 18.6,
+      "jsBytes": 8312,
+      "cssBytes": 3633,
+      "rendered": true,
+      "painted": 116,
+      "consoleErrors": []
+    }
+  ]
+}

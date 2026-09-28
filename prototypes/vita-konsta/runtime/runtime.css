@@ -1,0 +1,35 @@
+/* Runtime stylesheet: Tailwind base + Konsta theme (every token emitted, so per-screen CSS can reference them) + Vita's own rules. */
+@import 'tailwindcss' source(none);
+@import 'konsta/react/theme.css' theme(static);
+@source '../src/ui.jsx';
+@source '../src/nav.jsx';
+@source './kit.jsx';
+@custom-variant dark (&:where(.dark, .dark *));
+html, body, #root { height: 100%; }
+body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+/* The navigator: iOS push is a slide from the right over a page that drifts left and dims. */
+.vs-stack { position: absolute; inset: 0; overflow: hidden; }
+.vs-screen { position: absolute; inset: 0; will-change: transform; }
+.vs-screen.vs-under { transform: translateX(-28%); filter: brightness(.9); transition: transform .42s cubic-bezier(.2,.8,.2,1), filter .42s; }
+.vs-screen.vs-top { transform: none; filter: none; transition: transform .42s cubic-bezier(.2,.8,.2,1), filter .42s; }
+.vs-screen.vs-push { animation: vs-in .42s cubic-bezier(.2,.8,.2,1) both; box-shadow: -8px 0 24px rgba(0,0,0,.08); }
+.vs-screen.vs-pop { animation: vs-out .34s cubic-bezier(.4,0,.2,1) both; z-index: 50; }
+.vs-screen.vs-fade { animation: vs-fade .45s ease-out both; }
+@keyframes vs-in { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes vs-out { from { transform: none; } to { transform: translateX(100%); } }
+@keyframes vs-fade { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: none; } }
+
+/* Small moments of delight */
+@keyframes vs-pop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.vs-bounce { animation: vs-pop .35s ease-out; }
+@keyframes vs-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.vs-rise { animation: vs-rise .55s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes vs-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.vs-float { animation: vs-float 4s ease-in-out infinite; }
+@keyframes vs-wave { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.vs-wave { animation: vs-wave 3.2s linear infinite; }
+@keyframes vs-confetti { 0% { transform: translate(0,0) rotate(0); opacity: 1; } 100% { transform: translate(var(--x), 520px) rotate(720deg); opacity: 0; } }
+.vs-confetti { position: absolute; top: 30%; left: 50%; width: 8px; height: 14px; border-radius: 2px; animation: vs-confetti 1.6s cubic-bezier(.2,.6,.4,1) forwards; pointer-events: none; }
+.vs-static *, .vs-static *::before, .vs-static *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .vs-screen, .vs-bounce, .vs-rise, .vs-float, .vs-wave { animation: none !important; transition: none !important; } }
