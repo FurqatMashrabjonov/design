@@ -1,0 +1,78 @@
+{
+  "model": "claude-haiku-4-5-20251001",
+  "systemChars": 18941,
+  "screens": [
+    {
+      "id": "habit",
+      "chars": 2968,
+      "out": 1052,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 10964
+    },
+    {
+      "id": "habits",
+      "chars": 3102,
+      "out": 1183,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 11527
+    },
+    {
+      "id": "today",
+      "chars": 3547,
+      "out": 1198,
+      "in": 3,
+      "cacheRead": 7718,
+      "ms": 11682
+    },
+    {
+      "id": "water",
+      "chars": 1673,
+      "out": 568,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 6181
+    },
+    {
+      "id": "add-habit",
+      "chars": 4755,
+      "out": 1407,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 13345
+    },
+    {
+      "id": "steps",
+      "chars": 3263,
+      "out": 1434,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 13350
+    },
+    {
+      "id": "insights",
+      "chars": 3393,
+      "out": 1276,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 12627
+    },
+    {
+      "id": "settings",
+      "chars": 2832,
+      "out": 861,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 8900
+    },
+    {
+      "id": "profile",
+      "chars": 3483,
+      "out": 2301,
+      "in": 3,
+      "cacheRead": 5518,
+      "ms": 19040
+    }
+  ]
+}
