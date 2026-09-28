@@ -4,6 +4,28 @@ Newest first. One entry per completed change: what changed, files touched, how i
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
 
+## 2026-09-28 (9)
+
+### PRV-02 iPhone Duo: a foldable in the preview — the cover screen folded, list and detail side by side open
+
+- `lib/devices.ts`: iPhone Duo — cover 375×812 folded, inner 836×640 open (`unfolded`). `splitPanes` picks the
+  panes from the plan (`kind` + `parent`): a screen opened from another sits right of its parent, a screen that
+  opens others sits left of its first one, anything else fills the inner screen.
+- `DeviceFrame`: an unfolded (wider than tall) screen gets one status bar across both panes, the camera in the
+  right pane and a faint hinge crease.
+- Preview: a labelled Unfold / Fold button next to the device picker (only for a foldable). Open, both panes'
+  frames are shown, and either may navigate. Panes change with a fade, and the veil waits for both.
+  Opening and closing animate (`od-unfold` / `od-fold-close`, reduced motion off).
+- Files: `src/lib/devices.ts`, `src/components/DeviceFrame.tsx`, `src/routes/preview.$projectId.tsx`,
+  `src/styles.css`, `controllers.check.ts` (the pane rule).
+- Verified in the browser on NutriLens:
+  - Folded cover screen.
+  - Unfolded: Today's Diary beside Meal Details; Onboarding and Profile fill the inner screen.
+  - The Profile tab tapped from the left pane opens Profile. Folding back works.
+  - `npm run check` and `tsc` are clean.
+- Known: one tap on the Courses tab of Today's Diary sometimes does nothing, in the folded view too (that
+  screen's own tab bar). Not a pane issue.
+
 ## 2026-09-28 (8)
 
 ### PRV-01 Preview on a real device: iPhone 18 Pro, iPhone 18 Pro Max, Galaxy S26 Ultra

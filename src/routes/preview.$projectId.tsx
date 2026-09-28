@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Link2, Pencil, Smartphone } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, Link2, Pencil, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { getProject, getSession } from '../server/fns'
 import { frameSize } from '../canvas'
@@ -9,7 +9,7 @@ import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { DeviceFrame } from '@/components/DeviceFrame'
-import { DEVICES, DEFAULT_DEVICE, deviceById, type Device } from '@/lib/devices'
+import { DEVICES, DEFAULT_DEVICE, deviceById, splitPanes, type Device } from '@/lib/devices'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -85,6 +85,15 @@ function PreviewPage() {
       localStorage.setItem(DEVICE_KEY, d.id)
     } catch {}
   }
+  // PRV-02: a foldable opens to its inner screen. Open, the app is shown the way a tablet-class screen shows
+  // a phone app that has a list and a detail: the list on the left of the hinge, what it opens on the right.
+  const [open, setOpen] = useState(false)
+  const [foldAnim, setFoldAnim] = useState<'open' | 'closed' | null>(null)
+  const unfolded = !!device.unfolded && open
+  function toggleFold() {
+    setOpen((o) => !o)
+    setFoldAnim(open ? 'closed' : 'open')
+  }
   const insets = { top: device.top, bottom: device.bottom }
   // A switch re-renders every mounted screen in place (od:look); none of them reloads.
   const lookRef = useRef({ theme, insets })
@@ -95,6 +104,17 @@ function PreviewPage() {
   // What `pop` goes back to: the screens this session pushed from.
   const back = useRef<string[]>([])
   const [shownId, setShownId] = useState(() => screens.find((s) => s.id === search.s)?.id ?? screens[0]?.id)
+  // The plan knows which screen opens from which (kind + parent), so the two panes are decided in code.
+  const planned = useMemo(() => {
+    try {
+      const plan = JSON.parse(project.plan ?? '{}') as { screens?: { id: string; kind?: string; parent?: string }[] }
+      return new Map((plan.screens ?? []).map((p) => [p.id, p]))
+    } catch {
+      return new Map<string, { id: string; kind?: string; parent?: string }>()
+    }
+  }, [project.plan])
+  const panes = useMemo(() => (unfolded && shownId ? splitPanes(screens, planned, shownId) : { left: shownId }), [unfolded, screens, planned, shownId])
+  const visible = useMemo(() => [panes.left, panes.right].filter(Boolean) as string[], [panes])
   const currentIndex = Math.max(0, screens.findIndex((s) => s.id === shownId))
   const current = screens[currentIndex]
   const [leaving, setLeaving] = useState<{ id: string; motion: Motion } | null>(null)
@@ -115,15 +135,22 @@ function PreviewPage() {
   const goTo = useCallback(
     (id: string, how: Motion) => {
       if (id === shownId) return
-      setMounted((m) => (m.has(id) ? m : new Set(m).add(id)))
-      if (shownId) setLeaving({ id: shownId, motion: how })
-      setMotion(how)
+      const want = device.unfolded && open ? Object.values(splitPanes(screens, planned, id)).filter(Boolean) as string[] : [id]
+      setMounted((m) => (want.every((w) => m.has(w)) ? m : new Set([...m, ...want])))
+      // Open, the panes change in place (a fade); the phone's push/pop slide is for one screen at a time.
+      const split = !!device.unfolded && open
+      setLeaving(shownId && !split ? { id: shownId, motion: how } : null)
+      setMotion(split ? 'fade' : how)
       setShownId(id)
       // The address bar is left alone: the router notices even a replaceState and reloads the project
       // (~1 s). "Copy preview link" builds the link to the screen on show instead.
     },
-    [shownId],
+    [shownId, device, open, screens, planned],
   )
+  // Opening the phone shows a second pane: make sure its frame exists.
+  useEffect(() => {
+    setMounted((m) => (visible.every((v) => m.has(v)) ? m : new Set([...m, ...visible])))
+  }, [visible])
   const step = useCallback(
     (delta: number) => {
       const next = screens[currentIndex + delta]
@@ -136,7 +163,7 @@ function PreviewPage() {
   // The kit's useNav posts od:nav (runtime/kit/nav.jsx); only the frame on show may navigate.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (!shownId || e.source !== frames.current.get(shownId)?.contentWindow) return
+      if (!shownId || !visible.some((v) => e.source === frames.current.get(v)?.contentWindow)) return
       const nav = parseNav(e.data)
       if (!nav) return
       if (nav.action === 'pop') {
@@ -152,7 +179,7 @@ function PreviewPage() {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [screens, goTo, shownId])
+  }, [screens, goTo, shownId, visible])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -163,7 +190,8 @@ function PreviewPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [step])
 
-  const native = { width: device.w, height: device.h }
+  const shown = unfolded ? { ...device, ...device.unfolded! } : device
+  const native = { width: shown.w, height: shown.h }
   const bezel = device.bezel
   // Leave room for the arrows on the sides and a caption below.
   // Room for the top controls (~72px) and the caption below, so the phone never runs under either.
@@ -224,6 +252,11 @@ function PreviewPage() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+        {device.unfolded && (
+          <Button variant="ghost" size="sm" className="rounded-full font-medium" aria-pressed={open} onClick={toggleFold} title={open ? 'Fold to the cover screen' : 'Open to the inner screen'}>
+            {open ? <Smartphone /> : <Columns2 />} {open ? 'Fold' : 'Unfold'}
+          </Button>
+        )}
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
         <AppLookSwitch theme={theme} onChange={setTheme} />
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
@@ -249,7 +282,8 @@ function PreviewPage() {
           <ChevronLeft className="size-5" />
         </Arrow>
 
-        <DeviceFrame device={device} scale={scale} dark={theme.dark}>
+        <div className="od-fold" data-anim={foldAnim ?? undefined} onAnimationEnd={(e) => e.target === e.currentTarget && setFoldAnim(null)}>
+        <DeviceFrame device={shown} scale={scale} dark={theme.dark}>
           <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height }}>
             {screens.filter((s) => mounted.has(s.id)).map((s) => (
               <iframe
@@ -266,15 +300,17 @@ function PreviewPage() {
                   setLoaded((l) => (l.has(s.id) ? l : new Set(l).add(s.id)))
                   if (s.id === shownId) warmAll()
                 }}
-                data-state={s.id === shownId ? 'shown' : s.id === leaving?.id ? 'leaving' : 'hidden'}
+                data-state={visible.includes(s.id) ? 'shown' : s.id === leaving?.id ? 'leaving' : 'hidden'}
                 onAnimationEnd={s.id === leaving?.id ? () => setLeaving(null) : undefined}
-                aria-hidden={s.id !== shownId}
-                tabIndex={s.id === shownId ? 0 : -1}
+                style={panes.right ? (s.id === panes.left ? { width: '50%' } : s.id === panes.right ? { left: '50%', width: '50%' } : undefined) : undefined}
+                aria-hidden={!visible.includes(s.id)}
+                tabIndex={visible.includes(s.id) ? 0 : -1}
               />
             ))}
-            <GeneratingVeil show={!shownId || !loaded.has(shownId)} />
+            <GeneratingVeil show={!shownId || visible.some((v) => !loaded.has(v))} />
           </div>
         </DeviceFrame>
+        </div>
 
         <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)}>
           <ChevronRight className="size-5" />
@@ -282,7 +318,7 @@ function PreviewPage() {
       </div>
 
       <p className="relative mt-5 text-xs tabular-nums text-muted-foreground">
-        {currentIndex + 1} / {screens.length} · <span className="text-foreground">{current.name}</span>
+        {currentIndex + 1} / {screens.length} · <span className="text-foreground">{visible.map((v) => screens.find((s) => s.id === v)?.name).join(' · ')}</span>
         {/* Pexels' API guidelines ask for a link back wherever its photos are shown. */}
         {' · '}<a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Photos by Pexels</a>
       </p>

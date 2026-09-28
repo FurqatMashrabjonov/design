@@ -30,7 +30,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FIG-11 | Figma: Copy to Figma (SVG paste) | Generatsiya / Integratsiyalar | MVP | Tayyor | Kichik | FIG-10 | ⌘V tahrirlanadigan qatlamlar |
 | FIG-12 | Figma plagini: Auto Layout, Variables, prototip | Generatsiya / Integratsiyalar | Keyin | Rejada | Katta | FIG-10 | Butun ilova Auto Layout bilan |
 | PRV-01 | Preview: qurilma tanlash — iPhone 18 Pro / Pro Max, Galaxy S26 Ultra; o'z 2D ramkalarimiz; Android → Material | Generatsiya / Ko'rish | MVP | Tayyor | O'rta | KON-11 | Qurilma almashadi, ekran shu kenglikda, ramka tashqi asset'siz |
-| PRV-02 | Preview: iPhone Duo (foldable) — yopiq 5.4" va ochiq 7.6", ichki ekranda ro'yxat + detail yonma-yon | Generatsiya / Ko'rish | MVP | Rejada | O'rta | PRV-01 | Yopiq/ochiq almashadi, ochilish animatsiyasi |
+| PRV-02 | Preview: iPhone Duo (foldable) — yopiq 5.4" va ochiq 7.6", ichki ekranda ro'yxat + detail yonma-yon | Generatsiya / Ko'rish | MVP | Tayyor | O'rta | PRV-01 | Yopiq/ochiq almashadi, ochilish animatsiyasi |
 
 ## B0 · Tayyor
 

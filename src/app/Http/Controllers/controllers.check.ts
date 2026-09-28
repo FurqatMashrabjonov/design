@@ -1060,6 +1060,16 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.deepEqual(themeFromQuery(new URLSearchParams('a=zzz&p=x'), stored), stored, 'a bad query keeps the stored look')
   assert.equal(themeQuery({ accent: '#34c759', dark: true, platform: 'material' }), 'a=34c759&p=material&dark=1')
 }
+// PRV-02: on an open foldable a list sits left of what it opens; a screen that opens nothing fills the screen.
+{
+  const { splitPanes } = await import('../../../lib/devices.ts')
+  const screens = [{ id: '1', slug: 'diary' }, { id: '2', slug: 'meal' }, { id: '3', slug: 'profile' }, { id: '4', slug: 'onboarding' }]
+  const planned = new Map([['diary', { id: 'diary', kind: 'tab' }], ['meal', { id: 'meal', kind: 'push', parent: 'diary' }], ['profile', { id: 'profile', kind: 'tab' }], ['onboarding', { id: 'onboarding', kind: 'first-run' }]])
+  assert.deepEqual(splitPanes(screens, planned, '1'), { left: '1', right: '2' }, 'a list shows its first detail beside it')
+  assert.deepEqual(splitPanes(screens, planned, '2'), { left: '1', right: '2' }, 'a detail shows beside its parent')
+  assert.deepEqual(splitPanes(screens, planned, '3'), { left: '3' })
+  assert.deepEqual(splitPanes(screens, planned, '4'), { left: '4' })
+}
 // Two quick ⌘Z presses run their steps in order; run at once, the slower first step's save landed last.
 {
   const { UndoStack, pairStep } = await import('../../../lib/undo-stack.ts')
