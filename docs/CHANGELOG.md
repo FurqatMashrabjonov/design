@@ -5,6 +5,31 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-28 (12)
+
+### PRV-02 iPhone Duo reworked to match Apple's renders, then switched off until November
+
+- Proportions: the inner screen is 900×640 (≈1.4:1), and each half is the 450×640 cover screen.
+- Folded view: the cover has small corners and a metal spine at the hinge, and the phone's big corners at the
+  free edge.
+- Fold animation: the cover swings away about the hinge, then the left half swings in and lands.
+  - The swinging half is foreshortened (`perspective`), wears its own bezel, and blurs and dims as it turns.
+  - A swinging half's near edge may grow past the frame; nothing clips it.
+  - `foldLayout` in `lib/devices.ts` holds the geometry; `clipLeft` follows the landing half's projected width.
+- Open view: no crease line. The hinge shows as tabs in the frame, top and bottom. A split screen has two
+  rounded panes with a gap and a handle between them.
+- The phone is always laid out at its open size, so no frame is resized while it folds.
+- Controls: a labelled Fold/Unfold button under the phone, a slider to scrub the fold, and the `F` key.
+- **Off for now**: the Duo row in `DEVICES` is commented out, to come back in November 2026 (Notion PRV-02 →
+  Keyin). The code and its test (`foldLayout`, `splitPanes` in `controllers.check.ts`) stay. A viewer who had
+  the Duo picked falls back to the default phone.
+- Verified in the browser on NutriLens:
+  - folded;
+  - partly open at p 0.28 and 0.72;
+  - open, with Today's Diary beside Meal Details;
+  - Onboarding filling the whole screen.
+- `npm run check` failed once during the work and passed on the next three runs; its log was not kept.
+  `tsc` is clean.
 
 ## 2026-09-28 (11)
 

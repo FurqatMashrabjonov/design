@@ -396,13 +396,6 @@ svg.lucide { stroke-width: 1.75; }
     .od-preview-stage[data-motion='fade'] > iframe[data-state='shown'] { animation: od-pv-fade-in var(--duration-base) var(--motion-ease-out) both; }
     .od-preview-stage[data-motion='fade'] > iframe[data-state='leaving'] { animation: od-pv-fade-out var(--duration-base) var(--motion-ease-out) both; }
 }
-/* PRV-02: a foldable opening and closing — the inner screen grows out of the cover's width, and folds back. */
-@keyframes od-unfold { from { transform: perspective(2400px) rotateY(14deg) scaleX(.48); opacity: .5; } }
-@keyframes od-fold-close { from { transform: scaleX(1.8); opacity: .5; } }
-@media (prefers-reduced-motion: no-preference) {
-  .od-fold[data-anim='open'] { animation: od-unfold var(--duration-slow) var(--motion-ease-out) both; }
-  .od-fold[data-anim='closed'] { animation: od-fold-close var(--duration-slow) var(--motion-ease-out) both; }
-}
 /* /SHR-03 preview */
 
 /* The veil over a frame that is being drawn or is still loading (ScreenFrame GeneratingVeil). Shown: all three

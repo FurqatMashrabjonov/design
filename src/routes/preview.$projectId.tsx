@@ -9,7 +9,7 @@ import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { DeviceFrame } from '@/components/DeviceFrame'
-import { DEVICES, DEFAULT_DEVICE, deviceById, splitPanes, type Device } from '@/lib/devices'
+import { DEVICES, DEFAULT_DEVICE, deviceById, FOLD_PERSPECTIVE, foldLayout, splitPanes, type Device, type FoldFrame } from '@/lib/devices'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -87,13 +87,27 @@ function PreviewPage() {
   }
   // PRV-02: a foldable opens to its inner screen. Open, the app is shown the way a tablet-class screen shows
   // a phone app that has a list and a detail: the list on the left of the hinge, what it opens on the right.
-  const [open, setOpen] = useState(false)
-  const [foldAnim, setFoldAnim] = useState<'open' | 'closed' | null>(null)
-  const unfolded = !!device.unfolded && open
-  function toggleFold() {
-    setOpen((o) => !o)
-    setFoldAnim(open ? 'closed' : 'open')
-  }
+  // `fold` is how far it is open (0 folded … 1 open): the Fold button tweens it, the slider scrubs it.
+  const duo = !!device.unfolded
+  const [fold, setFold] = useState(0)
+  const foldRef = useRef(fold)
+  foldRef.current = fold
+  const tween = useRef(0)
+  const foldTo = useCallback((target: number) => {
+    cancelAnimationFrame(tween.current)
+    const from = foldRef.current
+    const ms = 900 * Math.abs(target - from)
+    if (!ms || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return setFold(target)
+    const start = performance.now()
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / ms)
+      const e = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+      setFold(from + (target - from) * e)
+      if (t < 1) tween.current = requestAnimationFrame(frame)
+    }
+    tween.current = requestAnimationFrame(frame)
+  }, [])
+  const toggleFold = useCallback(() => foldTo(foldRef.current > 0.5 ? 0 : 1), [foldTo])
   const insets = { top: device.top, bottom: device.bottom }
   // A switch re-renders every mounted screen in place (od:look); none of them reloads.
   const lookRef = useRef({ theme, insets })
@@ -113,8 +127,14 @@ function PreviewPage() {
       return new Map<string, { id: string; kind?: string; parent?: string }>()
     }
   }, [project.plan])
-  const panes = useMemo(() => (unfolded && shownId ? splitPanes(screens, planned, shownId) : { left: shownId }), [unfolded, screens, planned, shownId])
-  const visible = useMemo(() => [panes.left, panes.right].filter(Boolean) as string[], [panes])
+  const panes = useMemo(() => (duo && shownId ? splitPanes(screens, planned, shownId) : { left: shownId }), [duo, screens, planned, shownId])
+  const half = (device.unfolded?.w ?? 0) / 2
+  const layout = duo && shownId ? foldLayout(fold, panes as { left: string; right?: string }, shownId, half) : null
+  // Left to right, so the caption reads in the order the panes do.
+  const visible = layout ? [...layout.frames].sort((a, z) => a[1].left - z[1].left).map(([id]) => id) : shownId ? [shownId] : []
+  // A screen can only be tapped when the phone is fully folded or fully open.
+  const settled = !duo || fold === 0 || fold === 1
+  const visibleKey = visible.join()
   const currentIndex = Math.max(0, screens.findIndex((s) => s.id === shownId))
   const current = screens[currentIndex]
   const [leaving, setLeaving] = useState<{ id: string; motion: Motion } | null>(null)
@@ -135,22 +155,23 @@ function PreviewPage() {
   const goTo = useCallback(
     (id: string, how: Motion) => {
       if (id === shownId) return
-      const want = device.unfolded && open ? Object.values(splitPanes(screens, planned, id)).filter(Boolean) as string[] : [id]
+      const want = device.unfolded ? [id, ...(Object.values(splitPanes(screens, planned, id)).filter(Boolean) as string[])] : [id]
       setMounted((m) => (want.every((w) => m.has(w)) ? m : new Set([...m, ...want])))
       // Open, the panes change in place (a fade); the phone's push/pop slide is for one screen at a time.
-      const split = !!device.unfolded && open
+      const split = !!device.unfolded && foldRef.current > 0
       setLeaving(shownId && !split ? { id: shownId, motion: how } : null)
       setMotion(split ? 'fade' : how)
       setShownId(id)
       // The address bar is left alone: the router notices even a replaceState and reloads the project
       // (~1 s). "Copy preview link" builds the link to the screen on show instead.
     },
-    [shownId, device, open, screens, planned],
+    [shownId, device, screens, planned],
   )
-  // Opening the phone shows a second pane: make sure its frame exists.
+  // A foldable's panes are mounted before it opens, so they are drawn by the time they swing into view.
   useEffect(() => {
-    setMounted((m) => (visible.every((v) => m.has(v)) ? m : new Set([...m, ...visible])))
-  }, [visible])
+    const want = [...visible, panes.left, panes.right].filter(Boolean) as string[]
+    setMounted((m) => (want.every((v) => m.has(v)) ? m : new Set([...m, ...want])))
+  }, [visibleKey, panes.left, panes.right]) // eslint-disable-line react-hooks/exhaustive-deps
   const step = useCallback(
     (delta: number) => {
       const next = screens[currentIndex + delta]
@@ -163,7 +184,7 @@ function PreviewPage() {
   // The kit's useNav posts od:nav (runtime/kit/nav.jsx); only the frame on show may navigate.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (!shownId || !visible.some((v) => e.source === frames.current.get(v)?.contentWindow)) return
+      if (!shownId || !settled || !visible.some((v) => e.source === frames.current.get(v)?.contentWindow)) return
       const nav = parseNav(e.data)
       if (!nav) return
       if (nav.action === 'pop') {
@@ -179,18 +200,20 @@ function PreviewPage() {
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [screens, goTo, shownId, visible])
+  }, [screens, goTo, shownId, visibleKey, settled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'ArrowRight') step(1)
       if (e.key === 'ArrowLeft') step(-1)
+      if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && device.unfolded) toggleFold()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [step])
+  }, [step, device, toggleFold])
 
-  const shown = unfolded ? { ...device, ...device.unfolded! } : device
+  // A foldable is always laid out at its open size, so no frame is resized (and reflowed) while it folds.
+  const shown = duo ? { ...device, ...device.unfolded! } : device
   const native = { width: shown.w, height: shown.h }
   const bezel = device.bezel
   // Leave room for the arrows on the sides and a caption below.
@@ -252,11 +275,6 @@ function PreviewPage() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        {device.unfolded && (
-          <Button variant="ghost" size="sm" className="rounded-full font-medium" aria-pressed={open} onClick={toggleFold} title={open ? 'Fold to the cover screen' : 'Open to the inner screen'}>
-            {open ? <Smartphone /> : <Columns2 />} {open ? 'Fold' : 'Unfold'}
-          </Button>
-        )}
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
         <AppLookSwitch theme={theme} onChange={setTheme} />
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
@@ -282,9 +300,14 @@ function PreviewPage() {
           <ChevronLeft className="size-5" />
         </Arrow>
 
-        <div className="od-fold" data-anim={foldAnim ?? undefined} onAnimationEnd={(e) => e.target === e.currentTarget && setFoldAnim(null)}>
-        <DeviceFrame device={shown} scale={scale} dark={theme.dark}>
-          <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height }}>
+        <div className="relative">
+        {/* Folded, the hinge is the cover's left edge: a metal spine, as on the real phone. */}
+        {layout && layout.clipLeft >= half - 1 && (
+          <span aria-hidden className="absolute z-10 rounded-full" style={{ left: (layout.clipLeft / 2) * scale - 9, top: '2.5%', bottom: '2.5%', width: 7, background: 'linear-gradient(to right, #6f6b65, #e9e5de 45%, #a29d95)', boxShadow: '0 1px 3px rgb(0 0 0 / 35%)' }} />
+        )}
+        <div style={layout ? { clipPath: foldClip(fold, layout.clipLeft * scale, (shown.radius + shown.bezel) * scale), transform: `translateX(${(-layout.clipLeft / 2) * scale}px)` } : undefined}>
+        <DeviceFrame device={shown} scale={scale} dark={theme.dark} cover={duo && fold < 0.5} moving={duo && fold > 0 && fold < 1} split={duo && fold === 1 && !!panes.right}>
+          <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height, overflow: duo && fold > 0 && fold < 1 ? 'visible' : undefined }}>
             {screens.filter((s) => mounted.has(s.id)).map((s) => (
               <iframe
                 key={s.id}
@@ -302,7 +325,7 @@ function PreviewPage() {
                 }}
                 data-state={visible.includes(s.id) ? 'shown' : s.id === leaving?.id ? 'leaving' : 'hidden'}
                 onAnimationEnd={s.id === leaving?.id ? () => setLeaving(null) : undefined}
-                style={panes.right ? (s.id === panes.left ? { width: '50%' } : s.id === panes.right ? { left: '50%', width: '50%' } : undefined) : undefined}
+                style={layout ? foldStyle(layout.frames.get(s.id) ?? { left: half, width: half, z: 0 }) : undefined}
                 aria-hidden={!visible.includes(s.id)}
                 tabIndex={visible.includes(s.id) ? 0 : -1}
               />
@@ -311,19 +334,57 @@ function PreviewPage() {
           </div>
         </DeviceFrame>
         </div>
+        </div>
 
         <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)}>
           <ChevronRight className="size-5" />
         </Arrow>
       </div>
 
-      <p className="relative mt-5 text-xs tabular-nums text-muted-foreground">
+      {duo && (
+        <div className="relative mt-5 flex items-center gap-3 rounded-full bg-card/85 py-1 pr-4 pl-1 shadow-2 ring-1 ring-border backdrop-blur">
+          <Button size="sm" className="rounded-full font-medium" aria-pressed={fold > 0.5} onClick={toggleFold} title="Fold or unfold (F)">
+            {fold > 0.5 ? <Smartphone /> : <Columns2 />} {fold > 0.5 ? 'Fold' : 'Unfold'}
+          </Button>
+          <input
+            type="range"
+            min={0}
+            max={1000}
+            value={Math.round(fold * 1000)}
+            aria-label="How far the phone is open"
+            onChange={(e) => (cancelAnimationFrame(tween.current), setFold(Number(e.target.value) / 1000))}
+            onPointerUp={() => foldTo(foldRef.current > 0.5 ? 1 : 0)}
+            className="w-40 cursor-ew-resize accent-foreground"
+          />
+          <kbd className="rounded border border-border px-1.5 text-[12px] text-muted-foreground">F</kbd>
+        </div>
+      )}
+      <p className="relative mt-4 text-xs tabular-nums text-muted-foreground">
         {currentIndex + 1} / {screens.length} · <span className="text-foreground">{visible.map((v) => screens.find((s) => s.id === v)?.name).join(' · ')}</span>
         {/* Pexels' API guidelines ask for a link back wherever its photos are shown. */}
         {' · '}<a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Photos by Pexels</a>
       </p>
     </div>
   )
+}
+
+/** A foldable's frame at its place in the fold. A half that is swinging is foreshortened, wears its own bezel and
+ *  goes soft (blurred and dimmed) as it turns; a pane still unfolding is soft until the phone is open. */
+function foldStyle(f: FoldFrame): React.CSSProperties {
+  const style: React.CSSProperties = { left: f.left, width: f.width, right: 'auto', zIndex: f.z, borderRadius: f.card ? 22 : undefined }
+  const turn = f.angle ? Math.abs(Math.sin((f.angle * Math.PI) / 180)) : 0
+  const soft = Math.max(turn, f.soft ?? 0)
+  if (soft > 0.001) style.filter = `blur(${(soft * 12).toFixed(1)}px) brightness(${(1 - 0.5 * soft).toFixed(2)})`
+  if (!f.angle) return style
+  return { ...style, transform: `perspective(${FOLD_PERSPECTIVE}px) rotateY(${f.angle}deg)`, transformOrigin: `${f.origin} center`, backfaceVisibility: 'hidden', borderRadius: 40, boxShadow: '0 0 0 11px #0d0c0b, 0 0 0 12.5px #6f6b65' }
+}
+
+/** What of the device is in view. Folded: the cover, with small corners at the spine and the phone's big ones at the
+ *  free edge. Swinging: nothing above or below is cut off, since the near edge of a turning half grows. */
+function foldClip(p: number, left: number, big: number): string | undefined {
+  if (p >= 1) return undefined
+  if (p <= 0) return `inset(0 0 0 ${left}px round 10px ${big}px ${big}px 10px)`
+  return `inset(-30% -4% -30% ${left}px)`
 }
 
 function Tip({ label, children }: { label: string; children: React.ReactElement }) {

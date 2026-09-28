@@ -1112,6 +1112,20 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.deepEqual(splitPanes(screens, planned, '2'), { left: '1', right: '2' }, 'a detail shows beside its parent')
   assert.deepEqual(splitPanes(screens, planned, '3'), { left: '3' })
   assert.deepEqual(splitPanes(screens, planned, '4'), { left: '4' })
+  // Folded, only the cover is in view, over the right half; open, the panes sit either side of the hinge.
+  const { foldLayout } = await import('../../../lib/devices.ts')
+  const folded = foldLayout(0, { left: '1', right: '2' }, '1', 450)
+  assert.deepEqual([...folded.frames.keys()], ['1'])
+  assert.equal(folded.frames.get('1')!.left, 450)
+  assert.equal(folded.clipLeft, 450, 'the left half is out of view')
+  const swinging = foldLayout(0.25, { left: '1', right: '2' }, '1', 450)
+  assert.equal(swinging.frames.get('1')!.angle, -45, 'the cover swings away about the hinge first')
+  assert.equal(swinging.clipLeft, 450)
+  const open = foldLayout(1, { left: '1', right: '2' }, '1', 450)
+  assert.equal(open.frames.get('1')!.left, 0)
+  assert.ok(!open.frames.get('1')!.angle && open.frames.get('2')!.left > 450, 'open: flat, the right pane beyond the hinge')
+  assert.equal(open.clipLeft, 0)
+  assert.equal(foldLayout(1, { left: '3' }, '3', 450).frames.get('3')!.width, 900, 'one screen fills the open phone')
 }
 // Two quick ⌘Z presses run their steps in order; run at once, the slower first step's save landed last.
 {

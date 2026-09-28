@@ -5,7 +5,7 @@ import type { Device } from '@/lib/devices'
 // PRV-01: a phone drawn by us at its real size — bezel, Dynamic Island or punch-hole camera, status bar and
 // home indicator — laid over the app's screen the way the hardware and the OS are. `children` are drawn at the
 // device's own CSS viewport (w × h); the whole thing is scaled by `scale` to fit the stage.
-export function DeviceFrame(props: { device: Device; scale: number; dark: boolean; children: ReactNode }) {
+export function DeviceFrame(props: { device: Device; scale: number; dark: boolean; children: ReactNode; /** A foldable shown folded: only the right half (the cover) is in view. */ cover?: boolean; /** A half is swinging: nothing is clipped to the screen. */ moving?: boolean; /** Two panes: a handle sits in the gap between them. */ split?: boolean }) {
   const d = props.device
   const ink = props.dark ? '#fff' : '#000'
   const outerW = d.w + d.bezel * 2
@@ -23,12 +23,14 @@ export function DeviceFrame(props: { device: Device; scale: number; dark: boolea
         <span aria-hidden className="absolute rounded-l-sm bg-[#2a2826]" style={{ left: -3, top: 180, width: 3, height: 60 }} />
         <span aria-hidden className="absolute rounded-l-sm bg-[#2a2826]" style={{ left: -3, top: 250, width: 3, height: 60 }} />
         <span aria-hidden className="absolute rounded-r-sm bg-[#2a2826]" style={{ right: -3, top: 220, width: 3, height: 90 }} />
-        <div className="relative overflow-hidden bg-black" style={{ width: d.w, height: d.h, borderRadius: d.radius }}>
+        {/* A foldable's hinge shows as two dark tabs in the frame, top and bottom. */}
+        {wide && !props.cover && ['top', 'bottom'].map((edge) => <span key={edge} aria-hidden className="absolute left-1/2 -translate-x-1/2 rounded-sm bg-[#0b0b0a]" style={{ [edge]: 1, width: 26, height: d.bezel - 3 }} />)}
+        <div className={`relative bg-black ${props.moving ? '' : 'overflow-hidden'}`} style={{ width: d.w, height: d.h, borderRadius: d.radius }}>
           {props.children}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-30" style={{ height: d.top, color: ink }}>
             {wide ? (
               <>
-                <span className="absolute font-semibold tabular-nums" style={{ left: 28, top: 14, fontSize: 15 }}>9:41</span>
+                <span className="absolute font-semibold tabular-nums" style={{ left: props.cover ? d.w / 2 + 24 : 28, top: 14, fontSize: 15 }}>9:41</span>
                 <span className="absolute flex items-center gap-1.5" style={{ right: 24, top: 15 }}>
                   <Signal className="size-[15px]" strokeWidth={2.6} />
                   <Wifi className="size-[15px]" strokeWidth={2.6} />
@@ -58,9 +60,9 @@ export function DeviceFrame(props: { device: Device; scale: number; dark: boolea
               </>
             )}
           </div>
-          {wide && <span aria-hidden className="pointer-events-none absolute inset-y-0 left-1/2 z-30 w-px -translate-x-1/2" style={{ background: 'linear-gradient(to bottom, transparent, rgb(128 128 128 / 35%) 12%, rgb(128 128 128 / 35%) 88%, transparent)' }} />}
+          {props.split && <span aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 z-30 -translate-1/2 rounded-full bg-[#8a8680]" style={{ width: 4, height: 44 }} />}
           {/* The home indicator (iOS) or the gesture bar (Android). */}
-          <span aria-hidden className="pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 rounded-full" style={{ bottom: d.platform === 'ios' ? 8 : 7, width: d.platform === 'ios' ? 140 : 110, height: d.platform === 'ios' ? 5 : 4, background: ink, opacity: 0.85 }} />
+          <span aria-hidden className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-full" style={{ left: props.cover ? '75%' : '50%', bottom: d.platform === 'ios' ? 8 : 7, width: d.platform === 'ios' ? 140 : 110, height: d.platform === 'ios' ? 5 : 4, background: ink, opacity: 0.85 }} />
         </div>
       </div>
     </div>
