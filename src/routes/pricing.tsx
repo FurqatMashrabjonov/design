@@ -25,7 +25,7 @@ const bestSaving = Math.max(...PLANS.map((p) => Math.floor((1 - p.yearly / p.mon
 function Pricing() {
   const [yearly, setYearly] = useState(false)
   const tiers = [
-    { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', 'Every design system', 'Clickable preview'] },
+    { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', 'Light and dark', 'Clickable preview'] },
     ...PLANS.map((p) => ({
       id: p.id,
       name: p.name,
@@ -33,7 +33,7 @@ function Pricing() {
       note: yearly ? `billed $${p.yearly * 12} a year` : 'billed monthly',
       credits: `${p.credits.toLocaleString('en')} credits a month`,
       apps: appsFor(p.credits),
-      features: [p.projects, 'Figma and code export', 'Extra credit packs'],
+      features: [p.projects, 'Extra credit packs'],
     })),
   ]
   return (

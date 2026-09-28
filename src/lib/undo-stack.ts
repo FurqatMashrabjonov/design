@@ -13,21 +13,34 @@ export class UndoStack {
     this.future = []
   }
 
-  /** Resolves false when there was nothing to undo. A step that fails is dropped, and the error is the caller's. */
-  async undo(): Promise<boolean> {
-    const step = this.past.pop()
-    if (!step) return false
-    await step.undo()
-    this.future.push(step)
-    return true
+  // Steps run one after another: two quick ⌘Z presses used to run both steps at once, and whichever save
+  // landed last won — the other step was lost (seen with two theme changes).
+  private queue: Promise<unknown> = Promise.resolve()
+  private run(fn: () => Promise<boolean>): Promise<boolean> {
+    const next = this.queue.then(fn, fn)
+    this.queue = next.catch(() => {})
+    return next
   }
 
-  async redo(): Promise<boolean> {
-    const step = this.future.pop()
-    if (!step) return false
-    await step.redo()
-    this.past.push(step)
-    return true
+  /** Resolves false when there was nothing to undo. A step that fails is dropped, and the error is the caller's. */
+  undo(): Promise<boolean> {
+    return this.run(async () => {
+      const step = this.past.pop()
+      if (!step) return false
+      await step.undo()
+      this.future.push(step)
+      return true
+    })
+  }
+
+  redo(): Promise<boolean> {
+    return this.run(async () => {
+      const step = this.future.pop()
+      if (!step) return false
+      await step.redo()
+      this.past.push(step)
+      return true
+    })
   }
 }
 

@@ -1,27 +1,17 @@
-// GQ-08: a visual judge for an eval run. The deterministic metrics cannot see taste: a run can get
-// lint-clean and still look generic. This renders every screen (with its project's theme, as users
-// see it), shows each app's screens to a vision model with a fixed rubric, and — with --vs — asks
-// which of two runs is better for the same brief, in random order.
+// A visual judge for an eval run (eval/run.ts). Metrics cannot see taste: this shows each app's screenshots
+// to a vision model with a fixed rubric, and — with --vs — asks which of two runs is better for the same brief.
 //
-//   node --import ./eval/alias-hook.mjs eval/judge.ts <run-label> [--vs <other-label>|best] [--concurrency 3] [--best]
+//   node --import ./scripts/alias-hook.mjs eval/judge.ts <run-label> [--vs <other-label>|best] [--concurrency 3] [--best]
 //
-// EVAL-05: a pairwise verdict is asked twice, once in each order, and counts only when both agree —
-// a judge prefers whichever set it read first or last, and one sample per brief is mostly that bias.
-// `--vs best` compares with the run recorded in eval/out/BEST; `--best` records this run there when
-// it did not lose. Scores are also shown per dimension against the other run's own judge.json.
-//
-// Local only: it runs on the developer's Claude Code login (`claude -p`), like LLM_PROVIDER=claude-cli.
-// Scores are written to eval/out/<run>/judge.json. Judge runs are compared only with judge runs.
-import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+// A pairwise verdict is asked twice, once in each order, and counts only when both agree — a judge prefers
+// whichever set it read first or last. `--vs best` compares with eval/out/BEST; `--best` records this run
+// there when it did not lose. Local only: it runs on the developer's Claude Code login (`claude -p`).
+import { spawn } from 'node:child_process'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
-import Database from 'better-sqlite3'
-import { applyThemeOverride, parseTheme } from '../src/lib/theme-override.ts'
-import type { BriefResult } from './sheet.ts'
 
-const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const OUT_ROOT = resolve('eval/out')
 
 export const RUBRIC = `You are a senior product designer judging generated mobile app screens against the bar of the best work on Dribbble and in shipped top-100 apps. Be strict and consistent: "competent but generic" is a 3, not a 4.
@@ -85,38 +75,18 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>): Prom
   return out
 }
 
-/** Screenshots of a run's screens, themed as the product renders them. Headless Chrome on macOS will
- *  not open a window narrower than 500px, so each 390px screen is framed on a grey canvas. */
-function shoot(label: string): { brief: BriefResult; shots: string[] }[] {
+/** Each brief's screenshots (eval/run.ts wrote them beside metrics.json), in canvas order. */
+function shoot(label: string): { brief: { id: string; brief: string }; shots: string[] }[] {
   const dir = join(OUT_ROOT, label)
-  const results: BriefResult[] = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'))
-  // projects.json since INF-10 (Postgres); runs before it kept an SQLite eval.db.
-  const saved: { name: string; theme: string | null }[] | null = existsSync(join(dir, 'projects.json')) ? JSON.parse(readFileSync(join(dir, 'projects.json'), 'utf8')) : null
-  const db = !saved && existsSync(join(dir, 'eval.db')) ? new Database(join(dir, 'eval.db'), { readonly: true }) : null
-  const shots = join(dir, 'judge')
-  mkdirSync(shots, { recursive: true })
-  return results.map((r) => {
-    const themeJson = saved ? saved.find((p) => p.name === (r.appName ?? ''))?.theme : (db?.prepare('SELECT theme FROM projects WHERE name = ?').get(r.appName ?? '') as { theme?: string } | undefined)?.theme
-    const theme = parseTheme(themeJson ?? null)
-    const files = r.screens.map((s, i) => {
-      const base = `${r.id}-${i}`
-      const png = join(shots, `${base}.png`)
-      if (!existsSync(png)) {
-        writeFileSync(join(shots, `${base}.html`), applyThemeOverride(readFileSync(join(dir, s.file), 'utf8'), theme))
-        writeFileSync(join(shots, `${base}.frame.html`), `<body style="margin:0;background:#d9d9de"><iframe src="${base}.html" sandbox="allow-scripts" style="display:block;margin:0 auto;width:390px;height:844px;border:0;background:#fff"></iframe></body>`)
-        execFileSync(CHROME, ['--headless=new', '--hide-scrollbars', '--window-size=500,844', '--virtual-time-budget=10000', `--screenshot=${png}`, pathToFileURL(join(shots, `${base}.frame.html`)).href], { stdio: 'ignore', timeout: 60000 })
-      }
-      return png
-    })
-    return { brief: r, shots: files }
-  })
+  const results = JSON.parse(readFileSync(join(dir, 'metrics.json'), 'utf8')).results as { id: string; brief: string; screens: { slug: string; built: boolean }[] }[]
+  return results.map((r) => ({ brief: r, shots: r.screens.filter((s) => s.built && existsSync(join(dir, r.id, `${s.slug}.png`))).map((s) => join(dir, r.id, `${s.slug}.png`)) }))
 }
 
 const mean = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 100) / 100 : 0)
 
 async function main() {
   const { values: args, positionals } = parseArgs({ allowPositionals: true, options: { vs: { type: 'string' }, concurrency: { type: 'string', default: '3' }, best: { type: 'boolean', default: false } } })
-  const label = positionals[0] ?? readdirSync(OUT_ROOT).sort().at(-1)!
+  const label = positionals[0]!
   const bestFile = join(OUT_ROOT, 'BEST')
   if (args.vs === 'best') {
     if (!existsSync(bestFile)) throw new Error('No eval/out/BEST yet: judge a run with --best first')
@@ -129,8 +99,8 @@ async function main() {
 
   const judged = await pool(runs, n, async ({ brief, shots }) => {
     if (!shots.length) return null
-    const prompt = `Brief: ${brief.brief}\n\nRead each screenshot below (one phone screen each, on a grey canvas — ignore the canvas), then score them.\n${shots.map((p) => `- ${p}`).join('\n')}`
-    const j = parseJudgement<Omit<BriefJudgement, 'id'>>(await ask(RUBRIC, prompt, join(OUT_ROOT, label, 'judge')).catch(() => ''))
+    const prompt = `Brief: ${brief.brief}\n\nRead each screenshot below (one phone screen each), then score them.\n${shots.map((p) => `- ${p}`).join('\n')}`
+    const j = parseJudgement<Omit<BriefJudgement, 'id'>>(await ask(RUBRIC, prompt, join(OUT_ROOT, label)).catch(() => ''))
     if (!j) console.warn(`[judge] ${brief.id}: no usable reply`)
     else console.log(`[judge] ${brief.id}: overall ${mean(j.screens.map((s) => s.overall))}, coherence ${j.coherence}`)
     return j ? { id: brief.id, ...j } : null

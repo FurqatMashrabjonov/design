@@ -36,6 +36,7 @@ export const Screen = {
     id: string
     projectId: string
     name: string
+    slug?: string | null
     prompt: string
     html: string
     x: number

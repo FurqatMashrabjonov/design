@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Link2, Pencil } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Link2, Pencil, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { getProject, getSession } from '../server/fns'
 import { frameSize } from '../canvas'
-import { orderScreens, screenByName, screenForBack, screenForTab, withPreviewBridge } from '@/lib/preview-bridge'
-import { applyThemeOverride, parseTheme } from '@/lib/theme-override'
+import { GeneratingVeil, parseNav, postLook, screenForNav, screenSrc } from '../ScreenFrame'
+import { parseAppTheme } from '@/lib/app-theme'
+import { AppLookSwitch } from '@/components/canvas/ThemePanel'
 import { Button, buttonVariants } from '@/components/ui/button'
-import { PhoneFrame } from '@/components/PhoneFrame'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { DeviceFrame } from '@/components/DeviceFrame'
+import { DEVICES, DEFAULT_DEVICE, deviceById, type Device } from '@/lib/devices'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export const Route = createFileRoute('/preview/$projectId')({
@@ -28,13 +30,70 @@ export const Route = createFileRoute('/preview/$projectId')({
 // white flash per tap. Every screen keeps its own iframe, mounted once and kept, so a tap only changes
 // which one is shown — the page inside never reloads, and its Tailwind/icon scripts run once.
 type Motion = 'push' | 'pop' | 'fade'
+const DEVICE_KEY = 'od:preview-device'
 
 function PreviewPage() {
   const { project, screens: rows } = Route.useLoaderData()
   const search = Route.useSearch()
   const frames = useRef(new Map<string, HTMLIFrameElement>())
 
-  const screens = useMemo(() => orderScreens(rows.filter((sc) => sc.html)), [rows])
+  // Canvas order is plan order: left to right.
+  const screens = useMemo(() => rows.filter((sc) => sc.html).sort((a, z) => a.x - z.x || a.y - z.y), [rows])
+  // The app's own look; the stage around the phone follows the studio's light/dark.
+  // Show the prototype as iOS or Android, light or dark, without changing the project (the canvas saves it).
+  const saved = useMemo(() => parseAppTheme(project.theme), [project.theme])
+  const [theme, setTheme] = useState(saved)
+  // Screens whose page has loaded; the one on show wears the veil until then.
+  const [loaded, setLoaded] = useState<Set<string>>(() => new Set())
+  const loadedRef = useRef(loaded)
+  loadedRef.current = loaded
+  // A screen has drawn itself when its page reports a height (the kit's first od:height). That — not the
+  // iframe's load event, which can fire before this page hydrates — clears the veil and sends the look.
+  useEffect(() => {
+    function onDrawn(e: MessageEvent) {
+      if (e.data?.type !== 'od:height') return
+      for (const [id, f] of frames.current) {
+        if (f.contentWindow !== e.source) continue
+        postLook(f.contentWindow, lookRef.current.theme, lookRef.current.insets)
+        setLoaded((l) => (l.has(id) ? l : new Set(l).add(id)))
+      }
+    }
+    window.addEventListener('message', onDrawn)
+    // Ask every mounted screen that has not answered yet, in case its report came before this listener.
+    const ask = setInterval(() => {
+      for (const [id, f] of frames.current) if (!loadedRef.current.has(id)) f.contentWindow?.postMessage({ type: 'od:measure' }, '*')
+    }, 1000)
+    return () => {
+      window.removeEventListener('message', onDrawn)
+      clearInterval(ask)
+    }
+  }, [])
+
+  // PRV-01: the phone it is shown on — remembered per viewer; an Android phone shows the app as Material.
+  const [device, setDevice] = useState<Device>(DEFAULT_DEVICE)
+  useEffect(() => {
+    try {
+      const saved = deviceById(localStorage.getItem(DEVICE_KEY))
+      setDevice(saved)
+      setTheme((t) => ({ ...t, platform: saved.platform }))
+    } catch {}
+  }, [])
+  function chooseDevice(d: Device) {
+    setDevice(d)
+    setTheme((t) => ({ ...t, platform: d.platform }))
+    try {
+      localStorage.setItem(DEVICE_KEY, d.id)
+    } catch {}
+  }
+  const insets = { top: device.top, bottom: device.bottom }
+  // A switch re-renders every mounted screen in place (od:look); none of them reloads.
+  const lookRef = useRef({ theme, insets })
+  lookRef.current = { theme, insets }
+  useEffect(() => {
+    for (const f of frames.current.values()) postLook(f.contentWindow, theme, insets)
+  }, [theme, device]) // eslint-disable-line react-hooks/exhaustive-deps
+  // What `pop` goes back to: the screens this session pushed from.
+  const back = useRef<string[]>([])
   const [shownId, setShownId] = useState(() => screens.find((s) => s.id === search.s)?.id ?? screens[0]?.id)
   const currentIndex = Math.max(0, screens.findIndex((s) => s.id === shownId))
   const current = screens[currentIndex]
@@ -74,23 +133,22 @@ function PreviewPage() {
   )
   const warmAll = useCallback(() => setMounted((m) => (m.size >= screens.length ? m : new Set(screens.map((s) => s.id)))), [screens])
 
-  // The shell inside the frame reports tab and back taps; only trust our own iframe.
+  // The kit's useNav posts od:nav (runtime/kit/nav.jsx); only the frame on show may navigate.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      // Every frame is live; only the one on show may navigate.
-      if (!shownId || e.source !== frames.current.get(shownId)?.contentWindow || !e.data) return
-      if (e.data.type === 'od:navigate_tab') {
-        const target = screenForTab(screens, e.data.tabId)
-        if (target) goTo(target.id, 'fade')
-        else toast.info(`No screen was designed for the "${e.data.tabId}" tab`)
-      } else if (e.data.type === 'od:navigate_back') {
-        const target = screenForBack(screens, e.data.parentName)
-        if (target) goTo(target.id, 'pop')
-      } else if (e.data.type === 'od:navigate_link' && typeof e.data.name === 'string') {
-        // Links to screens that were never designed stay quiet: most rows in a list have no screen behind them.
-        const target = screenByName(screens, e.data.name)
-        if (target) goTo(target.id, 'push')
+      if (!shownId || e.source !== frames.current.get(shownId)?.contentWindow) return
+      const nav = parseNav(e.data)
+      if (!nav) return
+      if (nav.action === 'pop') {
+        const to = back.current.pop()
+        if (to) goTo(to, 'pop')
+        return
       }
+      const target = screenForNav(screens, nav.id!)
+      if (!target) return void toast.info('That screen has not been designed yet')
+      if (nav.action === 'push') back.current.push(shownId)
+      else back.current = []
+      goTo(target.id, nav.action === 'push' ? 'push' : 'fade')
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -105,17 +163,14 @@ function PreviewPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [step])
 
-  const native = frameSize(project.device)
-  const bezel = 10
+  const native = { width: device.w, height: device.h }
+  const bezel = device.bezel
   // Leave room for the arrows on the sides and a caption below.
-  const availH = Math.max(240, viewport.h - 130)
+  // Room for the top controls (~72px) and the caption below, so the phone never runs under either.
+  const availH = Math.max(240, viewport.h - 180)
   const availW = Math.max(240, viewport.w - 240)
   const scale = Math.min(1, availH / (native.height + bezel * 2), availW / (native.width + bezel * 2))
-  const frameW = native.width * scale
 
-  // The project's own theme override — distinct from the studio's light/dark, which the stage follows.
-  const appTheme = useMemo(() => parseTheme(project.theme), [project.theme])
-  const docs = useMemo(() => new Map(screens.map((s) => [s.id, withPreviewBridge(applyThemeOverride(s.html, appTheme))])), [screens, appTheme])
 
   async function copyLink() {
     try {
@@ -151,8 +206,27 @@ function PreviewPage() {
       >
         <ChevronLeft /> {project.name || 'Editor'}
       </Link>
+      {/* The app's platform and light/dark lead the cluster; the stage itself follows the studio's own
+          theme (set in the studio), so there is one moon here and it is the app's. */}
       <div className="absolute right-5 top-5 flex items-center gap-0.5 rounded-full bg-card/85 p-1 shadow-2 ring-1 ring-border backdrop-blur">
-        <ThemeToggle className="rounded-full" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="rounded-full font-medium" title="Show the app on another phone">
+              <Smartphone /> {device.name} <ChevronDown className="size-3.5 opacity-60" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60">
+            {DEVICES.map((d) => (
+              <DropdownMenuItem key={d.id} onSelect={() => chooseDevice(d)} className="justify-between">
+                <span className="flex items-center gap-2">{d.id === device.id ? <Check className="size-4" /> : <span className="size-4" />}{d.name}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{d.w}×{d.h}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+        <AppLookSwitch theme={theme} onChange={setTheme} />
+        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
         <Tip label="Copy preview link">
           <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground" aria-label="Copy preview link" onClick={copyLink}>
             <Link2 />
@@ -175,8 +249,8 @@ function PreviewPage() {
           <ChevronLeft className="size-5" />
         </Arrow>
 
-        <PhoneFrame width={frameW}>
-          <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+        <DeviceFrame device={device} scale={scale} dark={theme.dark}>
+          <div className="od-preview-stage" data-motion={motion} style={{ width: native.width, height: native.height }}>
             {screens.filter((s) => mounted.has(s.id)).map((s) => (
               <iframe
                 key={s.id}
@@ -185,17 +259,22 @@ function PreviewPage() {
                   else frames.current.delete(s.id)
                 }}
                 title={s.name}
-                srcDoc={docs.get(s.id)}
+                src={screenSrc(s.id, s.html)}
                 sandbox="allow-scripts"
-                onLoad={s.id === shownId ? warmAll : undefined}
+                onLoad={(e) => {
+                  postLook(e.currentTarget.contentWindow, lookRef.current.theme, lookRef.current.insets)
+                  setLoaded((l) => (l.has(s.id) ? l : new Set(l).add(s.id)))
+                  if (s.id === shownId) warmAll()
+                }}
                 data-state={s.id === shownId ? 'shown' : s.id === leaving?.id ? 'leaving' : 'hidden'}
                 onAnimationEnd={s.id === leaving?.id ? () => setLeaving(null) : undefined}
                 aria-hidden={s.id !== shownId}
                 tabIndex={s.id === shownId ? 0 : -1}
               />
             ))}
+            <GeneratingVeil show={!shownId || !loaded.has(shownId)} />
           </div>
-        </PhoneFrame>
+        </DeviceFrame>
 
         <Arrow label="Next screen" disabled={currentIndex === screens.length - 1} onClick={() => step(1)}>
           <ChevronRight className="size-5" />
@@ -204,6 +283,8 @@ function PreviewPage() {
 
       <p className="relative mt-5 text-xs tabular-nums text-muted-foreground">
         {currentIndex + 1} / {screens.length} · <span className="text-foreground">{current.name}</span>
+        {/* Pexels' API guidelines ask for a link back wherever its photos are shown. */}
+        {' · '}<a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Photos by Pexels</a>
       </p>
     </div>
   )

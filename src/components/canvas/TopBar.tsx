@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Download, Play, Trash2, ChevronLeft, Share2, FileCode2, FolderArchive, ClipboardCopy, PenTool, Moon, Sun, Menu, Pencil, Keyboard } from 'lucide-react'
+import { Download, Play, Trash2, ChevronLeft, Share2, Moon, Sun, Menu, Pencil, Keyboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { AccountMenu } from '@/components/AccountMenu'
@@ -23,20 +23,16 @@ export function TopBar(props: {
   /** Renames the project from the breadcrumb; the new name is shown once it resolves. */
   onRename: (name: string) => Promise<void>
   device: string
-  designSystem: string
-  /** The selected screen, which the per-screen export items act on; null disables them. */
-  screenName: string | null
-  onDownloadScreen: () => void
-  onCopyScreenHtml: () => void
-  /** FIG-06: every screen (or the selected ones) as Figma layers. */
-  onCopyFigma: () => void
-  onDownloadApp: () => void
   onShare: () => void
   onDeleteProject: () => Promise<void>
   onPreview: () => void
   /** False until the project has a drawn screen. */
   hasScreens: boolean
   onShortcuts?: () => void
+  /** The app's platform and light/dark switch (AppLookSwitch), its own pill. */
+  look?: ReactNode
+  /** Export is a headline feature: a labelled primary button in the top bar, its formats in a menu under it. */
+  exports?: { label: string; hint: string; icon: ReactNode; disabled?: boolean; onSelect: () => void }[]
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -82,12 +78,6 @@ export function TopBar(props: {
             <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onShare}>
               <Share2 /> Copy preview link
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onDownloadApp}>
-              <FolderArchive /> Download the app (.zip)
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onCopyFigma}>
-              <PenTool /> Copy all screens to Figma
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={toggleDark}>
               {dark ? <Sun /> : <Moon />} {dark ? 'Light mode' : 'Dark mode'}
@@ -98,7 +88,7 @@ export function TopBar(props: {
               </DropdownMenuItem>
             )}
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              <span className="capitalize">{props.designSystem.replace(/-/g, ' ')}</span> · <span className="capitalize">{props.device}</span>
+              Konsta UI · iOS
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
@@ -128,6 +118,7 @@ export function TopBar(props: {
       </div>
 
       <div className="pointer-events-auto flex shrink-0 items-center gap-1.5">
+        {props.look && <div className={pill}>{props.look}</div>}
         <div className={pill}>
           <Button variant="ghost" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
             <Play /> Preview
@@ -135,30 +126,26 @@ export function TopBar(props: {
           <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
             <Share2 /> Share
           </Button>
-          {/* Works with nothing selected: the whole app is always exportable. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" disabled={!props.hasScreens} className="font-semibold">
-                <Download /> Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuItem onSelect={props.onDownloadApp}>
-                <FolderArchive /> Whole app (.zip)
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={props.onCopyFigma}>
-                <PenTool /> Copy all screens to Figma
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">{props.screenName ?? 'Select a screen for these'}</DropdownMenuLabel>
-              <DropdownMenuItem disabled={!props.screenName} onSelect={props.onDownloadScreen}>
-                <FileCode2 /> This screen (.html)
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={!props.screenName} onSelect={props.onCopyScreenHtml}>
-                <ClipboardCopy /> Copy HTML
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {props.exports && props.exports.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" disabled={!props.hasScreens} className="font-semibold">
+                  <Download /> Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                {props.exports.map((x) => (
+                  <DropdownMenuItem key={x.label} disabled={x.disabled} onSelect={x.onSelect} className="items-start gap-2.5 py-2">
+                    <span className="mt-0.5 [&_svg]:size-4">{x.icon}</span>
+                    <span className="flex flex-col">
+                      <span className="font-medium">{x.label}</span>
+                      <span className="text-xs text-muted-foreground">{x.hint}</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
         <div className={cn(pill, 'gap-1.5 pr-1.5 pl-2.5 [&>div>span]:border-transparent')}>
           <div className="[&>span:not(.text-destructive)]:text-muted-foreground">

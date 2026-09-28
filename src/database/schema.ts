@@ -34,7 +34,10 @@ export const screens = pgTable('screens', {
     .notNull()
     .references(() => projects.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
+  // KON-00: the id the plan gave the screen; a component opens it with nav.push(slug).
+  slug: text('slug'),
   prompt: text('prompt').notNull(),
+  // The screen's source: a Konsta JSX component (KON-00); older projects hold an HTML document.
   html: text('html').notNull(),
   x: doublePrecision('x').notNull().default(0),
   y: doublePrecision('y').notNull().default(0),

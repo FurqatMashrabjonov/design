@@ -4,6 +4,175 @@ Newest first. One entry per completed change: what changed, files touched, how i
 Entries before 2026-09-19 were backfilled from git history and have no verification notes.
 
 
+## 2026-09-28 (8)
+
+### PRV-01 Preview on a real device: iPhone 18 Pro, iPhone 18 Pro Max, Galaxy S26 Ultra
+
+- `src/lib/devices.ts`: three devices, each with its CSS viewport, corner radius, bezel, camera cutout
+  (island / punch-hole) and safe areas (status bar and home indicator).
+- `src/components/DeviceFrame.tsx`: a phone frame we draw ourselves (no vendor artwork), with side keys, a
+  status bar (iOS 9:41 + Dynamic Island, Android + punch-hole) and a home indicator or gesture bar. It follows
+  light/dark.
+- Kit: `od:look` now carries `insets` (`parseInsets` validates them), and `safeAreaStyle` sets
+  `--k-safe-area-top/bottom`, so Konsta's Navbar and Tabbar keep clear of the status bar and home indicator.
+  `postLook(w, theme, insets?)`.
+- Preview: a device picker next to iOS/Android and light/dark (saved in localStorage as `od:preview-device`).
+  Picking an Android phone switches the look to Material. The screen is drawn at the device's own width.
+  A frame counts as drawn when its first `od:height` arrives, and frames that are not drawn yet get an
+  `od:measure` ping every second, so the veil always clears.
+- Files: `src/lib/devices.ts`, `src/components/DeviceFrame.tsx`, `runtime/kit.jsx`, `src/ScreenFrame.tsx`,
+  `src/routes/preview.$projectId.tsx`.
+- Verified in the browser on NutriLens:
+  - Galaxy S26 Ultra: Welcome screen, then Today's Diary (a tab screen) — the navbar sits below the status bar,
+    the tab bar sits above the gesture bar, and the veil clears on frames shown later.
+  - iPhone 18 Pro Max in dark mode.
+  - `npm run check` and `tsc` are clean.
+
+## 2026-09-28 (7)
+
+### CODE-03 View code, FIG-10/11 Copy to Figma, CODE-02 HTML prototype — the Export menu is complete
+
+- **CODE-03**: `CodeDialog` + `getScreenCode` — ekran kodi eksportdagi bilan aynan bir xil; frame toolbar (`</>`),
+  context menu va Export menyusidan.
+- **FIG-10**: eski serializer git'dan qaytdi va kit ichiga ko'chdi (`od:serialize`); qatlam nomlari Konsta
+  klasslaridan va kit belgilaridan (`data-od-photo`, `data-od-kit`): Navbar, Tab bar, Row · …, Photo · …,
+  Icon · …, Button · …; `.k-page` to'liq balandligi; yuklanayotgan (opacity 0) foto ham qatlam bo'ladi.
+- **FIG-11**: `figma-svg.ts` + `figma-copy.ts` qaytdi; "Copy to Figma" frame toolbar'ida, context menu'da va Export
+  menyusida (tanlanganlar yoki butun ilova, canvas'dagi joylashuv bilan, fotolar ichida).
+- **CODE-02**: `exportHtml` — React loyihasi serverda Vite bilan bitta HTML'ga (JS/CSS ichida), ~0.9 s, ~480 KB;
+  `?format=html`, CSP sandbox. Vite + plaginlar production dependency'ga ko'chdi. Telefon ramkasida Konsta App
+  ramka balandligida.
+- Brend belgilari (`components/BrandMarks.tsx`): "Copy to Figma" — Figma belgisi (Export menyusi, frame toolbar,
+  context menu), "React project" — React atomi; ikkalasi asl rangda, 16px; HTML va kod bandlari monoxrom qoldi.
+- Topilgan va tuzatilgan: frame balandlik xabari yo'qolsa veil qotib qolardi → `od:measure` so'rovi;
+  runtime rebuild paytida thumb 500 qaytarardi va yangi kit eksportlari restart'siz tanilmasdi → mtime bo'yicha.
+- `eval/figma.check.ts` (yangi): eval ekranlarini headless Chrome'da seriallaydi va SVG yozadi.
+
+Tekshiruv: tsc toza; `npm run check` o'tdi (HTML eksport testi qo'shildi). `eval/figma.check.ts photos-v1`:
+32/32 ekran seriallandi, ~30 matn va ~15 nomlangan qatlam/ekran, 44% frame flex, fotolar daraxtda; SVG ekranga
+vizual mos. Brauzer: "Copy all screens to Figma" → "8 screens, 234 KB, photos included"; HTML fayl brauzerda ochildi.
+Figma'ga haqiqiy paste qo'lda tekshirilmagan (Figma kerak).
+
+## 2026-09-28 (6)
+
+### CODE-01: export the app as a React + Vite project; Export button in the top bar
+
+- `ExportService.exportReact` + `GET /api/export/$projectId` (egasi yoki admin; tarif chegarasi serverda, 402 →
+  upgrade dialog): ekranlar JSX'i (unutilgan importlar yozilgan, `ListItem` kit'dan), kit, navigator
+  (`runtime/export/main.jsx`: push/pop animatsiya, tablar), `app.json` (ekranlar, tablar, tema), `photos.json`,
+  Konsta stylesheet (accent = `--color-brand-primary`), README. Kompyuterda telefon ramkasida ochiladi.
+- Kompilyator: `completeImports` alohida funksiya bo'ldi — kompilyator ham, eksport ham shundan foydalanadi.
+- Kit `useNav`: context'da navigator bo'lsa o'shani ishlatadi (eksport), aks holda host'ga xabar (studio).
+- Top bar: yozuvli, asosiy rangdagi **Export** tugmasi, menyuda formatlar ("React project (.zip)").
+- `src/lib/zip.ts` git'dan qaytarildi.
+
+Tekshiruv: `npx tsc --noEmit` toza; `npm run check` o'tdi — yangi test eksportni Vite bilan build qiladi, accent'ni
+CSS'da tekshiradi. Qo'lda: NutriLens eksporti build bo'ldi va brauzerda ochildi — onboarding → Skip → tab,
+qator → detail → orqaga, bitta chevron, fotolar; zip route 200, 73 KB.
+
+## 2026-09-28 (5)
+
+### No reload on a theme switch; a generating veil over frames
+
+- Tema almashganda frame'lar endi qayta yuklanmaydi: `ScreenFrame` va preview temani ishlab turgan sahifaga
+  `od:look` xabari bilan yuboradi (`postLook`), kit'ning `mount` joyida qayta chizadi (iOS↔Android, dark, accent).
+  Frame URL'da endi tema yo'q (`screenSrc(id, html)`).
+- `GeneratingVeil` (foydalanuvchi so'rovi bilan qayta qilindi): nur va yorliq yo'q — macOS Image Playground kabi
+  qalin blur, tayyor bo'lganda qalin → yengil → tiniq (~1.4 s; uch blur qatlami navbat bilan so'nadi, faqat opacity).
+  Generatsiya paytida, frame birinchi chizilguncha va rejalashtirilgan slotlarda. Reduced-motion'da darhol.
+
+- Preview: iOS/Android + ☀/☾ switch o'ng yuqoridagi guruhga ko'chdi (telefon ustiga tushardi), studio temasining
+  ikkinchi oy ikonkasi olib tashlandi (chalkash edi), telefon tepada va pastda joy qoldiradi, ekran yuklanguncha veil.
+
+Tekshiruv: tsc toza, `npm run check` o'tdi. Brauzer: iOS→Android almashtirishda 8 frame'dan 0 tasi qayta yuklandi,
+0.5 s ichida hammasi yangi ko'rinishda; veil 33% zoom'da ham aniq ko'rinadi.
+
+## 2026-09-28 (4)
+
+### KON-11: app theme — iOS / Android (Material), light / dark, accent; separate from the studio theme
+
+- `lib/app-theme.ts` (yangi): `{ accent, dark, platform }`, validatsiya, frame URL query. `projects.theme`da saqlanadi.
+- Runtime: `mount` Konsta `App theme`ni ios/material qiladi va accent'dan Konsta'ning o'z rang matematikasi bilan
+  `--k-color-*` tokenlarini hisoblaydi (iOS tint/shade; Android uchun Material You sxemasi — alohida 21 KB chunk).
+- Canvas: o'ng rail'da Theme paneli (`ThemePanel`) — Platform iOS/Android, Appearance Light/Dark, 12 accent + custom;
+  debounce bilan saqlanadi, undo bilan qaytadi. Frame va preview endi studio dark'iga emas, ilovaning o'z temasiga
+  qaraydi (`useStudioDark` olib tashlandi). Thumb route `a`/`p`/`dark` query'ni validatsiya qiladi.
+- Platforma (iOS | Android) va Light/Dark top bar'dagi alohida pill'ga chiqarildi (`AppLookSwitch`); rail'dagi panel
+  faqat accent (Colour). Preview'da ham xuddi shu switch (saqlamaydi, faqat ko'rsatadi).
+- Bug: tez-tez bosilgan ⌘Z qadamlarni parallel bajarib, sekinroq saqlash g'olib chiqardi — `UndoStack` endi navbat.
+
+Tekshiruv: `npx tsc --noEmit` toza, `npm run check` o'tdi (app-theme validatsiyasi, ketma-ket undo/redo testlari).
+Brauzer (NutriLens): Android + Dark + yashil accent hamma frame'da darhol; saqlandi; ikki marta tez ⌘Z ikkala
+qadamni tartib bilan qaytardi; studio dark bo'lganda ilova light qoldi.
+
+## 2026-09-28 (3)
+
+### KON-12: real photos (Pexels) + frames as tall as their content
+
+- `PhotoService` (yangi): ekran manbasidan `<Photo q>` va `photo:` so'rovlari AST orqali olinadi, saqlashda Pexels'dan
+  `image_cache`ga to'ldiriladi; sahifa faqat keshni o'qiydi. Kit: `Photo`, `usePhotos`; `mount` `photos` oladi.
+  SKILL/KIT/planner: rasm bo'ladigan narsa = haqiqiy foto, data'da `photo` so'rovi. Preview'da "Photos by Pexels".
+  Eval: `photos` metrikasi, `eval/photo-cache.json` (yangi DB'lar orasida kesh).
+- Frame balandligi: kit `.k-page` scroll balandligini `od:height` bilan yuboradi; `ScreenFrame` o'sadi (har versiya
+  844'dan o'lchanadi), canvas `screens.height`ga saqlaydi (`saveScreenHeight` qaytdi, 844–5000 clamp).
+
+Tekshiruv: `npx tsc --noEmit` toza, `npm run check` o'tdi (photoQueries, cachedPhotos testlari). Eval photos-v1
+(food, shop, travel, social): 54 so'rovning 54 tasiga foto topildi, har ekranda 1.19 foto, build 100%, crash 0.
+Brauzer: NutriLens'da chat orqali "kamera — haqiqiy taom fotosi" → v2 foto bilan; canvas'da frame'lar kontent
+balandligida (Profile, Food Analysis uzunroq).
+
+## 2026-09-28 (2)
+
+### KON-05: generation upgrade (colour, emoji, onboarding, examples) + Konsta eval and judge; HTML remnants removed
+
+- HTML qoldiqlari o'chirildi: `public/showcase`, landing'dagi AppMap/Examples/Features bo'limlari va dashboard'dagi
+  "ideas" bo'limi (eski HTML natijalari), design system chip/swatch, `isJsx` legacy yo'li. Meta, pricing va FAQ
+  matnlaridan Figma/eksport/"har bir element" va'dalari olib tashlandi. DB: 31 ta eski HTML loyiha o'chirildi
+  (oldin `pg_dump` zaxira nusxa olindi).
+- Eval: `eval/briefs.json` (8 brief), `eval/run.ts` (haqiqiy PlanController, headless Chrome skrinshotlar,
+  metrikalar: build/crash rate, token, soniya, Konsta qismlari, kit figuralari, emoji, ranglar, gradient, motion,
+  nav, onboarding; `--vs`, `--reshoot`), `eval/metrics.ts`, `eval/judge.ts` (rubrika + ikki tartibli pairwise),
+  `npm run eval` / `npm run judge`.
+- Generatsiya: SKILL.md qayta yozildi (bar = top App Store; rang, emoji, vizual lug'at, Konsta'ning to'liq
+  imkoniyatlari, onboarding/auth retseptlari, motion, "tuzoqlar"); planner `palette` + har bir element uchun
+  emoji/rang + iste'molchi ilovalarga onboarding + original nom; har ekran turiga o'z namunasi
+  (`konsta/examples/{dashboard,onboarding,detail,list}.jsx`).
+- Kit: `Rings`, `Heatmap`, `Meter`, `Glow`, `Dots`, `Medal`, `Tile tinted`, `tint()`, `gradient()`; `?static` →
+  `vs-static`; `Area` gradient id bug'i (rang id sifatida → qora fill) tuzatildi; `Crash` boundary.
+- Kod bilan tuzatiladigan narsalar: import qilinmagan Konsta/kit/lucide nomi avtomatik import qilinadi
+  (compiler); `ListItem link` + qo'l bilan qo'yilgan `ChevronRight` → bitta chevron (runtime `konsta.js`);
+  `<List>`dan tashqaridagi `<li>` bullet'i olib tashlandi (runtime CSS); modul yuklanmasa xato matni ko'rinadi.
+
+Tekshiruv: `npx tsc --noEmit` toza, `npm run check` o'tdi (parsePlan palitra, exampleFor, auto-import testlari
+qo'shildi). Eval (claude-cli/Haiku, 8 brief): base → rich-v2: build 0.984 → 1, crash 0.017 → 0, ranglar 1.7 → 6.3,
+emoji 0.6 → 4.2, gradient 0 → 0.63, onboarding 2 → 8/8; narxi: output token/ekran 1251 → 1886, soniya/ilova
+40 → 57. Judge pairwise (ikki tartib): rich-v2 base'ga qarshi 7 yutuq, 1 durang, 0 mag'lubiyat; absolyut ball 2.63/5.
+rich-v3 (SKILL "tuzoqlar" bo'limi): v2'ga qarshi 4–1–3 (shovqin darajasida), lekin rubrika hamma o'lchovda
+yuqori — overall 2.63 → 2.79, polish 2.38 → 2.70, fidelity 3.17 → 3.57; token 1886 → 1772, soniya 57 → 52.
+`eval/out/BEST` = rich-v3.
+
+## 2026-09-28
+
+### KON-01…04: faqat Konsta — HTML pipeline butunlay o'chirildi
+
+- O'chirildi: `kit/`, `blueprints/`, `design-systems/`, `craft/`, `app-patterns/`, `skills/mobile-screen/`, `eval/`,
+  `src/content/`, `src/lib`ning ko'pi (normalizer, linter, shell, theme-override, element-ops, figma, export…),
+  Planner/Shell/DesignSystem/Kit/Image/Reference/ScreenContext/PromptComposer servislari, ElementController,
+  /systems va /playbook sahifalari, Theme panel, element tahriri, Code dialog, eksport (zip/HTML/Figma).
+- Qoldi: login, dashboard, kreditlar/Polar, admin/Telescope, LLM provayderlari, canvas + chat, versiyalar, undo.
+- Yangi: `runtime/` (React + Konsta + `@od/kit` + ikonkalar, `npm run build:runtime`), `ScreenCompiler`
+  (JSX tekshiruv + transform + Tailwind), `ScreenDocument` + `/api/thumb` (sandbox sahifa), `/api/rt/v<build>/…`,
+  `JsxGenerator` (planner + skill/KIT/REFERENCE + etalon ekran), `PlanController`/`GenerateController` qayta yozildi,
+  `screens.slug` (migratsiya 0007), `ScreenFrame` (iframe src), preview `od:nav` (push/pop/tab), soddalashgan canvas.
+- Kit: `color` propiga Tailwind klassi berilsa (`"text-primary"`) accent ishlatiladi — ring va chart bo'sh chiqardi.
+- Testlar: `controllers.check.ts` — HTML bo'limlari o'rniga Konsta: parsePlan, compiler (import/fetch rad),
+  screenDocument, plan → 3 ekran (bittasi build bo'lmay qayta urinib, slotda qoladi), retry, edit, chat'dan undo,
+  ekran qo'shish. Eski `services.check`/`new-features.check`/eval testlari o'chdi.
+
+Tekshiruv: `npx tsc --noEmit` toza; `npm run check` o'tdi. Brauzer (localhost:3007, claude-cli/Haiku): bitta brief →
+8 ekran ~34 s, hammasi build bo'ldi; preview'da tab, push va back ishladi; tanlangan ekranni chat orqali tahrirlash
+~10 s, v2, chat'da Before/After va Undo.
+
 ## 2026-09-27
 
 ### Qaror: Konsta UI + to'liq JSX (KON-00) — sinovlar, etalon ilova, reja

@@ -2,6 +2,21 @@
 
 > Yozilgan: 2026-09-21, yangilangan 2026-09-27. Eng yangi ish: **`canvas-planner`** branch (origin HEAD ham shu; `main` unga fast-forward qilingan). Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
 
+## 000. HOZIRGI HOLAT (2026-09-28): faqat Konsta, HTML pipeline o'chirildi — branch `konsta`
+
+- Ilovada endi bitta yo'l bor: brief → planner (JSON) → har ekran JSX (Konsta + @od/kit) → server compile → sandbox
+  iframe. Eski HTML kodi git tarixida (`canvas-planner` branch'i).
+- Ishga tushirish: `npm install`, `npm run build:runtime` (runtime/dist), `LLM_PROVIDER=claude-cli npm run dev`.
+- Ishlayotgani (brauzerda tekshirildi): plan + 8 ekran ~34 s, preview navigatsiyasi (tab/push/back), chat edit, undo,
+  versiyalar ‹ ›, qayta chizish, o'chirish.
+- 2026-09-28 (2): emoji ruxsat etildi, eval + judge qo'shildi (`npm run eval`, `npm run judge`, `eval/out/BEST` =
+  rich-v3), generatsiya kuchaytirildi (palitra, emoji, onboarding, 4 ta namuna ekran, yangi kit figuralari), HTML
+  qoldiqlari va 31 ta eski HTML loyiha o'chirildi (zaxira: scratchpad'dagi `design-before-html-delete.dump`).
+- Ochiq: (1) judge absolyut bahosi 2.79/5 — eng ko'p takrorlanadigan xatolar: sarlavhaning kartaga yopishishi,
+  ilova ichida ma'lumot mos kelmasligi (savat ≠ checkout), bir xil narsaning ekranlar orasida boshqa rang/ikonkada
+  bo'lishi; (2) fotosuratlar KON-12 bilan qaytdi (Pexels, soatiga 200 so'rov — ko'p foydalanuvchida Pexels'dan limit oshirishni so'rash kerak); (3) accent'ni o'zgartirish UI'si yo'q; (4) CLAUDE.md'dagi UI palitra/kontrast testlari (`new-features.check`)
+  o'chgan; (5) `claude-cli` rejimida model dasturchining ismi/emailini bilib, profilga qo'yishi mumkin (faqat lokal).
+
 ## 00. YANGI YO'NALISH (2026-09-27): Konsta UI + to'liq JSX — shu yerdan davom et
 
 **Qaror (foydalanuvchi, KON-00):** ekranlar endi HTML emas — model **React JSX** yozadi, komponentlar

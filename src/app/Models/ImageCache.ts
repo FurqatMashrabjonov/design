@@ -11,4 +11,9 @@ export const ImageCache = {
   async save(query: string, url: string, avgColor: string | null) {
     await db.insert(imageCache).values({ query, url, avgColor }).onConflictDoNothing()
   },
+
+  /** Every cached lookup — the eval keeps them between its throwaway databases (eval/photo-cache.json). */
+  all() {
+    return db.select({ query: imageCache.query, url: imageCache.url, avgColor: imageCache.avgColor }).from(imageCache)
+  },
 }

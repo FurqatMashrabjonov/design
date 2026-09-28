@@ -1,18 +1,14 @@
-import { ERROR_MARK } from './artifact'
 import { creditsChanged, failFrom } from './credits'
+
+const ERROR_MARK = '<!--GEN_ERROR:' // GenerateController.ERROR_MARK
 
 export async function generate(
   body: {
     prompt: string
     projectId?: string
-    device?: string
-    designSystem?: string
     editScreenId?: string
-    editElementId?: string
     /** Redraw this screen from its stored spec (also how a failed screen is retried); `prompt` is ignored. */
     regenerateScreenId?: string
-    /** LLM-02: reference pictures for this one request, as data URLs ("make it look like this"). */
-    images?: string[]
   },
   onText: (text: string) => void,
   signal?: AbortSignal,

@@ -1,7 +1,7 @@
 // INF-10: one-off copy of the SQLite data.db into Postgres (DATABASE_URL, default `design`).
 // Refuses a target that already has projects or users, copies every table in foreign-key order,
 // converts SQLite's 0/1 booleans and Better Auth's millisecond integers, then checks row counts.
-// Run: node --env-file-if-exists=.env --import ./eval/alias-hook.mjs scripts/sqlite-to-pg.ts [path/to/data.db]
+// Run: node --env-file-if-exists=.env --import ./scripts/alias-hook.mjs scripts/sqlite-to-pg.ts [path/to/data.db]
 import Database from 'better-sqlite3'
 import { pool } from '../src/database/connection.ts'
 

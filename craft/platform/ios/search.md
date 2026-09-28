@@ -1,1 +1,0 @@
-**Search.** A rounded search field (36px, search icon leading, placeholder says what can be found: "Search dishes") pinned under the title. Recent searches appear before typing; results are dense rows, not big cards. A cancel text button appears while focused.

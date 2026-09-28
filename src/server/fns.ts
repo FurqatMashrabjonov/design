@@ -6,7 +6,6 @@ import { notFound } from '@tanstack/react-router'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
-import { ElementController, type ElementAction } from '@/app/Http/Controllers/ElementController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
 import { CreditService } from '@/app/Services/CreditService'
@@ -55,7 +54,7 @@ export const getProject = createServerFn({ method: 'GET' })
 export const createProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     const o = obj(d)
-    return { designSystem: str(o.designSystem, 60), brief: o.brief === undefined ? undefined : str(o.brief, 4000) }
+    return { brief: o.brief === undefined ? undefined : str(o.brief, 4000) }
   })
   .handler(async ({ data }) => {
     const user = await requireUser()
@@ -74,14 +73,6 @@ export const favoriteProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), favorite: obj(d).favorite === true }))
   .handler(async ({ data }) => (await requireProject(data.id), ProjectController.favorite(data)))
 
-export const themeFromChat = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), prompt: str(obj(d).prompt, 500) }))
-  .handler(async ({ data }) => (await requireProject(data.projectId), ProjectController.themeFromChat(data)))
-
-export const saveTheme = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), theme: obj(d).theme }))
-  .handler(async ({ data }) => (await requireProject(data.projectId), ProjectController.saveTheme(data)))
-
 export const revertMessage = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), messageId: idOf(obj(d).messageId) }))
   .handler(async ({ data }) => (await requireProject(data.projectId), HistoryController.revertMessage(data)))
@@ -92,11 +83,19 @@ export const moveScreen = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), x: num(obj(d).x), y: num(obj(d).y) }))
   .handler(async ({ data }) => (await requireScreen(data.id), ProjectController.moveScreen(data)))
 
+export const saveAppTheme = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), theme: obj(obj(d).theme) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ProjectController.saveAppTheme(data)))
+
 export const saveScreenHeight = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), height: num(obj(d).height) }))
   .handler(async ({ data }) => (await requireScreen(data.id), ProjectController.saveScreenHeight(data)))
 
 const screenRef = (d: unknown) => ({ id: idOf(obj(d).id), projectId: idOf(obj(d).projectId) })
+
+export const getScreenCode = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), projectId: idOf(obj(d).projectId) }))
+  .handler(async ({ data }) => (await requireProject(data.projectId), ScreenController.code(data)))
 
 export const renameScreen = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ ...screenRef(d), name: str(obj(d).name, 200) }))
@@ -122,49 +121,3 @@ export const rateScreen = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), value: obj(d).value === null ? null : oneOf(obj(d).value, ['up', 'down'] as const) }))
   .handler(async ({ data }) => (await requireProject(data.projectId), FeedbackController.rate(data)))
 
-// --- elements ---
-
-const elementRef = (d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), elementId: idOf(obj(d).elementId) })
-
-export const getElementInfo = createServerFn({ method: 'GET' })
-  .validator(elementRef)
-  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.info(data)))
-
-export const editElementText = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => ({ ...elementRef(d), text: str(obj(d).text, 2000) }))
-  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.editText(data)))
-
-export const elementAction = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => ({ ...elementRef(d), action: oneOf(obj(d).action, ['delete', 'duplicate', 'up', 'down'] as const) as ElementAction }))
-  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.act(data)))
-
-export const replaceElementPhoto = createServerFn({ method: 'POST' })
-  .validator((d: unknown) => ({ ...elementRef(d), query: str(obj(d).query, 120) }))
-  .handler(async ({ data }) => (await requireProject(data.projectId), ElementController.replacePhoto(data)))
-
-// --- public pages (MKT-06) ---
-// The design systems and their style cards are public: they are the product's argument, and every
-// page links back into it. Read-only and unauthenticated on purpose — no project or user is touched.
-
-export const getSystems = createServerFn({ method: 'GET' }).handler(async () => {
-  const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
-  return DesignSystemService.list().filter((s) => s.hasTokens)
-})
-
-export const getSystem = createServerFn({ method: 'GET' })
-  .validator((d: unknown) => ({ id: idOf(d) }))
-  .handler(async ({ data }) => {
-    const { DesignSystemService } = await import('@/app/Services/DesignSystemService')
-    if (!DesignSystemService.exists(data.id)) throw notFound()
-    const { designSystemSample } = await import('@/lib/ds-sample')
-    const entry = DesignSystemService.list().find((s) => s.id === data.id)
-    const name = entry?.name ?? data.id
-    return {
-      id: data.id,
-      name,
-      category: entry?.category ?? 'General',
-      description: entry?.description ?? '',
-      card: DesignSystemService.readStyleCard(data.id),
-      sample: designSystemSample(DesignSystemService.readTokensRoot(data.id), DesignSystemService.readFontUrls(data.id), name),
-    }
-  })

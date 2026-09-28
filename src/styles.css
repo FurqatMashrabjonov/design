@@ -397,3 +397,16 @@ svg.lucide { stroke-width: 1.75; }
     .od-preview-stage[data-motion='fade'] > iframe[data-state='leaving'] { animation: od-pv-fade-out var(--duration-base) var(--motion-ease-out) both; }
 }
 /* /SHR-03 preview */
+
+/* The veil over a frame that is being drawn or is still loading (ScreenFrame GeneratingVeil). Shown: all three
+   blur layers at once, so the screen sits under a deep blur. Hidden: they fade out deepest first — the blur
+   resolves from deep to light to sharp, as macOS's Image Playground reveals a picture. Opacity only. */
+.od-veil > div { opacity: 0; }
+.od-veil[data-show] > div { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .od-veil > div { transition: opacity 700ms var(--motion-ease-out); }
+  .od-veil .od-veil-l1 { transition-duration: 600ms; }
+  .od-veil .od-veil-l2 { transition-delay: 300ms; }
+  .od-veil .od-veil-l3 { transition-delay: 700ms; }
+  .od-veil[data-show] > div { transition-duration: 200ms; transition-delay: 0ms; }
+}

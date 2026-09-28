@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
-import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, ClipboardCopy, Code2, Download, GripVertical, ThumbsUp, ThumbsDown, PenTool, Play, Smartphone } from 'lucide-react'
+import { Pencil, Copy, Trash2, Check, X, ChevronLeft, ChevronRight, Ellipsis, RotateCw, Code2, GripVertical, ThumbsUp, ThumbsDown, Play, Smartphone } from 'lucide-react'
+import { FigmaMark } from '@/components/BrandMarks'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -36,11 +37,10 @@ export function FrameHandle(props: { children?: ReactNode }) {
 /** The less-frequent actions on a frame; shared by the ⋯ menu here and the right-click menu. */
 export type FrameActions = {
   onRegenerate: () => void
-  onCopyHtml: () => void
-  /** FIG-02: copy the screen as layers for Figma (paste with ⌘V). */
-  onCopyFigma: () => void
+  /** CODE-03: the screen's React code. */
   onViewCode: () => void
-  onDownload: () => void
+  /** FIG-11: the screen (or the selected screens) as Figma layers on the clipboard. */
+  onCopyFigma: () => void
   /** Opens the clickable preview at this screen. */
   onPreview: () => void
 }
@@ -172,8 +172,7 @@ export function FrameToolbar(props: FrameActions & {
       <span className="mx-0.5 h-5 w-px shrink-0 bg-border" aria-hidden />
       <BarButton label="Preview this screen" onClick={props.onPreview}><Play /></BarButton>
       <BarButton label="View code" onClick={props.onViewCode}><Code2 /></BarButton>
-      <BarButton label="Copy to Figma" onClick={props.onCopyFigma}><PenTool /></BarButton>
-      <BarButton label="Download HTML" onClick={props.onDownload}><Download /></BarButton>
+      <BarButton label="Copy to Figma" onClick={props.onCopyFigma}><FigmaMark /></BarButton>
       <BarButton label="Regenerate" onClick={props.onRegenerate}><RotateCw /></BarButton>
       <BarButton label="Duplicate" disabled={busy === 'duplicate'} onClick={() => guard('duplicate', props.onDuplicate)}><Copy /></BarButton>
       <span className="mx-0.5 h-5 w-px shrink-0 bg-border" aria-hidden />
@@ -191,9 +190,6 @@ export function FrameToolbar(props: FrameActions & {
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onSelect={props.onStartRename}>
             <Pencil /> Rename
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={props.onCopyHtml}>
-            <ClipboardCopy /> Copy HTML
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => guard('rate', () => props.onRate(props.rating === 'up' ? null : 'up'))}>

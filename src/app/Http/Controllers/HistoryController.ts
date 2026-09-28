@@ -3,7 +3,6 @@ import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
 import { Project } from '@/app/Models/Project'
-import { sanitizeTheme } from '@/lib/theme-override'
 import { parseMeta, type MessageScreen } from '@/lib/agent-messages'
 
 export const HistoryController = {
@@ -43,14 +42,6 @@ export const HistoryController = {
     const meta = parseMeta(message.meta)
     if (message.kind === 'plan' || message.kind === 'error' || meta.reverted) throw new Error('This step cannot be undone')
     const redo = message.kind === 'revert'
-
-    if (meta.previousTheme !== undefined) {
-      const project = await Project.find(data.projectId)
-      const before = project?.theme ? JSON.parse(project.theme) : {}
-      await Project.saveTheme(data.projectId, sanitizeTheme(meta.previousTheme))
-      await Message.setMeta(message.id, { ...meta, reverted: true })
-      return await Message.add({ projectId: data.projectId, role: 'agent', kind: 'revert', text: redo ? 'Applied the theme change again.' : 'Put the theme back the way it was.', meta: { previousTheme: before } })
-    }
 
     const touched: MessageScreen[] = []
     for (const ref of meta.screens ?? []) {

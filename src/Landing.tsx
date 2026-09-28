@@ -4,63 +4,27 @@ import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye
 import { PhoneFrame, PHONE } from '@/components/PhoneFrame'
 import { PromptBox } from './PromptBox'
 import { buttonVariants } from '@/components/ui/button'
-import { AppMap } from '@/components/landing/AppMap'
 import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
 import { CREDIT_PRICES, SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 
-// MKT-01: the public page. Everything shown is real output of the pipeline (public/showcase is
-// copied from an eval run), nothing is a mock. The prompt typed here survives sign-in: it is kept
+// MKT-01: the public page. The prompt typed here survives sign-in: it is kept
 // in sessionStorage and the dashboard starts the project with it (see PENDING_PROMPT in index.tsx).
 
 // ponytail: brand name is undecided (LND-01); change it in components/SiteChrome.tsx.
 export { BRAND }
 export const PENDING_PROMPT = 'od:pending-prompt'
-/** IMG-01: reference pictures typed alongside that prompt, handed to the project page that starts the run. */
-export const PENDING_IMAGES = 'od:pending-images'
-
-// One set per design system written for a phone, each real output of today's pipeline. The first
-// screen is the cover, so it is always one the render audit found clean.
-// UI-11: `bg` / `accent` are the system's own `--bg` / `--accent` (design-systems/<id>/tokens.css) and
-// `character` is how DesignSystemService describes it. ponytail: copied, not read — the landing has no loader.
-export const SETS = [
-  { id: 'volt-run', name: 'Stride', kind: 'Running', system: 'Volt', systemId: 'volt', bg: '#0a0a0b', accent: '#d4ff3a', character: 'Black and volt-lime, condensed italic headlines — a training poster.', prompt: 'Running app: a live run screen with duration, distance and pace, a home with weekly volume and a quick-start run, and a run summary with a route map and pace analysis.', screens: [0, 1, 3, 4, 6] },
-  { id: 'ember-habit', name: 'Ripple', kind: 'Habit tracker', system: 'Ember', systemId: 'ember', bg: '#ffffff', accent: '#e8845a', character: 'Soft coral tints, one heavy sans, big soft corners — it cheers you on.', prompt: 'make habit tracker', screens: [0, 1, 2, 3, 6] },
-  { id: 'lumen-stays', name: 'Nestaway', kind: 'Stays', system: 'Lumen', systemId: 'lumen', bg: '#eff2f7', accent: '#0a6cf0', character: 'Light and translucent, glass controls over content — it feels native.', prompt: 'Stay booking app: browse places to stay with photos, a place detail with gallery, amenities and reviews, a date and guests picker, booking confirmation, and my trips.', screens: [1, 3, 4, 5, 6] },
-  { id: 'graphite-ledger', name: 'Plum Ledger', kind: 'Expense tracker', system: 'Graphite', systemId: 'graphite', bg: '#0b0c0e', accent: '#f6a61e', character: 'Engineered dark, dense, mono figures, one amber signal — an instrument.', prompt: 'Expense tracker for freelancers: this month’s spending with a category breakdown, a transactions list, a transaction detail with merchant and receipt fields, add an expense, and a monthly report with a chart.', screens: [1, 2, 3, 5] },
-  { id: 'nova-magazine', name: 'Folio', kind: 'Magazine', system: 'Nova', systemId: 'nova', bg: '#f4f3ef', accent: '#d2451e', character: 'Warm tinted neutrals, a serif hero figure, a floating tab bar — a product.', prompt: 'Long-read magazine app: a curated home of essays, an article reader with pull quotes and a progress bar, saved articles, an author page, and reading settings.', screens: [1, 2, 3, 5] },
-]
 
 // UI-11: facts the code keeps, never marketing numbers. MAX_SCREENS is 6 (PlannerService, server-only).
 const APP = CREDIT_PRICES['deepseek-flash']!
 const FACTS = [
-  [String(SETS.length), 'design systems made for a phone'],
-  ['6', 'screens at most, planned as one app'],
+  ['iOS', 'native components, light and dark'],
+  ['8', 'screens at most, planned as one app'],
   [String(APP.plan + APP.draw), 'credits for a whole app'],
   [String(appsFor(SIGNUP_CREDITS)), `apps from the ${SIGNUP_CREDITS} free credits`],
 ]
 
 const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery with restaurant menus and live order tracking', 'Language learning with lessons and a leaderboard', 'Plant care reminders with a photo journal']
 
-/** One real generated screen, drawn at phone size and scaled into `width` pixels. */
-export function Phone({ src, width, className = '', eager = false }: { src: string; width: number; className?: string; eager?: boolean }) {
-  const scale = width / PHONE.width
-  return (
-    <PhoneFrame width={width} className={className}>
-      <iframe
-        src={src}
-        title=""
-        aria-hidden
-        tabIndex={-1}
-        loading={eager ? 'eager' : 'lazy'}
-        sandbox="allow-scripts"
-        className="pointer-events-none origin-top-left border-0"
-        style={{ width: PHONE.width, height: PHONE.height, transform: `scale(${scale})` }}
-      />
-    </PhoneFrame>
-  )
-}
-
-export const shot = (set: string, i: number) => `/showcase/${set}-${i}.html`
 
 function HeroPrompt({ big = false }: { big?: boolean }) {
   const navigate = useNavigate()
@@ -82,15 +46,10 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
         submitLabel="Design it"
         label="Describe your app"
         placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
-        hint="Add a picture to match its look"
-        attachments
         fill={fill}
-        onSubmit={async (prompt, images) => {
-          // IMG-01: the pictures wait in session storage like the prompt; the project page reads them once.
+        onSubmit={async (prompt) => {
           try {
             sessionStorage.setItem(PENDING_PROMPT, prompt.slice(0, 2000))
-            if (images?.length) sessionStorage.setItem(PENDING_IMAGES, JSON.stringify(images))
-            else sessionStorage.removeItem(PENDING_IMAGES)
           } catch {}
           await navigate({ to: '/login', search: { next: '/' } })
         }}
@@ -104,36 +63,16 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
               </button>
             ))}
           </div>
-          {/* DS-02: no picker before there is anything to look at — these say which systems the app
-              is drawn in (the brief and the app type choose), and each opens its style page. */}
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-2 text-xs text-muted-foreground">
-            <span className="mr-1">Drawn in the style that suits it:</span>
-            {SETS.map((s) => (
-              <Link key={s.systemId} to="/systems/$id" params={{ id: s.systemId }} className="inline-flex h-7 items-center gap-1.5 rounded-full border border-border bg-card px-2.5 font-medium text-foreground transition-colors duration-(--duration-fast) ease-out hover:border-foreground/30">
-                <Dot s={s} /> {s.system}
-              </Link>
-            ))}
-          </div>
         </>
       )}
     </div>
   )
 }
 
-/** A system's ground with its accent inside: the two colours that tell the systems apart. */
-function Dot({ s, size = 14 }: { s: (typeof SETS)[number]; size?: number }) {
-  return (
-    <span aria-hidden className="grid shrink-0 place-items-center rounded-full ring-1 ring-foreground/15" style={{ width: size, height: size, background: s.bg }}>
-      <span className="rounded-full" style={{ width: size / 2, height: size / 2, background: s.accent }} />
-    </span>
-  )
-}
 
 
 
 export function Landing() {
-  const [set, setSet] = useState(0)
-  const active = SETS[set]
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <SiteHeader onLanding />
@@ -149,72 +88,11 @@ export function Landing() {
             Describe an app. <br />Get <Em>all of it</Em>.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Every screen planned together — one tab bar, one data model, one design system, real photos. Tap through it, edit any element, keep going.
+            Every screen planned together and built from native iOS components — one tab bar, one data model, light and dark. Tap through it, change it in the chat, keep going.
           </p>
           <div className="mx-auto mt-8 max-w-2xl">
             <HeroPrompt big />
           </div>
-        </div>
-      </section>
-
-      {/* UI-11: the whole-app map — the USP, drawn from one real app's own links */}
-      <section className="mx-auto max-w-6xl px-4 pt-20 pb-12 sm:pt-28">
-        <div className="mx-auto max-w-2xl text-center">
-          <Eyebrow>Not a pile of screens</Eyebrow>
-          <h2 className="text-2xl sm:text-4xl">Screens that <Em>know</Em> each other.</h2>
-          <p className="mt-4 text-muted-foreground">
-            The app is planned before a pixel is drawn, so every tab and every button goes somewhere real. This is Ripple, made from the prompt “make habit tracker” — each line is a link in its screens.
-          </p>
-        </div>
-        <div className="mt-12 sm:mt-16">
-          <AppMap />
-        </div>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ['One navigation', 'The same tab bar and back button on every screen, injected by code.'],
-            ['One data model', 'A payment of $88.42 is $88.42 on the list, the detail and the receipt.'],
-            ['Real photos', 'Every image slot is filled with a matching photo, never a grey box.'],
-            ['One design system', 'Tokens, type and components shared by every screen of the app.'],
-          ].map(([t, d]) => (
-            <div key={t} className="rounded-lg border border-border bg-card p-5 shadow-1">
-              <p className="font-semibold">{t}</p>
-              <p className="mt-1.5 text-sm text-muted-foreground">{d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* UI-11: the five phone systems */}
-      <section id="systems" className="mx-auto max-w-6xl px-4 py-24">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-          <div className="max-w-xl">
-            <Eyebrow>Five systems, made for a phone</Eyebrow>
-            <h2 className="text-2xl sm:text-4xl">A look with a <Em>point of view</Em>.</h2>
-            <p className="mt-4 text-muted-foreground">Your app is drawn in the one that suits it, or in the one your reference picture looks like. Switch it after, in one click.</p>
-          </div>
-          <Link to="/systems" className="shrink-0 text-sm font-medium underline-offset-4 hover:underline">All design systems →</Link>
-        </div>
-        <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-          {SETS.map((s, k) => (
-            <Link
-              key={s.systemId}
-              to="/systems/$id"
-              params={{ id: s.systemId }}
-              className={`group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${k < 2 ? 'lg:col-span-3' : 'lg:col-span-2'}`}
-            >
-              <div className="relative flex h-64 items-start justify-center gap-3 overflow-hidden pt-8" style={{ background: s.bg }}>
-                <Phone src={shot(s.id, s.screens[0]!)} width={k < 2 ? 150 : 136} />
-                <Phone src={shot(s.id, s.screens[1]!)} width={k < 2 ? 150 : 136} className="translate-y-8" />
-              </div>
-              <div className="flex flex-1 flex-col gap-1 border-t border-border p-5">
-                <p className="flex items-center gap-2 text-lg font-semibold">
-                  <Dot s={s} size={16} /> {s.system}
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">{s.name} · {s.kind}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">{s.character}</p>
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
 
@@ -230,38 +108,6 @@ export function Landing() {
         </dl>
       </section>
 
-      {/* Examples */}
-      <section id="examples" className="bg-inverse py-24 text-inverse-foreground [--ring:var(--inverse-foreground)]">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
-            <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[.14em] text-inverse-foreground/55">Made from a single prompt</p>
-              <h2 className="text-2xl sm:text-4xl">Real output. <span className="text-inverse-foreground/50">No retouching.</span></h2>
-            </div>
-            <div className="flex flex-wrap gap-2" role="tablist">
-              {SETS.map((s, i) => (
-                <button
-                  key={s.id}
-                  role="tab"
-                  aria-selected={i === set}
-                  onClick={() => setSet(i)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm outline-none transition-colors duration-(--duration-fast) ease-out focus-visible:ring-2 focus-visible:ring-ring ${i === set ? 'bg-primary font-semibold text-primary-foreground' : 'text-inverse-foreground/70 ring-1 ring-inverse-foreground/15 hover:text-inverse-foreground'}`}
-                >
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="mt-8 max-w-3xl rounded-md bg-inverse-foreground/5 px-4 py-3 font-mono text-md leading-relaxed text-inverse-foreground/75 ring-1 ring-inverse-foreground/10">
-            <span className="text-inverse-foreground/50">prompt ›</span> {active.prompt}
-            <span className="ml-2 whitespace-nowrap text-inverse-foreground/50">· {active.system} system</span>
-          </p>
-          <div key={active.id} className="mt-2 -mx-4 flex gap-5 overflow-x-auto px-4 py-10 [scrollbar-width:none] animate-in fade-in duration-500">
-            {active.screens.map((i) => <Phone key={i} src={shot(active.id, i)} width={200} />)}
-          </div>
-        </div>
-      </section>
-
       {/* How it works */}
       <section id="how" className="mx-auto max-w-6xl px-4 py-24">
         <div className="mx-auto max-w-2xl text-center">
@@ -270,9 +116,9 @@ export function Landing() {
         </div>
         <div className="mt-14 grid gap-5 md:grid-cols-3">
           {[
-            ['01', 'Describe', 'Say what the app does, in a sentence or a page. The style is picked to suit the app; change it after.'],
+            ['01', 'Describe', 'Say what the app does, in a sentence or a page.'],
             ['02', 'Get the whole app', 'A planner scopes the screens, the data and the navigation, then designs every screen in parallel.'],
-            ['03', 'Click, edit, export', 'Tap through it as a prototype, change any element by clicking it, undo anything, download a zip.'],
+            ['03', 'Click and change', 'Tap through it as a prototype, ask the chat for changes, undo anything.'],
           ].map(([n, t, d]) => (
             <div key={n} className="rounded-xl border border-border bg-card p-7 shadow-1">
               <span className="font-mono text-sm text-muted-foreground">{n}</span>
@@ -280,19 +126,6 @@ export function Landing() {
               <p className="mt-2 text-muted-foreground">{d}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Features bento */}
-      <section className="mx-auto max-w-6xl px-4 pb-24">
-        <div className="grid gap-4 md:grid-cols-6">
-          <Feature className="md:col-span-4" icon={MousePointerClick} title="Edit any element" text="Click a button, a card or a headline and say what to change. The rest of the screen stays byte-for-byte the same." />
-          <Feature className="md:col-span-2" icon={Undo2} title="Undo everything" text="⌘Z on the canvas, version arrows on every screen, and “undo this step” in the chat." />
-          <Feature className="md:col-span-2" icon={Palette} title="Picked to suit the app" text="One of five systems made for a phone, chosen from your brief or your reference picture. Name a brand (“like Notion”) to get its look instead, or retheme at any time." />
-          <Feature className="md:col-span-2" icon={BarChart3} title="Charts drawn from data" text="Bar, line, area, donut, ring and heatmap charts rendered in code, in the system’s colours." />
-          <Feature className="md:col-span-2" icon={ScanEye} title="Craft rules, applied in code" text="Minimum text size, 44px tap areas, focus rings and tabular figures are set on every screen after it is drawn." />
-          <Feature className="md:col-span-3" icon={ImageIcon} title="Real photos, locked in place" text="Image slots are filled with matching photos and sized so a picture never breaks the layout." />
-          <Feature className="md:col-span-3" icon={Download} title="Export a working prototype" text="On a paid plan, download the whole app as a zip of clickable HTML — open it offline, build from it — or take it to Figma." />
         </div>
       </section>
 
@@ -304,11 +137,10 @@ export function Landing() {
         </div>
         <div className="mt-10 divide-y divide-border rounded-lg border border-border bg-card shadow-1">
           {[
-            ['What do I get from one prompt?', 'A planned app: up to 6 screens that share one navigation, one data model and one design system, each one clickable and editable.'],
-            ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — ${appsFor(SIGNUP_CREDITS)} whole apps — and one project, no card needed. Plans add monthly credits, more projects and export.`],
+            ['What do I get from one prompt?', 'A planned app: up to 8 screens that share one navigation and one data model, built from native iOS components, each one clickable.'],
+            ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — ${appsFor(SIGNUP_CREDITS)} whole apps — and one project, no card needed. Plans add monthly credits and more projects.`],
             ['Do I need design experience?', 'No. Describe the app in plain words. Designers use it to get past the blank page and iterate faster.'],
-            ['Can I change a screen after it is made?', 'Click any element and describe the change, ask the chat for bigger changes, or add a new screen — it will match the rest.'],
-            ['Can I export?', 'On a paid plan — the whole app as a zip of HTML that works offline as a clickable prototype, or into Figma.'],
+            ['Can I change a screen after it is made?', 'Select it and describe the change in the chat, or add a new screen — it will match the rest.'],
             ['Who owns the designs?', 'You do. Your projects are private to your account and you can delete them, or your account, at any time.'],
           ].map(([q, a]) => (
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
@@ -339,14 +171,3 @@ export function Landing() {
   )
 }
 
-function Feature({ icon: Icon, title, text, className = '' }: { icon: typeof Layers; title: string; text: string; className?: string }) {
-  return (
-    <div className={`group rounded-xl border border-border bg-card p-7 shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 ${className}`}>
-      <span className="grid size-10 place-items-center rounded-md bg-primary text-primary-foreground">
-        <Icon className="size-5" />
-      </span>
-      <p className="mt-6 text-lg font-semibold">{title}</p>
-      <p className="mt-1.5 text-muted-foreground">{text}</p>
-    </div>
-  )
-}

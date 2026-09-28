@@ -16,7 +16,7 @@ export const Route = createFileRoute('/')({
   head: () => ({
     meta: [
       { title: `${BRAND} — design a whole mobile app from one prompt` },
-      { name: 'description', content: 'Describe an app and get every screen in one design language: shared data, one navigation, real photos. Click through it, edit any element, export a prototype.' },
+      { name: 'description', content: 'Describe an app and get every screen built from native iOS components: shared data, one navigation, light and dark. Click through it and change it in the chat.' },
     ],
   }),
   component: Index,
@@ -41,7 +41,7 @@ function Home() {
     } catch {}
     if (!prompt || started.current) return
     started.current = true
-    createProject({ data: { designSystem: 'auto', brief: prompt } })
+    createProject({ data: { brief: prompt } })
       .then(({ id }) => navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } }))
       .catch(reportError)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -55,5 +55,5 @@ function Home() {
     return () => timers.forEach(clearTimeout)
   }, [])
 
-  return <Dashboard projects={data.projects} designSystems={data.designSystems} credits={data.credits} user={user ?? undefined} />
+  return <Dashboard projects={data.projects} credits={data.credits} user={user ?? undefined} />
 }

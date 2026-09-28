@@ -4,6 +4,8 @@ import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
+const SERVER_ONLY = ['@tailwindcss/node', '@tailwindcss/oxide', 'rolldown', '@babel/parser']
+
 export default defineConfig(({ mode }) => {
   // Server-only secrets (no VITE_ prefix) into process.env for dev
   Object.assign(process.env, loadEnv(mode, process.cwd(), ''))
@@ -12,5 +14,8 @@ export default defineConfig(({ mode }) => {
     server: { port: 3000, allowedHosts: ['.ngrok-free.app'] },
     plugins: [tanstackStart(), viteReact(), tailwindcss()],
     resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+    // KON-00: the screen compiler's packages carry native binaries; Node loads them, Vite never bundles them.
+    ssr: { external: SERVER_ONLY },
+    optimizeDeps: { exclude: SERVER_ONLY },
   }
 })

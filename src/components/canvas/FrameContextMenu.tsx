@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Pencil, Copy, RotateCw, ClipboardCopy, Code2, Download, Trash2, PenTool, Play } from 'lucide-react'
+import { Pencil, Copy, RotateCw, Trash2, Play, Code2 } from 'lucide-react'
+import { FigmaMark } from '@/components/BrandMarks'
 import type { FrameActions } from './FrameToolbar'
 import {
   ContextMenu,
@@ -33,18 +34,11 @@ export function FrameContextMenu(props: FrameActions & {
         <ContextMenuItem onSelect={props.onRegenerate}>
           <RotateCw /> Regenerate
         </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem onSelect={props.onCopyHtml}>
-          <ClipboardCopy /> Copy HTML
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={props.onCopyFigma}>
-          <PenTool /> Copy to Figma
-        </ContextMenuItem>
         <ContextMenuItem onSelect={props.onViewCode}>
           <Code2 /> View code
         </ContextMenuItem>
-        <ContextMenuItem onSelect={props.onDownload}>
-          <Download /> Download HTML
+        <ContextMenuItem onSelect={props.onCopyFigma}>
+          <FigmaMark /> Copy to Figma
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" onSelect={props.onDelete}>

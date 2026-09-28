@@ -1,0 +1,186 @@
+import { createHash } from 'node:crypto'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+import { parse } from '@babel/parser'
+import { transformSync } from 'rolldown/experimental'
+import { compile as twCompile, optimize } from '@tailwindcss/node'
+import { Scanner } from '@tailwindcss/oxide'
+
+// A screen is one React component the model wrote on Konsta UI (KON-00). It is parsed and transformed
+// here and never executed on the server: static refusal of anything outside the four allowed imports and
+// of the browser APIs a screen has no business touching, then JSX → JS (oxc) and the Tailwind CSS for the
+// classes it uses. The frame it runs in (sandbox, no same-origin) is the boundary; this is depth.
+
+const ROOT = process.cwd()
+export const RUNTIME_DIR = join(ROOT, 'runtime', 'dist')
+
+type Exports = Record<string, string[]>
+let exportsCache: { allowed: Record<string, Set<string>>; lucide: Record<string, string>; mtime: number } | null = null
+// Read again when the runtime is rebuilt (its exports.json changes), so a new kit export is known without a restart.
+function runtimeExports() {
+  const file = join(RUNTIME_DIR, 'exports.json')
+  if (!existsSync(file)) {
+    if (exportsCache) return exportsCache // mid-rebuild: the last build's list is still right
+    throw new Error('The screen runtime is not built — run `npm run build:runtime`')
+  }
+  const mtime = statSync(file).mtimeMs
+  if (exportsCache?.mtime === mtime) return exportsCache
+  const ex = JSON.parse(readFileSync(file, 'utf8')) as Exports
+  const lucide = JSON.parse(readFileSync(join(RUNTIME_DIR, 'lucide-map.json'), 'utf8')) as Record<string, string>
+  exportsCache = {
+    allowed: {
+      react: new Set([...ex.react, 'default']),
+      'react/jsx-runtime': new Set(ex['jsx-runtime']),
+      'konsta/react': new Set(ex.konsta),
+      'lucide-react': new Set(ex.lucide),
+      '@od/kit': new Set(ex.kit),
+    },
+    lucide,
+    mtime,
+  }
+  return exportsCache
+}
+
+const BANNED = new Set(['require', 'eval', 'Function', 'fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'localStorage', 'sessionStorage', 'indexedDB', 'postMessage', 'importScripts', 'opener', 'dangerouslySetInnerHTML'])
+const BANNED_MEMBER = new Set(['parent', 'top', 'cookie', 'opener']) // only as window./document./globalThis./self.
+const GLOBALS = new Set(['window', 'document', 'globalThis', 'self'])
+const BANNED_TAGS = new Set(['script', 'iframe', 'object', 'embed', 'base', 'link', 'meta', 'style'])
+// ponytail: token-level refusal, so `window['parent']` slips past — the sandbox is the boundary.
+
+// Konsta's @theme blocks (tokens only) so per-screen utilities like bg-primary resolve; runtime.css emits every token.
+let cssInput: string | null = null
+function tailwindInput() {
+  if (cssInput) return cssInput
+  const dir = join(ROOT, 'node_modules', 'konsta', 'styles')
+  const theme = readdirSync(dir)
+    .filter((f) => f.endsWith('.css'))
+    .flatMap((f) => [...readFileSync(join(dir, f), 'utf8').matchAll(/@theme\s*\{([^}]*)\}/g)].map((m) => m[1]))
+    .join('\n')
+  cssInput = `@import "tailwindcss/theme.css" theme(reference);\n@import "tailwindcss/utilities.css";\n@custom-variant dark (&:where(.dark, .dark *));\n@theme reference {\n${theme}\n}\n`
+  return cssInput
+}
+
+export type Compiled = { ok: true; js: string; css: string } | { ok: false; errors: string[] }
+
+/**
+ * The source with the imports it forgot. A name the screen uses but never imported (<BlockTitle> without its
+ * import crashed a screen at render) is imported when the runtime has exactly that export: Konsta first, then
+ * the kit, then a lucide icon. The compiler builds from this, and the code export ships it, so an exported
+ * project builds too. A source that does not parse is returned as it is (the compiler reports it).
+ */
+export function completeImports(source: string): string {
+  const { allowed, lucide } = runtimeExports()
+  let ast: ReturnType<typeof parse>
+  try {
+    ast = parse(source, { sourceType: 'module', plugins: ['jsx'] })
+  } catch {
+    return source
+  }
+  const declared = new Set<string>()
+  const used = new Set<string>()
+  ;(function walk(n: unknown, parentKey?: string): void {
+    if (!n || typeof n !== 'object') return
+    if (Array.isArray(n)) return n.forEach((c) => walk(c, parentKey))
+    const node = n as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (node.type === 'ImportSpecifier' || node.type === 'ImportDefaultSpecifier') declared.add((node.local as { name: string }).name)
+    if ((node.type === 'VariableDeclarator' || node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') && (node.id as { type?: string })?.type === 'Identifier') declared.add((node.id as { name: string }).name)
+    if (node.type === 'VariableDeclarator') for (const k of JSON.stringify(node.id).matchAll(/"type":"Identifier"[^}]*?"name":"([^"]+)"/g)) declared.add(k[1]!)
+    if (node.type === 'Identifier' && node.name && parentKey === 'params') declared.add(node.name)
+    if (node.type === 'JSXOpeningElement' && (node.name as { type: string }).type === 'JSXIdentifier') used.add((node.name as { name: string }).name)
+    if (node.type === 'CallExpression' && (node.callee as { type: string }).type === 'Identifier') used.add((node.callee as { name: string }).name)
+    for (const [k, v] of Object.entries(node)) if (k !== 'loc' && k !== 'start' && k !== 'end' && typeof v === 'object') walk(v, k)
+  })(ast.program)
+  const add: Record<string, string[]> = { 'konsta/react': [], '@od/kit': [], 'lucide-react': [] }
+  for (const name of used) {
+    if (declared.has(name) || !/^[A-Za-z]/.test(name)) continue
+    if (allowed['konsta/react']!.has(name)) add['konsta/react']!.push(name)
+    else if (allowed['@od/kit']!.has(name)) add['@od/kit']!.push(name)
+    else if (/^[A-Z]/.test(name) && lucide[name]) add['lucide-react']!.push(name)
+  }
+  const lines = Object.entries(add).filter(([, names]) => names.length).map(([spec, names]) => `import { ${names.sort().join(', ')} } from '${spec}'`)
+  return lines.length ? `${lines.join('\n')}\n${source}` : source
+}
+
+/** Static checks, JSX → JS and this screen's CSS. */
+export async function compileScreen(input: string): Promise<Compiled> {
+  const { allowed, lucide: lucideFiles } = runtimeExports()
+  const source = completeImports(input)
+  const errors: string[] = []
+  let ast: ReturnType<typeof parse>
+  try {
+    ast = parse(source, { sourceType: 'module', plugins: ['jsx'], tokens: true })
+  } catch (e) {
+    return { ok: false, errors: [`The screen's code does not parse: ${(e as Error).message}`] }
+  }
+
+  // 1. Imports: the whitelist, real names only; each lucide icon is rewritten to its own module.
+  const splices: [number, number, string][] = []
+  const unknown: string[] = []
+  for (const node of ast.program.body) {
+    if (node.type !== 'ImportDeclaration') continue
+    const spec = node.source.value
+    const names = allowed[spec]
+    if (!names) { errors.push(`import from '${spec}' is not allowed`); continue }
+    const icons: string[] = []
+    for (const s of node.specifiers) {
+      if (s.type === 'ImportNamespaceSpecifier') { errors.push(`namespace import from '${spec}' is not allowed`); continue }
+      const name = s.type === 'ImportDefaultSpecifier' ? 'default' : s.imported.type === 'Identifier' ? s.imported.name : s.imported.value
+      if (!names.has(name)) { unknown.push(`${name} from '${spec}'`); continue }
+      if (spec === 'lucide-react') icons.push(`import ${s.local.name} from 'lucide-react/icons/${lucideFiles[name]}'`)
+    }
+    if (spec === 'lucide-react') splices.push([node.start!, node.end!, icons.join('\n')])
+  }
+  if (unknown.length) errors.push(`these do not exist: ${unknown.join(', ')}`)
+
+  // 2. Exactly one default export, a function component.
+  const defaults = ast.program.body.filter((n) => n.type === 'ExportDefaultDeclaration')
+  if (defaults.length !== 1) errors.push(`expected one default export, found ${defaults.length}`)
+  else {
+    const d = (defaults[0] as { declaration: { type: string; name?: string } }).declaration
+    const fn = new Set(['FunctionDeclaration', 'ArrowFunctionExpression', 'FunctionExpression'])
+    const isFn = fn.has(d.type) || (d.type === 'Identifier' && ast.program.body.some((n) =>
+      (n.type === 'FunctionDeclaration' && n.id?.name === d.name) ||
+      (n.type === 'VariableDeclaration' && n.declarations.some((v) => v.id.type === 'Identifier' && v.id.name === d.name && v.init && fn.has(v.init.type)))))
+    if (!isFn) errors.push('the default export is not a function component')
+  }
+
+  // 3. Banned identifiers, dynamic import(), window.parent / document.cookie, script-like tags.
+  const tok = (ast.tokens ?? []) as { type: { label: string } | string; value?: string }[]
+  const label = (i: number) => { const t = tok[i]?.type; return typeof t === 'string' ? t : t?.label }
+  for (let i = 0; i < tok.length; i++) {
+    const v = tok[i].value
+    const l = label(i)
+    if (l === 'name' && v && BANNED.has(v)) errors.push(`'${v}' is not allowed`)
+    else if (l === 'name' && v && BANNED_MEMBER.has(v) && label(i - 1) === '.' && GLOBALS.has(String(tok[i - 2]?.value))) errors.push(`'${tok[i - 2].value}.${v}' is not allowed`)
+    else if (l === 'import' && label(i + 1) === '(') errors.push('dynamic import() is not allowed')
+    else if (l === 'jsxName' && v && BANNED_TAGS.has(v) && label(i - 1) === 'jsxTagStart') errors.push(`<${v}> is not allowed`)
+    else if (l === 'jsxName' && v === 'dangerouslySetInnerHTML') errors.push(`'${v}' is not allowed`)
+  }
+  if (errors.length) return { ok: false, errors: [...new Set(errors)] }
+
+  // 4. JSX → JS; specifiers stay as written, the frame's import map resolves them.
+  let src = source
+  for (const [s, e, r] of splices.sort((a, b) => b[0] - a[0])) src = src.slice(0, s) + r + src.slice(e)
+  const out = transformSync('screen.jsx', src, { lang: 'jsx', sourceType: 'module', jsx: { runtime: 'automatic' } })
+  if (out.errors?.length) return { ok: false, errors: out.errors.map((e) => `transform: ${e.message}`) }
+
+  // 5. Tailwind for this screen's classes (a fresh compiler with a reference theme is ~5 ms).
+  const candidates = new Scanner({ sources: [] }).scanFiles([{ content: source, extension: 'jsx' }])
+  const compiler = await twCompile(tailwindInput(), { base: ROOT, onDependency() {} })
+  const css = optimize(compiler.build(candidates), { minify: true }).code
+  return { ok: true, js: out.code, css }
+}
+
+// Compiled screens are kept by the hash of their source, so a frame reload costs nothing.
+const cache = new Map<string, Promise<Compiled>>()
+export const sourceHash = (source: string) => createHash('sha1').update(source).digest('hex').slice(0, 16)
+export function compileCached(source: string): Promise<Compiled> {
+  const key = sourceHash(source)
+  let hit = cache.get(key)
+  if (!hit) {
+    hit = compileScreen(source)
+    cache.set(key, hit)
+    if (cache.size > 500) cache.delete(cache.keys().next().value!)
+  }
+  return hit
+}

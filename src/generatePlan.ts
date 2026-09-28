@@ -1,23 +1,14 @@
-import type { Plan } from './app/Services/PlannerService'
 import { creditsChanged, failFrom } from './credits'
 
 export type PlanEvent =
-  | ({ type: 'plan'; screenIds: string[] } & Plan)
+  | { type: 'plan'; appName: string; screenIds: string[]; screens: { name: string; kind: string }[] }
   | { type: 'screen_start'; index: number; name: string }
-  | { type: 'screen_delta'; index: number; text: string }
   | { type: 'screen_done'; index: number; screenId: string; name: string }
-  | { type: 'screen_image'; index: number; query: string; url: string }
   | { type: 'screen_error'; index: number; message: string }
-  /** CHAT-08: the plan is drawn up and waits for the person; nothing is being drawn. */
-  | { type: 'awaiting' }
   | { type: 'done' }
   | { type: 'error'; message: string }
 
-/** CHAT-08: how a planned run is asked for — plan and wait, or draw a plan the person approved. */
-export type PlanRequest =
-  /** IMG-01: `images` are data URLs read once on the server and then dropped. */
-  | { brief: string; gate?: boolean; images?: string[] }
-  | { approve: { keep: number[]; names: Record<number, string> } }
+export type PlanRequest = { brief: string }
 
 // Streams /api/generate-plan (newline-delimited JSON) and calls onEvent for each line.
 export async function generatePlan(projectId: string, request: PlanRequest, onEvent: (e: PlanEvent) => void, signal?: AbortSignal) {

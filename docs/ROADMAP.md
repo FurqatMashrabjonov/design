@@ -9,17 +9,28 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
 | KON-00 | QAROR: generatsiya Konsta UI + to'liq JSX (React); HTML yo'li eski loyihalar uchun qoladi | Generatsiya / Qarorlar | MVP | Tayyor | Kichik |  | Qaror yozilgan; HANDOFF va CLAUDE.md moslangan |
-| KON-01 | Sinov: model Vita ekranlarini Konsta JSX'da yozadi → server build → sandbox render; etalon va HTML bilan solishtirish | Generatsiya / Asosiy | MVP | Rejada | O'rta | KON-00 | ≥95% kompilyatsiya, ≤1.5k token/ekran, hakamda HTML'dan yutadi |
-| KON-02 | @od/kit runtime: React + Konsta + ikonlar + Ring/Bars/Area/WaterGlass + navigator/store; versiyalangan CDN build | Generatsiya / Render | MVP | Rejada | O'rta | KON-01 | ≤150 KB gz, CORS *, ekran runtime versiyasini saqlaydi |
-| KON-03 | ScreenCompiler: oxc parse + import whitelist + JSX→JS + Tailwind (ilova bo'yicha bitta CSS) | Generatsiya / Render | MVP | Rejada | O'rta | KON-01 | Model kodi serverda bajarilmaydi; build ≤50 ms; testlar |
-| KON-04 | Ekran hujjati /s/:id + screens. domeni + CSP sandbox | Generatsiya / Render | MVP | Rejada | Kichik | KON-02, KON-03 | sandbox=allow-scripts, connect-src none, tema render paytida |
-| KON-05 | JSX prompti + Konsta API ma'lumotnomasi + planner/blueprint moslash | Generatsiya / Sifat | MVP | Rejada | O'rta | KON-01 | To'liq eval: kompilyatsiya ≥98%, hakamda yutadi |
-| KON-06 | DB: format/source_jsx/compiled_js/runtime_version, app_css; ikki renderer flag bilan | Generatsiya / Ma'lumotlar bazasi | MVP | Rejada | O'rta | KON-03 | Eski loyihalar html bo'lib qoladi |
-| KON-07 | Kanvas + Preview jsx uchun (Preview'da butun ilova jonli) | Generatsiya / Kanvas | MVP | Rejada | O'rta | KON-04, KON-06 | 20 ekran silliq; push/pop/tab; dark/aksent |
-| KON-08 | Tahrir, undo, versiyalar JSX ustida | Generatsiya / Tahrirlash | MVP | Rejada | Katta | KON-07 | Element tahriri, chat, Cmd+Z, ‹ › ishlaydi |
-| KON-09 | Eksport: React + Vite zip va bitta faylli HTML | Generatsiya / Fayllar | MVP | Rejada | O'rta | KON-07 | npm run dev ishlaydi; HTML internetsiz |
+| KON-01 | Sinov: model Vita ekranlarini Konsta JSX'da yozadi → server build → sandbox render; etalon va HTML bilan solishtirish | Generatsiya / Asosiy | MVP | Tayyor | O'rta | KON-00 | ≥95% kompilyatsiya, ≤1.5k token/ekran, hakamda HTML'dan yutadi |
+| KON-02 | @od/kit runtime: React + Konsta + ikonlar + Ring/Bars/Area/WaterGlass + navigator/store; versiyalangan CDN build | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | ≤150 KB gz, CORS *, ekran runtime versiyasini saqlaydi |
+| KON-03 | ScreenCompiler: oxc parse + import whitelist + JSX→JS + Tailwind (ilova bo'yicha bitta CSS) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | Model kodi serverda bajarilmaydi; build ≤50 ms; testlar |
+| KON-04 | Ekran hujjati /s/:id + screens. domeni + CSP sandbox | Generatsiya / Render | MVP | Tayyor | Kichik | KON-02, KON-03 | sandbox=allow-scripts, connect-src none, tema render paytida |
+| KON-05 | JSX prompti + Konsta API ma'lumotnomasi + planner/blueprint moslash | Generatsiya / Sifat | MVP | Tayyor | O'rta | KON-01 | To'liq eval: kompilyatsiya ≥98%, hakamda yutadi |
+| KON-06 | DB: format/source_jsx/compiled_js/runtime_version, app_css; ikki renderer flag bilan | Generatsiya / Ma'lumotlar bazasi | Bekor | Rejada | O'rta | KON-03 | Eski loyihalar html bo'lib qoladi |
+| KON-07 | Kanvas + Preview jsx uchun (Preview'da butun ilova jonli) | Generatsiya / Kanvas | MVP | Tayyor | O'rta | KON-04, KON-06 | 20 ekran silliq; push/pop/tab; dark/aksent |
+| KON-08 | Tahrir, undo, versiyalar JSX ustida | Generatsiya / Tahrirlash | MVP | Tayyor | Katta | KON-07 | Element tahriri, chat, Cmd+Z, ‹ › ishlaydi |
+| KON-09 | Eksport: React + Vite zip va bitta faylli HTML | Generatsiya / Fayllar | Keyin | Rejada | O'rta | KON-07 | npm run dev ishlaydi; HTML internetsiz |
 | KON-10 | Thumbnail (headless PNG) + eval/hakam jsx ekranlarda | Generatsiya / Render | MVP | Rejada | Kichik | KON-04 | Dashboard va eval sheet'lari jsx'dan |
-| KON-11 | Material (Android) ko'rinishi: theme=material | Generatsiya / Tema | Keyin | Rejada | Kichik | KON-07 | iOS/Android almashadi |
+| KON-11 | Material (Android) ko'rinishi: theme=material | Generatsiya / Tema | MVP | Tayyor | Kichik | KON-07 | iOS/Android almashadi |
+| KON-12 | Konsta ekranlarida haqiqiy fotosuratlar: kit <Photo q> slot, serverda Pexels bilan to'ldiriladi (image_cache) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-02, KON-03 | Rasm bo'ladigan joyda haqiqiy foto |
+| KON-13 | Render tekshiruvi + bitta tuzatish chaqiruvi | Generatsiya / Sifat | Keyin | Rejada | O'rta | KON-12 | Judge spacing/polish oshadi |
+| KON-14 | Chat agenti: tahrirda tool calling | Generatsiya / Tahrirlash | Keyin | Rejada | Katta | KON-08 | Bir so'rovda bir nechta ekran |
+| CODE-01 | Kod eksporti: React + Vite loyiha (.zip) | Generatsiya / Fayllar | MVP | Tayyor | O'rta | KON-02 | vite build testi |
+| CODE-02 | Kod eksporti: bitta faylli HTML prototip | Generatsiya / Fayllar | MVP | Tayyor | O'rta | CODE-01 | Internetsiz ochiladi |
+| CODE-03 | Ekran kodini ko'rish va nusxalash | Generatsiya / Fayllar | MVP | Tayyor | Kichik |  | Frame menyusidan JSX |
+| FIG-10 | Figma: serializer kit runtime ichida, Konsta qatlam nomlari | Generatsiya / Integratsiyalar | MVP | Tayyor | Kichik |  | figma.check o'tadi |
+| FIG-11 | Figma: Copy to Figma (SVG paste) | Generatsiya / Integratsiyalar | MVP | Tayyor | Kichik | FIG-10 | ⌘V tahrirlanadigan qatlamlar |
+| FIG-12 | Figma plagini: Auto Layout, Variables, prototip | Generatsiya / Integratsiyalar | Keyin | Rejada | Katta | FIG-10 | Butun ilova Auto Layout bilan |
+| PRV-01 | Preview: qurilma tanlash — iPhone 18 Pro / Pro Max, Galaxy S26 Ultra; o'z 2D ramkalarimiz; Android → Material | Generatsiya / Ko'rish | MVP | Tayyor | O'rta | KON-11 | Qurilma almashadi, ekran shu kenglikda, ramka tashqi asset'siz |
+| PRV-02 | Preview: iPhone Duo (foldable) — yopiq 5.4" va ochiq 7.6", ichki ekranda ro'yxat + detail yonma-yon | Generatsiya / Ko'rish | MVP | Rejada | O'rta | PRV-01 | Yopiq/ochiq almashadi, ochilish animatsiyasi |
 
 ## B0 · Tayyor
 

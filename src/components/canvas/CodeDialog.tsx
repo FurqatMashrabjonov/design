@@ -2,18 +2,20 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
-// Read-only view of a screen's raw HTML. No syntax highlighting — a plain <pre> is enough for
-// "let me grab this" or "let me check what it actually generated", which covers the real use cases.
-export function CodeDialog(props: { screen: { name: string; html: string } | null; onOpenChange: (open: boolean) => void }) {
+// CODE-03: a screen's code, exactly as the React export ships it (the imports it forgot written in), read-only
+// with one Copy. No syntax highlighting — a monospace <pre> covers "grab this" and "what did it write".
+export function CodeDialog(props: { screen: { name: string; code: string } | null; onOpenChange: (open: boolean) => void }) {
   const [copied, setCopied] = useState(false)
-
   return (
     <Dialog open={!!props.screen} onOpenChange={props.onOpenChange}>
-      <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-2xl">
+      <DialogContent className="flex max-h-[82vh] flex-col sm:max-w-3xl">
         <DialogHeader className="flex-row items-center justify-between gap-2 space-y-0">
-          <DialogTitle className="truncate">{props.screen?.name}</DialogTitle>
+          <div className="min-w-0">
+            <DialogTitle className="truncate">{props.screen?.name}</DialogTitle>
+            <DialogDescription className="text-xs">React + Konsta UI · the same file the React export contains</DialogDescription>
+          </div>
           <Button
             variant="outline"
             size="sm"
@@ -21,7 +23,7 @@ export function CodeDialog(props: { screen: { name: string; html: string } | nul
             onClick={async () => {
               if (!props.screen) return
               try {
-                await navigator.clipboard.writeText(props.screen.html)
+                await navigator.clipboard.writeText(props.screen.code)
                 setCopied(true)
                 setTimeout(() => setCopied(false), 1500)
               } catch {
@@ -33,9 +35,7 @@ export function CodeDialog(props: { screen: { name: string; html: string } | nul
             {copied ? 'Copied' : 'Copy'}
           </Button>
         </DialogHeader>
-        <pre className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap break-all">
-          {props.screen?.html}
-        </pre>
+        <pre className="min-h-0 flex-1 overflow-auto rounded-lg bg-muted p-4 font-mono text-xs leading-relaxed whitespace-pre">{props.screen?.code}</pre>
       </DialogContent>
     </Dialog>
   )

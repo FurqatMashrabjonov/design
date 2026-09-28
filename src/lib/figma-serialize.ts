@@ -5,7 +5,8 @@
 //
 // Flex containers carry their layout (direction, gap, padding, alignment) so the plugin can map
 // them to Auto Layout; everything else is placed absolutely. The app's own markers name the layers
-// ("Tab bar", "Photo · cappuccino", "Chart · bar"), which no screenshot tool can.
+// ("Tab bar", "Photo · cappuccino", "Row · Morning run"), which no screenshot tool can. KON: it runs inside the
+// kit (runtime/kit.jsx answers od:serialize); names come from Konsta's classes and the kit's data-od-* marks.
 
 export const OD_TREE_VERSION = 1
 
@@ -64,20 +65,40 @@ function visible(el, cs) {
   var r = el.getBoundingClientRect();
   return r.width > 0 && r.height > 0;
 }
+function kcls(el, c) { return (' ' + (el.getAttribute('class') || '') + ' ').indexOf(' ' + c + ' ') !== -1; }
+function label(el) { return (el.textContent || '').replace(/\\s+/g, ' ').trim().slice(0, 28); }
+// Layer names from what the screen is made of: the kit's own marks, Konsta's parts, lucide icons.
 function nameOf(el) {
   var a = function (n) { return el.getAttribute(n); };
-  if (el.hasAttribute('data-od-shell')) return /nav|tab/i.test(el.tagName + ' ' + (a('data-od-shell') || '')) ? 'Tab bar' : 'Header';
-  if (a('data-od-img')) return 'Photo · ' + a('data-od-img');
-  if (a('data-od-avatar')) return 'Avatar · ' + a('data-od-avatar');
-  if (el.hasAttribute('data-od-logo-resolved')) return 'Logo';
-  if (a('data-od-chart')) return 'Chart · ' + a('data-od-chart');
-  if (el.hasAttribute('data-od-map-rendered')) return 'Map';
-  if (a('data-lucide')) return 'Icon · ' + a('data-lucide');
-  if (el.tagName === 'BUTTON' || a('role') === 'button') return 'Button · ' + (el.textContent || '').trim().slice(0, 24);
+  if (a('data-od-photo')) return 'Photo · ' + a('data-od-photo');
+  if (a('data-od-kit')) return a('data-od-kit');
+  if (kcls(el, 'k-navbar')) return 'Navbar';
+  if (kcls(el, 'k-tabbar') || (kcls(el, 'k-toolbar') && el.querySelector('.k-tabbar-link-icon, [class*="k-tabbar"]'))) return 'Tab bar';
+  if (kcls(el, 'k-toolbar')) return 'Toolbar';
+  if (kcls(el, 'k-list-item')) return 'Row · ' + label(el);
+  if (kcls(el, 'k-list') || kcls(el, 'k-list-input')) return kcls(el, 'k-list') ? 'List' : 'Field';
+  if (kcls(el, 'k-block-title')) return 'Section title · ' + label(el);
+  if (kcls(el, 'k-card')) return 'Card';
+  if (kcls(el, 'k-block')) return 'Block';
+  if (kcls(el, 'k-segmented')) return 'Segmented';
+  if (kcls(el, 'k-chip')) return 'Chip · ' + label(el);
+  if (kcls(el, 'k-toggle')) return 'Toggle';
+  if (kcls(el, 'k-checkbox')) return 'Checkbox';
+  if (kcls(el, 'k-fab')) return 'Floating button';
+  if (kcls(el, 'k-searchbar')) return 'Search bar';
+  if (kcls(el, 'k-sheet') || kcls(el, 'k-dialog') || kcls(el, 'k-actions')) return 'Sheet';
+  if (el.tagName === 'svg' || el.tagName === 'SVG') {
+    var ic = ((el.getAttribute('class') || '').match(/lucide-([a-z0-9-]+)/) || [])[1];
+    if (ic) return 'Icon · ' + ic;
+  }
+  if (el.tagName === 'BUTTON' || kcls(el, 'k-button') || a('role') === 'button') return 'Button · ' + label(el);
   if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return 'Input · ' + (a('placeholder') || a('aria-label') || '');
-  var cls = (el.getAttribute('class') || '').split(/\\s+/).filter(function (c) { return c && !/[:\\[\\]]/.test(c); })[0];
+  if (el.tagName === 'IMG') return 'Image · ' + (a('alt') || '').slice(0, 40);
+  var cls = (el.getAttribute('class') || '').split(/\\s+/).filter(function (c) { return c && !/[:\\[\\]\/!]/.test(c); })[0];
   return (el.tagName.toLowerCase() + (cls ? '.' + cls : '')).slice(0, 60);
 }
+// Parts that are layers in their own right (never folded into their only child).
+function kept(el) { return el.hasAttribute('data-od-photo') || el.hasAttribute('data-od-kit') || /\\bk-(navbar|tabbar|toolbar|list-item|card|segmented|chip|fab|searchbar)\\b/.test(el.getAttribute('class') || ''); }
 function fillsOf(cs) {
   var out = [], bg = rgba(cs.backgroundColor);
   if (bg.a > 0) out.push({ type: 'solid', color: bg });
@@ -191,10 +212,13 @@ function svgOf(el) {
 function walk(el, depth) {
   if (depth > 60) return null;
   var cs = getComputedStyle(el);
-  if (!visible(el, cs)) return null;
-  var b = box(el), tag = el.tagName;
+  var tag = el.tagName;
+  // A photo still fading in (the kit's Photo holds it at opacity 0 until it loads) is still the photo.
+  var fading = tag === 'IMG' && el.getAttribute('src') && Number(cs.opacity) === 0;
+  if (!visible(el, cs) && !fading) return null;
+  var b = box(el);
   var base = { name: nameOf(el), x: b.x, y: b.y, w: b.w, h: b.h };
-  var op = Number(cs.opacity); if (op < 1) base.opacity = op;
+  var op = Number(cs.opacity); if (op < 1 && !fading) base.opacity = op;
   if (tag === 'svg') return Object.assign(base, { type: 'svg', svg: svgOf(el) });
   if (tag === 'IMG') {
     var fit = cs.objectFit === 'contain' ? 'contain' : cs.objectFit === 'fill' ? 'fill' : 'cover';
@@ -220,29 +244,22 @@ function walk(el, depth) {
   }
   // A plain wrapper with one child and nothing of its own is just that child.
   var bare = !node.fills.length && !node.stroke && !node.shadows && !node.radius && !node.layout && node.opacity === undefined;
-  if (bare && node.children.length === 1 && depth > 0 && !el.hasAttribute('data-od-shell')) return node.children[0];
+  if (bare && node.children.length === 1 && depth > 0 && !kept(el)) return node.children[0];
   if (!node.children.length && !node.fills.length && !node.stroke && !node.shadows) return null;
   ['stroke', 'radius', 'shadows', 'layout'].forEach(function (k) { if (node[k] === undefined) delete node[k]; });
   if (!node.clip) delete node.clip;
   return node;
 }
 var body = document.body, doc = document.documentElement;
-var root = walk(body, 0) || { type: 'frame', name: 'Screen', x: 0, y: 0, w: doc.clientWidth, h: doc.scrollHeight, children: [] };
-root.x = 0; root.y = 0; root.w = doc.clientWidth; root.h = Math.max(doc.scrollHeight, body.scrollHeight);
+// A Konsta page scrolls inside .k-page; the canvas frame is as tall as its content, so its height is the page's.
+var kpage = document.querySelector('.k-page');
+var fullH = Math.max(doc.scrollHeight, body.scrollHeight, kpage ? kpage.scrollHeight : 0);
+var root = walk(body, 0) || { type: 'frame', name: 'Screen', x: 0, y: 0, w: doc.clientWidth, h: fullH, children: [] };
+root.x = 0; root.y = 0; root.w = doc.clientWidth; root.h = fullH;
 root.name = document.title || 'Screen';
-var bg = rgba(getComputedStyle(body).backgroundColor); if (!bg.a) bg = rgba(getComputedStyle(doc).backgroundColor); if (!bg.a) bg = { r: 255, g: 255, b: 255, a: 1 };
+var bg = kpage ? rgba(getComputedStyle(kpage).backgroundColor) : { a: 0 }; if (!bg.a) bg = rgba(getComputedStyle(body).backgroundColor); if (!bg.a) bg = rgba(getComputedStyle(doc).backgroundColor); if (!bg.a) bg = { r: 255, g: 255, b: 255, a: 1 };
 return { version: ${OD_TREE_VERSION}, name: root.name, width: root.w, height: root.h, background: bg, root: root };
 `
-
-/** The in-frame bridge: answers `od:serialize` from the parent with the tree. */
-export const SERIALIZE_BRIDGE = `<script id="__od_serialize">
-window.addEventListener('message', function (e) {
-  if (e.source !== window.parent || !e.data || e.data.type !== 'od:serialize') return;
-  var tree = null, error = null;
-  try { tree = (function () { ${SERIALIZE_SOURCE} })(); } catch (err) { error = String(err && err.message || err); }
-  window.parent.postMessage({ type: 'od:serialized', requestId: e.data.requestId, tree: tree, error: error }, '*');
-});
-</script>`
 
 /** A tree arriving from a sandboxed frame: shape-checked before anything uses it. */
 export function parseTree(v: unknown): ODTree | null {

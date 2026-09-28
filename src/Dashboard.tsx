@@ -4,7 +4,7 @@ import { ArrowUp, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Spa
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
-import { BRAND, PENDING_IMAGES, Phone, SETS, shot } from './Landing'
+import { BRAND } from './Landing'
 import { reportError, useCredits } from './credits'
 import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -21,7 +21,6 @@ import { PhoneFrame } from '@/components/PhoneFrame'
 // their first three screens.
 
 type Card = { id: string; name: string; device: string; designSystem: string; favorite: boolean; screenCount: number; covers: string[]; updatedAt: number }
-type System = { id: string; name: string; category: string; swatch: { bg: string | null; fg: string | null; accent: string | null; font: string | null } }
 type User = { name: string; email: string }
 
 const VIEW_KEY = 'od:projects-view'
@@ -66,14 +65,6 @@ function write(key: string, value: string) {
   try { localStorage.setItem(key, value) } catch {}
 }
 
-export function Swatch({ s, size = 14 }: { s: System['swatch'] | undefined; size?: number }) {
-  return (
-    <span className="inline-flex shrink-0 overflow-hidden rounded-full ring-1 ring-foreground/10" style={{ width: size, height: size }} aria-hidden>
-      <span className="h-full w-1/2" style={{ background: s?.bg ?? 'var(--card)' }} />
-      <span className="h-full w-1/2" style={{ background: s?.accent ?? 'var(--muted-foreground)' }} />
-    </span>
-  )
-}
 
 
 /** BIL-08: the credit balance, in credits and in the screens it buys, so running out is never a surprise. */
@@ -151,12 +142,9 @@ function nameForTransition(e: MouseEvent<HTMLElement>) {
   if (stage) stage.style.viewTransitionName = 'od-project'
 }
 
-export function Dashboard({ projects, designSystems, credits, user }: { projects: Card[]; designSystems: System[]; credits: number; user: User | undefined }) {
+export function Dashboard({ projects, credits, user }: { projects: Card[]; credits: number; user: User | undefined }) {
   const navigate = useNavigate()
   const router = useRouter()
-  // DS-02: nobody picks a style up front any more. This stays only so an idea card lands on the
-  // system it is showing off — a card is a picture of an output, so clicking it should reproduce it.
-  const [designSystem, setDesignSystem] = useState('auto')
   const [fill, setFill] = useState<{ text: string; key: number }>()
   const [tab, setTab] = useState<'all' | 'favorites'>('all')
   const [query, setQuery] = useState('')
@@ -167,7 +155,6 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
   const [stars, setStars] = useState<Record<string, boolean>>({})
   useEffect(() => { if (read(VIEW_KEY) === 'list') setView('list') }, [])
 
-  const systems = useMemo(() => new Map(designSystems.map((s) => [s.id, s])), [designSystems])
   const starred = (c: Card) => stars[c.id] ?? c.favorite
   const shown = projects.filter((c) => (tab === 'all' || starred(c)) && c.name.toLowerCase().includes(query.trim().toLowerCase()))
   const first = (user?.name || user?.email || '').split(/[\s@]/)[0]
@@ -189,12 +176,6 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
     setDeleting(null)
     router.invalidate()
   }
-  function pickIdea(i: number) {
-    const s = SETS[i]!
-    if (systems.has(s.systemId)) setDesignSystem(s.systemId)
-    setFill({ text: s.prompt, key: Date.now() })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
   function chooseView(v: 'grid' | 'list') {
     setView(v)
     write(VIEW_KEY, v)
@@ -204,40 +185,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
     document.querySelector<HTMLTextAreaElement>('#top textarea')?.focus({ preventScroll: true })
   }
   const menu = (c: Card) => <ProjectMenu card={c} onRename={() => { setDraft(c.name); setRenaming(c) }} onDelete={() => setDeleting(c)} />
-  const chip = (c: Card) => (
-    <span className="inline-flex max-w-40 shrink-0 items-center gap-1.5 rounded-full border bg-background py-0.5 pr-2 pl-1 text-xs text-muted-foreground">
-      <Swatch s={systems.get(c.designSystem)?.swatch} size={12} /> <span className="truncate">{systems.get(c.designSystem)?.name ?? c.designSystem}</span>
-    </span>
-  )
 
-  const ideas = (
-    <section id="ideas" className="mt-16 scroll-mt-6">
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold">{projects.length ? 'Need a start?' : 'New here? Start from one of these'}</h2>
-        <p className="mt-0.5 text-md text-muted-foreground">Real output from one prompt — pick one to fill the box above.</p>
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {SETS.map((s, i) => {
-          const accent = systems.get(s.systemId)?.swatch.accent
-          return (
-            <button key={s.id} type="button" onClick={() => pickIdea(i)} className="group flex flex-col overflow-hidden rounded-lg border bg-card text-left shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-              {/* The system's own accent tints the stage; swatch values are literal colours only (swatchOf). */}
-              <div className="relative flex h-40 justify-center overflow-hidden pt-5" style={{ background: accent ? `color-mix(in oklab, ${accent} 16%, var(--muted))` : 'var(--muted)' }}>
-                <Phone src={shot(s.id, s.screens[0]!)} width={108} className="transition duration-(--duration-slow) ease-spring group-hover:-translate-y-1.5" />
-              </div>
-              <div className="flex flex-1 flex-col p-3">
-                <p className="text-sm font-semibold">{s.kind}</p>
-                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{s.prompt}</p>
-                <p className="mt-auto inline-flex items-center gap-1.5 pt-2.5 text-xs font-medium text-muted-foreground">
-                  <Swatch s={systems.get(s.systemId)?.swatch} size={10} /> {s.system}
-                </p>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-    </section>
-  )
 
   const projectList = projects.length === 0 ? (
     /* UI-12: the first visit. Nothing to list yet, so the section says where the first app comes from. */
@@ -310,7 +258,6 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                 <div className="min-w-0 flex-1">
                   <Link to="/p/$projectId" params={{ projectId: c.id }} viewTransition onClick={nameForTransition} className="block truncate text-sm font-semibold hover:underline">{c.name}</Link>
                   <p className="mt-1 flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
-                    {chip(c)}
                     <span className="truncate">{c.screenCount} screen{c.screenCount === 1 ? '' : 's'} · {ago(c.updatedAt)}</span>
                   </p>
                 </div>
@@ -327,7 +274,6 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
               <Link to="/p/$projectId" params={{ projectId: c.id }} className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="relative h-12 w-9 shrink-0 overflow-hidden rounded-xs border bg-muted">{c.covers[0] && <Thumb screenId={c.covers[0]} device={c.device} width={36} />}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.name}</span>
-                <span className="hidden w-36 sm:flex">{chip(c)}</span>
                 <span className="hidden w-20 text-xs text-muted-foreground sm:block">{c.screenCount} screens</span>
                 <span className="w-24 text-right text-xs text-muted-foreground">{ago(c.updatedAt)}</span>
               </Link>
@@ -355,7 +301,6 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
         <nav className="space-y-0.5 px-2 pt-1 text-sm">
           <a href="#top" className={`${navItem} bg-sidebar-accent font-medium`} aria-current="page"><Home className="size-4" /> Home</a>
           <a href="#projects" className={`${navItem} text-muted-foreground hover:bg-sidebar-accent hover:text-foreground`}><Grid2x2 className="size-4" /> Projects</a>
-          <a href="#ideas" className={`${navItem} text-muted-foreground hover:bg-sidebar-accent hover:text-foreground`}><Sparkles className="size-4" /> Examples</a>
         </nav>
         {projects.length > 0 && (
           <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-2">
@@ -411,19 +356,12 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
                 variant="hero"
                 submitLabel="Design it"
                 label="Describe your app"
-                hint="iPhone · up to 6 screens · real photos"
+                hint="iPhone · up to 8 screens · light and dark"
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
                 fill={fill}
-                attachments
-                onSubmit={async (prompt, images) => {
-                  // The pictures travel in session storage, not the URL: the project page starts the
-                  // run and reads them there, exactly once.
+                onSubmit={async (prompt) => {
                   try {
-                    if (images?.length) sessionStorage.setItem(PENDING_IMAGES, JSON.stringify(images))
-                    else sessionStorage.removeItem(PENDING_IMAGES)
-                  } catch {}
-                  try {
-                    const { id } = await createProject({ data: { designSystem, brief: prompt } })
+                    const { id } = await createProject({ data: { brief: prompt } })
                     navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
                   } catch (e) {
                     reportError(e) // BIL-14: over the plan's project count opens the upgrade dialog
@@ -434,7 +372,7 @@ export function Dashboard({ projects, designSystems, credits, user }: { projects
           </section>
 
           {/* A returning person sees their projects first; a new one sees the examples first. */}
-          {projects.length ? <>{projectList}{ideas}</> : <>{ideas}{projectList}</>}
+          {projectList}
         </div>
       </main>
 

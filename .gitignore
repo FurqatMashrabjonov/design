@@ -11,3 +11,8 @@ eval/out
 # Competitor research screenshots (28 MB); kept locally, not in history.
 concurrents-screenshots
 .claude/worktrees/
+runtime/dist/
+runtime/react.js
+runtime/jsx-runtime.js
+runtime/react-dom-client.js
+

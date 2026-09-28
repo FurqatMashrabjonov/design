@@ -4,6 +4,15 @@ import { Project } from '@/app/Models/Project'
 import { nextFramePosition } from '@/canvas'
 
 export const ScreenController = {
+  /** CODE-03: the screen's code as the React export ships it (forgotten imports written in, the kit's ListItem). */
+  async code(data: { id: string; projectId: string }) {
+    const screen = await Screen.findInProject(data.id, data.projectId)
+    if (!screen || screen.deletedAt || !screen.html) throw notFound()
+    const { completeImports } = await import('@/app/Services/ScreenCompiler')
+    const { withKitListItem } = await import('@/app/Services/ExportService')
+    return { name: screen.name, code: withKitListItem(completeImports(screen.html)) }
+  },
+
   async rename(data: { id: string; projectId: string; name: string }) {
     const name = data.name.trim().slice(0, 80)
     if (!name) throw new Error('Name cannot be empty')

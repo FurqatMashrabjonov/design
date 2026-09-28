@@ -53,8 +53,6 @@ export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
         <BrandLink />
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
           <a href={examples} className={link}>Examples</a>
-          <Link to="/systems" className={link} activeProps={{ className: 'text-foreground' }}>Design systems</Link>
-          <Link to="/playbook" className={link} activeProps={{ className: 'text-foreground' }}>Playbook</Link>
           <Link to="/pricing" className={link} activeProps={{ className: 'text-foreground' }}>Pricing</Link>
         </nav>
         <div className="flex items-center gap-1">
@@ -76,8 +74,6 @@ export function SiteFooter({ onLanding = false }: { onLanding?: boolean }) {
         {/* ponytail: Terms / Privacy links land with LEG-01…04. */}
         <div className="flex flex-wrap justify-center gap-6">
           <a href={`${home}#examples`} className={link}>Examples</a>
-          <Link to="/systems" className={link}>Design systems</Link>
-          <Link to="/playbook" className={link}>Playbook</Link>
           <Link to="/pricing" className={link}>Pricing</Link>
           <a href={`${home}#faq`} className={link}>FAQ</a>
           <Link to="/login" className={link}>Sign in</Link>
