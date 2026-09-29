@@ -2,6 +2,8 @@
 import assert from 'node:assert'
 
 delete process.env.PEXELS_API_KEY // image slots must not reach the network from a test
+process.env.LLM_MODEL = 'deepseek-flash' // the stubs below answer in DeepSeek's shape and the credit tests price its profile
+process.env.RENDER_AUDIT = "0" // KON-13: no headless Chrome per stub screen; the audit has its own test below
 process.env.DEEPSEEK_API_KEY = 'test-key'
 const { Project } = await import('../../Models/Project.ts')
 const { Screen } = await import('../../Models/Screen.ts')
@@ -99,6 +101,9 @@ export default function Screen() {
   const rules = lint.findings.map((f) => f.rule)
   for (const r of ['blocktitle-in-block', 'list-item-outside-list', 'list-in-block', 'prominent-buttons', 'emoji-in-control', 'fixed-bottom-under-tabbar']) assert.ok(rules.includes(r), `the lint reports ${r}`)
   assert.equal(lintJsx('this is not { valid').findings.length, 0, 'a source that does not parse is left to the compiler')
+  // A BlockTitle over anything but a Block or List gets a gap, or the next card covers its descenders (LinguaBloom).
+  const titled = lintJsx(`export default function Screen() { return <Page><BlockTitle className="!mt-8">Plan</BlockTitle><div className="px-4" /><BlockTitle>Rows</BlockTitle><List /><BlockTitle>Bare</BlockTitle>{[1].map((i) => <div key={i} />)}</Page> }`).source
+  assert.ok(titled.includes('className="!mt-8 !mb-2">Plan') && titled.includes('<BlockTitle className="!mb-2">Bare') && titled.includes('<BlockTitle>Rows'), titled)
   const again = lintJsx(src)
   assert.equal(again.source, src, 'the lint is idempotent: fixing a fixed screen changes nothing')
   // HIG-12: named text styles compile to Apple's sizes; Hero picks its text colour; text-white on a Hero is dropped.
@@ -656,6 +661,44 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     await AdminController.setSetting('adm', { key: 'llm.model.screen', value: null })
     await AdminController.setSetting('adm', { key: 'llm.fallback', value: null })
   }
+  // LLM-08: a screen on GPT-6 Luna goes to OpenAI's Chat Completions as a reasoning model (max_completion_tokens,
+  // no temperature, reasoning_effort "none"); a screen on Opus 5.5 keeps its thinking at low effort (it 400s on
+  // thinking disabled).
+  const realOpenAI = process.env.OPENAI_API_KEY
+  process.env.OPENAI_API_KEY = 'test-openai'
+  process.env.ANTHROPIC_API_KEY = 'test-anthropic'
+  const sent: { url: string; headers: Record<string, string>; body: any }[] = []
+  globalThis.fetch = (async (url: unknown, init?: RequestInit) => {
+    sent.push({ url: String(url), headers: init?.headers as Record<string, string>, body: JSON.parse(String(init?.body)) })
+    if (String(url).includes('openai.com')) {
+      const chunk = (o: unknown) => `data: ${JSON.stringify(o)}\n\n`
+      return new Response(chunk({ choices: [{ delta: { content: page('GPT screen') } }] }) + chunk({ choices: [], usage: { prompt_tokens: 12, completion_tokens: 40, prompt_tokens_details: { cached_tokens: 8 } } }) + 'data: [DONE]\n\n', { status: 200 })
+    }
+    const ev = (o: unknown) => `event: x\ndata: ${JSON.stringify(o)}\n\n`
+    return new Response(ev({ type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 1 } } }) + ev({ type: 'content_block_delta', delta: { type: 'text_delta', text: page('Opus screen') } }) + ev({ type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 50 } }), { status: 200 })
+  }) as typeof fetch
+  try {
+    await Project.create({ id: 'p-llm08', name: 'L', designSystem: 'minimal', device: 'mobile' })
+    await AdminController.setSetting('adm', { key: 'llm.model.screen', value: 'gpt-6-luna' })
+    assert.ok(!(await post(GenerateController, { projectId: 'p-llm08', prompt: 'a settings screen' })).includes('GEN_ERROR'))
+    const gpt = sent.find((h) => h.url === 'https://api.openai.com/v1/chat/completions')!
+    assert.ok(gpt, 'the screen call went to OpenAI')
+    assert.deepEqual([gpt.body.model, gpt.body.reasoning_effort, gpt.headers.Authorization], ['gpt-6-luna', 'none', 'Bearer test-openai'])
+    assert.ok(gpt.body.max_completion_tokens > 0 && !('max_tokens' in gpt.body) && !('temperature' in gpt.body), 'sent as a reasoning model')
+    assert.ok((await Screen.forProject('p-llm08')).some((sc) => sc.html.includes('GPT screen')), 'the screen was drawn from its stream')
+    await AdminController.setSetting('adm', { key: 'llm.model.screen', value: 'claude-opus-5-5' })
+    sent.length = 0
+    assert.ok(!(await post(GenerateController, { projectId: 'p-llm08', prompt: 'another screen' })).includes('GEN_ERROR'))
+    const opus = sent.find((h) => h.url === 'https://api.anthropic.com/v1/messages')!
+    assert.ok(opus && opus.body.model === 'claude-opus-5-5' && !('thinking' in opus.body) && opus.body.output_config?.effort === 'low', JSON.stringify(opus?.body ?? {}).slice(0, 200))
+  } finally {
+    globalThis.fetch = llmFetch
+    if (realOpenAI === undefined) delete process.env.OPENAI_API_KEY
+    else process.env.OPENAI_API_KEY = realOpenAI
+    if (realKey === undefined) delete process.env.ANTHROPIC_API_KEY
+    else process.env.ANTHROPIC_API_KEY = realKey
+    await AdminController.setSetting('adm', { key: 'llm.model.screen', value: null })
+  }
   assert.equal(await CreditService.priceOf('screen'), 2, 'reset: DeepSeek again')
 }
 
@@ -933,7 +976,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const settle = () => new Promise((r) => setTimeout(r, 150))
   const rowsFor = (rid: string) => db.select().from(outgoingRequests).where(eq(outgoingRequests.requestId, rid)).orderBy(outgoingRequests.id)
 
-  assert.deepEqual(['api.deepseek.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'api.pexels.com', 'sandbox-api.polar.sh', 'oauth2.googleapis.com', 'example.org'].map(purposeOf), ['deepseek', 'gemini', 'anthropic', 'pexels', 'polar', 'google', 'other'])
+  assert.deepEqual(['api.deepseek.com', 'generativelanguage.googleapis.com', 'api.anthropic.com', 'api.openai.com', 'api.pexels.com', 'sandbox-api.polar.sh', 'oauth2.googleapis.com', 'example.org'].map(purposeOf), ['deepseek', 'gemini', 'anthropic', 'openai', 'pexels', 'polar', 'google', 'other'])
 
   // A stub underneath: no network. The body is streamed in two chunks and must arrive unchanged.
   const seen: string[] = []
@@ -1127,6 +1170,56 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(open.clipLeft, 0)
   assert.equal(foldLayout(1, { left: '3' }, '3', 450).frames.get('3')!.width, 900, 'one screen fills the open phone')
 }
+// LLM-08: a 429 that says how long to wait is waited out and tried again on the same model.
+{
+  const L = await import('../../Services/LlmService.ts')
+  assert.equal(L.retryAfterMs(new Headers({ 'retry-after-ms': '120' }), ''), 120)
+  assert.equal(L.retryAfterMs(new Headers({ 'retry-after': '2' }), ''), 2000)
+  assert.equal(L.retryAfterMs(new Headers(), 'Rate limit reached … Please try again in 902ms. Visit'), 902)
+  assert.equal(L.retryAfterMs(new Headers(), 'try again in 1.5s'), 1500)
+  assert.equal(L.retryAfterMs(new Headers(), 'no hint'), undefined)
+  const saved = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = (async () => {
+    calls++
+    if (calls === 1) return new Response('{"error":{"message":"Rate limit reached. Please try again in 20ms."}}', { status: 429 })
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }], usage: { prompt_tokens: 5, completion_tokens: 3 } }), { status: 200 })
+  }) as typeof fetch
+  try {
+    assert.equal(await L.completeJSON('s', 'u', 50), '{"ok":true}', 'the second try answers')
+    assert.equal(calls, 2, 'one wait, one retry')
+  } finally {
+    globalThis.fetch = saved
+  }
+}
+// HIG-17: over eight screens, what the brief asked for stays; a tab nobody asked for goes before an asked checkout.
+{
+  const { parsePlan } = await import('../../Services/JsxGenerator.ts')
+  const tab = (id: string, asked = false) => ({ id, name: id, kind: 'tab', tab: id, asked, spec: '' })
+  const push = (id: string, parent: string, asked = false) => ({ id, name: id, kind: 'push', parent, asked, spec: '' })
+  const plan = parsePlan(JSON.stringify({
+    appName: 'Shop', accent: '#ff375f', palette: { sneakers: '#ff375f', consistency: 'blue' },
+    tabs: ['home', 'search', 'bag', 'saved', 'profile'].map((id) => ({ id, label: id, icon: 'House' })),
+    screens: [{ id: 'welcome', name: 'Welcome', kind: 'first-run', spec: '' }, tab('home', true), tab('search'), tab('bag', true), tab('saved'), tab('profile'),
+      push('product', 'home', true), push('checkout', 'bag', true), push('tracking', 'checkout', true), push('reviews', 'product'), push('settings', 'profile')],
+  }), 'x')
+  const ids = plan.screens.map((s) => s.id)
+  assert.equal(ids.length, 8)
+  for (const want of ['welcome', 'product', 'checkout', 'tracking']) assert.ok(ids.includes(want), `${want} was asked for: ${ids}`)
+  assert.ok(!ids.includes('reviews') && !ids.includes('settings'), 'unasked pushed screens go first')
+  assert.deepEqual(plan.tabs.map((t) => t.id).sort(), plan.screens.filter((s) => s.kind === 'tab').map((s) => s.tab).sort(), 'a dropped tab leaves the tab bar')
+}
+// KON-13: findings from a drawn page are validated before they reach a prompt, and each says what fixed means.
+{
+  const { parseAudit, auditBrief, AUDIT_SOURCE } = await import('../../../lib/render-audit.ts')
+  // The page-side script is a template string: one unescaped backslash made it unparsable and every check silently empty.
+  assert.doesNotThrow(() => new Function(AUDIT_SOURCE), 'the audit script parses')
+  const found = parseAudit([{ rule: 'clipped-text', where: '"Speaking" (Button)', detail: 'is cut off' }, { rule: 'rm -rf', where: 'x' }, 'junk', { rule: 'sparse', where: '(Page)', detail: 'the lower 46% is empty' }])
+  assert.deepEqual(found.map((f) => f.rule), ['clipped-text', 'sparse'], 'unknown rules and junk are dropped')
+  const brief = auditBrief(found)
+  assert.ok(brief.includes('"Speaking" (Button) is cut off → give the text room'), brief)
+  assert.equal(parseAudit(Array.from({ length: 30 }, () => ({ rule: 'overlap', where: 'a', detail: 'b' }))).length, 12, 'capped')
+}
 // Two quick ⌘Z presses run their steps in order; run at once, the slower first step's save landed last.
 {
   const { UndoStack, pairStep } = await import('../../../lib/undo-stack.ts')
@@ -1177,7 +1270,8 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   reply = () => new Response('down', { status: 500 })
   await UsageService.run({ userId: 'user-9' }, () => post(GenerateController, { projectId: 'p-usage', prompt: 'again' }))
   const failed = (await db.select().from(llmCalls)).filter((r) => r.userId === 'user-9' && !r.ok)
-  assert.ok(failed.length === 1 && /DeepSeek 500/.test(failed[0].error ?? ''), 'a failed call is logged with its error')
+  // With no fallback set, the same model gets one more try; each attempt is its own logged row.
+  assert.ok(failed.length === 2 && failed.every((f) => /DeepSeek 500/.test(f.error ?? '')), 'a failed call and its one retry are logged with their error')
 
   assert.equal(await UsageService.refusal('user-9'), null, 'under the limits')
   UsageService.begin('user-9')

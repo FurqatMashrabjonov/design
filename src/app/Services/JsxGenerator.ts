@@ -13,7 +13,7 @@ const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 let system: string | null = null
 /** The screen writer's system prompt: skill + kit + Konsta reference (the reference is generated from Konsta's types). */
 export function screenSystem(): string {
-  return (system ??= [read('skills/mobile-screen-jsx/SKILL.md').replace(/^---[\s\S]*?---\n/, ''), read('konsta/KIT.md'), read('konsta/REFERENCE.md')].join('\n\n'))
+  return (system ??= [read('skills/mobile-screen-jsx/SKILL.md').replace(/^---[\s\S]*?---\n/, ''), read('konsta/KIT.md'), read('konsta/USAGE.md'), read('konsta/REFERENCE.md')].join('\n\n'))
 }
 // One finished screen per kind of screen (konsta/examples): what the model copies is how it is built.
 const examples = new Map<string, string>()
@@ -22,20 +22,22 @@ const example = (name: 'dashboard' | 'onboarding' | 'detail' | 'list') => exampl
 export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Settings', 'Bell', 'Calendar', 'ChartColumn', 'ListChecks', 'ShoppingBag', 'ShoppingCart', 'MessageCircle', 'Map', 'Compass', 'Wallet', 'CreditCard', 'BookOpen', 'Dumbbell', 'Utensils', 'Music', 'Play', 'Camera', 'Image', 'Star', 'Bookmark', 'Inbox', 'Layers', 'Grid2x2', 'Sparkles', 'Activity', 'Target', 'Plane', 'Ticket', 'Users', 'Briefcase', 'GraduationCap', 'Leaf', 'Droplets', 'Footprints']
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
-export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string }
+export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
 export type AppPlan = { appName: string; summary: string; accent: string; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string }
 
-const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
+export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
 {"appName": string, "summary": "one sentence", "accent": "#rrggbb (one confident accent that suits the app)",
- "palette": {"camelCaseName": "#rrggbb", …} — 3–6 vivid, distinct colours, one per thing the app tracks or sorts by (e.g. steps/water/sleep, food/drinks/dessert, income/rent/fun); iOS system hues read well (#ff9f0a #0a84ff #30d158 #bf5af2 #ff375f #5e5ce6 #64d2ff #ffd60a),
+ "palette": {"camelCaseName": "#rrggbb", …} — 3–6 vivid, distinct colours, one per thing the app tracks or sorts by, named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); iOS system hues read well (#ff9f0a #0a84ff #30d158 #bf5af2 #ff375f #5e5ce6 #64d2ff #ffd60a),
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
- "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
- "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, consistent, rich enough to fill the screens"}
-Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all, the ones the brief asks for first. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen (2–3 slides inside it) unless the brief says otherwise; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
+ "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
+ "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
+Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen (2–3 slides inside it) unless the brief says otherwise; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'screen'
 
-/** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens. */
+/** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens —
+ *  and when there are more, what the brief asked for stays (HIG-17: a checkout or a tracking screen used to be cut
+ *  because the eight slots went to onboarding and the tabs first). */
 export function parsePlan(json: string, fallbackName: string): AppPlan {
   const raw = JSON.parse(jsonOnly(json)) as Partial<AppPlan> & { screens?: Partial<PlannedScreen>[]; tabs?: Partial<AppLook['tabs'][number]>[] }
   const tabs = (raw.tabs ?? []).slice(0, 5).map((t) => ({ id: slug(String(t.id ?? t.label ?? 'tab')), label: String(t.label ?? t.id ?? 'Tab').slice(0, 16), icon: TAB_ICONS.includes(String(t.icon)) ? String(t.icon) : 'House' }))
@@ -45,7 +47,7 @@ export function parsePlan(json: string, fallbackName: string): AppPlan {
     while (seen.has(id)) id += '-2'
     seen.add(id)
     const kind: Kind = (['tab', 'push', 'modal', 'first-run'] as const).includes(s.kind as Kind) ? (s.kind as Kind) : 'push'
-    return { id, name: String(s.name ?? id).slice(0, 60), kind, tab: s.tab ? slug(String(s.tab)) : undefined, parent: s.parent ? slug(String(s.parent)) : undefined, spec: String(s.spec ?? '').slice(0, 800) }
+    return { id, name: String(s.name ?? id).slice(0, 60), kind, tab: s.tab ? slug(String(s.tab)) : undefined, parent: s.parent ? slug(String(s.parent)) : undefined, spec: String(s.spec ?? '').slice(0, 800), asked: (s as { asked?: unknown }).asked === true }
   })
   // One tab screen per tab: the first claim wins, a tab with none gets its first unclaimed screen.
   const byTab = new Map<string, PlannedScreen>()
@@ -58,16 +60,34 @@ export function parsePlan(json: string, fallbackName: string): AppPlan {
   }
   const tabbed = tabs.filter((t) => byTab.has(t.id))
   for (const s of screens) if ((s.kind === 'push' || s.kind === 'modal') && (!s.parent || !seen.has(s.parent))) s.parent = byTab.get(tabbed[0]?.id ?? '')?.id ?? screens[0]?.id
-  screens = [...screens.filter((s) => s.kind === 'first-run'), ...tabbed.map((t) => byTab.get(t.id)!), ...screens.filter((s) => s.kind === 'push' || s.kind === 'modal')].slice(0, 8)
+  screens = [...screens.filter((s) => s.kind === 'first-run'), ...tabbed.map((t) => byTab.get(t.id)!), ...screens.filter((s) => s.kind === 'push' || s.kind === 'modal')]
+  // Over eight: drop what the brief did not ask for — pushed screens first (last planned first), then a tab and its
+  // screen, never below three tabs and never the first-run screen.
+  const MAX = 8
+  const drop = (s: PlannedScreen) => (screens = screens.filter((x) => x !== s))
+  for (const s of [...screens].reverse()) if (screens.length > MAX && (s.kind === 'push' || s.kind === 'modal') && !s.asked && !screens.some((x) => x.parent === s.id)) drop(s)
+  for (const s of [...screens].reverse()) if (screens.length > MAX && s.kind === 'tab' && !s.asked && screens.filter((x) => x.kind === 'tab').length > 3 && !screens.some((x) => x.parent === s.id)) drop(s)
+  screens = screens.slice(0, MAX)
+  const kept = new Set(screens.map((s) => s.tab).filter(Boolean))
+  const liveTabs = tabbed.filter((t) => kept.has(t.id))
   if (!screens.length) throw new Error('The plan had no screens')
   const accent = /^#[0-9a-f]{6}$/i.test(String(raw.accent)) ? String(raw.accent) : '#5e5ce6'
   // The palette is pasted into every screen as code, so only identifiers and hex colours pass.
   const palette = Object.fromEntries(Object.entries(raw.palette && typeof raw.palette === 'object' ? raw.palette : {}).filter(([k, v]) => /^[a-z][a-zA-Z0-9]{0,19}$/.test(k) && /^#[0-9a-f]{6}$/i.test(String(v))).slice(0, 6).map(([k, v]) => [k, String(v).toLowerCase()]))
-  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent, palette, tabs: tabbed, screens, data: String(raw.data ?? '').slice(0, 5000) }
+  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000) }
 }
 
 export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal): Promise<AppPlan> {
-  return parsePlan(await completeJSON(PLANNER, `Brief: ${brief}`, 4000, onUsage, undefined, signal, 'plan'), fallbackName)
+  const today = new Date().toISOString().slice(0, 10)
+  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}`, 4000, onUsage, undefined, signal, 'plan'), fallbackName)
+  // A plan that does not parse draws nothing at all (1 of 16 DeepSeek plans on 2026-09-29, not reproducible), and
+  // a plan is cheap, so it gets one more try.
+  try {
+    return await once()
+  } catch (e) {
+    if (signal?.aborted) throw e
+    return once()
+  }
 }
 
 const kindLine = (s: PlannedScreen) =>

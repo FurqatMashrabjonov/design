@@ -10,12 +10,13 @@ import { Setting } from '@/app/Models/Setting'
 // Values are sealed at rest and cached decrypted for a minute (a key changed on another server is
 // picked up within that); nothing here ever returns a value to the browser.
 
-export const SECRET_NAMES = ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'PEXELS_API_KEY', 'POLAR_ACCESS_TOKEN', 'POLAR_WEBHOOK_SECRET'] as const
+export const SECRET_NAMES = ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'PEXELS_API_KEY', 'POLAR_ACCESS_TOKEN', 'POLAR_WEBHOOK_SECRET'] as const
 export type SecretName = (typeof SECRET_NAMES)[number]
 const LABEL: Record<SecretName, string> = {
   DEEPSEEK_API_KEY: 'DeepSeek',
   GEMINI_API_KEY: 'Google Gemini',
   ANTHROPIC_API_KEY: 'Anthropic (Claude)',
+  OPENAI_API_KEY: 'OpenAI (GPT)',
   PEXELS_API_KEY: 'Pexels (photos)',
   POLAR_ACCESS_TOKEN: 'Polar (payments)',
   POLAR_WEBHOOK_SECRET: 'Polar webhook secret',
@@ -89,6 +90,7 @@ export const SecretService = {
       DEEPSEEK_API_KEY: () => fetch('https://api.deepseek.com/models', { headers: { Authorization: `Bearer ${key}` } }),
       GEMINI_API_KEY: () => fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1', { headers: { 'x-goog-api-key': key } }),
       ANTHROPIC_API_KEY: () => fetch('https://api.anthropic.com/v1/models?limit=1', { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' } }),
+      OPENAI_API_KEY: () => fetch('https://api.openai.com/v1/models', { headers: { Authorization: `Bearer ${key}` } }),
       PEXELS_API_KEY: () => fetch('https://api.pexels.com/v1/search?query=test&per_page=1', { headers: { Authorization: key } }),
       POLAR_ACCESS_TOKEN: () => fetch(`${polar}/v1/organizations/`, { headers: { Authorization: `Bearer ${key}` } }),
       POLAR_WEBHOOK_SECRET: null,

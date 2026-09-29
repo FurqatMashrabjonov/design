@@ -8,6 +8,7 @@ import './runtime.css'
 // always loaded; the Material You scheme is loaded only when a screen is shown as Android.
 import iosColors from '../node_modules/konsta/color-utils/ios-colors.js'
 import { SERIALIZE_SOURCE } from '../src/lib/figma-serialize.ts'
+import { AUDIT_SOURCE } from '../src/lib/render-audit.ts'
 export * from './kit/ui.jsx'
 import { STATIC } from './kit/ui.jsx'
 export { useNav, AppTabbar, usePhotos } from './kit/nav.jsx'
@@ -56,6 +57,7 @@ export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform
   await render()
   reportHeight(el)
   answerSerialize()
+  answerAudit()
   // The host changes the look in place (od:look) — iOS ↔ Android, light ↔ dark, accent — so a theme switch
   // re-renders this screen instead of reloading the page. Only the parent is listened to, and only valid values pass.
   window.addEventListener('message', (e) => {
@@ -114,5 +116,21 @@ function answerSerialize() {
       error = String(err?.message ?? err)
     }
     window.parent.postMessage({ type: 'od:serialized', requestId: e.data.requestId, tree, error }, '*')
+  })
+}
+
+// KON-13: the server asks what the drawn screen looks like (od:audit) before anyone sees it. Only the parent may ask.
+function answerAudit() {
+  const audit = new Function(AUDIT_SOURCE)
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'od:audit') return
+    let findings = []
+    let error = null
+    try {
+      findings = audit()
+    } catch (err) {
+      error = String(err?.message ?? err)
+    }
+    window.parent.postMessage({ type: 'od:audited', findings, error, material: !!document.querySelector('.k-material') }, '*')
   })
 }

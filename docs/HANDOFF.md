@@ -176,7 +176,7 @@ marketing, muharrir) shundan keyin.
   to'la ikonka, har tizimning o'z bar tokenlari, Lumen uchun haqiqiy glass. **Foydalanuvchidan
   so'raladi: GQ-40 ni MVP ga o'tkazish.**
 - Model A/B (2 brief: food-delivery, fit-tracker), eval asboblari endi repoda:
-  `npm run eval -- --model <id>`, `LLM_SCREEN_THINKING=1`, `LLM_PLAN_THINKING=1`, `LLM_RETRY_SAME=1`.
+  `npm run eval -- --model <id>`, `LLM_SCREEN_THINKING=1`, `LLM_PLAN_THINKING=1`. (A call that fails before its first token is retried once on the same model when no fallback is set.)
 
   | | DeepSeek off (hozirgi) | DeepSeek thinking | Gemini 3.1 Flash-Lite |
   |---|---|---|---|

@@ -5,6 +5,184 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (3)
+
+### LLM-08 (in progress): OpenAI adapter — GPT-6 Luna and GPT-6 Sol — and Claude Opus 5.5 as pickable models
+
+- `LlmService`: a new `openai` provider on Chat Completions. GPT-6 is sent as a reasoning model:
+  `max_completion_tokens`, no temperature, and `reasoning_effort: "none"` from the model row. Caching is
+  automatic. Usage is read from `prompt_tokens_details`: cache reads, and cache writes when reported.
+- Claude Opus 5.5 cannot switch thinking off (a 400), so it runs at `output_config.effort: "low"` with a
+  16k output floor. Other Claude models keep thinking disabled.
+- Prices, checked 2026-09-29:
+
+  | Model | Per 1M tokens | Credits: plan / draw / screen / element |
+  |---|---|---|
+  | Luna | $0.10 / $0.50 (cache $0.01, write $0.125) | 1 / 14 / 2 / 1 — as DeepSeek |
+  | Sol | $2 / $10 | 8 / 156 / 24 / 9 — as Sonnet |
+  | Opus 5.5 | $4 / $20 (cache $0.20, write $5) | 18 / 360 / 55 / 20 — floor × 1.5 for its thinking |
+
+  The credit price test holds every row to 1.25× its worst cost.
+- The admin panel has an OpenAI key (`OPENAI_API_KEY`, "Test connection" on `/v1/models`). Telescope labels
+  `api.openai.com` as `openai`.
+- Tests: a screen on GPT-6 Luna reaches OpenAI with the reasoning-model shape; a screen on Opus 5.5 carries no
+  `thinking` and effort low.
+- Verified in the browser: Settings shows the OpenAI key row; Providers lists Opus 5.5, GPT-6 Luna and GPT-6 Sol.
+  `npm run check` and `tsc` are clean.
+- **Measured with the key** (8 briefs, the same pipeline, only the model changed; `eval --model <id>` sets
+  `llm.model.*` in the eval's fresh database):
+
+  | | DeepSeek V4.1 Flash | GPT-6 Luna |
+  |---|---|---|
+  | Judge, pairwise | — | **6 won, 0 tied, 2 lost** |
+  | Rubric overall | 2.95 | **3.14** |
+  | Coherence | 3.25 | **3.63** — one accent, the same data on every screen |
+  | Hierarchy | 3.33 | 3.58 |
+  | Output tokens per screen | 2 379 | 1 559 (−35%) |
+  | Seconds per app | 54 | 49 |
+  | Problems per screen | 0.13 | 0.14 |
+  | Cost per app | $0.016–0.033 | ~$0.01–0.02 |
+
+- The account's real limit, read from the response headers: 500 RPM and **200 000 TPM** for gpt-6-luna, about
+  1.7 apps a minute. Tier 2 opens after $50 of spend.
+- In that run, three screens of one app were lost to a 429 ("try again in 902ms"): the retry went out at once
+  and met the limit again. `LlmService` now waits out a 429 that says how long (`retry-after-ms`,
+  `retry-after`, or the message) and retries on the same model, twice at most. Re-run with 3 apps at once:
+  24/24 screens.
+- GPT-6 Sol was stopped at the owner's call (too expensive).
+- **GPT-6 Luna is the default model.** `LLM_MODEL` overrides it, and `DEEPSEEK_MODEL` is still read. With no
+  admin fallback, the fallback is DeepSeek V4.1 Flash. The tests pin `deepseek-flash`. The OpenAI key lives in
+  `.env`, which is gitignored. Verified in the admin: Plan, Screen and Edit show GPT-6 Luna, and the fallback
+  shows DeepSeek V4.1 Flash.
+
+
+## 2026-09-29 (2)
+
+### HIG-17 planner keeps what the brief asked for, one value per fact; HIG-16 the check measures Android too
+
+**HIG-17 (`JsxGenerator`).**
+- The planner marks each screen the brief names (`asked`).
+- Over eight screens, `parsePlan` now drops unasked pushed screens first (never a parent of a kept screen), then
+  an unasked tab. It never goes below three tabs, never drops the first-run screen, and a dropped tab leaves the
+  tab bar. Before, onboarding and the tabs took the eight slots first, and a checkout or tracking screen was cut.
+- `data` must give every fact one value for the whole app: the person's XP, rank, balance and streak, and the
+  state each flow shares (cart items, the stay, the order).
+- The planner is told today's date, so dates are around today.
+- Palette keys are named after the tracked thing, never a quality.
+
+**HIG-16 (`RenderAudit`).** The same page is measured as iOS, switched to Material in place (`od:look`) and
+measured again: one Chrome, two platforms. What only Android shows reaches the repair as "… on Android".
+
+**Eval** (DeepSeek V4.1, 8 briefs):
+- HIG-17 against the previous run: judge 3 won, 3 tied, 2 lost. The judge saw tracking and checkout present,
+  cart equal to checkout, and one user across screens.
+- Problems per screen 0.13; 92% of screens clean.
+
+**Before and after all HIG work.** The commit before HIG (`1d50245`) was run in a worktree and measured with
+today's check:
+
+| | Before HIG | Now |
+|---|---|---|
+| Problems per screen | 1.33 | 0.13 (−90%) |
+| Clean screens | 42% | 92% |
+| Judge (taste) | — | 3 won, 2 tied, 3 lost: taste unchanged |
+
+**Files:** `src/app/Services/JsxGenerator.ts`, `src/app/Services/RenderAudit.ts`, `runtime/kit.jsx`,
+`controllers.check.ts` (the `asked` priority test).
+
+**Verified:** `npm run check` and `tsc` are clean.
+
+## 2026-09-29
+
+### KON-13 + HIG-15 render check and one repair, HIG-11 skill, HIG-13 usage cards — measured on DeepSeek V4.1
+
+**Render check (KON-13).** Every drawn screen is opened in headless Chrome and measured by the kit
+(`lib/render-audit.ts`, `od:audit`):
+- a box past the phone's edge;
+- text cut off;
+- text over text;
+- text under a card or a fixed bar;
+- near-invisible text (a gradient is judged at its worst stop);
+- half a phone left empty.
+
+`RenderAudit.ts` serves the page on 127.0.0.1 with a random token, `?static`, and a CSP with no network except
+Pexels photos.
+
+**One repair (HIG-15 merged in).** The render findings and the lint's reported findings go into one rewrite. It
+is kept only if it builds and fewer problems are left, and the chat log says `checked: N found, M left`. Without
+Chrome the check is the lint alone; `RENDER_AUDIT=0` turns it off (the tests set it).
+
+**Lint.** A `BlockTitle` with no `Block`/`List` under it, or with one whose margin the model changed, gets
+`!mb-2`. Konsta pulls the next box up by 8px, and this one trap caused most of the measured breakage.
+
+**HIG-11: skill rewritten HIG-first**, 7.8k characters:
+- structure first: one primary action, inset grouped lists, chevrons only for navigation;
+- `Segmented` holds 2–4 options;
+- no half-empty screens;
+- text styles instead of pixel sizes;
+- colour, emoji and photos kept.
+
+**HIG-13: `konsta/USAGE.md`.** Ten right/wrong JSX cards, added to the system prompt.
+
+**Reliability.**
+- A plan that fails is asked once more.
+- A call that fails before its first token is retried on the same model when no fallback is set. DeepSeek
+  dropped the connection with nothing read on 3 of 16 plans, and those apps got no screens.
+- The model label is now "DeepSeek V4.1 Flash": `deepseek-flash` has served V4.1 since 2026-09-10, same price.
+
+**Eval** (8 briefs, DeepSeek V4.1; `problemsPerScreen` is measured the same way for every run):
+
+| Run | Problems / screen | Clean screens | s / app | Out tokens / screen |
+|---|---|---|---|---|
+| base: old lint, no repair | 0.54 (5 briefs) | 76% | 45 | 1 677 |
+| + render repair | 0.48 | 73% | 89 | 2 840 |
+| + new lint + HIG-11 skill | 0.05 | 94.5% | 59 | 2 531 |
+| + USAGE cards (hig13) | 0.08 | 94% | 36 | 2 099 |
+| old skill, all else equal | 0.24 | 94% | 72 | 2 466 |
+
+- Re-measuring stored screens with only the new lint applied: base 0.54 → 0.00. The lint fixes the trap for free;
+  the paid rewrite is a safety net.
+- Judge, new skill against old skill: 3 won, 1 tied, 4 lost of 8, almost all "slight". We call that noise; the new
+  skill keeps −67% problems at 2× speed.
+- The judge's repeated complaints are data consistency across screens and screens the brief asked for that are
+  missing from the plan. Both are HIG-17 (planner) work.
+
+**Files:**
+- `src/lib/render-audit.ts`, `src/app/Services/RenderAudit.ts`, `runtime/kit.jsx`;
+- `src/app/Http/Controllers/PlanController.ts`, `src/app/Http/Controllers/GenerateController.ts`;
+- `src/lib/jsx-lint.ts`, `src/app/Services/JsxGenerator.ts`, `src/app/Services/LlmService.ts`;
+- `skills/mobile-screen-jsx/SKILL.md`, `konsta/USAGE.md`;
+- `eval/run.ts`, `controllers.check.ts`.
+
+**Verified:** `npm run check` and `tsc` are clean. A new test holds the page-side audit script parseable: one
+unescaped backslash had once made every check silently empty.
+
+## 2026-09-28 (13)
+
+### PRV-03 Preview stage: nothing competes with the phone
+
+- No dot grid: the preview is a presentation, not a workspace, so it has one flat tone (the studio's canvas
+  colour).
+- Behind the phone: a soft radial light in the app's own accent, and a shadow on the floor. The eye goes to the
+  middle, and the light follows the accent.
+- The controls step back: 2 s without the pointer moving over the page, or without a key press, and the top bar,
+  arrows, fold controls and caption fade out (`[data-idle] .od-chrome`). Any move brings them back.
+  - Pointer moves inside the phone never reach the page, so using the app keeps them hidden.
+  - They stay while the pointer is on them, while one has focus, or while the device menu is open.
+  - The fade is inside `prefers-reduced-motion: no-preference`.
+- Files: `src/routes/preview.$projectId.tsx`, `src/styles.css`.
+- Verified in the browser:
+  - the controls go idle after 2 s (opacity 0);
+  - a move wakes them;
+  - hovering the top bar holds them;
+  - `npm run check` and `tsc` are clean.
+- Presentation mode (fullscreen, only the phone) is PRV-04, Keyin.
+- Follow-up the same day:
+  - The stage and its controls wear the app's light/dark, not the studio's: `.light` re-applies the light ramp
+    inside a dark studio, next to `:root`.
+  - The "Photos by Pexels" link is removed from the preview (the owner's call). Pexels' API guideline asks for
+    a visible link, so a credit belongs somewhere else in the product.
+
 ## 2026-09-28 (12)
 
 ### PRV-02 iPhone Duo reworked to match Apple's renders, then switched off until November

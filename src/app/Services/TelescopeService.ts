@@ -237,7 +237,7 @@ export const TelescopeService = {
 
 const MAX_PAYLOAD = 64 * 1024
 
-export const PURPOSES = ['deepseek', 'gemini', 'anthropic', 'pexels', 'polar', 'google', 'other'] as const
+export const PURPOSES = ['deepseek', 'gemini', 'anthropic', 'openai', 'pexels', 'polar', 'google', 'other'] as const
 export type Purpose = (typeof PURPOSES)[number]
 export type OutgoingRecord = { requestId: string | null; method: string; host: string; path: string; query: string | null; purpose: Purpose; status: number | null; error?: string | null; ms: number; size: number | null }
 export type OutgoingFilters = { purpose?: Purpose; status?: '2xx' | '3xx' | '4xx' | '5xx' | 'error'; host?: string; slowMs?: number; from?: number; to?: number; page?: number }
@@ -250,6 +250,7 @@ export function purposeOf(host: string): Purpose {
   if (/(^|\.)deepseek\.com$/.test(h)) return 'deepseek'
   if (h === 'generativelanguage.googleapis.com') return 'gemini'
   if (/(^|\.)anthropic\.com$/.test(h)) return 'anthropic'
+  if (/(^|\.)openai\.com$/.test(h)) return 'openai'
   if (/(^|\.)pexels\.com$/.test(h)) return 'pexels'
   if (/(^|\.)polar\.sh$/.test(h)) return 'polar'
   if (/(^|\.)(google\.com|googleapis\.com|gstatic\.com)$/.test(h)) return 'google'

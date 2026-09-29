@@ -124,7 +124,8 @@
     --ease-spring: var(--motion-ease-spring);
 }
 
-:root {
+/* `.light` re-applies the light ramp inside a dark studio (the preview stage follows the app's own light/dark). */
+:root, .light {
     /* UI-01: one warm (sand) ramp for light and dark, so no surface is pure white or pure black.
        UI-10: in OKLCH; new-features.check.ts converts these and checks the contrast pairs. */
     --background: oklch(0.991 0.005 85);        /* #fefcf8 */
@@ -395,6 +396,11 @@ svg.lucide { stroke-width: 1.75; }
     .od-preview-stage[data-motion='pop'] > iframe[data-state='leaving'] { z-index: 3; animation: od-pv-out-right var(--duration-slow) var(--motion-ease-out) both; box-shadow: -12px 0 32px rgb(0 0 0 / .12); }
     .od-preview-stage[data-motion='fade'] > iframe[data-state='shown'] { animation: od-pv-fade-in var(--duration-base) var(--motion-ease-out) both; }
     .od-preview-stage[data-motion='fade'] > iframe[data-state='leaving'] { animation: od-pv-fade-out var(--duration-base) var(--motion-ease-out) both; }
+}
+/* PRV-03: the preview's controls fade out while the app is in use and come back on any pointer move. */
+[data-idle] .od-chrome { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .od-chrome { transition: opacity var(--duration-slow) var(--motion-ease-out); }
 }
 /* /SHR-03 preview */
 

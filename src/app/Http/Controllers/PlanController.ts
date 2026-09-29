@@ -7,6 +7,9 @@ import { mapLimit } from '@/app/Services/Pool'
 import { compileScreen } from '@/app/Services/ScreenCompiler'
 import { lintJsx } from '@/lib/jsx-lint'
 import { resolvePhotos } from '@/app/Services/PhotoService'
+import { auditScreen, repairOn } from '@/app/Services/RenderAudit'
+import type { AppLook } from '@/app/Services/ScreenDocument'
+import { auditBrief } from '@/lib/render-audit'
 import { planApp, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
@@ -24,8 +27,14 @@ function linted(jsx: string): string {
   return r.source
 }
 
-/** One screen: written, linted, compiled, and if the compiler refused it, rewritten once with its errors. */
-export async function drawScreen(user: string, tally: (u: import('@/app/Services/LlmService').LlmUsage) => void, signal: AbortSignal, site: 'screen' | 'edit' = 'screen'): Promise<string> {
+/** What the render audit found on a screen and what was left after its one repair (KON-13). */
+export type AuditOutcome = { found: number; left: number; repaired: boolean }
+
+/** One screen: written, linted, compiled, and if the compiler refused it, rewritten once with its errors. Then
+ *  (KON-13) drawn in headless Chrome and measured; if a person would see something broken — text cut off, a card
+ *  on a heading, a row off the screen, half a phone empty — it is rewritten once with exactly those findings, and
+ *  the rewrite is kept only if it builds and fewer problems are left. */
+export async function drawScreen(user: string, tally: (u: import('@/app/Services/LlmService').LlmUsage) => void, signal: AbortSignal, site: 'screen' | 'edit' = 'screen', audit?: { look: AppLook; slug: string; report?: (o: AuditOutcome) => void }): Promise<string> {
   let jsx = linted(await writeScreen(user, tally, signal, site))
   let built = await compileScreen(jsx)
   if (!built.ok) {
@@ -35,8 +44,37 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
   }
   // KON-12: its photos are looked up now, so the page that shows it only reads the cache.
   await resolvePhotos(jsx, signal).catch(() => {})
+  // KON-13 + HIG-15: one check of what a person would see (the drawn page, measured) and what the lint could only
+  // report (a List inside a Block, three big buttons…); if either found something, one rewrite with all of it.
+  if (audit && repairOn() && !signal.aborted) {
+    const check = async (src: string) => {
+      const render = (await auditScreen(src, audit.look, audit.slug, signal)) ?? []
+      const lint = lintJsx(src).findings
+      return { render, lint, count: render.length + lint.length }
+    }
+    const found = await check(jsx)
+    let left = found.count
+    let repaired = false
+    if (found.count && !signal.aborted) {
+      const problems = [auditBrief(found.render), ...found.lint.map((f) => `- ${f.message}`)].filter(Boolean).join('\n')
+      const fix = await writeScreen(`${user}\n\n# YOUR SCREEN, AS IT RENDERED\n\`\`\`jsx\n${jsx}\`\`\`\nWe drew it 390px wide and checked it. A person would see these problems:\n${problems}\nFix exactly these. Keep everything else as it is — the same content, data, sections, colours and style. Write the whole file again.`, tally, signal, site).then(linted).catch(() => null)
+      if (fix && (await compileScreen(fix)).ok) {
+        await resolvePhotos(fix, signal).catch(() => {})
+        const after = await check(fix)
+        if (after.count < found.count) {
+          jsx = fix
+          left = after.count
+          repaired = true
+        }
+      }
+    }
+    audit.report?.({ found: found.count, left, repaired })
+  }
   return jsx
 }
+
+/** The audit's line in the run's log: what the person's screen went through before they saw it. */
+export const checkNote = (c?: AuditOutcome) => (!c ? '' : c.found ? `, checked: ${c.found} problem${c.found === 1 ? '' : 's'} found, ${c.left} left` : ', checked: clean')
 
 export const PlanController = {
   async stream(request: Request, opts: { onFinish?: () => void } = {}): Promise<Response> {
@@ -91,11 +129,13 @@ export const PlanController = {
             send({ type: 'screen_start', index: i, name: s.name })
             const t0 = Date.now()
             try {
-              const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal)
+              let checked: AuditOutcome | undefined
+              const look = { accent: plan.accent, dark: false, platform: 'ios' as const, tabs: plan.tabs }
+              const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal, 'screen', { look, slug: s.id, report: (o) => (checked = o) })
               const screen = await Screen.create({ ...place(s, i), html: jsx })
               drawn.push({ id: screen.id, name: screen.name, created: true })
               order.set(screen.id, i)
-              log.push(`${s.name} — ${((Date.now() - t0) / 1000).toFixed(1)}s, ${jsx.length} chars`)
+              log.push(`${s.name} — ${((Date.now() - t0) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`)
               send({ type: 'screen_done', index: i, screenId: screen.id, name: screen.name })
             } catch (e) {
               const message = e instanceof Error ? e.message : String(e)

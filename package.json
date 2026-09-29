@@ -7,7 +7,7 @@
     "check": "test -f runtime/dist/exports.json || npm run build:runtime; node --import ./scripts/alias-hook.mjs src/database/database.check.ts && DB_FRESH=1 node --import ./scripts/alias-hook.mjs src/app/Http/Controllers/controllers.check.ts",
     "start": "node --env-file-if-exists=.env server.prod.mjs",
     "build:runtime": "vite build -c runtime/vite.config.js",
-    "eval": "DB_FRESH=1 LLM_PROVIDER=${LLM_PROVIDER:-claude-cli} node --env-file=.env --import ./scripts/alias-hook.mjs eval/run.ts",
+    "eval": "DB_FRESH=1 LLM_PROVIDER=${LLM_PROVIDER:-api} node --env-file=.env --import ./scripts/alias-hook.mjs eval/run.ts",
     "judge": "node --import ./scripts/alias-hook.mjs eval/judge.ts"
   },
   "license": "ISC",

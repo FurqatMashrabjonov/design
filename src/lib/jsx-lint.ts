@@ -65,6 +65,26 @@ export function lintJsx(source: string): LintResult {
   // The screen component: `export default function Screen()` or `export default Screen` with Screen declared above.
   let defaultFn = ast.program.body.find((n: Node) => n.type === 'ExportDefaultDeclaration')?.declaration
   if (defaultFn?.type === 'Identifier') defaultFn = ast.program.body.find((n: Node) => (n.type === 'FunctionDeclaration' && n.id?.name === defaultFn.name) || (n.type === 'VariableDeclaration' && n.declarations.some((d: Node) => d.id?.name === defaultFn.name)))
+  // Konsta pulls a BlockTitle's bottom margin up (-mb-2) for the Block or List it expects next; anything else
+  // under it (a plain div of cards, a grid, a mapped list) then sits 8px over the title's descenders. The one right
+  // answer is a small positive gap on that title.
+  const KONSTA_UNDER_TITLE = new Set(['Block', 'List', 'BlockHeader', 'BlockFooter', 'Table', 'BlockTitle'])
+  const titleGap = new Set<Node>()
+  ;(function siblings(x: unknown): void {
+    if (!x || typeof x !== 'object') return
+    if (Array.isArray(x)) return x.forEach(siblings)
+    const y = x as Node
+    if ((y.type === 'JSXElement' || y.type === 'JSXFragment') && Array.isArray(y.children)) {
+      const kids = y.children.filter((c: Node) => c.type === 'JSXElement' || c.type === 'JSXExpressionContainer' && c.expression?.type !== 'JSXEmptyExpression')
+      kids.forEach((c: Node, i: number) => {
+        const next = kids[i + 1]
+        // A Block or List whose own top margin the model changed no longer leaves room for the pull-up either.
+        const konstaNext = next?.type === 'JSXElement' && KONSTA_UNDER_TITLE.has(nameOf(next)) && !/(^|\s)!?-?m[ty]-/.test(classText(next))
+        if (c.type === 'JSXElement' && nameOf(c) === 'BlockTitle' && next && !konstaNext && !/(^|\s)!?-?mb-/.test(classText(c))) titleGap.add(c)
+      })
+    }
+    for (const [k, v] of Object.entries(y)) if (k !== 'loc' && typeof v === 'object') siblings(v)
+  })(ast.program)
   let largeButtons = 0
   let fixedBottom: Node | null = null
   let tabbar = false
@@ -104,8 +124,13 @@ export function lintJsx(source: string): LintResult {
       const whiteOnHero = name === 'Hero' && hasClass(node, 'text-white')
       const doubleGutter = name === 'Block' && hasClass(node, 'px-4')
       const loneWhite = hasClass(node, 'bg-white') && !/\bdark:bg-/.test(classText(node))
-      for (const p of classParts(node)) {
+      const parts = classParts(node)
+      // A template className is left alone: a second className attribute would be a guess.
+      const gapTitle = titleGap.has(node) && (parts.length === 0 || parts.some((p) => p.whole)) && !attr(node, 'className')?.value?.expression?.type?.startsWith('Template')
+      if (gapTitle && parts.length === 0 && !attr(node, 'className')) edits.push([node.openingElement.name.end, node.openingElement.name.end, ' className="!mb-2"'])
+      for (const p of parts) {
         let text = p.text
+        if (gapTitle && p.whole) text = `${text} !mb-2`
         // tint() is a 16% wash: white text on it cannot be read; the label colour is the one right answer.
         if (whiteOnTint || whiteOnHero) text = text.replace(/(^|\s)text-white(?=\s|$)/g, '$1')
         // Block already pads its content to the list inset; px-4 on it doubles the gutter.
@@ -121,6 +146,7 @@ export function lintJsx(source: string): LintResult {
       if (whiteOnHero) fixed.push('white-on-hero: dropped text-white on a Hero (it sets its own text colour)')
       if (doubleGutter) fixed.push('block-double-gutter: dropped px-4 on a Block')
       if (loneWhite) fixed.push('lone-bg-white: added dark:bg-[#1c1c1e]')
+      if (gapTitle) fixed.push('title-over-content: gave a BlockTitle with no Block/List under it a bottom gap')
       if (classParts(node).some((p) => /\btext-\[(\d+(?:\.\d+)?)px\]/.test(p.text) && [...p.text.matchAll(/\btext-\[(\d+(?:\.\d+)?)px\]/g)].some((m) => Number(m[1]) < MIN_TEXT_PX))) fixed.push(`tiny-text: raised text below ${MIN_TEXT_PX}px`)
 
       if (here) {

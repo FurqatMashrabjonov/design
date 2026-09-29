@@ -18,6 +18,11 @@ export const CREDIT_PRICES: Record<string, Prices> = {
   'gemini-2.5-flash': { plan: 2, draw: 26, screen: 4, element: 2 },
   'claude-haiku-4-5': { plan: 3, draw: 65, screen: 10, element: 4 },
   'claude-sonnet-5': { plan: 8, draw: 156, screen: 24, element: 9 },
+  // LLM-08. Luna's floor is below DeepSeek's; it is priced the same so a switch changes nothing for people.
+  'gpt-6-luna': { plan: 1, draw: 14, screen: 2, element: 1 },
+  'gpt-6-sol': { plan: 8, draw: 156, screen: 24, element: 9 },
+  // Opus 5.5 always thinks a little (low effort): its floor × 1.5.
+  'claude-opus-5-5': { plan: 18, draw: 360, screen: 55, element: 20 },
 }
 
 /** BIL-07: a new account starts with these — four apps, once. */

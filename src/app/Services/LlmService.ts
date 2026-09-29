@@ -20,6 +20,10 @@ export const PRICES: Record<string, Price> = {
   'gemini-2.5-flash': { input: 0.3, cached: 0.03, output: 2.5 },
   'claude-haiku-4-5': { input: 1, cached: 0.1, cacheWrite: 1.25, output: 5 },
   'claude-sonnet-5': { input: 2, cached: 0.2, cacheWrite: 2.5, output: 10 },
+  // LLM-08 (checked 2026-09-29): Opus 5.5 reads its cache at $0.20; GPT-6 bills a cache write at 1.25× input.
+  'claude-opus-5-5': { input: 4, cached: 0.2, cacheWrite: 5, output: 20 },
+  'gpt-6-luna': { input: 0.1, cached: 0.01, cacheWrite: 0.125, output: 0.5 },
+  'gpt-6-sol': { input: 2, cached: 0.2, cacheWrite: 2.5, output: 10 },
 }
 /** The generating model's base (off-peak) rate — what the eval's estimate uses. */
 export const PRICE = PRICES['deepseek-flash']!
@@ -45,15 +49,20 @@ export function costOf(u: LlmUsage, model: string, at: Date = new Date()): numbe
  * needs a PRICES row too (a test holds both tables together): a model we cannot price cannot run.
  * Gemini 2.5 can switch thinking off; Gemini 3 cannot, so it thinks as little as it allows.
  */
-export type Provider = 'deepseek' | 'gemini' | 'anthropic'
+export type Provider = 'deepseek' | 'gemini' | 'anthropic' | 'openai'
 export type ModelInfo = { provider: Provider; apiModel: string; label: string; reasoningEffort?: string }
 export const MODELS: Record<string, ModelInfo> = {
-  'deepseek-flash': { provider: 'deepseek', apiModel: 'deepseek-flash', label: 'DeepSeek V4 Flash' },
+  'deepseek-flash': { provider: 'deepseek', apiModel: 'deepseek-flash', label: 'DeepSeek V4.1 Flash' },
   'gemini-3.1-flash-lite': { provider: 'gemini', apiModel: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash-Lite', reasoningEffort: 'minimal' },
   'gemini-3.8-flash': { provider: 'gemini', apiModel: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', reasoningEffort: 'low' },
   'gemini-2.5-flash': { provider: 'gemini', apiModel: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', reasoningEffort: 'none' },
   'claude-haiku-4-5': { provider: 'anthropic', apiModel: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
   'claude-sonnet-5': { provider: 'anthropic', apiModel: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
+  // Opus 5.5 cannot switch thinking off (a 400): it runs at the lowest effort instead.
+  'claude-opus-5-5': { provider: 'anthropic', apiModel: 'claude-opus-5-5', label: 'Claude Opus 5.5', reasoningEffort: 'low' },
+  // LLM-08: GPT-6 takes reasoning effort "none", the same as thinking off everywhere else.
+  'gpt-6-luna': { provider: 'openai', apiModel: 'gpt-6-luna', label: 'GPT-6 Luna', reasoningEffort: 'none' },
+  'gpt-6-sol': { provider: 'openai', apiModel: 'gpt-6-sol', label: 'GPT-6 Sol', reasoningEffort: 'none' },
 }
 
 /** One finished model call: how long, whether it worked, what it used. For the spend log (OBS-01). */
@@ -93,6 +102,8 @@ export function onLlmUsage(fn: typeof usageListener) {
 export const usageOf = {
   deepseek: (u: Record<string, number>): LlmUsage => ({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_cache_hit_tokens ?? 0, completionTokens: u.completion_tokens ?? 0, cacheWriteTokens: 0 }),
   gemini: (u: Record<string, any>): LlmUsage => ({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_tokens_details?.cached_tokens ?? 0, completionTokens: u.completion_tokens ?? 0, cacheWriteTokens: 0 }),
+  // OpenAI caches a prefix on its own; GPT-6 reports what it read (cached_tokens) and may report what it wrote.
+  openai: (u: Record<string, any>): LlmUsage => ({ promptTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_tokens_details?.cached_tokens ?? 0, completionTokens: u.completion_tokens ?? 0, cacheWriteTokens: u.prompt_tokens_details?.cache_write_tokens ?? u.prompt_tokens_details?.cache_creation_tokens ?? 0 }),
   // Claude's input_tokens leaves out what was read from or written to the cache; ours counts every input token.
   anthropic: (u: Record<string, number>): LlmUsage => {
     const read = u.cache_read_input_tokens ?? 0
@@ -101,16 +112,22 @@ export const usageOf = {
   },
 }
 
-// The default model this app generates with: DeepSeek V4 Flash. Asked for by name, `deepseek-flash`
+// The default model this app generates with: DeepSeek V4.1 Flash (since 2026-09-10 `deepseek-flash` serves
+// V4.1; same price, $0.15/$0.60 per 1M off-peak, double at peak). Asked for by name, `deepseek-flash`
 // thinks by default; the legacy `deepseek-chat` alias is this same model with thinking off, but an
 // alias can be re-pointed, so both the id and the mode are pinned here. LLM-07: an admin may pick
 // another model per call site (llm.model.*); this is what applies when none is picked.
-const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-flash'
+// LLM-08 (2026-09-29): the default is GPT-6 Luna — on the eval it beat DeepSeek V4.1 Flash 6–0–2 at about the
+// same price. LLM_MODEL overrides it (DEEPSEEK_MODEL is still read, for old .env files).
+const MODEL = process.env.LLM_MODEL || process.env.DEEPSEEK_MODEL || 'gpt-6-luna'
+// With no fallback set by the admin, a second provider stands by: an OpenAI outage or a run of 429s then draws on
+// DeepSeek instead of failing. A DeepSeek default keeps its old behaviour (the same model, once more).
+const DEFAULT_FALLBACK = MODEL === 'deepseek-flash' ? undefined : 'deepseek-flash'
 /**
  * ADM-13: where provider keys come from. SecretService registers itself on import (the admin panel's
  * key, else .env); until it does — the plain-node tests, which have no database — it is .env alone.
  */
-type KeyName = 'DEEPSEEK_API_KEY' | 'GEMINI_API_KEY' | 'ANTHROPIC_API_KEY'
+type KeyName = 'DEEPSEEK_API_KEY' | 'GEMINI_API_KEY' | 'ANTHROPIC_API_KEY' | 'OPENAI_API_KEY'
 let keySource: (name: KeyName) => Promise<string | undefined> = async (name) => process.env[name]
 export function setKeySource(fn: typeof keySource) {
   keySource = fn
@@ -119,6 +136,7 @@ const KEY_OF: Record<Provider, { name: KeyName; label: string }> = {
   deepseek: { name: 'DEEPSEEK_API_KEY', label: 'DeepSeek' },
   gemini: { name: 'GEMINI_API_KEY', label: 'Gemini' },
   anthropic: { name: 'ANTHROPIC_API_KEY', label: 'Anthropic' },
+  openai: { name: 'OPENAI_API_KEY', label: 'OpenAI' },
 }
 async function providerKey(p: Provider): Promise<string> {
   const key = await keySource(KEY_OF[p].name)
@@ -130,7 +148,7 @@ async function providerKey(p: Provider): Promise<string> {
  * is billed as the configured model too, so the credit flow can be tried without spending. */
 export const BILLED_MODEL = MODEL
 // Fail at boot, not after a paid call: a model we cannot price cannot be billed (LLM-05).
-if (!PRICES[MODEL] || !MODELS[MODEL]) throw new Error(`DEEPSEEK_MODEL=${MODEL} has no row in PRICES and MODELS`)
+if (!PRICES[MODEL] || !MODELS[MODEL]) throw new Error(`LLM_MODEL=${MODEL} has no row in PRICES and MODELS`)
 
 /**
  * LLM-07: which model each call site runs on is an admin setting, read at call time. `plan` is the
@@ -167,7 +185,7 @@ export async function modelFor(site: Site): Promise<string> {
 }
 export async function fallbackModel(): Promise<string | undefined> {
   const v = await setting('llm.fallback')
-  return isUsableModel(v) ? v : undefined
+  return isUsableModel(v) ? v : DEFAULT_FALLBACK
 }
 
 /**
@@ -314,17 +332,30 @@ async function* call(site: Site, mode: 'stream' | 'json', o: Omit<CallOpts, 'mod
   // The row is logged under the model that ran; the reroute is said in the request's server log.
   if (pick.circuit) console.warn(`[llm] circuit open: ${pick.primary} is down, ${site} runs on ${primary} until ${new Date(pick.circuit.until).toISOString()}`)
   let yielded = false
-  try {
-    for await (const d of once(primary)) {
-      yielded = true
-      yield d
+  // A 429 that says how long to wait (OpenAI's per-minute token limit: "try again in 902ms") is waited out and
+  // tried again on the same model, twice at most — a planned run sends several screens at once and brushes the
+  // limit; retrying at once only met it again (LLM-08, 2026-09-29: 3 of 62 screens lost to it). Anything else
+  // that fails before the first token goes once to the fallback, or to the same model when none is set.
+  for (let waits = 0; ; waits++) {
+    try {
+      for await (const d of once(primary)) {
+        yielded = true
+        yield d
+      }
+      return
+    } catch (e) {
+      const wait = e instanceof ProviderError && e.status === 429 ? e.retryAfterMs : undefined
+      if (!yielded && !o.signal?.aborted && wait !== undefined && wait <= 30_000 && waits < 2) {
+        await new Promise((r) => setTimeout(r, wait + 250))
+        continue
+      }
+      // With no fallback set, the same model gets the one more try: a connection DeepSeek dropped before answering
+      // (2026-09-29: two of 24 eval plans, a socket closed with nothing read) otherwise leaves an app with no screens.
+      const fallback = yielded || o.signal?.aborted ? undefined : ((await fallbackModel()) ?? primary)
+      if (!fallback) throw e
+      yield* once(fallback)
+      return
     }
-  } catch (e) {
-    // LLM_RETRY_SAME=1 (the eval's model A/B only): a model with no fallback gets one more try on
-    // itself, so a provider's passing 503 does not decide which model looks better.
-    const fallback = yielded || o.signal?.aborted ? undefined : (await fallbackModel()) ?? (process.env.LLM_RETRY_SAME === '1' ? primary : undefined)
-    if (!fallback || (fallback === primary && process.env.LLM_RETRY_SAME !== '1')) throw e
-    yield* once(fallback)
   }
 }
 
@@ -350,9 +381,32 @@ const openaiMessages = (o: CallOpts) => [
   { role: 'user', content: userContent(o.user, o.images) },
 ]
 
+/** A provider's refusal, with how long it asked us to wait when it said (a 429's retry-after). */
+export class ProviderError extends Error {
+  status: number
+  retryAfterMs?: number
+  constructor(message: string, status: number, retryAfterMs?: number) {
+    super(message)
+    this.status = status
+    this.retryAfterMs = retryAfterMs
+  }
+}
+/** How long a 429 asks us to wait: the retry-after-ms / retry-after headers, else "try again in 902ms / 1.2s". */
+export function retryAfterMs(headers: Headers, text: string): number | undefined {
+  const ms = Number(headers.get('retry-after-ms'))
+  if (ms > 0) return ms
+  const sec = Number(headers.get('retry-after'))
+  if (sec > 0) return sec * 1000
+  const m = /try again in ([\d.]+)\s*(ms|s)\b/i.exec(text)
+  return m ? Number(m[1]) * (m[2]!.toLowerCase() === 's' ? 1000 : 1) : undefined
+}
+
 async function post(url: string, headers: Record<string, string>, body: unknown, signal: AbortSignal | undefined, name: string): Promise<Response> {
   const res = await fetch(url, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) })
-  if (!res.ok || !res.body) throw new Error(`${name} ${res.status}: ${await res.text()}`)
+  if (!res.ok || !res.body) {
+    const text = await res.text()
+    throw new ProviderError(`${name} ${res.status}: ${text}`, res.status, res.status === 429 ? retryAfterMs(res.headers, text) : undefined)
+  }
   return res
 }
 
@@ -452,10 +506,12 @@ function anthropicContent(user: string, images?: RefImage[]) {
 }
 const anthropicBody = (o: CallOpts) => ({
   model: o.model,
-  max_tokens: o.maxTokens,
   // Off, as everywhere (LLM-01): Sonnet 5 thinks unless told not to. No temperature: Sonnet 5 refuses
-  // any non-default sampling value (400), and ours is the default, 1.0.
-  thinking: THINKING_OFF,
+  // any non-default sampling value (400), and ours is the default, 1.0. A model that cannot switch thinking
+  // off (Opus 5.5) runs at its lowest effort, with room for that thinking in the output budget.
+  ...(o.reasoningEffort
+    ? { max_tokens: Math.max(o.maxTokens, 16000), output_config: { effort: o.reasoningEffort } }
+    : { max_tokens: o.maxTokens, thinking: THINKING_OFF }),
   system: [{ type: 'text', text: o.system, cache_control: { type: 'ephemeral' } }],
   messages: [{ role: 'user', content: anthropicContent(o.user, o.images) }],
 })
@@ -489,7 +545,24 @@ const anthropic: Adapter = {
   },
 }
 
-const ADAPTERS: Record<Provider, Adapter> = { deepseek, gemini, anthropic }
+// LLM-08: OpenAI's Chat Completions. GPT-6 is a reasoning model: `max_completion_tokens` (not max_tokens), no
+// temperature (only the default is accepted), `reasoning_effort` from the model row. Caching is automatic.
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
+const openaiBody = (o: CallOpts) => ({ model: o.model, max_completion_tokens: o.maxTokens, ...(o.reasoningEffort && { reasoning_effort: o.reasoningEffort }), messages: openaiMessages(o) })
+const openai: Adapter = {
+  async *stream(o) {
+    const res = await post(OPENAI_URL, { Authorization: `Bearer ${await providerKey('openai')}` }, { ...openaiBody(o), stream: true, stream_options: { include_usage: true } }, o.signal, 'OpenAI')
+    yield* openaiStream(res, usageOf.openai, o.onUsage)
+  },
+  async json(o) {
+    const res = await post(OPENAI_URL, { Authorization: `Bearer ${await providerKey('openai')}` }, { ...openaiBody(o), response_format: { type: 'json_object' } }, o.signal, 'OpenAI')
+    const json = await res.json()
+    if (json.usage) o.onUsage(usageOf.openai(json.usage))
+    return jsonOnly(String(json.choices?.[0]?.message?.content ?? ''))
+  },
+}
+
+const ADAPTERS: Record<Provider, Adapter> = { deepseek, gemini, anthropic, openai }
 
 /** Claude has no JSON mode: keep what lies between the first { and the last }, fences and prose dropped. */
 export function jsonOnly(text: string): string {

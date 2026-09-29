@@ -19,9 +19,10 @@ import { appLook } from '@/app/Services/JsxGenerator'
 import { onLlmUsage } from '@/app/Services/LlmService'
 import { mapLimit } from '@/app/Services/Pool'
 import { ImageCache } from '@/app/Models/ImageCache'
+import { auditScreen } from '@/app/Services/RenderAudit'
 import { sourceMetrics } from './metrics'
 
-const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false } } })
+const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false }, model: { type: 'string' } } })
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const OUT = resolve('eval/out', opt.label!)
 const briefs = (JSON.parse(readFileSync('eval/briefs.json', 'utf8')) as { id: string; brief: string }[]).filter((b) => !opt.only || opt.only.split(',').includes(b.id))
@@ -38,7 +39,7 @@ onLlmUsage((u) => {
   t.calls++
 })
 
-type ScreenResult = { slug: string; name: string; kind: string; built: boolean; crashed?: boolean; error?: string } & Partial<ReturnType<typeof sourceMetrics>>
+type ScreenResult = { slug: string; name: string; kind: string; built: boolean; crashed?: boolean; error?: string; problems?: number; problemRules?: string[] } & Partial<ReturnType<typeof sourceMetrics>>
 type BriefResult = { id: string; brief: string; appName: string; seconds: number; planned: number; drawn: number; tokens: { in: number; out: number; calls: number }; screens: ScreenResult[] }
 
 // The pages point at /api/rt/v<build>/…; a tiny server answers that from runtime/dist and serves the pages.
@@ -142,10 +143,20 @@ function summary(results: BriefResult[]) {
     namedText: mean('namedText'),
     higByRule: ok.flatMap((s) => s.higRules ?? []).reduce<Record<string, number>>((m, r) => ((m[r] = (m[r] ?? 0) + 1), m), {}),
     firstRun: results.filter((r) => r.screens.some((s) => s.kind === 'first-run')).length,
+    problemsPerScreen: +(ok.reduce((a, s) => a + (s.problems ?? 0), 0) / Math.max(1, ok.length)).toFixed(2),
+    cleanShare: +(ok.filter((s) => s.problems === 0).length / Math.max(1, ok.length)).toFixed(3),
   }
 }
 
 mkdirSync(OUT, { recursive: true })
+// LLM-08: --model <id> runs every call site (plan, screen, edit) on that model, set the way the admin sets it.
+if (opt.model) {
+  await import('@/app/Services/SecretService') // registers the settings source LlmService reads
+  const { Setting } = await import('@/app/Models/Setting')
+  const { MODELS } = await import('@/app/Services/LlmService')
+  if (!MODELS[opt.model]) throw new Error(`--model ${opt.model}: not in MODELS (${Object.keys(MODELS).join(', ')})`)
+  for (const site of ['plan', 'screen', 'edit']) await Setting.set(`llm.model.${site}`, opt.model)
+}
 // Photos found in earlier runs are kept in a file: every run has a throwaway database, and Pexels allows 200 lookups an hour.
 const PHOTO_CACHE = resolve('eval/photo-cache.json')
 if (existsSync(PHOTO_CACHE)) for (const r of JSON.parse(readFileSync(PHOTO_CACHE, 'utf8')) as { query: string; url: string; avgColor: string | null }[]) await ImageCache.save(r.query, r.url, r.avgColor)
@@ -168,17 +179,24 @@ const results: BriefResult[] = opt.reshoot
 const shots = results.filter((r) => !opt.only || opt.only.split(',').includes(r.id)).flatMap((r) => r.screens.filter((s) => s.built).flatMap((s) => (opt.dark ? ['', '-dark'] : ['']).map((d) => ({ id: r.id, file: `${s.slug}${d}` }))))
 await mapLimit(shots, 4, (s) => shoot(`http://127.0.0.1:${port}/frame?src=/${s.id}/${s.file}.html?static`, join(OUT, s.id, `${s.file}.png`)))
 await mapLimit(results.filter((r) => !opt.only || opt.only.split(',').includes(r.id)).flatMap((r) => r.screens.filter((s) => s.built).map((s) => ({ r, s }))), 4, async ({ r, s }) => (s.crashed = await crashed(`http://127.0.0.1:${port}/${r.id}/${s.slug}.html?static`)))
+// KON-13: what a person would see broken on each final screen (the same audit generation repairs with; measured
+// here whether or not the run repaired, so RENDER_AUDIT=0 is the baseline).
+await mapLimit(results.filter((r) => !opt.only || opt.only.split(',').includes(r.id)).flatMap((r) => r.screens.filter((s) => s.built && !s.crashed).map((s) => ({ r, s }))), 4, async ({ r, s }) => {
+  const plan = JSON.parse(readFileSync(join(OUT, r.id, 'plan.json'), 'utf8'))
+  const found = await auditScreen(readFileSync(join(OUT, r.id, `${s.slug}.jsx`), 'utf8'), { accent: plan.accent ?? '#5e5ce6', dark: false, platform: 'ios', tabs: plan.tabs ?? [] }, s.slug)
+  if (found) (s.problems = found.length), (s.problemRules = found.map((f) => f.rule))
+})
 server.close()
 
 writeFileSync(PHOTO_CACHE, JSON.stringify(await ImageCache.all()))
 const sum = summary(results)
-writeFileSync(join(OUT, 'metrics.json'), JSON.stringify({ label: opt.label, provider: process.env.LLM_PROVIDER ?? 'deepseek', at: new Date().toISOString(), summary: sum, results }, null, 2))
+writeFileSync(join(OUT, 'metrics.json'), JSON.stringify({ label: opt.label, provider: process.env.LLM_PROVIDER ?? 'deepseek', model: opt.model ?? (await import('@/app/Services/LlmService')).BILLED_MODEL, repair: process.env.RENDER_AUDIT !== '0', at: new Date().toISOString(), summary: sum, results }, null, 2))
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`)
 writeFileSync(join(OUT, 'index.html'), `<!doctype html><meta charset=utf-8><title>eval ${esc(opt.label!)}</title>
 <body style="margin:0;padding:24px;background:#18181b;color:#e4e4e7;font:13px -apple-system,system-ui">
 <h1 style="font-size:20px">${esc(opt.label!)}</h1><pre style="color:#a1a1aa">${esc(JSON.stringify(sum))}</pre>
 ${results.map((r) => `<h2 style="font-size:15px;margin:28px 0 4px">${esc(r.appName)} <span style="color:#71717a;font-weight:400">— ${esc(r.brief)} · ${r.seconds}s</span></h2>
-<div style="display:flex;gap:12px;overflow-x:auto;padding:8px 0">${r.screens.map((s) => `<figure style="margin:0;flex:none;width:260px"><div style="width:260px;height:563px;border-radius:24px;overflow:hidden;background:#27272a">${s.built ? `<img src="${r.id}/${s.slug}.png" width=260>` : `<p style="padding:16px;color:#f87171">${esc(s.error ?? 'did not build')}</p>`}</div><figcaption style="margin-top:6px">${esc(s.name)} <span style="color:#71717a">${s.crashed ? '<b style="color:#f87171">CRASH</b> · ' : ''}${s.kind} · ${s.konsta ?? 0} konsta · ${s.kitFigures ?? 0} fig · ${s.emoji ?? 0} emoji · ${s.colors ?? 0} col</span></figcaption></figure>`).join('')}</div>`).join('')}`)
+<div style="display:flex;gap:12px;overflow-x:auto;padding:8px 0">${r.screens.map((s) => `<figure style="margin:0;flex:none;width:260px"><div style="width:260px;height:563px;border-radius:24px;overflow:hidden;background:#27272a">${s.built ? `<img src="${r.id}/${s.slug}.png" width=260>` : `<p style="padding:16px;color:#f87171">${esc(s.error ?? 'did not build')}</p>`}</div><figcaption style="margin-top:6px">${esc(s.name)} <span style="color:#71717a">${s.crashed ? '<b style="color:#f87171">CRASH</b> · ' : ''}${s.problems ? `<b style="color:#fb923c" title="${esc((s.problemRules ?? []).join(', '))}">${s.problems} problems</b> · ` : ''}${s.kind} · ${s.konsta ?? 0} konsta · ${s.kitFigures ?? 0} fig · ${s.emoji ?? 0} emoji · ${s.colors ?? 0} col</span></figcaption></figure>`).join('')}</div>`).join('')}`)
 console.log(JSON.stringify(sum))
 if (opt.vs) {
   const prev = JSON.parse(readFileSync(resolve('eval/out', opt.vs, 'metrics.json'), 'utf8')).summary as Record<string, number>

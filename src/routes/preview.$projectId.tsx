@@ -139,6 +139,33 @@ function PreviewPage() {
   const current = screens[currentIndex]
   const [leaving, setLeaving] = useState<{ id: string; motion: Motion } | null>(null)
   const [motion, setMotion] = useState<Motion>('fade')
+  // PRV-03: the controls step back while the app is in use. Two seconds without the pointer moving over the page
+  // (moves inside the phone never reach it) or a key press, and they fade out; any move brings them back. They
+  // stay while the pointer is on them, while one has focus, or while the device menu is open.
+  const [idle, setIdle] = useState(false)
+  const hold = useRef(false)
+  const idleTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const wake = useCallback(() => {
+    setIdle(false)
+    clearTimeout(idleTimer.current)
+    idleTimer.current = setTimeout(() => !hold.current && setIdle(true), 2000)
+  }, [])
+  const holdChrome = (on: boolean) => {
+    hold.current = on
+    if (on) setIdle(false)
+    else wake()
+  }
+  useEffect(() => {
+    wake()
+    window.addEventListener('pointermove', wake)
+    window.addEventListener('keydown', wake)
+    return () => {
+      clearTimeout(idleTimer.current)
+      window.removeEventListener('pointermove', wake)
+      window.removeEventListener('keydown', wake)
+    }
+  }, [wake])
+  const chrome = { onPointerEnter: () => holdChrome(true), onPointerLeave: () => holdChrome(false), onFocus: () => holdChrome(true), onBlur: () => holdChrome(false) }
   // Frames are mounted as they are needed and never unmounted: the shown one and its neighbours first,
   // then the rest once the first has loaded, so a later tap finds its screen already drawn.
   const [mounted, setMounted] = useState<Set<string>>(() => new Set([shownId, screens[currentIndex - 1]?.id, screens[currentIndex + 1]?.id].filter(Boolean) as string[]))
@@ -221,6 +248,8 @@ function PreviewPage() {
   const availH = Math.max(240, viewport.h - 180)
   const availW = Math.max(240, viewport.w - 240)
   const scale = Math.min(1, availH / (native.height + bezel * 2), availW / (native.width + bezel * 2))
+  const phoneW = (native.width + bezel * 2) * scale
+  const phoneH = (native.height + bezel * 2) * scale
 
 
   async function copyLink() {
@@ -245,22 +274,23 @@ function PreviewPage() {
     )
   }
 
-  // UI-17: the stage is the studio's canvas in the studio's own theme, and the phone is the one
-  // PhoneFrame — no hex stage colours, no second bezel, no light/dark of its own.
+  // UI-17: the stage is drawn with the studio's tokens (no hex stage colours), in the app's light/dark (PRV-03).
   return (
-    <div className="relative flex h-screen flex-col items-center justify-center overflow-hidden bg-canvas text-foreground">
-      <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px]" />
+    // PRV-03: a presentation, not a workspace — one flat tone and no grid, so nothing competes with the phone. The
+    // stage and its controls wear the app's light/dark, not the studio's: a dark app is shown on a dark stage.
+    <div className={`relative flex h-screen flex-col items-center justify-center overflow-hidden bg-canvas text-foreground ${theme.dark ? 'dark' : 'light'}`} data-idle={idle || undefined}>
       <Link
         to="/p/$projectId"
         params={{ projectId: project.id }}
-        className={buttonVariants({ variant: 'outline', size: 'sm', className: 'absolute left-5 top-5 rounded-full bg-card shadow-1' })}
+        className={buttonVariants({ variant: 'outline', size: 'sm', className: 'od-chrome absolute left-5 top-5 rounded-full bg-card shadow-1' })}
+        {...chrome}
       >
         <ChevronLeft /> {project.name || 'Editor'}
       </Link>
-      {/* The app's platform and light/dark lead the cluster; the stage itself follows the studio's own
-          theme (set in the studio), so there is one moon here and it is the app's. */}
-      <div className="absolute right-5 top-5 flex items-center gap-0.5 rounded-full bg-card/85 p-1 shadow-2 ring-1 ring-border backdrop-blur">
-        <DropdownMenu>
+      {/* The app's platform and light/dark lead the cluster; the stage follows the app's light/dark, so there is
+          one moon here and it is the app's. */}
+      <div {...chrome} className="od-chrome absolute right-5 top-5 flex items-center gap-0.5 rounded-full bg-card/85 p-1 shadow-2 ring-1 ring-border backdrop-blur">
+        <DropdownMenu onOpenChange={holdChrome}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="rounded-full font-medium" title="Show the app on another phone">
               <Smartphone /> {device.name} <ChevronDown className="size-3.5 opacity-60" />
@@ -296,6 +326,10 @@ function PreviewPage() {
       </div>
 
       <div className="relative flex items-center gap-8">
+        {/* A soft light in the app's own colour behind the phone, and its shadow on the floor: the eye goes to the
+            middle, and the stage belongs to this app (it follows the accent). */}
+        <div aria-hidden className="od-stage-glow pointer-events-none absolute top-1/2 left-1/2 -translate-1/2 rounded-full" style={{ width: phoneW * 2.2, height: phoneH * 1.4, background: `radial-gradient(closest-side, color-mix(in oklab, ${theme.accent} 20%, transparent), transparent)` }} />
+        <div aria-hidden className="pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-full" style={{ top: `calc(50% + ${phoneH / 2 - 14}px)`, width: phoneW * 0.9, height: 36, background: 'radial-gradient(closest-side, rgb(0 0 0 / 38%), transparent)' }} />
         <Arrow label="Previous screen" disabled={currentIndex === 0} onClick={() => step(-1)}>
           <ChevronLeft className="size-5" />
         </Arrow>
@@ -342,7 +376,7 @@ function PreviewPage() {
       </div>
 
       {duo && (
-        <div className="relative mt-5 flex items-center gap-3 rounded-full bg-card/85 py-1 pr-4 pl-1 shadow-2 ring-1 ring-border backdrop-blur">
+        <div {...chrome} className="od-chrome relative mt-5 flex items-center gap-3 rounded-full bg-card/85 py-1 pr-4 pl-1 shadow-2 ring-1 ring-border backdrop-blur">
           <Button size="sm" className="rounded-full font-medium" aria-pressed={fold > 0.5} onClick={toggleFold} title="Fold or unfold (F)">
             {fold > 0.5 ? <Smartphone /> : <Columns2 />} {fold > 0.5 ? 'Fold' : 'Unfold'}
           </Button>
@@ -359,10 +393,8 @@ function PreviewPage() {
           <kbd className="rounded border border-border px-1.5 text-[12px] text-muted-foreground">F</kbd>
         </div>
       )}
-      <p className="relative mt-4 text-xs tabular-nums text-muted-foreground">
+      <p className="od-chrome relative mt-4 text-xs tabular-nums text-muted-foreground">
         {currentIndex + 1} / {screens.length} · <span className="text-foreground">{visible.map((v) => screens.find((s) => s.id === v)?.name).join(' · ')}</span>
-        {/* Pexels' API guidelines ask for a link back wherever its photos are shown. */}
-        {' · '}<a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Photos by Pexels</a>
       </p>
     </div>
   )
@@ -398,7 +430,7 @@ function Tip({ label, children }: { label: string; children: React.ReactElement 
 
 function Arrow(props: { label: string; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <Button variant="outline" size="icon-lg" aria-label={props.label} title={props.label} disabled={props.disabled} onClick={props.onClick} className="rounded-full bg-card shadow-1 disabled:opacity-30">
+    <Button variant="outline" size="icon-lg" aria-label={props.label} title={props.label} disabled={props.disabled} onClick={props.onClick} className="od-chrome rounded-full bg-card shadow-1 disabled:opacity-30">
       {props.children}
     </Button>
   )

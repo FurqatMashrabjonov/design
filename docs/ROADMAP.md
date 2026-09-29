@@ -12,12 +12,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KON-01 | Sinov: model Vita ekranlarini Konsta JSX'da yozadi → server build → sandbox render; etalon va HTML bilan solishtirish | Generatsiya / Asosiy | MVP | Tayyor | O'rta | KON-00 | ≥95% kompilyatsiya, ≤1.5k token/ekran, hakamda HTML'dan yutadi |
 | HIG-10 | JSX lint (AST) ScreenCompiler'da: HIG va Konsta qoidalari, autofix; mavjud bo'lmagan komponent = rad | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | Qoidalar + eval hisoblagichlari (hig, higByRule) |
 | HIG-12 | Kit'ni xatoga chidamli qilish: type scale klasslari, avtomatik kontrastli kartalar | Generatsiya / Izchillik | MVP | Tayyor | O'rta | HIG-10 | Kontrast xatosi 0; text-[Npx] o'rniga nomli uslublar |
-| HIG-11 | Skill'ni HIG-first qayta yozish (≤8k), platform-neytral | Generatsiya / Sifat | MVP | Jarayonda | O'rta | HIG-10 | HIG topilmalari −60%, hakamda yutqazmaydi |
-| HIG-13 | HIG → Konsta foydalanish kartalari (kitchen-sink + ehmo formati) | Generatsiya / Sifat | MVP | Rejada | O'rta | HIG-11 | Komponent xatolari eval'da ~0 |
+| HIG-11 | Skill'ni HIG-first qayta yozish (≤8k), platform-neytral | Generatsiya / Sifat | MVP | Tayyor | O'rta | HIG-10 | HIG topilmalari −60%, hakamda yutqazmaydi |
+| HIG-13 | HIG → Konsta foydalanish kartalari (kitchen-sink + ehmo formati) | Generatsiya / Sifat | MVP | Tayyor | O'rta | HIG-11 | Komponent xatolari eval'da ~0 |
 | HIG-14 | Eval: HIG metrikalari + hakam rubrikasi (dickwu 5 linza) | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | Har run'da HIG jadvali va linza ballari |
-| HIG-15 | Lint topilmalari → bitta tuzatish chaqiruvi | Generatsiya / Ishonchlilik | Keyin | Rejada | Kichik | HIG-10 | Yiqilgan ekranlar ≤2% |
-| HIG-16 | Material 3 paritet (platform-neytral ekran kodi) | Generatsiya / Tema | Keyin | Rejada | Kichik |  | iOS va Material'da lint'dan o'tadi |
-| HIG-17 | Planner ma'lumot izchilligi: sanalar, palitra kalitlari | Generatsiya / Kontent | Keyin | Rejada | Kichik |  | Eskirgan sana 0 |
+| HIG-15 | Lint topilmalari → bitta tuzatish chaqiruvi | Generatsiya / Ishonchlilik | MVP | Tayyor | Kichik | HIG-10 | Yiqilgan ekranlar ≤2% |
+| HIG-16 | Material 3 paritet (platform-neytral ekran kodi) | Generatsiya / Tema | MVP | Tayyor | Kichik |  | iOS va Material'da lint'dan o'tadi |
+| HIG-17 | Planner ma'lumot izchilligi: sanalar, palitra kalitlari | Generatsiya / Kontent | MVP | Tayyor | Kichik |  | Eskirgan sana 0 |
 | KON-02 | @od/kit runtime: React + Konsta + ikonlar + Ring/Bars/Area/WaterGlass + navigator/store; versiyalangan CDN build | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | ≤150 KB gz, CORS *, ekran runtime versiyasini saqlaydi |
 | KON-03 | ScreenCompiler: oxc parse + import whitelist + JSX→JS + Tailwind (ilova bo'yicha bitta CSS) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-01 | Model kodi serverda bajarilmaydi; build ≤50 ms; testlar |
 | KON-04 | Ekran hujjati /s/:id + screens. domeni + CSP sandbox | Generatsiya / Render | MVP | Tayyor | Kichik | KON-02, KON-03 | sandbox=allow-scripts, connect-src none, tema render paytida |
@@ -29,7 +29,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KON-10 | Thumbnail (headless PNG) + eval/hakam jsx ekranlarda | Generatsiya / Render | MVP | Rejada | Kichik | KON-04 | Dashboard va eval sheet'lari jsx'dan |
 | KON-11 | Material (Android) ko'rinishi: theme=material | Generatsiya / Tema | MVP | Tayyor | Kichik | KON-07 | iOS/Android almashadi |
 | KON-12 | Konsta ekranlarida haqiqiy fotosuratlar: kit <Photo q> slot, serverda Pexels bilan to'ldiriladi (image_cache) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-02, KON-03 | Rasm bo'ladigan joyda haqiqiy foto |
-| KON-13 | Render tekshiruvi + bitta tuzatish chaqiruvi | Generatsiya / Sifat | Keyin | Rejada | O'rta | KON-12 | Judge spacing/polish oshadi |
+| KON-13 | Render tekshiruvi + bitta tuzatish chaqiruvi | Generatsiya / Sifat | MVP | Tayyor | O'rta | KON-12 | Judge spacing/polish oshadi |
 | KON-14 | Chat agenti: tahrirda tool calling | Generatsiya / Tahrirlash | Keyin | Rejada | Katta | KON-08 | Bir so'rovda bir nechta ekran |
 | CODE-01 | Kod eksporti: React + Vite loyiha (.zip) | Generatsiya / Fayllar | MVP | Tayyor | O'rta | KON-02 | vite build testi |
 | CODE-02 | Kod eksporti: bitta faylli HTML prototip | Generatsiya / Fayllar | MVP | Tayyor | O'rta | CODE-01 | Internetsiz ochiladi |
@@ -39,6 +39,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FIG-12 | Figma plagini: Auto Layout, Variables, prototip | Generatsiya / Integratsiyalar | Keyin | Rejada | Katta | FIG-10 | Butun ilova Auto Layout bilan |
 | PRV-01 | Preview: qurilma tanlash — iPhone 18 Pro / Pro Max, Galaxy S26 Ultra; o'z 2D ramkalarimiz; Android → Material | Generatsiya / Ko'rish | MVP | Tayyor | O'rta | KON-11 | Qurilma almashadi, ekran shu kenglikda, ramka tashqi asset'siz |
 | PRV-02 | Preview: iPhone Duo (foldable) — yopiq 5.4" va ochiq 7.6", ichki ekranda ro'yxat + detail yonma-yon | Generatsiya / Ko'rish | Keyin | Rejada | O'rta | PRV-01 | Yopiq/ochiq almashadi, ochilish animatsiyasi |
+| PRV-03 | Preview foni: setkasiz tekis fon, telefon ortida ilova rangidan yumshoq nur, tugmalar 2 s harakatsizlikdan keyin yashirinadi | Generatsiya / Ko'rish | MVP | Tayyor | Kichik | PRV-01 | Ko'z faqat telefonda |
+| PRV-04 | Preview taqdimot rejimi: Fullscreen / P tugmasi — ekranda faqat telefon | Generatsiya / Ko'rish | Keyin | Rejada | Kichik | PRV-03 | Fullscreen API |
 
 ## B0 · Tayyor
 

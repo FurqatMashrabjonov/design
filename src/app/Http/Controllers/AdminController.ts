@@ -156,7 +156,7 @@ export const AdminController = {
         apiModel: m.apiModel,
         prices: PRICES[id] ?? null,
         credits: CREDIT_PRICES[id] ?? null,
-        keySet: !!(await SecretService.get(({ deepseek: 'DEEPSEEK_API_KEY', gemini: 'GEMINI_API_KEY', anthropic: 'ANTHROPIC_API_KEY' } as const)[m.provider])),
+        keySet: !!(await SecretService.get(({ deepseek: 'DEEPSEEK_API_KEY', gemini: 'GEMINI_API_KEY', anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY' } as const)[m.provider])),
       })),
     ),
   /** ADM-14: the Providers page — the models, which one each site runs on, their health, open circuits. */

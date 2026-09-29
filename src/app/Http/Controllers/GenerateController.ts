@@ -1,11 +1,12 @@
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
-import { drawScreen } from '@/app/Http/Controllers/PlanController'
+import { checkNote, drawScreen, type AuditOutcome } from '@/app/Http/Controllers/PlanController'
 import { Project } from '@/app/Models/Project'
 import { Screen, type ScreenRow } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
 import { editBrief, parseAppPlan, screenBrief, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { nextFramePosition } from '@/canvas'
+import { parseAppTheme } from '@/lib/app-theme'
 import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/lib/agent-messages'
 
 export const ERROR_MARK = '<!--GEN_ERROR:'
@@ -57,7 +58,11 @@ export const GenerateController = {
       async start(controller) {
         const send = (s: string) => { try { controller.enqueue(enc.encode(s)) } catch {} }
         try {
-          const jsx = await drawScreen(user, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen')
+          // KON-13: a screen added, edited or redrawn from chat is measured and repaired like a planned one.
+          let checked: AuditOutcome | undefined
+          const look = { accent: parseAppTheme(project.theme).accent, dark: false, platform: 'ios' as const, tabs: plan?.tabs ?? [] }
+          const slug = target?.slug ?? added?.id ?? ''
+          const jsx = await drawScreen(user, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen', { look, slug, report: (o) => (checked = o) })
           let changed: { id: string; name: string; versionId?: string; created?: boolean }
           if (target) {
             const versionId = target.html ? await ScreenVersion.captureFrom(target) : undefined
@@ -74,7 +79,7 @@ export const GenerateController = {
           await Message.add({
             projectId: project.id, role: 'agent', kind,
             text: changeReply({ kind: kind as 'add' | 'edit' | 'regenerate', screen: changed.name, version: changed.created ? undefined : (await ScreenVersion.count(changed.id)) + 1 }),
-            meta: { screens: [changed], log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${jsx.length} chars`, ...(usage.promptTokens ? [formatTokens(usage)] : [])], durationMs: Date.now() - startedAt },
+            meta: { screens: [changed], log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])], durationMs: Date.now() - startedAt },
           })
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e)
