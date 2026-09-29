@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { CreditCard, LogOut, Shield, Trash2 } from 'lucide-react'
+import { CreditCard, LifeBuoy, LogOut, Shield, Trash2 } from 'lucide-react'
 import { manageBilling } from '@/credits'
 import { authClient } from '@/lib/auth-client'
 import { deleteAccount } from '@/server/fns'
@@ -41,6 +41,9 @@ export function AccountMenu() {
           )}
           <DropdownMenuItem onSelect={() => manageBilling()}>
             <CreditCard /> Billing
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => navigate({ to: '/contact' })}>
+            <LifeBuoy /> Help & support
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={signOut}>
             <LogOut /> Sign out

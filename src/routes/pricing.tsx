@@ -122,6 +122,10 @@ function Pricing() {
             ))}
           </tbody>
         </table>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Failed generations return their credits automatically. Cancel a plan any time.{' '}
+          <Link to="/refunds" className="underline underline-offset-2 hover:text-foreground">Refund policy</Link>
+        </p>
       </section>
     </SitePage>
   )

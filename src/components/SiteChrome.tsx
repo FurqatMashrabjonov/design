@@ -72,12 +72,14 @@ export function SiteFooter({ onLanding = false }: { onLanding?: boolean }) {
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
         <span>© {new Date().getFullYear()} {BRAND}</span>
-        {/* ponytail: Terms / Privacy links land with LEG-01…04. */}
-        <div className="flex flex-wrap justify-center gap-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <a href={`${home}#examples`} className={link}>Examples</a>
           <Link to="/pricing" className={link}>Pricing</Link>
           <a href={`${home}#faq`} className={link}>FAQ</a>
-          <Link to="/login" className={link}>Sign in</Link>
+          <Link to="/contact" className={link}>Contact</Link>
+          <Link to="/terms" className={link}>Terms</Link>
+          <Link to="/privacy" className={link}>Privacy</Link>
+          <Link to="/refunds" className={link}>Refunds</Link>
         </div>
       </div>
     </footer>

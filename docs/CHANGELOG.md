@@ -5,6 +5,40 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (11)
+
+### LEG-01…04: terms, privacy, refunds and contact pages
+
+- **Four public pages** in one reading layout (`components/Legal.tsx`, inside `SitePage`): `/terms`, `/privacy`,
+  `/refunds` and `/contact`. Each links to the others and carries its "last updated" date.
+- **Checked against the code, not boilerplate.**
+  - Privacy lists what is really stored: the account; the work (prompts, projects, versions, chat, ratings); AI
+    calls with tokens and cost; request logs with a truncated IP hash, kept 7 days; Polar orders (never a card); the
+    waitlist; and the email log.
+  - It names who processes data: OpenAI (default), DeepSeek (fallback, China), Gemini and Anthropic only if
+    switched to, Google sign-in, Pexels (only photo words), Polar, Resend and the host.
+  - It states there are no analytics or ad cookies (one session cookie plus preferences) and explains public share
+    links.
+  - It describes what Delete account removes (checked: user → projects → screens, versions, messages and feedback
+    cascade) and what is kept for accounting.
+  - Terms: age 16+, the user owns their prompts and designs, AI output may resemble others, the Pexels and
+    open-source licences, and what is not allowed (impersonating brands, phishing screens, fake records…).
+    Credits: failed work is refunded automatically, plan credits lapse monthly, packs never expire. Polar is the
+    merchant of record; liability is capped at 12 months of payments; the law of the operator's country applies.
+  - Refunds: failed generations are automatic; an unused pack within 14 days; a plan's first payment within 14
+    days if under 10% of its credits were used; a renewal made by mistake within 7 days; the EU withdrawal note.
+- **Linked from:** the site footer (Contact, Terms, Privacy, Refunds), the login note (terms and privacy), the
+  pricing page (the refund line) and the account menu ("Help & support").
+- **`lib/brand.ts`** holds `SUPPORT_EMAIL`, `OPERATOR` and `POLICIES_UPDATED`.
+- **Still to do by the owner:**
+  - `SUPPORT_EMAIL` is a placeholder (`support@example.com`) until the domain's address exists, so LEG-04 stays
+    open.
+  - Read the three policies. The refund thresholds (14 days, 10%, 7 days) and the governing law are defaults to
+    confirm. This is not legal advice.
+- **Verified:**
+  - `npm run check` and `tsc` are clean; each page returns 200.
+  - In the browser: /privacy, the footer's and the page's own links.
+
 ## 2026-09-29 (10)
 
 ### EML-03: Admin → Email — status, sends to the waitlist or users, editable system emails, history, unsubscribe

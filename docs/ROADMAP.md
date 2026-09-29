@@ -123,7 +123,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-15 | Blueprint'ga qahramon lahza: nima va qanchalik katta | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-10 | Asosiy raqam sahifaning eng katta elementi; hakam ierarxiya bahosi tushmaydi |
 | GQ-16 | Komponent varag'i kirish sifatida: HOUSE STYLE CSS o'rniga HTML parchalari | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-10, THM-08 | Bir ilovada karta bir xil yig'iladi; hakam coherence o'sadi |
 | GQ-17 | Planner'ga "bitta jasur harakat" maydoni | Generatsiya / Sifat | MVP | Rejada | Kichik | GQ-10 | Har ekran spec'ida ilovaning bitta jasur harakati; hakam polish o'sadi |
-| GEN-27 | Ekran "Untitled" bo'lib qoladi: <title> bo'sh bo'lganda nom rejadagi ekran nomidan olinsin | Generatsiya / Ishonchlilik | MVP | Rejada | Kichik |  | Rejalashtirilgan ekran hech qachon Untitled bo'lmaydi |
+| GEN-27 | Ekran "Untitled" bo'lib qoladi: <title> bo'sh bo'lganda nom rejadagi ekran nomidan olinsin | Generatsiya / Ishonchlilik | Bekor | Rejada | Kichik |  | Rejalashtirilgan ekran hech qachon Untitled bo'lmaydi |
 | GQ-18 | iOS 26 tab bar qoidalari ShellService'ga: 21px inset, scroll'da yig'ilish, qidiruv oroli, shisha qirra | Generatsiya / Izchillik | MVP | Tayyor | O'rta | GQ-13 | Bar chetdan 21px ichkarida, scroll'da faol tabga yig'iladi, shisha faqat navigatsiya qatlamida |
 | GQ-19 | Detail sarlavhasi: katta serif title, scroll'da 17px ga yig'iladi, chiziq o'rniga blur qirra | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13, GQ-18 | Har detail ekranda bir xil, kodda |
 | GQ-20 | Ikonka muomalasi: og'irlik tizimdan, duotone CSS bilan, faol tabda chizish animatsiyasi | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | Kulrang doira hech qayerda qolmaydi |
@@ -133,7 +133,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-24 | Harakat: prujinali easing tokeni, bosishda 0.98 scale, tab morph, reduced-motion | Generatsiya / Izchillik | MVP | Tayyor | Kichik | GQ-13 | Kit va shell'da, reduced-motion'da o'chadi |
 | GQ-25 | Nova dark varianti va 'tungi/focus' brief'larda dark-first | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10, GQ-13 | To'q palitrada Nova hunari to'g'ri ishlaydi |
 | GQ-26 | Planner palitrasi: prompt namunasi placeholder bo'lsin, ottenka xilma-xilligi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | GQ-10 | hueDirection kodda tanlaydi; 5 loyihada ≥3 oila 82%; haqiqiy yugurish teal berdi |
-| GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | MVP | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
+| GQ-27 | Hero maydoni sticker tavsiya qilsin; sticker sloti ishlatilmadi | Generatsiya / Kontent | Bekor | Rejada | Kichik | GQ-21, GQ-15 | Bitta generatsiyada kamida 2 ekranda sticker |
 | GQ-28 | Jamlanma raqamlar ekranlar orasida mos bo'lsin (streak, bugungi soni, jami) — APP DATA'ga | Generatsiya / Izchillik | Keyin | Rejada | Kichik | GQ-16 | Hakam bir yugurishda raqam ziddiyati topmaydi |
 | GQ-29 | Lumen — iOS 26 Liquid Glass tizimi; tizim o'z chrome'ini qotira olsin | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-13, NAV-01 | audit 0.45 → 0.65, overflow 13 → 2, panel 20/20 island |
 | GQ-31 | Qahramon raqam ekranga sig'sin — o'lcham belgilar soniga bog'lansin | Generatsiya / Sifat | MVP | Tayyor | Kichik | GQ-29 | brauzerda o'lchandi: $4,218.40 100px da 469px, 350px ga sig'maydi |
@@ -389,10 +389,10 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | OBS-04 | Asosiy hodisalar analitikasi | Monitoring / Analitika | MVP | Rejada | Kichik | INF-05 | Ro'yxatdan o'tish, birinchi generatsiya, ko'rish, ulashish, eksport, xarid sanaladi |
 | OBS-05 | Foydalanuvchi xarajati bo'yicha admin sahifasi | Monitoring / LLM xarajati | MVP | Tayyor | Kichik | OBS-01 | Faqat admin ko'radi: foydalanuvchilar xarajat va kredit bo'yicha |
 | EML-01 | Email provayderi va domen uchun SPF/DKIM | Email / O'rnatish | MVP | Bloklangan | Kichik | INF-06 | Kirish havolalari spam'ga emas, inbox'ga tushadi |
-| LEG-01 | Foydalanish shartlari | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /terms da e'lon qilingan |
-| LEG-02 | Maxfiylik siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /privacy da e'lon qilingan |
-| LEG-03 | Pulni qaytarish siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik | BIL-02 | E'lon qilingan va narxlar sahifasidan havola bor |
-| LEG-04 | Yordam uchun aloqa | Huquqiy va yordam / Yordam | MVP | Rejada | Kichik |  | Yordam emaili pastki qismda va hisob menyusida |
+| LEG-01 | Foydalanish shartlari | Huquqiy va yordam / Siyosatlar | MVP | Tayyor | Kichik |  | /terms da e'lon qilingan |
+| LEG-02 | Maxfiylik siyosati | Huquqiy va yordam / Siyosatlar | MVP | Tayyor | Kichik |  | /privacy da e'lon qilingan |
+| LEG-03 | Pulni qaytarish siyosati | Huquqiy va yordam / Siyosatlar | MVP | Tayyor | Kichik | BIL-02 | E'lon qilingan va narxlar sahifasidan havola bor |
+| LEG-04 | Yordam uchun aloqa | Huquqiy va yordam / Yordam | MVP | Bloklangan | Kichik |  | Yordam emaili pastki qismda va hisob menyusida |
 | MKT-01 | Landing sahifa: tavsif maydoni, galereya, narxlar, savol-javob | Marketing / Sayt | MVP | Jarayonda | O'rta | BIL-12 | Kirmagan mehmon mahsulotni kirishdan oldin ko'radi |
 | MKT-02 | SEO va ijtimoiy tarmoq uchun rasm | Marketing / Sayt | MVP | Rejada | Kichik | MKT-01 | Telegram, X va LinkedIn'da havola chiroyli ko'rinadi |
 | MKT-03 | Demo video yoki GIF | Marketing / Kontent | MVP | Rejada | Kichik |  | Bitta tavsifdan bosiladigan ilovagacha, bir daqiqadan kam |

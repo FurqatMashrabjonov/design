@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { Loader2, Mail } from 'lucide-react'
 import { getSession } from '../server/fns'
 import { authClient } from '@/lib/auth-client'
@@ -99,7 +99,10 @@ function Login() {
             {error && <p className="text-center text-sm text-destructive">{error}</p>}
           </div>
         )}
-        <p className="text-center text-xs text-muted-foreground">No password needed. By continuing you agree to the terms of use and privacy policy.</p>
+        <p className="text-center text-xs text-muted-foreground">No password needed. By continuing you agree to the{' '}
+          <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">terms of use</Link> and{' '}
+          <Link to="/privacy" className="underline underline-offset-2 hover:text-foreground">privacy policy</Link>.
+        </p>
       </div>
       </main>
     </div>
