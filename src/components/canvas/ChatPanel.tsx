@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowDown, ChevronRight, CircleAlert, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { ArrowDown, CircleAlert, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
+import { copyText } from '@/lib/clipboard'
 import type { MessageRow } from '@/app/Models/Message'
 import { parseMeta } from '@/lib/agent-messages'
 import { Button } from '@/components/ui/button'
+import { BrandMark } from '@/components/SiteChrome'
 import { cn } from '@/lib/utils'
 
-// The project's conversation: what was asked and what the agent did about it, with a way back.
+// The project's conversation: what was asked and what the agent did about it, with a way back. It reads like a
+// chat — the agent's replies are plain text beside its mark, never a log; the pipeline's details (timings, tokens,
+// audit counts) stay in the message's meta and the admin's Generations page.
 export function ChatPanel(props: {
   messages: MessageRow[]
   /** The card for work in progress (the live activity, a plan awaiting approval), after the last message. */
   running?: ReactNode
+  /** What the person just sent, shown before the stored message comes back with the reply. */
+  pending?: string
   screenIds: Set<string>
   device: string
   onFocusScreen: (id: string) => void
@@ -69,6 +74,7 @@ export function ChatPanel(props: {
             </AgentMessage>
           ),
         )}
+        {props.pending && <UserMessage message={{ id: 'pending', text: props.pending } as MessageRow} onEdit={props.onEdit} />}
         {props.running}
       </div>
       {!atBottom && (
@@ -133,15 +139,6 @@ function askedBefore(messages: MessageRow[], index: number): string | null {
   return null
 }
 
-async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-    toast.success('Copied')
-  } catch {
-    toast.error('Could not copy')
-  }
-}
-
 function IconAction(props: { title: string; onClick: () => void; children: ReactNode; danger?: boolean }) {
   return (
     <button type="button" onClick={props.onClick} title={props.title} aria-label={props.title} className={cn('rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground', props.danger && 'hover:text-destructive')}>
@@ -204,84 +201,75 @@ function AgentMessage(props: {
   }
 
   return (
-    <div className={cn('od-rise group space-y-2.5 rounded-2xl rounded-bl-md border bg-card p-3.5 text-sm shadow-1', isError && 'border-destructive/40 bg-destructive/5')}>
-      <div className="flex gap-2">
-        {isError && <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />}
-        <p className={cn('min-w-0 flex-1 whitespace-pre-wrap break-words', meta.reverted && 'text-muted-foreground line-through')}>{m.text}</p>
-        <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-          {props.asked && !isError && (
-            <IconAction title="Ask again" onClick={() => props.onResend(props.asked!)}>
-              <RotateCw className="size-3.5" />
-            </IconAction>
-          )}
-          <IconAction title="Copy" onClick={() => copyText(m.text)}>
-            <Copy className="size-3.5" />
-          </IconAction>
-        </div>
-      </div>
+    <div className="od-rise group flex gap-2.5">
+      <AgentAvatar error={isError} />
+      <div className="min-w-0 flex-1 space-y-2.5 pt-0.5 text-sm">
+        <p className={cn('whitespace-pre-wrap break-words leading-relaxed', isError && 'text-destructive', meta.reverted && 'text-muted-foreground line-through')}>{m.text}</p>
 
-      {isError && props.asked && (
-        <Button size="sm" variant="outline" onClick={() => props.onResend(props.asked!)}>
-          <RotateCw className="size-3.5" /> Try again
-        </Button>
-      )}
+        {isError && props.asked && (
+          <Button size="sm" variant="outline" className="rounded-full" onClick={() => props.onResend(props.asked!)}>
+            <RotateCw className="size-3.5" /> Try again
+          </Button>
+        )}
 
-      {changed && (
-        <BeforeAfter screenId={changed.id} versionId={changed.versionId!} device={props.device} onOpen={() => props.onFocusScreen(changed.id)} />
-      )}
+        {changed && <BeforeAfter screenId={changed.id} versionId={changed.versionId!} device={props.device} onOpen={() => props.onFocusScreen(changed.id)} />}
 
-      {(meta.screens ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {meta.screens!.map((s) =>
-            props.screenIds.has(s.id) ? (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => props.onFocusScreen(s.id)}
-                className="max-w-full truncate rounded-md border bg-background px-2 py-0.5 text-xs hover:border-ring/40 hover:text-foreground"
-                title="Show on the canvas"
-              >
-                {s.name}
-              </button>
-            ) : (
-              <span key={s.id} className="max-w-full truncate rounded-md border border-dashed px-2 py-0.5 text-xs text-muted-foreground">
-                {s.name}
-              </span>
-            ),
-          )}
-        </div>
-      )}
+        {(meta.screens ?? []).length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {meta.screens!.map((s) =>
+              props.screenIds.has(s.id) ? (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => props.onFocusScreen(s.id)}
+                  className="max-w-full truncate rounded-full border bg-background px-2.5 py-1 text-xs transition-colors hover:border-ring/40 hover:bg-muted"
+                  title="Show on the canvas"
+                >
+                  {s.name}
+                </button>
+              ) : (
+                <span key={s.id} className="max-w-full truncate rounded-full border border-dashed px-2.5 py-1 text-xs text-muted-foreground">
+                  {s.name}
+                </span>
+              ),
+            )}
+          </div>
+        )}
 
-      {(revertible || (meta.log ?? []).length > 0) && (
-        <div className="flex items-start justify-between gap-2 pt-0.5">
-          {(meta.log ?? []).length > 0 ? (
-            <details className="group/log min-w-0 flex-1 text-xs text-muted-foreground">
-              <summary className="flex cursor-pointer list-none items-center gap-1 hover:text-foreground">
-                <ChevronRight className="size-3.5 transition-transform group-open/log:rotate-90" />
-                Agent log{meta.durationMs ? ` · ${(meta.durationMs / 1000).toFixed(0)}s` : ''}
-              </summary>
-              <ul className="mt-1.5 space-y-1 border-l pl-3 font-mono text-xs leading-snug">
-                {meta.log!.map((line, i) => (
-                  <li key={i} className="break-words">
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          ) : (
-            <span />
-          )}
+        {/* The actions every chat has, under the message; Undo stays visible because it is the way back. */}
+        <div className="-ml-1 flex items-center gap-0.5">
           {revertible && (
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 px-2 text-xs" disabled={reverting} onClick={revert} title="Put the screen back the way it was before this step">
+            <button type="button" disabled={reverting} onClick={revert} title="Put the screens back the way they were before this step" className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50">
               {reverting ? <Loader2 className="size-3.5 animate-spin" /> : <Undo2 className="size-3.5" />}
               {m.kind === 'revert' ? 'Redo' : 'Undo'}
-            </Button>
+            </button>
           )}
+          <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            {props.asked && !isError && (
+              <IconAction title="Ask again" onClick={() => props.onResend(props.asked!)}>
+                <RotateCw className="size-3.5" />
+              </IconAction>
+            )}
+            <IconAction title="Copy" onClick={() => copyText(m.text)}>
+              <Copy className="size-3.5" />
+            </IconAction>
+          </div>
         </div>
-      )}
-      {error && <p className="text-xs text-destructive">{error}</p>}
-      {props.children}
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        {props.children}
+      </div>
     </div>
+  )
+}
+
+/** The agent's face in the conversation: the brand mark, or a warning when the step failed. */
+export function AgentAvatar({ error }: { error?: boolean }) {
+  return error ? (
+    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive">
+      <CircleAlert className="size-4" />
+    </span>
+  ) : (
+    <BrandMark className="size-7 shrink-0 rounded-full" />
   )
 }
 

@@ -11,10 +11,6 @@ const timeline = (screenId: string) => eq(screenVersions.screenId, screenId)
 const order = [asc(screenVersions.createdAt), asc(screenVersions.seq)]
 
 export const ScreenVersion = {
-  forScreen(screenId: string): Promise<ScreenVersionRow[]> {
-    return db.select().from(screenVersions).where(timeline(screenId)).orderBy(...order)
-  },
-
   /** The snapshot ids in order — what the ‹ › arrows walk, without loading every page. */
   async ids(screenId: string): Promise<string[]> {
     return (await db.select({ id: screenVersions.id }).from(screenVersions).where(timeline(screenId)).orderBy(...order)).map((r) => r.id)

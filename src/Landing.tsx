@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Layers, MousePointerClick, Download, Palette, Undo2, BarChart3, ScanEye, Image as ImageIcon, Plus, Sparkles } from 'lucide-react'
-import { PhoneFrame, PHONE } from '@/components/PhoneFrame'
+import { useNavigate } from '@tanstack/react-router'
+import { Plus, Sparkles } from 'lucide-react'
 import { PromptBox } from './PromptBox'
-import { buttonVariants } from '@/components/ui/button'
 import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
 import { CREDIT_PRICES, SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 

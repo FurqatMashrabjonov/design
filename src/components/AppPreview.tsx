@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, Link2, Pencil, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
+import { copyText } from '@/lib/clipboard'
 import { GeneratingVeil, parseNav, postLook, screenForNav, screenSrc } from '@/ScreenFrame'
 import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
@@ -276,16 +277,11 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
     </>
   )
 
-  async function copyLink() {
-    try {
-      const url = new URL(window.location.href)
-      if (shownId) url.searchParams.set('s', shownId)
-      url.searchParams.delete('ref') // a re-shared link is not the post it first came from
-      await navigator.clipboard.writeText(url.toString())
-      toast.success('Preview link copied')
-    } catch {
-      toast.error('Could not copy — clipboard access was blocked')
-    }
+  function copyLink() {
+    const url = new URL(window.location.href)
+    if (shownId) url.searchParams.set('s', shownId)
+    url.searchParams.delete('ref') // a re-shared link is not the post it first came from
+    copyText(url.toString(), 'Preview link copied')
   }
 
   if (!current) {

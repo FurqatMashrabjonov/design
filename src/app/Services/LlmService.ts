@@ -25,9 +25,6 @@ export const PRICES: Record<string, Price> = {
   'gpt-6-luna': { input: 0.1, cached: 0.01, cacheWrite: 0.125, output: 0.5 },
   'gpt-6-sol': { input: 2, cached: 0.2, cacheWrite: 2.5, output: 10 },
 }
-/** The generating model's base (off-peak) rate — what the eval's estimate uses. */
-export const PRICE = PRICES['deepseek-flash']!
-
 /** DeepSeek peak hours: 01:00–04:00 and 06:00–10:00 UTC, Monday to Friday. */
 export function isPeak(at: Date = new Date()): boolean {
   const day = at.getUTCDay()

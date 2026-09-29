@@ -1,7 +1,7 @@
 // FIG-02: "Copy to Figma". Reads the screen's layer tree from its frame, puts the photos inside
 // (so Figma does not have to fetch them), and copies the SVG as text — Figma turns pasted SVG
 // markup into editable layers. Browser-only.
-import { embedImages, odToSvg, odTreesToSvg } from './figma-svg.ts'
+import { embedImages, odTreesToSvg } from './figma-svg.ts'
 import type { ODTree } from './figma-serialize.ts'
 
 /** A photo as a data URL, or null (the SVG then keeps the link). Only Pexels photos are fetched,
@@ -23,16 +23,6 @@ export async function photoAsDataUrl(url: string, width = 400): Promise<string |
   } catch {
     return null
   }
-}
-
-export async function treeToFigmaSvg(tree: ODTree): Promise<string> {
-  return odToSvg(await embedImages(tree, photoAsDataUrl))
-}
-
-export async function copyTreeToFigma(tree: ODTree): Promise<{ bytes: number }> {
-  const svg = await treeToFigmaSvg(tree)
-  await navigator.clipboard.writeText(svg)
-  return { bytes: svg.length }
 }
 
 /** FIG-06: several screens at once, placed as they are on the canvas. */

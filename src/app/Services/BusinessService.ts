@@ -1,5 +1,6 @@
-import { sql, type SQL } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { db } from '@/database/connection'
+import { all, one, unixNow as now, DAY, likeOf, dayStart, dayOf } from '@/database/query'
 import { orders } from '@/database/schema'
 import { CSV_MAX_ROWS, paging, toCsv, type LedgerQuery, type SubsQuery } from '@/admin/table-query'
 import { PRODUCTS } from '@/lib/credit-prices'
@@ -9,14 +10,7 @@ import { PRODUCTS } from '@/lib/credit-prices'
 // the provider's fee. ponytail: every order is taken as USD (the Polar products are priced in USD);
 // a second currency needs a conversion before the sums mean anything.
 
-const all = async <T>(q: SQL) => (await db.execute(q)).rows as T[]
-const one = async <T>(q: SQL) => (await all<T>(q))[0]
-const DAY = 86400
-const now = () => Math.floor(Date.now() / 1000)
 // Same as AdminStatsService: ILIKE text matched literally, and a 'YYYY-MM-DD' day as unix seconds (UTC).
-const likeOf = (text: string) => `%${text.replace(/[\\%_]/g, (c) => '\\' + c)}%`
-const dayStart = (d: string) => Math.floor(Date.parse(`${d}T00:00:00Z`) / 1000)
-const dayOf = (col: SQL) => sql`to_char(to_timestamp(${col}) AT TIME ZONE 'UTC', 'YYYY-MM-DD')`
 
 /** Polar's fee as an estimate: 4% + $0.40 an order. */
 export const FEE_RATE = 0.04

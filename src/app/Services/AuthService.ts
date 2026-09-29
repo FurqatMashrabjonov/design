@@ -2,7 +2,6 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { magicLink } from 'better-auth/plugins/magic-link'
 import { EmailService } from './EmailService'
-import { magicLinkEmail } from '@/lib/emails'
 import { admin } from 'better-auth/plugins/admin'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '@/database/connection'
@@ -49,7 +48,7 @@ export const auth = betterAuth({
       // EML-01: sent through Resend; with no key, development logs it and production refuses (EmailService).
       sendMagicLink: async ({ email, url }) => {
         if (process.env.NODE_ENV !== 'production') devMail.lastLink = { email, url }
-        await EmailService.send({ to: email, ...magicLinkEmail(url) })
+        await EmailService.system('magic-link', email, { url })
       },
     }),
     // ADM-01: roles and bans. Its hooks refuse sign-in to a banned user; server/auth.ts also treats

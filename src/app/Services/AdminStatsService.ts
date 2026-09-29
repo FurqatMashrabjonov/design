@@ -1,5 +1,5 @@
 import { sql, type SQL } from 'drizzle-orm'
-import { db } from '@/database/connection'
+import { all, one, unixNow as now, DAY, dayOf, epoch, likeOf, dayStart } from '@/database/query'
 import { UsageService } from './UsageService'
 import { Setting } from '@/app/Models/Setting'
 import { Credit } from '@/app/Models/Credit'
@@ -12,47 +12,7 @@ import { paging, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 // just for the panel. Units differ: Better Auth's user/session times are timestamptz, every other
 // table stores unix seconds. ponytail: computed on each request; add summary tables if it gets slow.
 
-const all = async <T>(q: SQL) => (await db.execute(q)).rows as T[]
-const one = async <T>(q: SQL) => (await all<T>(q))[0]
-const now = () => Math.floor(Date.now() / 1000)
-const DAY = 86400
 
-/** The calendar day (UTC) of a unix-seconds column, as 'YYYY-MM-DD'. */
-const dayOf = (col: SQL) => sql`to_char(to_timestamp(${col}) AT TIME ZONE 'UTC', 'YYYY-MM-DD')`
-const epoch = (col: SQL) => sql`extract(epoch from ${col})::bigint`
-
-type Window = { from: number; to: number }
-// The current window ends a second ahead, so a row written this very second is inside it.
-const windowOf = (days: number, back = 0): Window => ({ from: now() - DAY * days * (back + 1), to: now() - DAY * days * back + (back ? 0 : 1) })
-
-async function kpisFor(w: Window) {
-  const at = (col: SQL) => sql`${col} >= ${w.from} AND ${col} < ${w.to}`
-  const r = (await one<Record<string, number | null>>(sql`
-    SELECT
-      (SELECT count(*) FROM "user" WHERE ${at(epoch(sql`created_at`))}) AS "newUsers",
-      (SELECT count(*) FROM (
-         SELECT user_id FROM session WHERE ${at(epoch(sql`updated_at`))}
-         UNION SELECT user_id FROM llm_calls WHERE user_id IS NOT NULL AND ${at(sql`created_at`)}
-      ) a) AS "activeUsers",
-      (SELECT count(*) FROM screens WHERE html != '' AND ${at(sql`created_at`)}) AS screens,
-      (SELECT count(*) FROM screens WHERE error IS NOT NULL AND ${at(sql`created_at`)}) AS "failedScreens",
-      (SELECT count(*) FROM llm_calls WHERE ${at(sql`created_at`)}) AS calls,
-      (SELECT count(*) FROM llm_calls WHERE NOT ok AND ${at(sql`created_at`)}) AS "failedCalls",
-      (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE ${at(sql`created_at`)}) AS spend,
-      (SELECT avg(ms) FROM llm_calls WHERE ok AND ${at(sql`created_at`)}) AS "avgMs"
-  `))!
-  const n = (k: string) => Number(r[k] ?? 0)
-  return {
-    newUsers: n('newUsers'),
-    activeUsers: n('activeUsers'),
-    screens: n('screens'),
-    failedScreens: n('failedScreens'),
-    calls: n('calls'),
-    failRate: n('calls') ? n('failedCalls') / n('calls') : 0,
-    spend: n('spend'),
-    avgMs: n('avgMs'),
-  }
-}
 
 /** ADM-03: one row of the users table — what a user did and what it cost. */
 type UserRow = {
@@ -77,55 +37,11 @@ type CallRow = {
   completionTokens: number; costUsd: number; ms: number; ok: boolean; error: string | null; email: string | null; userId: string | null; project: string | null; projectId: string | null
 }
 
-/** ILIKE pattern that matches `text` literally anywhere: %, _ and \ are escaped. */
-const likeOf = (text: string) => `%${text.replace(/[\\%_]/g, (c) => '\\' + c)}%`
-/** Unix seconds at 00:00 UTC of a 'YYYY-MM-DD' day (the table parser has checked the shape). */
-const dayStart = (d: string) => Math.floor(Date.parse(`${d}T00:00:00Z`) / 1000)
 
 export const AdminStatsService = {
-  /** ADM-02: KPIs for a window against the window before it, 30-day series, activation, "now". */
-  async overview(days: 1 | 7 | 30) {
-    const since = now() - DAY * 30
-    const series = await all<{ day: string; signups: number; spend: number; screens: number }>(sql`
-      SELECT to_char(d, 'YYYY-MM-DD') AS day,
-        (SELECT count(*) FROM "user" WHERE (created_at AT TIME ZONE 'UTC')::date = d) AS signups,
-        (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE ${dayOf(sql`created_at`)} = to_char(d, 'YYYY-MM-DD')) AS spend,
-        (SELECT count(*) FROM screens WHERE html != '' AND ${dayOf(sql`created_at`)} = to_char(d, 'YYYY-MM-DD')) AS screens
-      FROM generate_series((to_timestamp(${since}) AT TIME ZONE 'UTC')::date, (now() AT TIME ZONE 'UTC')::date, interval '1 day') AS g(d)
-      ORDER BY d
-    `)
-    const act = (await one<{ users: number; withProject: number; twoPlus: number; returned: number }>(sql`
-      SELECT
-        (SELECT count(*) FROM "user") AS users,
-        (SELECT count(DISTINCT user_id) FROM projects WHERE user_id IS NOT NULL) AS "withProject",
-        (SELECT count(*) FROM (SELECT user_id FROM projects WHERE user_id IS NOT NULL GROUP BY user_id HAVING count(*) >= 2) t) AS "twoPlus",
-        (SELECT count(*) FROM "user" u WHERE EXISTS (SELECT 1 FROM llm_calls c WHERE c.user_id = u.id AND c.created_at > ${epoch(sql`u.created_at`)} + ${DAY}))
-          AS returned
-    `))!
-    const running = UsageService.running()
-    const who = running.length ? await all<{ id: string; email: string }>(sql`SELECT id, email FROM "user" WHERE id IN (${sql.join(running.map((r) => sql`${r}`), sql`, `)})`) : []
-    const errors = await all<{ id: string; createdAt: number; provider: string; error: string | null; email: string | null; project: string | null }>(sql`
-      SELECT c.id, c.created_at AS "createdAt", c.provider, c.error, u.email, p.name AS project
-      FROM llm_calls c LEFT JOIN "user" u ON u.id = c.user_id LEFT JOIN projects p ON p.id = c.project_id
-      WHERE NOT c.ok ORDER BY c.created_at DESC LIMIT 10
-    `)
-    const [current, previous, today, limits] = await Promise.all([
-      kpisFor(windowOf(days)),
-      kpisFor(windowOf(days, 1)),
-      kpisFor({ from: Math.floor(new Date().setUTCHours(0, 0, 0, 0) / 1000), to: now() + 1 }),
-      UsageService.limits(),
-    ])
-    return { days, current, previous, series, activation: act, now: { running: who.map((w) => w.email), errors, limits, spentToday: today.spend } }
-  },
-
-  /** ADM-03: every user with what they did and what it cost. */
-  users() {
-    return all<UserRow>(sql`${usersSql(sql`true`)} ORDER BY u.created_at DESC`)
-  },
-
   /** ADM-03: one user — projects, recent actions, calls, daily spend, limit override. */
   async user(id: string) {
-    const row = (await AdminStatsService.users()).find((u) => u.id === id)
+    const row = await one<UserRow>(usersSql(sql`u.id = ${id}`))
     if (!row) return null
     const [ban, override, limits, projects, credits, actions, calls, spendByDay] = await Promise.all([
       one<{ banReason: string | null }>(sql`SELECT ban_reason AS "banReason" FROM "user" WHERE id = ${id}`),

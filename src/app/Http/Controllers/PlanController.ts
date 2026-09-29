@@ -157,7 +157,7 @@ export const PlanController = {
           if (usage.promptTokens) log.push(formatTokens(usage))
           await Message.add({
             projectId: project.id, role: 'agent', kind: 'plan',
-            text: planReply({ appName: plan.appName, summary: plan.summary, drawn: drawn.map((d) => d.name), failed, tabs: plan.tabs.map((t) => t.label), entities: [], stopped }),
+            text: planReply({ appName: plan.appName, summary: plan.summary, drawn: drawn.map((d) => d.name), failed, tabs: plan.tabs.map((t) => t.label), stopped }),
             meta: { screens: drawn, log, durationMs: Date.now() - startedAt, stopped },
           })
           send({ type: 'done' })

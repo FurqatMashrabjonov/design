@@ -1,13 +1,11 @@
-import { sql, type SQL } from 'drizzle-orm'
-import { db } from '@/database/connection'
+import { sql } from 'drizzle-orm'
+import { all, DAY } from '@/database/query'
 import { setHealthSource } from './LlmService'
 
 // ADM-14: how each model is doing, read from llm_calls (nothing collected just for this page), and the
 // health the circuit breaker in LlmService acts on. `now` is injectable so a test can place its rows.
 
-const all = async <T>(q: SQL) => (await db.execute(q)).rows as T[]
 const HOUR = 3600
-const DAY = 86400
 
 export type Window = { calls: number; errorRate: number | null; p50: number | null; p95: number | null; cacheHit: number | null; spend: number }
 export type Status = 'down' | 'degraded' | 'healthy' | 'idle'

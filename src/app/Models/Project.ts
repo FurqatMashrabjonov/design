@@ -70,11 +70,6 @@ export const Project = {
     return (await db.insert(projects).values(data).returning())[0]!
   },
 
-  /** IMG-02: the reference picture decides the look, so it may replace the system chosen from text. */
-  async saveDesignSystem(id: string, designSystem: string) {
-    await db.update(projects).set({ designSystem }).where(eq(projects.id, id))
-  },
-
   async rename(id: string, name: string) {
     await db.update(projects).set({ name }).where(eq(projects.id, id))
   },

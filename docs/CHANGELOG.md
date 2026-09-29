@@ -5,6 +5,121 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (10)
+
+### EML-03: Admin → Email — status, sends to the waitlist or users, editable system emails, history, unsubscribe
+
+- **Status:**
+  - Whether Resend is connected, and from which address.
+  - What went out in 24 hours against the free plan's 100.
+  - How many people can be reached: the waitlist and users, minus those who unsubscribed.
+  - How many unsubscribed.
+- **Compose:**
+  - Audiences: the waitlist, all users (banned users excluded), or one person.
+  - Fields: subject, heading, text (a blank line is a paragraph, `{{brand}}` is the name) and an optional button
+    with an https link.
+  - A live preview, rendered by the same function the server sends with, in a sandboxed iframe.
+  - "Send test to me", then "Send to N" with a confirmation.
+  - One send is at most 100 people and must stay under the 24-hour limit. It is paced at about two a second
+    (Resend's rate), and each mail carries its unsubscribe link and a `List-Unsubscribe` header.
+- **Templates:** the sign-in link and the waitlist confirmation can be edited and previewed, and reset to the
+  default. The words are stored in `settings` (`email.template.<kind>`).
+- **History:** every send with its counts, and the latest 100 emails with their status (sent, failed, logged); a
+  failed one shows its error on hover.
+- **Unsubscribe:**
+  - `/unsubscribe?e=…&t=…` carries an HMAC of the address, so a link cannot be forged for someone else.
+  - It is one button, so a mail scanner opening the link changes nothing.
+  - An unsubscribed address gets no bulk mail, not even sent to it alone. Sign-in links still arrive.
+- **Underneath:**
+  - Migration `0009_email` adds `emails`, `email_campaigns` and `email_suppressions`.
+  - `EmailService`: `send` logs every mail; `system`, `template`/`saveTemplate`, `recipients`, `campaign`,
+    `suppress` and `overview` are new.
+  - `lib/emails.ts` is now `SYSTEM_EMAILS` and `renderEmail`.
+  - Admin writes are logged in `admin_actions`.
+- **Files:**
+  - New: `routes/admin.email.tsx`, `routes/unsubscribe.tsx`, `migrations/0009_email.ts`.
+  - Changed: `EmailService`, `lib/emails.ts`, `AdminController`, `server/admin-fns.ts`, `server/fns.ts`,
+    `AuthService`, `ShareController`, `admin.tsx` (Email in the sidebar under Business), the schema and
+    `controllers.check.ts`.
+- **Verified:**
+  - `npm run check` covers logging, the edited template being what goes out, reset, a token that only unsubscribes
+    its own address, unsubscribed people left out, a send's counts and header, a failed mail that does not fail the
+    sign-up, and a sign-in link with no unsubscribe link.
+  - `tsc` is clean.
+  - In the browser: the page and its three sections; a real test mail to the owner (sent through Resend and
+    logged); the templates' preview; the unsubscribe page, which stored the suppression (the test row was removed).
+
+## 2026-09-29 (9)
+
+### CHAT-10: the chat reads like a chat — no agent log, plain replies, the message shows at once
+
+- **The "Agent log" is gone from the chat.** Its lines (timings, characters, audit counts, tokens) stay in the
+  message's `meta.log` for support and in the admin's Generations page. The person never sees them.
+- **Replies are sentences.** For example: "Here's Sipwise — a simple water tracker… I designed 7 screens across 3
+  tabs. Tap one to jump to it, or tell me what to change."
+  - The screens are chips under the reply, so they are not listed again. The "Tabs:" line and the unused
+    `entities` parameter were dropped.
+  - A failure reads "X didn't come out — use Try again on that frame".
+- **Layout.** An agent reply sits beside the brand mark, with no card, a red mark when it failed, and rounded
+  screen chips. Copy and Ask again appear on hover. Undo and Redo stay visible under the reply, because they are
+  the way back.
+- **What the person sent shows at once** (`pending`), until the stored message comes back with the reply. Before,
+  the chat stayed empty above the progress until the end.
+- **Progress** has the same layout (the mark, no card): ticks per screen and one elapsed time, with no per-step
+  seconds.
+- **Files:** `components/canvas/ChatPanel.tsx`, `ActivityCard.tsx`, `lib/agent-messages.ts`, `PlanController`,
+  `routes/p.$projectId.tsx`, and `controllers.check.ts` (the reply's shape and that it has no log lines).
+- **Verified:**
+  - `npm run check` and `tsc` are clean.
+  - In the browser: a new app from the dashboard (the prompt shown at once, ticks while drawing, the new reply
+    with chips) and adding a screen (the message at once, "Added “Profile”." with Undo).
+  - Messages written before this change keep their old text.
+
+## 2026-09-29 (8)
+
+### CLN-02: cleanup — dead code out, one set of SQL helpers, fewer database writes; a Postgres size estimate
+
+- **Dead code removed** (−484 lines, +98):
+  - The old admin overview: `adminOverview` → `AdminController.overview` → `AdminStatsService.overview` with its
+    `kpisFor` and `windowOf`, replaced by ADM-20's `DashboardService`. Also `AdminController.users`.
+  - `Project.saveDesignSystem`, `ScreenVersion.forScreen`, `copyTreeToFigma` / `treeToFigmaSvg`, `PRICE`,
+    `SectionTitle`.
+  - `components/ui/skeleton.tsx`, the HTML-era `skill/mobile-app-screens/`, and the stray `.replay.tmp.ts` (it
+    imported files that no longer exist).
+  - 17 unused imports and locals (`tsc --noUnusedLocals` is clean now). The Dashboard's `fill` state was never
+    set.
+- **DRY:**
+  - `database/query.ts` holds the read-side SQL helpers (`all`, `one`, `num`, `DAY`, `unixNow`, `dayOf`, `epoch`,
+    `dayStart`, `likeOf`). Before, each was defined again in up to six services.
+  - `OverviewService` (MRR and alerts only) was folded into `DashboardService`, its only caller.
+  - `lib/clipboard.ts` `copyText` replaces three copies of "copy, then toast".
+- **Database requests:**
+  - The admin user page read every user to find one; it now asks for that one row.
+  - Telescope no longer records the screen runtime's modules (`/api/rt`). They were 8 147 of 11 713
+    `http_requests` rows, about 70%, because every frame loads dozens.
+  - The canvas saved every frame's height on every open (1 074 calls in five days). It now saves only a height
+    that changed.
+  - `getCredits` was called on every page by the root credits dialog, signed-out shared previews included. The
+    dialog now asks only once it opens.
+- **Measured per app** (8 screens, on disk after TOAST compression):
+  - Screens ~24 KB (source ~5 000 characters, stored ~2 200 bytes each), project and plan ~3 KB, messages
+    ~2.4 KB, 11 model calls ~3 KB: about 33 KB.
+  - Each edit adds ~3.3 KB (a version, a message and a call).
+  - About 70 KB per app with five edits, indexes and slack.
+  - Telescope is capped at 7 days and 200 000 rows per table, at most ~0.2 GB.
+- **Left as they are** (recorded, not changed):
+  - `projects.palette` and `design_system_auto` are HTML-era columns nothing reads. Dropping a column is not
+    undone, so they wait for the owner's word.
+  - `ProjectController.show` asks each screen's version position separately (8 small queries per app).
+  - `p.$projectId.tsx` (664 lines) and `LlmService` (632 lines) are the largest files. They are candidates to
+    split when they are next changed, not now.
+- **Verified:**
+  - `npm run check`, `tsc` and `tsc --noUnusedLocals` are clean.
+  - In the browser: the admin dashboard, a user's page (the one-row lookup), and the canvas with its credits
+    badge.
+  - No `/api/rt` rows and no height saves after opening a canvas; `getCredits` twice per canvas load in
+    development (StrictMode), from four or more before.
+
 ## 2026-09-29 (7)
 
 ### EML-01 (code): email through Resend — sign-in links and waitlist confirmations

@@ -63,9 +63,12 @@ export function reportError(e: unknown) {
 
 type CreditState = { balance: number; plan: 'starter' | 'pro' | null; canExport: boolean }
 
-export function useCredits(initial?: number): CreditState | undefined {
+/** The balance and plan, reloaded when a generation ends. `enabled: false` asks nothing (the root dialog asks only
+ *  once it opens — it is mounted on every page, signed-out shared previews included). */
+export function useCredits(initial?: number, enabled = true): CreditState | undefined {
   const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null, canExport: false })
   useEffect(() => {
+    if (!enabled) return
     let live = true
     const load = () => getCredits().then((r) => live && setState(r)).catch(() => {})
     load()
@@ -74,7 +77,7 @@ export function useCredits(initial?: number): CreditState | undefined {
       live = false
       window.removeEventListener(CHANGED, load)
     }
-  }, [])
+  }, [enabled])
   return state
 }
 
@@ -113,7 +116,7 @@ export function CreditsBadge() {
 /** Mounted once (root): opens when a generation is refused for credits. */
 export function CreditsDialog() {
   const [why, setWhy] = useState<OutOfCredits | Limit | null>(null)
-  const plan = useCredits()?.plan
+  const plan = useCredits(undefined, why !== null)?.plan
   useEffect(() => {
     const on = (e: Event) => setWhy((e as CustomEvent<OutOfCredits | Limit>).detail)
     window.addEventListener(OUT, on)

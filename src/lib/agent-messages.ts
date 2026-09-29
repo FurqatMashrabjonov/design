@@ -52,22 +52,15 @@ export function friendlyError(raw: string): string {
   return 'Something went wrong while generating. Try again.'
 }
 
-export function planReply(p: {
-  appName: string
-  summary: string
-  drawn: string[]
-  failed: string[]
-  tabs: string[]
-  entities: { kind: string; count: number }[]
-  stopped?: boolean
-}): string {
-  const lines = [`${p.appName} — ${p.summary}`.replace(/ — $/, '')]
-  if (p.drawn.length) lines.push(`Designed ${plural(p.drawn.length, 'screen')}: ${list(p.drawn)}.`)
-  if (p.tabs.length) lines.push(`Tabs: ${p.tabs.join(' · ')}.`)
-  if (p.entities.length) lines.push(`Every screen shares one set of data: ${list(p.entities.map((e) => plural(e.count, e.kind.toLowerCase())))}.`)
-  if (p.failed.length) lines.push(`${list(p.failed)} could not be drawn — use “Try again” on ${p.failed.length === 1 ? 'that frame' : 'those frames'}.`)
-  if (p.stopped) lines.push('Stopped before the rest were drawn.')
-  return lines.join('\n')
+/** The reply to a planned app, said the way a person would: what it is, how much is there, what to do next. The
+ *  screens themselves are chips under the message, so they are not listed again here. */
+export function planReply(p: { appName: string; summary: string; drawn: string[]; failed: string[]; tabs: string[]; stopped?: boolean }): string {
+  const about = p.summary ? `Here's ${p.appName} — ${p.summary.replace(/^(A|An|The)\b/, (w) => w.toLowerCase()).replace(/\.?$/, '.')}` : `Here's ${p.appName}.`
+  const lines = [about]
+  if (p.drawn.length) lines.push(`I designed ${plural(p.drawn.length, 'screen')}${p.tabs.length ? ` across ${plural(p.tabs.length, 'tab')}` : ''}. Tap one to jump to it, or tell me what to change.`)
+  if (p.failed.length) lines.push(`${list(p.failed)} didn't come out — use Try again on ${p.failed.length === 1 ? 'that frame' : 'those frames'}.`)
+  if (p.stopped) lines.push('You stopped me before the rest were drawn.')
+  return lines.join('\n\n')
 }
 
 export function changeReply(p: { kind: 'add' | 'edit' | 'element' | 'regenerate'; screen: string; element?: string | null; version?: number; slot?: string; parts?: string[] }): string {

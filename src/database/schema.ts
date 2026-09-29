@@ -292,6 +292,39 @@ export const waitlist = pgTable('waitlist', {
   createdAt: unix('created_at').notNull().default(now),
 })
 
+// EML-03: every email sent (or logged, with no provider in development), and the bulk sends that caused some.
+export const emails = pgTable('emails', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  toEmail: text('to_email').notNull(),
+  subject: text('subject').notNull(),
+  tag: text('tag').notNull(),
+  status: text('status').notNull(), // sent | failed | logged | skipped
+  providerId: text('provider_id'),
+  error: text('error'),
+  campaignId: bigint('campaign_id', { mode: 'number' }),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+export const emailCampaigns = pgTable('email_campaigns', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  audience: text('audience').notNull(),
+  subject: text('subject').notNull(),
+  content: text('content').notNull(), // EmailContent + button url, as JSON
+  recipients: integer('recipients').notNull().default(0),
+  sent: integer('sent').notNull().default(0),
+  failed: integer('failed').notNull().default(0),
+  skipped: integer('skipped').notNull().default(0),
+  adminId: text('admin_id'),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+// EML-03: who asked for no more bulk email (the unsubscribe link). Sign-in links still reach them.
+export const emailSuppressions = pgTable('email_suppressions', {
+  email: text('email').primaryKey(),
+  reason: text('reason').notNull(),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
 // OBS-12: one row per outgoing HTTP call (no bodies, no headers; secret query params masked).
 export const outgoingRequests = pgTable('outgoing_requests', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),

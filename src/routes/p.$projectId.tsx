@@ -186,6 +186,8 @@ function ProjectPage() {
   // A planned run: the plan arrives first, then each screen as it is saved.
   const [plan, setPlan] = useState<(PlanShape & { screenIds: string[] }) | null>(null)
   const [planning, setPlanning] = useState(false)
+  // What the person just sent: shown in the chat at once, until the stored message arrives with the reply.
+  const [asked, setAsked] = useState('')
   const [status, setStatus] = useState<Record<number, ScreenStatus>>({})
   const [planErrors, setPlanErrors] = useState<Record<number, string>>({})
   const started = useRef(false)
@@ -237,6 +239,7 @@ function ProjectPage() {
     started.current = true
     const brief = search.brief
     router.navigate({ to: '.', search: {}, replace: true }) // drop ?brief so a reload never re-triggers
+    setAsked(brief)
     runPlan(brief)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -250,6 +253,8 @@ function ProjectPage() {
   function reportHeight(id: string, h: number) {
     setHeights((prev) => (prev[id] === h ? prev : { ...prev, [id]: h }))
     clearTimeout(heightTimers.current[id])
+    // Saved only when it changed (the server clamps to 844–5000): every open of the canvas used to write each frame.
+    if (Math.round(Math.min(5000, Math.max(844, h))) === screens.find((s) => s.id === id)?.height) return
     heightTimers.current[id] = setTimeout(() => saveScreenHeight({ data: { id, height: h } }).catch(() => {}), 600) // layout only
   }
   const screenIds = useMemo(() => new Set(screens.map((sc) => sc.id)), [screens])
@@ -333,6 +338,7 @@ function ProjectPage() {
 
   // No screens yet: the message plans the app. Otherwise it changes the selected screens, or adds one.
   async function submitPrompt(prompt: string) {
+    setAsked(prompt)
     if (screens.length === 0 && !planning) return runPlan(prompt)
     await run(selectedIds.length ? selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id })) : [{ prompt, projectId: project.id }])
   }
@@ -557,6 +563,7 @@ function ProjectPage() {
           }}
           onEdit={(text) => setFill((x) => ({ text, key: (x?.key ?? 0) + 1 }))}
           onResend={(text) => (running ? setQueued(text) : submitPrompt(text).catch((e) => reportError(e)))}
+          pending={running && asked && [...messages].reverse().find((m) => m.role === 'user')?.text !== asked ? asked : undefined}
           running={activity ? <ActivityCard activity={activity} /> : undefined}
           empty={<ChatEmpty suggestions={[]} onPick={(text) => setFill((x) => ({ text, key: (x?.key ?? 0) + 1 }))} />}
         />

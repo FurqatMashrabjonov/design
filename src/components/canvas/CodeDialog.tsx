@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { toast } from 'sonner'
+import { copyText } from '@/lib/clipboard'
 import { Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -22,12 +22,9 @@ export function CodeDialog(props: { screen: { name: string; code: string } | nul
             className="mr-6 shrink-0"
             onClick={async () => {
               if (!props.screen) return
-              try {
-                await navigator.clipboard.writeText(props.screen.code)
+              if (await copyText(props.screen.code, 'Code copied')) {
                 setCopied(true)
                 setTimeout(() => setCopied(false), 1500)
-              } catch {
-                toast.error('Could not copy — clipboard access was blocked')
               }
             }}
           >

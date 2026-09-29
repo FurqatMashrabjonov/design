@@ -2,7 +2,6 @@ import { notFound } from '@tanstack/react-router'
 import { Screen } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
-import { Project } from '@/app/Models/Project'
 import { parseMeta, type MessageScreen } from '@/lib/agent-messages'
 
 export const HistoryController = {

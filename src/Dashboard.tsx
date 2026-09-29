@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { ArrowUp, Globe, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Sparkles, Star, Trash2 } from 'lucide-react'
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
@@ -145,7 +145,6 @@ function nameForTransition(e: MouseEvent<HTMLElement>) {
 export function Dashboard({ projects, credits, user }: { projects: Card[]; credits: number; user: User | undefined }) {
   const navigate = useNavigate()
   const router = useRouter()
-  const [fill, setFill] = useState<{ text: string; key: number }>()
   const [tab, setTab] = useState<'all' | 'favorites'>('all')
   const [query, setQuery] = useState('')
   const [view, setView] = useState<'grid' | 'list'>('grid')
@@ -359,7 +358,6 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
                 label="Describe your app"
                 hint="iPhone · up to 8 screens · light and dark"
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
-                fill={fill}
                 onSubmit={async (prompt) => {
                   try {
                     const { id } = await createProject({ data: { brief: prompt } })

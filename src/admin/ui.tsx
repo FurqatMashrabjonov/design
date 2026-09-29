@@ -70,11 +70,6 @@ export function Callout({ tone = 'bad', children, className }: { tone?: 'bad' | 
   return <div className={cn('rounded-md border px-4 py-3 text-sm', cls, className)}>{children}</div>
 }
 
-/** The heading of a group of panels on a page. */
-export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h2 className={cn('mb-3 text-md font-semibold', className)}>{children}</h2>
-}
-
 export const money = (usd: number) => (usd === 0 ? '$0' : usd < 0.01 ? `$${usd.toFixed(4)}` : `$${usd.toFixed(2)}`)
 export const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`)
 export const secs = (ms: number) => (ms ? `${(ms / 1000).toFixed(1)}s` : '—')

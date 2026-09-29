@@ -2,12 +2,12 @@
 // Every function here checks who is asking and that they own what they name (B1, OWN-02), and
 // validates its input at the boundary (SEC-02): what reaches a controller is well-typed and theirs.
 import { createServerFn } from '@tanstack/react-start'
-import { notFound } from '@tanstack/react-router'
 import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { ShareController, EMAIL, cleanRef } from '@/app/Http/Controllers/ShareController'
+import { EmailService, validUnsubscribe } from '@/app/Services/EmailService'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
 import { CreditService } from '@/app/Services/CreditService'
 import { BillingController } from '@/app/Http/Controllers/BillingController'
@@ -91,6 +91,15 @@ export const joinWaitlist = createServerFn({ method: 'POST' })
   })
   // ponytail: no per-IP limit; an email is stored once, so a bot fills rows, not credits. Add one if spam shows up.
   .handler(async ({ data }) => ShareController.join(data))
+
+/** EML-03: the unsubscribe link — public, keyed by the address and its HMAC; a wrong pair changes nothing. */
+export const unsubscribe = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ email: str(obj(d).email, 254).toLowerCase(), token: str(obj(d).token, 64) }))
+  .handler(async ({ data }) => {
+    if (!validUnsubscribe(data.email, data.token)) throw new Error('This unsubscribe link is not valid')
+    await EmailService.suppress(data.email)
+    return { ok: true }
+  })
 
 export const favoriteProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), favorite: obj(d).favorite === true }))

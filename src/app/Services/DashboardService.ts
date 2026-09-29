@@ -1,22 +1,26 @@
 import { sql, type SQL } from 'drizzle-orm'
-import { db } from '@/database/connection'
+import { all, one, unixNow as clock, DAY, num as n, dayOf } from '@/database/query'
 import { PRICES } from './LlmService'
-import { OverviewService } from './OverviewService'
+import { PRODUCTS } from '@/lib/credit-prices'
 import { UsageService } from './UsageService'
 
-// ADM-20: the admin dashboard — what was sold, what the models cost, and what is left. Money in is a fact: the
+// ADM-20: the admin dashboard — what was sold, what the models cost, and what is left, plus live plans (MRR, ADM-12)
+// and the alerts (what is wrong right now). Money in is a fact: the
 // provider's orders (ADM-15), never rebuilt from credit grants. Money out is what llm_calls logged per call, at the
 // price that applied (DeepSeek's peak included). Tokens are shown with their dollars: each model's input, cache and
 // output tokens priced at its list rates, scaled so the parts add up to what was really spent. Times are unix seconds.
 
-const all = async <T>(q: SQL) => (await db.execute(q)).rows as T[]
-const one = async <T>(q: SQL) => (await all<T>(q))[0]!
-const clock = () => Math.floor(Date.now() / 1000)
-const DAY = 86400
-const n = (r: Record<string, unknown>, k: string) => Number(r[k] ?? 0)
 /** Polar's fee, an estimate: 4% + $0.40 per order. */
 const FEE_RATE = 0.04
 const FEE_FIXED_USD = 0.4
+
+/** PRODUCTS as a SQL table: key, name, monthly-equivalent dollars, payments per grant, plan. */
+const products = sql`(VALUES ${sql.join(
+  PRODUCTS.map((p) => sql`(${p.key}::text, ${p.name}::text, ${p.interval === 'year' ? p.cents / 12 / 100 : p.cents / 100}::float8, ${p.interval === 'year' ? 1 / 12 : 1}::float8, ${p.plan}::text)`),
+  sql`, `,
+)}) AS pr(key, name, usd, payments, plan)`
+
+export type Alert = { key: 'budget' | 'model' | 'errors' | 'screens' | 'paused'; text: string; href: string }
 
 export type Tokens = { input: number; cached: number; cacheWrite: number; output: number }
 export type ModelRow = { model: string; calls: number; failed: number; tokens: Tokens; usd: number; inputUsd: number; outputUsd: number }
@@ -78,12 +82,11 @@ async function byModel(from: number, to: number): Promise<ModelRow[]> {
 
 /** 30 UTC days: sold and LLM spend in dollars, output tokens. */
 function daily(now: number) {
-  const d = (col: SQL) => sql`to_char(to_timestamp(${col}) AT TIME ZONE 'UTC', 'YYYY-MM-DD')`
   return all<{ day: string; sold: number; spend: number; tokens: number }>(sql`
     SELECT to_char(g.d, 'YYYY-MM-DD') AS day,
-      (SELECT coalesce(sum(amount_cents), 0)::float8 / 100 FROM orders WHERE lower(currency) = 'usd' AND ${d(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS sold,
-      (SELECT coalesce(sum(cost_usd), 0)::float8 FROM llm_calls WHERE ${d(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS spend,
-      (SELECT coalesce(sum(prompt_tokens + completion_tokens), 0)::float8 FROM llm_calls WHERE ${d(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS tokens
+      (SELECT coalesce(sum(amount_cents), 0)::float8 / 100 FROM orders WHERE lower(currency) = 'usd' AND ${dayOf(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS sold,
+      (SELECT coalesce(sum(cost_usd), 0)::float8 FROM llm_calls WHERE ${dayOf(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS spend,
+      (SELECT coalesce(sum(prompt_tokens + completion_tokens), 0)::float8 FROM llm_calls WHERE ${dayOf(sql`created_at`)} = to_char(g.d, 'YYYY-MM-DD')) AS tokens
     FROM generate_series((to_timestamp(${now - DAY * 29}) AT TIME ZONE 'UTC')::date, (to_timestamp(${now}) AT TIME ZONE 'UTC')::date, interval '1 day') AS g(d)
     ORDER BY g.d
   `)
@@ -109,6 +112,48 @@ async function waitlist(from: number, to: number) {
 }
 
 export const DashboardService = {
+  /** Live plans now: MRR (monthly-equivalent) and the count per plan. Not windowed — a plan has no history. */
+  async subscriptions(now = clock()) {
+    const r = await one<Record<string, unknown>>(sql`
+      SELECT coalesce(sum(pr.usd), 0) AS mrr, count(*) FILTER (WHERE pr.plan = 'starter') AS starter, count(*) FILTER (WHERE pr.plan = 'pro') AS pro
+      FROM subscriptions s JOIN ${products} ON pr.key = s.product_key
+      WHERE s.status IN ('active', 'trialing') AND (s.current_period_end IS NULL OR s.current_period_end > ${now})
+    `)
+    return { mrr: n(r, 'mrr'), starter: n(r, 'starter'), pro: n(r, 'pro') }
+  },
+
+  /** What is wrong right now. Deterministic: every threshold is here, every count is SQL at `now`. */
+  async alerts(now = clock()): Promise<Alert[]> {
+    const midnight = now - (now % DAY)
+    const [limits, r, models] = await Promise.all([
+      UsageService.limits(),
+      one<Record<string, unknown>>(sql`
+        SELECT
+          (SELECT coalesce(sum(cost_usd), 0) FROM llm_calls WHERE created_at >= ${midnight} AND created_at <= ${now}) AS "spentToday",
+          (SELECT count(*) FROM server_logs WHERE level = 'error' AND created_at > ${now - 3600} AND created_at <= ${now}) AS "errorsHour",
+          (SELECT count(*) FROM server_logs WHERE level = 'error' AND created_at > ${now - 3600 - DAY} AND created_at <= ${now - 3600}) AS "errorsDay",
+          (SELECT count(*) FROM screens WHERE (html != '' OR error IS NOT NULL) AND created_at > ${now - DAY} AND created_at <= ${now}) AS attempts,
+          (SELECT count(*) FROM screens WHERE error IS NOT NULL AND created_at > ${now - DAY} AND created_at <= ${now}) AS failed
+      `),
+      all<{ model: string; calls: number; failed: number }>(sql`
+        SELECT model, count(*)::int AS calls, count(*) FILTER (WHERE NOT ok)::int AS failed FROM llm_calls
+        WHERE created_at > ${now - 900} AND created_at <= ${now} GROUP BY model HAVING count(*) >= 5 AND count(*) FILTER (WHERE NOT ok) * 2 >= count(*)
+        ORDER BY model
+      `),
+    ])
+    const out: Alert[] = []
+    if (limits.paused) out.push({ key: 'paused', text: 'Generation is paused', href: '/admin/settings' })
+    const spent = n(r, 'spentToday'), budget = limits.dailyBudgetUsd
+    if (budget > 0 && spent >= budget * 0.8) out.push({ key: 'budget', text: `Daily budget ${Math.round((spent / budget) * 100)}% used ($${spent.toFixed(2)} of $${budget.toFixed(2)})`, href: '/admin/settings' })
+    for (const m of models) out.push({ key: 'model', text: `${m.model || 'unknown model'}: ${m.failed} of ${m.calls} calls failed in 15 min`, href: '/admin/providers' })
+    // The baseline is the 24 hours before the last hour, so the spike does not raise its own average.
+    const hour = n(r, 'errorsHour'), avg = n(r, 'errorsDay') / 24
+    if (hour >= 5 && hour > 3 * avg) out.push({ key: 'errors', text: `${hour} server errors in the last hour (avg ${avg.toFixed(1)}/h)`, href: '/admin/errors' })
+    const attempts = n(r, 'attempts'), failed = n(r, 'failed')
+    if (attempts >= 10 && failed / attempts >= 0.2) out.push({ key: 'screens', text: `${Math.round((failed / attempts) * 100)}% of screens failed in 24h (${failed} of ${attempts})`, href: '/admin/generations?result=error' })
+    return out
+  },
+
   window,
   byModel,
   daily,
@@ -123,8 +168,8 @@ export const DashboardService = {
       window(now - 2 * span, now - span),
       byModel(now - span, now + 1),
       daily(now),
-      OverviewService.subscriptions(now),
-      OverviewService.alerts(now),
+      DashboardService.subscriptions(now),
+      DashboardService.alerts(now),
       UsageService.limits(),
       window(midnight, now + 1),
       waitlist(now - span, now + 1),

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { shareProject } from '@/server/fns'
+import { copyText } from '@/lib/clipboard'
 
 // SHR-02: who can open the preview. Private (the default) is the owner only; Public makes a link anyone can open,
 // view only. Turning it off kills the link — turning it on again makes a new one. A link per channel carries `ref`,
@@ -31,15 +32,6 @@ export function ShareDialog(props: { open: boolean; onOpenChange: (o: boolean) =
       toast.error('Could not change sharing — try again')
     } finally {
       setBusy(false)
-    }
-  }
-
-  async function copy(url: string, what: string) {
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.success(`${what} copied`)
-    } catch {
-      toast.error('Could not copy — clipboard access was blocked')
     }
   }
 
@@ -78,14 +70,14 @@ export function ShareDialog(props: { open: boolean; onOpenChange: (o: boolean) =
           <div className="grid gap-3">
             <div className="flex gap-2">
               <Input readOnly value={link()} onFocus={(e) => e.currentTarget.select()} aria-label="Public link" />
-              <Button onClick={() => copy(link(), 'Link')}>
+              <Button onClick={() => copyText(link(), 'Link copied')}>
                 <Copy /> Copy
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               Link for a post, to see which one brings people:
               {CHANNELS.map((c) => (
-                <Button key={c.ref} size="sm" variant="outline" className="h-7 rounded-full" onClick={() => copy(link(c.ref), `${c.label} link`)}>
+                <Button key={c.ref} size="sm" variant="outline" className="h-7 rounded-full" onClick={() => copyText(link(c.ref), `${c.label} link copied`)}>
                   {c.label}
                 </Button>
               ))}

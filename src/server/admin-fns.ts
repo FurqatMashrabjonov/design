@@ -6,16 +6,13 @@ import { SECRET_NAMES } from '@/app/Services/SecretService'
 import { requireAdmin } from './auth'
 import { idOf, num, obj, oneOf, str } from './validate'
 import { parseCallsQuery, parseUsersQuery } from '@/admin/table-query'
+import { SYSTEM_EMAILS, type EmailContent, type SystemEmail } from '@/lib/emails'
+import { EMAIL } from '@/app/Http/Controllers/ShareController'
 
 export const adminCheck = createServerFn({ method: 'GET' }).handler(async () => {
   const u = await requireAdmin()
   return { email: u.email, name: u.name }
 })
-
-export const adminOverview = createServerFn({ method: 'GET' })
-  .validator((d: unknown) => ({ days: Number(oneOf(String(obj(d).days), ['1', '7', '30'] as const)) as 1 | 7 | 30 }))
-  .handler(async ({ data }) => (await requireAdmin(), AdminController.overview(data.days)))
-
 
 export const adminUser = createServerFn({ method: 'GET' })
   .validator((id: unknown) => idOf(id))
@@ -108,3 +105,44 @@ export const adminUsersCsv = createServerFn({ method: 'GET' })
 export const adminCallsCsv = createServerFn({ method: 'GET' })
   .validator((d: unknown) => parseCallsQuery(obj(d)))
   .handler(async ({ data }) => (await requireAdmin(), AdminController.callsCsv(data)))
+
+// --- EML-03: email ---
+
+/** An email's words from the editor: subject, heading and body are required; a button is optional. */
+function emailContent(v: unknown): EmailContent {
+  const o = obj(v)
+  const subject = str(o.subject, 200).trim(), heading = str(o.heading, 200).trim(), body = str(o.body, 5000).trim()
+  if (!subject || !heading || !body) throw new Error('Subject, heading and text are required')
+  const button = o.button === undefined || o.button === '' ? undefined : str(o.button, 60).trim()
+  return { subject, heading, body, ...(button && { button }) }
+}
+/** A button's link: http(s) only, so an email never carries a javascript: or data: link. */
+function buttonUrl(v: unknown): string | undefined {
+  if (v === undefined || v === '') return undefined
+  const u = str(v, 500).trim()
+  if (!/^https?:\/\/[^\s]+$/i.test(u)) throw new Error('The button link must start with https://')
+  return u
+}
+
+export const adminEmail = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.email()))
+
+export const adminSendCampaign = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const audience = oneOf(o.audience, ['waitlist', 'users', 'one'] as const)
+    const to = audience === 'one' ? str(o.to, 254).trim().toLowerCase() : undefined
+    if (to !== undefined && !EMAIL.test(to)) throw new Error('Enter a valid email')
+    return { audience, to, content: emailContent(o.content), url: buttonUrl(o.url) }
+  })
+  .handler(async ({ data }) => AdminController.sendCampaign((await requireAdmin()).id, data))
+
+export const adminSendTestEmail = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ content: emailContent(obj(d).content), url: buttonUrl(obj(d).url) }))
+  .handler(async ({ data }) => AdminController.sendTest(await requireAdmin(), data))
+
+export const adminSaveEmailTemplate = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    return { kind: oneOf(o.kind, Object.keys(SYSTEM_EMAILS) as SystemEmail[]), content: o.content === null ? null : emailContent(o.content) }
+  })
+  .handler(async ({ data }) => AdminController.saveEmailTemplate((await requireAdmin()).id, data))

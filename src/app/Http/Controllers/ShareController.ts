@@ -4,7 +4,6 @@ import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { Waitlist } from '@/app/Models/Waitlist'
 import { EmailService } from '@/app/Services/EmailService'
-import { waitlistEmail } from '@/lib/emails'
 
 // SHR-02: a preview the owner made public, seen by anyone with its link (/s/<token>), view only. WLT-01: the
 // waitlist that link collects, and which post (`ref`) brought each view and sign-up. The caller is checked in
@@ -43,7 +42,7 @@ export const ShareController = {
     const email = data.email.toLowerCase()
     const joined = await Waitlist.join({ email, ref: data.ref, projectId: project?.id ?? null, note: data.note })
     // EML-01: a new sign-up gets its confirmation; a mail that fails never fails the sign-up (it is logged).
-    if (joined) await EmailService.send({ to: email, ...waitlistEmail() }).catch((e) => console.error('[email] waitlist confirmation failed:', e instanceof Error ? e.message : e))
+    if (joined) await EmailService.system('waitlist', email).catch((e) => console.error('[email] waitlist confirmation failed:', e instanceof Error ? e.message : e))
     return { joined }
   },
 }

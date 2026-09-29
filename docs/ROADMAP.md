@@ -142,6 +142,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-34 | Ember — soft tonal tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-32 | habit/fitness/health/learning/food; audit 0.571 |
 | GQ-35 | Volt — qora sport tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-34 | fitness/media/commerce; audit 0.81 |
 | CLN-01 | Tozalash: o'lik kod, DRY, desktop yo'li, o'ylab topilgan palitra | Generatsiya / Sifat | MVP | Tayyor | O'rta | GQ-33 | kod sof −1404, prompt matni −1994; mobil promptlar bayt-bayt bir xil |
+| CHAT-10 | Chat oddiy chatdek: agent log yo'q, javob gap bilan, yuborilgan xabar darhol ko'rinadi | Muharrir / Kanvas | MVP | Tayyor | Kichik |  | Log faqat meta va admin'da; progress belgilar bilan |
+| CLN-02 | Tozalash 2: DB so'rovlari va hajmi, o'lik kod, DRY/KISS/YAGNI/SOLID; Postgres hajm prognozi | Generatsiya / Sifat | MVP | Tayyor | O'rta | CLN-01 | −484 qator; SQL yordamchilari bitta; /api/rt yozilmaydi; hajm jadvali |
 | GQ-36 | Misollar va landing — 5 ta telefon tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | CLN-01 | Dashboard va landing faqat 5 ta telefon tizimidagi haqiqiy ekranlar; misol o'z tizimini tanlaydi |
 | GQ-37 | Sticker hero raqam ustiga tushmaydi | Generatsiya / Sifat | MVP | Tayyor | Kichik | GQ-27, GQ-31 | Sticker figura qatorida emas: 13/29 → 0/6 |
 | GQ-01 | Rasm sloti qulfi kenglikni buzmasin + squeezed-text audit | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | docs/GENERATION-QUALITY-PLAN-2.md |
@@ -414,6 +416,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | SEC-05 | Ro'yxatdan o'tishda suiiste'mol: captcha yoki vaqtinchalik emailni bloklash | Xavfsizlik / Suiiste'mol | Keyin | Rejada | Kichik |  |  |
 | SHR-03 | Ulashish havolasiga parol yoki muddat | Ko'rish va ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 |  |
 | BIL-13 | Jamoaviy to'lov va hisob-fakturalar | To'lov va kreditlar / To'lovlar | Keyin | Rejada | O'rta | OWN-06 |  |
+| EML-03 | Admin: Email sahifasi — holat, yuborish (waitlist/userlar), shablonlar, tarix, unsubscribe | Email / Hayot sikli | MVP | Tayyor | O'rta | EML-01, WLT-01 | Har xat log'da; test va kampaniya; shablon tahrir; unsubscribe |
 | EML-02 | Xush kelibsiz xati | Email / Hayot sikli | Keyin | Rejada | Kichik | EML-01 |  |
 | GEN-10 | Ekran holatlari: bo'sh, yuklanmoqda, xato | Generatsiya / Variantlar | Keyin | Rejada | O'rta |  |  |
 | GEN-11 | Rasm yoki skrinshot orqali kirish | Generatsiya / Kirish ma'lumoti | Keyin | Rejada | O'rta |  |  |

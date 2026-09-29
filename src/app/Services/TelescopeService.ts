@@ -22,9 +22,10 @@ type Con = Pick<Console, 'log' | 'info' | 'warn' | 'error'>
 const G = globalThis as typeof globalThis & { __odConsole?: Con; __odLogsInstalled?: boolean; __odCleanupAt?: number; __odFetchInstalled?: boolean }
 const original = (): Con => G.__odConsole ?? console
 
-/** Dev internals and static files are not requests anyone wants to read; thumbnails are too many. */
+/** Dev internals and static files are not requests anyone wants to read; thumbnails and the screen runtime's
+ *  modules (/api/rt, ~70% of all rows before CLN-02: a frame loads dozens) are too many. */
 export function skipPath(path: string): boolean {
-  return /^\/(@vite|@fs|@id|@react-refresh|node_modules\/|src\/|showcase\/|api\/thumb\/|__vite)/.test(path) || /\.(js|mjs|ts|tsx|css|map|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|txt|json)$/i.test(path)
+  return /^\/(@vite|@fs|@id|@react-refresh|node_modules\/|src\/|showcase\/|api\/thumb\/|api\/rt\/|__vite)/.test(path) || /\.(js|mjs|ts|tsx|css|map|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|txt|json)$/i.test(path)
 }
 
 const SECRET_PARAM = /token|key|secret|code|password|session|signature/i

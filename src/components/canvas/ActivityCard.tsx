@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, CircleX, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AgentAvatar } from './ChatPanel'
 
-// CHAT-02: what the agent is doing right now, as steps — the same facts the finished message's
-// "Agent log" will hold, shown while they happen. Never model tokens: the pipeline's events are the
+// CHAT-02: what the agent is doing right now, as steps (plan, then each screen with a tick), beside the agent's mark
+// like its replies — progress a person reads, not a log: no per-step timings, one elapsed time at the top. Never model tokens: the pipeline's events are the
 // only source (architecture rule: the conversation is written by the controllers, in code).
 
 /** What the card needs from a plan event (PlanEvent 'plan'). */
@@ -67,29 +68,19 @@ function Step(props: { state: StepState; label: string; detail?: string; error?:
 
 const secs = (ms: number) => `${Math.max(0, Math.round(ms / 1000))}s`
 
-/** Per-step timing, from when this card first saw a step running to when it saw it finish. */
-function useStepClock() {
-  const clock = useRef(new Map<string, { start?: number; end?: number }>())
-  // ponytail: recorded while rendering (idempotent); a step that finished before the card mounted shows no time.
-  return (key: string, state: StepState, startedAt?: number) => {
-    const now = Date.now()
-    const t = clock.current.get(key) ?? {}
-    clock.current.set(key, t)
-    if (state === 'running' && t.start === undefined) t.start = startedAt ?? now
-    if ((state === 'done' || state === 'error') && t.start !== undefined && t.end === undefined) t.end = now
-    return t.start === undefined || state === 'pending' ? undefined : secs((t.end ?? now) - t.start)
-  }
-}
-
 export function ActivityCard({ activity }: { activity: Activity }) {
-  useElapsed(activity.startedAt) // re-renders every second, so running steps tick
-  const timeOf = useStepClock()
+  useElapsed(activity.startedAt) // re-renders every second, so the elapsed time ticks
   const total = secs(Date.now() - activity.startedAt)
-  const card = 'od-rise space-y-2 rounded-2xl border bg-card p-3 shadow-1'
+  const shell = (children: React.ReactNode) => (
+    <div className="od-rise flex gap-2.5" aria-live="polite">
+      <AgentAvatar />
+      <div className="min-w-0 flex-1 space-y-2 pt-0.5">{children}</div>
+    </div>
+  )
   if (activity.kind !== 'drawing')
-    return (
-      <div className={card} aria-live="polite">
-        {activity.kind === 'planning' && <Step state="running" label="Planning the app" detail={timeOf('plan', 'running', activity.startedAt)} />}
+    return shell(
+      <>
+        {activity.kind === 'planning' && <Step state="running" label="Planning your app…" detail={total} />}
         {activity.kind === 'waiting' && <Step state="running" label={activity.text} detail={total} />}
         {activity.kind === 'editing' && (
           <>
@@ -102,14 +93,14 @@ export function ActivityCard({ activity }: { activity: Activity }) {
             )}
           </>
         )}
-      </div>
+      </>,
     )
 
   const screens = activity.plan.screens
   const finished = screens.filter((_, i) => activity.status[i] === 'done' || activity.status[i] === 'error').length
   const allDone = finished === screens.length
-  return (
-    <div className={card} aria-live="polite">
+  return shell(
+    <>
       <div className="flex items-center gap-2 px-1 text-sm">
         <span className="min-w-0 flex-1 truncate font-medium">
           {allDone ? `Drew ${screens.length} screens` : `Drawing ${screens.length} screens`}
@@ -123,12 +114,11 @@ export function ActivityCard({ activity }: { activity: Activity }) {
       </div>
       <ol className="space-y-px">
         <li>
-          <Step small state="done" label="Planned the app" detail={timeOf('plan', 'done')} />
+          <Step small state="done" label="Planned the app" />
         </li>
         {screens.map((s, i) => {
           const st = activity.status[i] ?? 'pending'
           const photos = activity.photos[i] ?? 0
-          const time = timeOf(`screen-${i}`, st)
           return (
             <li key={i}>
               <Step
@@ -136,13 +126,13 @@ export function ActivityCard({ activity }: { activity: Activity }) {
                 state={st}
                 label={s.name}
                 error={st === 'error' ? (activity.errors[i] ?? 'Failed') : undefined}
-                detail={st === 'running' && photos ? `${photos} photo${photos === 1 ? '' : 's'} · ${time ?? ''}` : time}
+                detail={st === 'running' && photos ? `${photos} photo${photos === 1 ? '' : 's'}` : undefined}
                 onClick={st === 'pending' ? undefined : () => activity.onFocus(i)}
               />
             </li>
           )
         })}
       </ol>
-    </div>
+    </>,
   )
 }

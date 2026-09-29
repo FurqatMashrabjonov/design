@@ -14,6 +14,8 @@ import { ProviderStatsService } from '@/app/Services/ProviderStatsService'
 import { CREDIT_PRICES } from '@/lib/credit-prices'
 import { TelescopeService } from '@/app/Services/TelescopeService'
 import { BillingController } from './BillingController'
+import { EmailService, unsubscribeUrl, type CampaignInput } from '@/app/Services/EmailService'
+import { renderEmail, type EmailContent, type SystemEmail } from '@/lib/emails'
 
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
@@ -35,9 +37,7 @@ export const ADMIN_SETTINGS = {
 export type AdminSettingKey = keyof typeof ADMIN_SETTINGS
 
 export const AdminController = {
-  overview: (days: 1 | 7 | 30) => AdminStatsService.overview(days),
   // An admin by ADMIN_EMAILS shows as one, though their stored role may still be 'user'.
-  users: async () => (await AdminStatsService.users()).map((u) => ({ ...u, role: isAdmin(u) ? 'admin' : u.role })),
   async user(id: string) {
     const u = await AdminStatsService.user(id)
     if (!u) throw notFound()
@@ -120,6 +120,23 @@ export const AdminController = {
     await Setting.set(d.key, d.value)
     if (d.key.startsWith('llm.')) clearLlmSettings() // this server reads the new model at once
     await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
+  },
+
+  // EML-03: the Email page — status and history, a bulk send, a test to yourself, the system emails' words.
+  email: () => EmailService.overview(),
+  async sendCampaign(adminId: string, c: CampaignInput) {
+    const r = await EmailService.campaign(adminId, c)
+    await AdminAction.log(adminId, 'send-email', c.audience === 'one' ? c.to ?? '' : c.audience, `${c.content.subject} · ${r.sent} sent${r.failed ? `, ${r.failed} failed` : ''}`)
+    return r
+  },
+  /** The draft, exactly as a recipient gets it, to the admin's own address only. */
+  async sendTest(admin: { id: string; email: string }, d: { content: EmailContent; url?: string }) {
+    await EmailService.send({ to: admin.email, tag: 'test', ...renderEmail(d.content, { url: d.url, unsubscribeUrl: unsubscribeUrl(admin.email) }) })
+    return { to: admin.email }
+  },
+  async saveEmailTemplate(adminId: string, d: { kind: SystemEmail; content: EmailContent | null }) {
+    await EmailService.saveTemplate(d.kind, d.content)
+    await AdminAction.log(adminId, 'email-template', d.kind, d.content ? 'changed' : 'reset to default')
   },
 
   /** ADM-11: the tables, one page at a time, and the same filter as CSV (no paging, capped). */

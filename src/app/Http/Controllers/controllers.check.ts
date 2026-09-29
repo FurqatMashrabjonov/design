@@ -7,12 +7,10 @@ process.env.RENDER_AUDIT = "0" // KON-13: no headless Chrome per stub screen; th
 process.env.DEEPSEEK_API_KEY = 'test-key'
 const { Project } = await import('../../Models/Project.ts')
 const { Screen } = await import('../../Models/Screen.ts')
-const { ScreenVersion } = await import('../../Models/ScreenVersion.ts')
 const { GenerateController } = await import('./GenerateController.ts')
 const { PlanController } = await import('./PlanController.ts')
 const { HistoryController } = await import('./HistoryController.ts')
 const { Message } = await import('../../Models/Message.ts')
-const { parseMeta } = await import('../../../lib/agent-messages.ts')
 
 // KON-00: a screen is a Konsta component; `page` is one the compiler accepts, fenced as the model writes it.
 const page = (title: string) => '```jsx\nimport { Page, Navbar, Block } from \'konsta/react\'\nexport default function Screen() {\n  return <Page><Navbar title="' + title + '" /><Block className="p-4">' + title + '</Block></Page>\n}\n```'
@@ -264,10 +262,6 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const trail = (await AdminStatsService.controls()).actions.map((a) => a.action)
   assert.deepEqual(trail.slice(0, 3), ['set-setting', 'set-user-limit', 'set-user-limit'], 'every admin write is logged, newest first')
   assert.ok(trail.includes('ban') && trail.includes('unban'))
-  const o = await AdminStatsService.overview(7)
-  assert.equal(o.series.length >= 30, true, 'a 30-day series with a row per day')
-  assert.ok(o.current.newUsers >= 1 && typeof o.current.failRate === 'number')
-  assert.ok((await AdminStatsService.users()).some((u) => u.email === 'boss@x.uz'))
 
   // BIL-04: credits are a ledger — the balance is the sum, a ref happens once, an admin grant is logged.
   const { Credit } = await import('../../Models/Credit.ts')
@@ -282,7 +276,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   await AdminController.grantCredits('adm', { userId: 'u2', amount: 100, note: 'beta tester' })
   assert.equal(await Credit.balance('u2'), 149)
   assert.equal((await AdminStatsService.controls()).actions[0]!.action, 'grant-credits', 'a grant is in the admin log')
-  assert.equal((await AdminStatsService.users()).find((u) => u.id === 'u2')!.credits, 149, 'the users table shows the balance')
+  assert.equal((await AdminStatsService.user('u2'))!.user.credits, 149, 'the user page shows the balance')
   assert.equal((await AdminStatsService.user('u2'))!.credits[0]!.note, 'beta tester', 'newest movement first')
 }
 
@@ -497,7 +491,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(maskQuery(new URL('http://x/a?token=abc&page=2').search), 'token=***&page=2', 'a token is masked, page kept')
   assert.equal(maskQuery('?apiKey=1&sessionId=2&q=hi'), 'apiKey=***&sessionId=***&q=hi')
   assert.equal(maskQuery(''), null)
-  for (const p of ['/@vite/client', '/@fs/x', '/@id/y', '/node_modules/z.js', '/src/styles.css', '/assets/app.js', '/a.css', '/a.map', '/logo.png', '/icon.svg', '/favicon.ico', '/f.woff2', '/showcase/x', '/api/thumb/s1'])
+  for (const p of ['/@vite/client', '/@fs/x', '/@id/y', '/node_modules/z.js', '/src/styles.css', '/assets/app.js', '/a.css', '/a.map', '/logo.png', '/icon.svg', '/favicon.ico', '/f.woff2', '/showcase/x', '/api/thumb/s1', '/api/rt/v123/lucide/star'])
     assert.ok(skipPath(p), `${p} is not recorded`)
   for (const p of ['/', '/admin/requests', '/_serverFn/abc', '/api/generate', '/p/123']) assert.ok(!skipPath(p), `${p} is recorded`)
 
@@ -708,7 +702,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
 // ADM-12 / ADM-20: MRR, the dashboard's money (sold from orders, LLM spend, profit, tokens in dollars) and every
 // alert at its threshold. The clock is pinned in 2100, so the windows see only the rows seeded here.
 {
-  const { OverviewService } = await import('../../Services/OverviewService.ts')
+  const { DashboardService: OverviewService } = await import('../../Services/DashboardService.ts')
   const { DashboardService } = await import('../../Services/DashboardService.ts')
   const { AdminController } = await import('./AdminController.ts')
   const { db } = await import('../../../database/connection.ts')
@@ -1355,36 +1349,82 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.deepEqual([w?.ref, w?.note], ['x', 'a gym app'], 'the first ref stays; a later note fills an empty one')
 }
 
-// --- EML-01: email through one service; without a provider, logged in development ---
+// --- EML-01/03: email through one service; logged, templated, bulk sends with unsubscribe ---
 {
-  const { EmailService, devMail, setEmailTransport } = await import('../../Services/EmailService.ts')
-  const { magicLinkEmail, waitlistEmail } = await import('../../../lib/emails.ts')
+  const { EmailService, setEmailTransport, unsubscribeUrl, validUnsubscribe, CAMPAIGN_MAX } = await import('../../Services/EmailService.ts')
+  const { renderEmail, SYSTEM_EMAILS } = await import('../../../lib/emails.ts')
   const { ShareController } = await import('./ShareController.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { sql } = await import('drizzle-orm')
+  const rows = async (tag: string) => (await db.execute(sql`SELECT to_email AS "to", status FROM emails WHERE tag = ${tag} ORDER BY id`)).rows as { to: string; status: string }[]
+  const waitlistMail = () => ({ to: 'a@b.co', tag: 'waitlist', ...renderEmail(SYSTEM_EMAILS.waitlist.content) })
   delete process.env.RESEND_API_KEY
   const was = process.env.EMAIL_FROM
   delete process.env.EMAIL_FROM
-  assert.equal(await EmailService.ready(), false)
   const env = process.env.NODE_ENV
   process.env.NODE_ENV = 'development'
-  assert.deepEqual(await EmailService.send({ to: 'a@b.co', ...waitlistEmail() }), { logged: true }, 'no provider: logged in development')
+  assert.equal(await EmailService.ready(), false)
+  assert.deepEqual(await EmailService.send(waitlistMail()), { logged: true }, 'no provider: logged in development')
   process.env.NODE_ENV = 'production'
-  await assert.rejects(EmailService.send({ to: 'a@b.co', ...waitlistEmail() }), /not set up/, 'no provider in production: refused, never pretended')
-  process.env.NODE_ENV = env
-  const sent: { to: string; tag: string; from: string }[] = []
-  setEmailTransport(async (m, _key, from) => (sent.push({ to: m.to, tag: m.tag, from }), { id: 'em_1' }))
+  await assert.rejects(EmailService.send(waitlistMail()), /not set up/, 'no provider in production: refused, never pretended')
+  assert.deepEqual((await rows('waitlist')).map((r) => r.status).slice(-2), ['logged', 'failed'], 'every mail is logged, whatever happened')
+  process.env.NODE_ENV = 'development'
+
+  const sent: { to: string; tag: string; from: string; subject: string; unsub?: string }[] = []
+  setEmailTransport(async (m, _key, from) => (sent.push({ to: m.to, tag: m.tag, from, subject: m.subject, unsub: m.headers?.['List-Unsubscribe'] }), { id: 'em_1' }), async () => {})
   process.env.RESEND_API_KEY = 're_test_0000'
   process.env.EMAIL_FROM = 'Design <hello@example.com>'
+  await db.execute(sql`DELETE FROM waitlist`)
   await ShareController.join({ token: null, email: 'New@Mail.io', ref: null, note: null })
   await ShareController.join({ token: null, email: 'new@mail.io', ref: null, note: null })
-  assert.deepEqual(sent, [{ to: 'new@mail.io', tag: 'waitlist', from: 'Design <hello@example.com>' }], 'a new sign-up is confirmed once')
+  assert.deepEqual(sent.map((m) => [m.to, m.tag, m.from]), [['new@mail.io', 'waitlist', 'Design <hello@example.com>']], 'a new sign-up is confirmed once')
+
+  // A template an admin changed is what goes out; reset puts the default back.
+  await EmailService.saveTemplate('waitlist', { subject: 'Hi from {{brand}}', heading: 'Hello', body: 'Soon.' })
+  await ShareController.join({ token: null, email: 'second@mail.io', ref: null, note: null })
+  assert.equal(sent.at(-1)!.subject, 'Hi from Design', "the admin's words, {{brand}} filled in")
+  await EmailService.saveTemplate('waitlist', null)
+  assert.equal((await EmailService.template('waitlist')).subject, SYSTEM_EMAILS.waitlist.content.subject)
+
+  // Unsubscribe: the link is signed for its address; an unsubscribed address gets no bulk mail.
+  const link = new URL(unsubscribeUrl('new@mail.io'))
+  assert.ok(validUnsubscribe('new@mail.io', link.searchParams.get('t')!))
+  assert.ok(!validUnsubscribe('second@mail.io', link.searchParams.get('t')!), "one address's token does not unsubscribe another")
+  await EmailService.suppress('NEW@mail.io')
+  assert.deepEqual(await EmailService.recipients('waitlist'), ['second@mail.io'], 'who unsubscribed is left out')
+
+  sent.length = 0
+  const r = await EmailService.campaign('adm', { audience: 'waitlist', content: { subject: 'You are in', heading: 'Welcome', body: 'Come in.', button: 'Open' }, url: 'https://example.com' })
+  assert.deepEqual([r.recipients, r.sent, r.failed], [1, 1, 0])
+  assert.equal(sent[0]!.tag, 'campaign')
+  assert.match(sent[0]!.unsub ?? '', /\/unsubscribe\?e=second%40mail\.io&t=/, 'a bulk mail carries its List-Unsubscribe header')
+  const camp = (await db.execute(sql`SELECT sent, recipients FROM email_campaigns WHERE id = ${r.id}`)).rows[0] as { sent: number; recipients: number }
+  assert.deepEqual([camp.sent, camp.recipients], [1, 1], 'the send is recorded with its counts')
+  await assert.rejects(EmailService.campaign('adm', { audience: 'one', to: 'new@mail.io', content: { subject: 's', heading: 'h', body: 'b' } }), /Nobody/, 'not even one by one to someone who unsubscribed')
+  assert.ok(CAMPAIGN_MAX <= 100)
+
   setEmailTransport(async () => { throw new Error('Email provider answered 500') })
   assert.equal((await ShareController.join({ token: null, email: 'third@mail.io', ref: null, note: null })).joined, true, 'a failed mail never fails the sign-up')
-  const m = magicLinkEmail('https://x.io/verify?token=a&b="<c>"')
+  assert.equal((await rows('waitlist')).at(-1)!.status, 'failed')
+
+  const m = renderEmail(SYSTEM_EMAILS['magic-link'].content, { url: 'https://x.io/verify?token=a&b="<c>"' })
   assert.ok(m.html.includes('token=a&amp;b=&quot;&lt;c&gt;&quot;') && m.text.includes('token=a&b="<c>"'), 'the link is escaped in html, whole in text')
+  assert.ok(!m.html.includes('Unsubscribe'), 'a sign-in link carries no unsubscribe link')
   delete process.env.RESEND_API_KEY
   if (was === undefined) delete process.env.EMAIL_FROM
   else process.env.EMAIL_FROM = was
-  void devMail
+  process.env.NODE_ENV = env
+}
+
+// --- CHAT: the plan reply reads like a person, never a log ---
+{
+  const { planReply } = await import('../../../lib/agent-messages.ts')
+  const r = planReply({ appName: 'Sipwise', summary: 'A simple water tracker.', drawn: ['Today', 'History'], failed: ['Settings'], tabs: ['Today', 'History'] })
+  assert.equal(r.split('\n\n')[0], "Here's Sipwise — a simple water tracker.")
+  assert.match(r, /I designed 2 screens across 2 tabs\./)
+  assert.match(r, /Settings didn't come out — use Try again on that frame\./)
+  assert.ok(!/Tabs:|Designed|Tokens/.test(r), 'no log lines in the reply')
+  assert.equal(planReply({ appName: 'X', summary: 'Mindloom helps founders', drawn: [], failed: [], tabs: [] }), "Here's X — Mindloom helps founders.", 'a name at the start keeps its capital')
 }
 
 console.log('ok')
