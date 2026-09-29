@@ -5,6 +5,47 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (7)
+
+### EML-01 (code): email through Resend — sign-in links and waitlist confirmations
+
+- **Provider: Resend.** Research, 2026-09-29:
+  - Resend: 3 000 emails a month and 100 a day free, then $20 for 50 000.
+  - Postmark: 100 a month free.
+  - Amazon SES: $0.10 per 1 000, but an AWS account, a sandbox exit and bounce handling are on us.
+  - Resend has the least setup for a solo launch, and Better Auth's magic link needs one function.
+- **`EmailService.send`** is one HTTPS call to `api.resend.com/emails`, with no SDK. The key is `RESEND_API_KEY`
+  (Admin → Settings → API keys, or `.env`) and the sender is `EMAIL_FROM`.
+  - Only the provider's status is kept, never its body.
+  - Without a key, development prints the mail to the server log and production refuses.
+  - Outgoing calls are recorded under the new purpose `resend`.
+- **Templates** (`lib/emails.ts`): the sign-in link and "You're on the waitlist". Each has an html part and a text
+  part, inline styles, escaped values and one action.
+  - `BRAND` moved to `lib/brand.ts`, so server code and the plain-node tests read the same name.
+- **Wired:**
+  - The magic link (`AuthService`) sends through the service.
+  - A new waitlist sign-up gets a confirmation. A failed mail is logged and never fails the sign-up.
+  - "Test connection" for the key posts an empty mail: 422 means Resend knows the key (a sending-only key cannot
+    list domains).
+- **Still to do by the owner:** buy the domain (INF-02), verify it in Resend (SPF and DKIM records in DNS, DMARC
+  advised), create a sending-only key, and set `EMAIL_FROM`. Until then EML-01 is blocked: its bar is mail that
+  lands in the inbox.
+- **Files:**
+  - New: `app/Services/EmailService.ts`, `lib/emails.ts`, `lib/brand.ts`.
+  - Changed: `AuthService`, `ShareController`, `SecretService`, `TelescopeService`, `SiteChrome`, `.env.example`
+    and `controllers.check.ts`.
+- **Verified:**
+  - `npm run check`: logged without a provider; refused in production; a sign-up confirmed once through a stub
+    transport; a failing transport does not fail the sign-up; the link is escaped in html and whole in text.
+  - `tsc` is clean.
+  - Dev server: a waitlist sign-up in the browser and a magic-link request both logged their mail.
+  - The test rows were removed.
+  - Real delivery with the owner's Resend key: both mails were accepted by Resend and sent from
+    `onboarding@resend.dev` to the account owner. A mail to anyone else was refused (422), as Resend does before
+    a domain is verified.
+  - Until `EMAIL_FROM` is set, development sends from `onboarding@resend.dev`; production has no such fallback.
+  - The owner confirmed that both mails arrived, and that after a restart a magic link from /login signed them in.
+
 ## 2026-09-29 (6)
 
 ### SHR-02 + SHR-05 + WLT-01: a public preview link, a phone view, and a waitlist for build-in-public posts

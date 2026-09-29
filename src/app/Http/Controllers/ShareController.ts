@@ -3,6 +3,8 @@ import { notFound } from '@tanstack/react-router'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { Waitlist } from '@/app/Models/Waitlist'
+import { EmailService } from '@/app/Services/EmailService'
+import { waitlistEmail } from '@/lib/emails'
 
 // SHR-02: a preview the owner made public, seen by anyone with its link (/s/<token>), view only. WLT-01: the
 // waitlist that link collects, and which post (`ref`) brought each view and sign-up. The caller is checked in
@@ -38,6 +40,10 @@ export const ShareController = {
   /** A waitlist sign-up from a shared preview. True when the email is new. */
   async join(data: { token: string | null; email: string; ref: string | null; note: string | null }) {
     const project = data.token ? await Project.byShareToken(data.token) : undefined
-    return { joined: await Waitlist.join({ email: data.email.toLowerCase(), ref: data.ref, projectId: project?.id ?? null, note: data.note }) }
+    const email = data.email.toLowerCase()
+    const joined = await Waitlist.join({ email, ref: data.ref, projectId: project?.id ?? null, note: data.note })
+    // EML-01: a new sign-up gets its confirmation; a mail that fails never fails the sign-up (it is logged).
+    if (joined) await EmailService.send({ to: email, ...waitlistEmail() }).catch((e) => console.error('[email] waitlist confirmation failed:', e instanceof Error ? e.message : e))
+    return { joined }
   },
 }

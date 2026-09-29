@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils'
 // site header; pricing, playbook and the system pages had a bare "← Design" link and login had no
 // brand at all, so leaving the landing felt like leaving the product.
 
-export const BRAND = 'Design'
+import { BRAND } from '@/lib/brand'
+export { BRAND }
 
 const link = 'rounded-sm transition-colors duration-(--duration-base) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 

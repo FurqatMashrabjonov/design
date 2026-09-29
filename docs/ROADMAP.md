@@ -386,7 +386,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | OBS-03 | Server va brauzer xatolarini kuzatish | Monitoring / Xatolar | MVP | Rejada | Kichik | INF-05 | Kutilmagan xatolar foydalanuvchi ID si bilan bitta panelga tushadi |
 | OBS-04 | Asosiy hodisalar analitikasi | Monitoring / Analitika | MVP | Rejada | Kichik | INF-05 | Ro'yxatdan o'tish, birinchi generatsiya, ko'rish, ulashish, eksport, xarid sanaladi |
 | OBS-05 | Foydalanuvchi xarajati bo'yicha admin sahifasi | Monitoring / LLM xarajati | MVP | Tayyor | Kichik | OBS-01 | Faqat admin ko'radi: foydalanuvchilar xarajat va kredit bo'yicha |
-| EML-01 | Email provayderi va domen uchun SPF/DKIM | Email / O'rnatish | MVP | Rejada | Kichik | INF-06 | Kirish havolalari spam'ga emas, inbox'ga tushadi |
+| EML-01 | Email provayderi va domen uchun SPF/DKIM | Email / O'rnatish | MVP | Bloklangan | Kichik | INF-06 | Kirish havolalari spam'ga emas, inbox'ga tushadi |
 | LEG-01 | Foydalanish shartlari | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /terms da e'lon qilingan |
 | LEG-02 | Maxfiylik siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik |  | /privacy da e'lon qilingan |
 | LEG-03 | Pulni qaytarish siyosati | Huquqiy va yordam / Siyosatlar | MVP | Rejada | Kichik | BIL-02 | E'lon qilingan va narxlar sahifasidan havola bor |

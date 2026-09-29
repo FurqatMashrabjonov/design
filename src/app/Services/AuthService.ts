@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { magicLink } from 'better-auth/plugins/magic-link'
+import { EmailService } from './EmailService'
+import { magicLinkEmail } from '@/lib/emails'
 import { admin } from 'better-auth/plugins/admin'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { db } from '@/database/connection'
@@ -12,8 +14,8 @@ import { Project } from '@/app/Models/Project'
 // (AUTH-01). Better Auth owns sessions and the four auth tables; everything else in the app only
 // asks "who is this" through requireUser() (lib: server/auth.ts).
 //
-// Until an email provider is set up (EML-01), a magic link is printed to the server log in
-// development and refused in production — the only way to sign in locally without Google keys.
+// A magic link is mailed through EmailService (EML-01, Resend). With no key it is printed to the server log in
+// development — the way to sign in locally without Google keys — and refused in production.
 
 const google =
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -44,10 +46,10 @@ export const auth = betterAuth({
   plugins: [
     magicLink({
       expiresIn: 15 * 60,
+      // EML-01: sent through Resend; with no key, development logs it and production refuses (EmailService).
       sendMagicLink: async ({ email, url }) => {
-        if (process.env.NODE_ENV === 'production') throw new Error('Email sign-in is not set up yet')
-        devMail.lastLink = { email, url }
-        console.log(`\n[auth] magic link for ${email}:\n${url}\n`)
+        if (process.env.NODE_ENV !== 'production') devMail.lastLink = { email, url }
+        await EmailService.send({ to: email, ...magicLinkEmail(url) })
       },
     }),
     // ADM-01: roles and bans. Its hooks refuse sign-in to a banned user; server/auth.ts also treats

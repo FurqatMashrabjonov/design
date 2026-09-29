@@ -10,7 +10,7 @@ import { Setting } from '@/app/Models/Setting'
 // Values are sealed at rest and cached decrypted for a minute (a key changed on another server is
 // picked up within that); nothing here ever returns a value to the browser.
 
-export const SECRET_NAMES = ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'PEXELS_API_KEY', 'POLAR_ACCESS_TOKEN', 'POLAR_WEBHOOK_SECRET'] as const
+export const SECRET_NAMES = ['DEEPSEEK_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'PEXELS_API_KEY', 'POLAR_ACCESS_TOKEN', 'POLAR_WEBHOOK_SECRET', 'RESEND_API_KEY'] as const
 export type SecretName = (typeof SECRET_NAMES)[number]
 const LABEL: Record<SecretName, string> = {
   DEEPSEEK_API_KEY: 'DeepSeek',
@@ -20,6 +20,7 @@ const LABEL: Record<SecretName, string> = {
   PEXELS_API_KEY: 'Pexels (photos)',
   POLAR_ACCESS_TOKEN: 'Polar (payments)',
   POLAR_WEBHOOK_SECRET: 'Polar webhook secret',
+  RESEND_API_KEY: 'Resend (email)',
 }
 
 const TTL_MS = 60_000
@@ -94,12 +95,15 @@ export const SecretService = {
       PEXELS_API_KEY: () => fetch('https://api.pexels.com/v1/search?query=test&per_page=1', { headers: { Authorization: key } }),
       POLAR_ACCESS_TOKEN: () => fetch(`${polar}/v1/organizations/`, { headers: { Authorization: `Bearer ${key}` } }),
       POLAR_WEBHOOK_SECRET: null,
+      // A sending-only key (the kind to use) may not list domains: its 401 still proves Resend knows the key, so the
+      // probe is the send endpoint with an empty body — 422 (known key, bad mail) is a pass, 401/403 a rejection.
+      RESEND_API_KEY: () => fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: '{}' }),
     }
     const run = probe[name]
     if (!run) return /^whsec_[A-Za-z0-9+/=]{16,}$/.test(key) ? { ok: true, detail: 'Looks like a webhook secret (checked on the next webhook)' } : { ok: false, detail: 'Expected whsec_…' }
     try {
       const res = await run()
-      if (res.ok) return { ok: true, detail: `Connected (${res.status})` }
+      if (res.ok || (name === 'RESEND_API_KEY' && (res.status === 422 || res.status === 400))) return { ok: true, detail: `Connected (${res.status})` }
       // A read that carries nothing but the key: 400 (Gemini's answer to a bad key), 401 or 403 all mean the key.
       return { ok: false, detail: [400, 401, 403].includes(res.status) ? `Rejected by the provider (${res.status})` : `Provider answered ${res.status}` }
     } catch {

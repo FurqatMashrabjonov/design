@@ -1355,4 +1355,36 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.deepEqual([w?.ref, w?.note], ['x', 'a gym app'], 'the first ref stays; a later note fills an empty one')
 }
 
+// --- EML-01: email through one service; without a provider, logged in development ---
+{
+  const { EmailService, devMail, setEmailTransport } = await import('../../Services/EmailService.ts')
+  const { magicLinkEmail, waitlistEmail } = await import('../../../lib/emails.ts')
+  const { ShareController } = await import('./ShareController.ts')
+  delete process.env.RESEND_API_KEY
+  const was = process.env.EMAIL_FROM
+  delete process.env.EMAIL_FROM
+  assert.equal(await EmailService.ready(), false)
+  const env = process.env.NODE_ENV
+  process.env.NODE_ENV = 'development'
+  assert.deepEqual(await EmailService.send({ to: 'a@b.co', ...waitlistEmail() }), { logged: true }, 'no provider: logged in development')
+  process.env.NODE_ENV = 'production'
+  await assert.rejects(EmailService.send({ to: 'a@b.co', ...waitlistEmail() }), /not set up/, 'no provider in production: refused, never pretended')
+  process.env.NODE_ENV = env
+  const sent: { to: string; tag: string; from: string }[] = []
+  setEmailTransport(async (m, _key, from) => (sent.push({ to: m.to, tag: m.tag, from }), { id: 'em_1' }))
+  process.env.RESEND_API_KEY = 're_test_0000'
+  process.env.EMAIL_FROM = 'Design <hello@example.com>'
+  await ShareController.join({ token: null, email: 'New@Mail.io', ref: null, note: null })
+  await ShareController.join({ token: null, email: 'new@mail.io', ref: null, note: null })
+  assert.deepEqual(sent, [{ to: 'new@mail.io', tag: 'waitlist', from: 'Design <hello@example.com>' }], 'a new sign-up is confirmed once')
+  setEmailTransport(async () => { throw new Error('Email provider answered 500') })
+  assert.equal((await ShareController.join({ token: null, email: 'third@mail.io', ref: null, note: null })).joined, true, 'a failed mail never fails the sign-up')
+  const m = magicLinkEmail('https://x.io/verify?token=a&b="<c>"')
+  assert.ok(m.html.includes('token=a&amp;b=&quot;&lt;c&gt;&quot;') && m.text.includes('token=a&b="<c>"'), 'the link is escaped in html, whole in text')
+  delete process.env.RESEND_API_KEY
+  if (was === undefined) delete process.env.EMAIL_FROM
+  else process.env.EMAIL_FROM = was
+  void devMail
+}
+
 console.log('ok')
