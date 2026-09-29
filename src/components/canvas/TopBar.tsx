@@ -24,6 +24,8 @@ export function TopBar(props: {
   onRename: (name: string) => Promise<void>
   device: string
   onShare: () => void
+  /** SHR-02: the preview has a public link. */
+  shared?: boolean
   onDeleteProject: () => Promise<void>
   onPreview: () => void
   /** False until the project has a drawn screen. */
@@ -76,7 +78,7 @@ export function TopBar(props: {
               <Pencil /> Rename project
             </DropdownMenuItem>
             <DropdownMenuItem disabled={!props.hasScreens} onSelect={props.onShare}>
-              <Share2 /> Copy preview link
+              <Share2 /> Share preview…
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={toggleDark}>
@@ -123,8 +125,8 @@ export function TopBar(props: {
           <Button variant="ghost" size="sm" onClick={props.onPreview} disabled={!props.hasScreens} title="Open a clickable full-page preview">
             <Play /> Preview
           </Button>
-          <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title="Copy a link to the preview">
-            <Share2 /> Share
+          <Button variant="ghost" size="sm" onClick={props.onShare} disabled={!props.hasScreens} title={props.shared ? 'Public — anyone with the link can view' : 'Private — share a link to the preview'}>
+            <Share2 /> Share{props.shared && <span className="size-1.5 rounded-full bg-success" aria-label="(public)" />}
           </Button>
           {props.exports && props.exports.length > 0 && (
             <DropdownMenu>

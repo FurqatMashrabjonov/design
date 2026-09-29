@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { ArrowUp, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Sparkles, Star, Trash2 } from 'lucide-react'
+import { ArrowUp, Globe, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Sparkles, Star, Trash2 } from 'lucide-react'
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
@@ -20,7 +20,7 @@ import { PhoneFrame } from '@/components/PhoneFrame'
 // as the hero, starting points drawn from real output, and the projects as cards that fan out
 // their first three screens.
 
-type Card = { id: string; name: string; device: string; designSystem: string; favorite: boolean; screenCount: number; covers: string[]; updatedAt: number }
+type Card = { id: string; name: string; device: string; designSystem: string; favorite: boolean; shared: boolean; screenCount: number; covers: string[]; updatedAt: number }
 type User = { name: string; email: string }
 
 const VIEW_KEY = 'od:projects-view'
@@ -259,6 +259,7 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
                   <Link to="/p/$projectId" params={{ projectId: c.id }} viewTransition onClick={nameForTransition} className="block truncate text-sm font-semibold hover:underline">{c.name}</Link>
                   <p className="mt-1 flex min-w-0 items-center gap-2 text-xs whitespace-nowrap text-muted-foreground">
                     <span className="truncate">{c.screenCount} screen{c.screenCount === 1 ? '' : 's'} · {ago(c.updatedAt)}</span>
+                    {c.shared && <span className="flex shrink-0 items-center gap-1 text-success" title="Anyone with the link can view the preview"><Globe className="size-3" /> Public</span>}
                   </p>
                 </div>
                 <StarButton card={c} on={starred(c)} toggle={() => toggleStar(c)} />

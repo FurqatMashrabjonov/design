@@ -32,6 +32,7 @@ export const Project = {
         device: projects.device,
         designSystem: projects.designSystem,
         favorite: projects.favorite,
+        shared: sql<boolean>`${projects.shareToken} IS NOT NULL`.mapWith(Boolean),
         createdAt: projects.createdAt,
         screenCount: sql<number>`(SELECT count(*) FROM screens s WHERE ${shown})`.mapWith(Number),
         covers: sql<string[]>`ARRAY(SELECT s.id FROM screens s WHERE ${shown} ORDER BY s.created_at, s.id LIMIT 3)`,
@@ -40,6 +41,15 @@ export const Project = {
       .from(projects)
       .where(eq(projects.userId, userId))
     return rows.sort((a, b) => b.updatedAt - a.updatedAt)
+  },
+
+  /** SHR-02: the project a share link names, or nothing — never a hint that it exists but is private. */
+  async byShareToken(token: string): Promise<ProjectRow | undefined> {
+    return (await db.select().from(projects).where(eq(projects.shareToken, token)))[0]
+  },
+
+  async setShareToken(id: string, shareToken: string | null) {
+    await db.update(projects).set({ shareToken }).where(eq(projects.id, id))
   },
 
   async setFavorite(id: string, favorite: boolean) {

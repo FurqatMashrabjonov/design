@@ -43,6 +43,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LLM-08 | OpenAI adapteri (GPT-6 Luna, GPT-6 Sol) + Claude Opus 5.5; Luna standart model | Generatsiya / Modellar | MVP | Tayyor | Kichik | LLM-07 | Hakam 6–0–2 DeepSeek'ga qarshi; 429 kutib qayta urinish |
 | THM-01 | 5 ta ilova uslubi (Clean, Midnight, Vivid, Soft, Editorial): AI tanlaydi, ranglarni kod tanlaydi, panelda almashadi | Generatsiya / Tema | MVP | Tayyor | O'rta | KON-11 | 8 brief'da 5/5 uslub, 8/8 accent; hakam 5–0–3 |
 | THM-02 | Onboarding va dashboard namunalari xilma-xilligi (3–4 layout, uslub va seed bo'yicha) | Generatsiya / Tema | Keyin | Rejada | Kichik | THM-01 | 8 ilovada ≥3 xil onboarding tuzilishi |
+| ADM-20 | Admin dashboard: Sold / LLM spend / Profit katta; tokenlar dollarda model bo'yicha; keraksiz ma'lumot Debug'ga yig'ildi | Admin / Dashboard | MVP | Tayyor | O'rta | ADM-15 | Daromad orders'dan; tokenlar $ bilan; sidebar ixcham |
 | PRV-04 | Preview taqdimot rejimi: Fullscreen / P tugmasi — ekranda faqat telefon | Generatsiya / Ko'rish | Keyin | Rejada | Kichik | PRV-03 | Fullscreen API |
 
 ## B0 · Tayyor
@@ -298,7 +299,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | DSH-05 | Loyihalarni qidirish | Bosh sahifa / Loyihalar | MVP | Tayyor | Kichik |  | Yozish bilan ro'yxat nom bo'yicha filtrlanadi |
 | DSH-03 | Ilhom kartalari (tavsifni to'ldiradigan uslubli boshlang'ichlar) | Bosh sahifa / Bosh sahifa | MVP | Tayyor | Kichik |  | 4–6 ta karta, har biri tavsif va dizayn tizimini qo'yadi |
 | DSH-06 | Birinchi kirishdagi bo'sh holat | Bosh sahifa / Birinchi tanishuv | MVP | Tayyor | Kichik | DSH-03 | Yangi foydalanuvchi ilhom kartalari va bir qatorli tushuntirishni ko'radi |
-| SHR-02 | Loyiha ko'rinishi uchun ommaviy ulashish havolasi | Ko'rish va ulashish / Ulashish | MVP | Rejada | O'rta | OWN-04 | Ega ulashishni yoqadi; taxmin qilib bo'lmaydigan havola bilan har kim faqat ko'radi |
+| SHR-02 | Loyiha ko'rinishi uchun ommaviy ulashish havolasi | Ko'rish va ulashish / Ulashish | MVP | Tayyor | O'rta | OWN-04 | Ega ulashishni yoqadi; taxmin qilib bo'lmaydigan havola bilan har kim faqat ko'radi |
 
 | UI-10 | Vizual poydevor: bitta brend, OKLCH tokenlar, shrift, soya/radius/harakat shkalasi, ikon qoidasi | Interfeys / Interfeys | MVP | Tayyor | O'rta | UI-01 | Bitta aksent va tokenlar; bitta PhoneFrame va PromptBox; landing dark |
 | UI-11 | Landing v2: ishlaydigan prompt, stil yorliqli galereya, jonli 'butun ilova' xaritasi, raqamli isbot | Marketing / Sayt | MVP | Tayyor | O'rta | UI-10 | Hero prompt, flow xaritasi, galereya, video, raqamlar |
@@ -329,7 +330,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | UI-26 | Kirgan foydalanuvchida / avval landing bo'lib chiziladi — yozilgan prompt yo'qoladi | Interfeys / Bosh sahifa | Keyin | Rejada | Kichik |  | Landing ko'rinmaydi, matn saqlanadi |
 | TST-01 | controllers.check beqaror: admin overview 'newUsers >= 1' ba'zan 0 | Sifat / Sifat | Keyin | Rejada | Kichik |  | 20 marta ketma-ket yashil |
 | SHR-04 | QR kod: telefonda skanerlab prototipni ochish | Ulashish / Ulashish | Keyin | Rejada | Kichik | SHR-02 | Haqiqiy telefonda skanerlab ochiladi |
-| SHR-05 | Telefonda to'liq ekranli prototip pleyeri | Ulashish / Ko'rish | Keyin | Rejada | O'rta | SHR-02, SHR-04 | 360/440 da skroll yo'q, svayp |
+| SHR-05 | Telefonda to'liq ekranli prototip pleyeri | Ulashish / Ko'rish | MVP | Tayyor | O'rta | SHR-02 | Telefonda qurilma chizilmaydi, ilova butun ekran; ekranlar ilova ichida bosib o'tiladi (svayp qilinmadi) |
+| GEN-20 | Birinchi generatsiyada ko'proq ekran (8 → 12) | Generatsiya / Sifat | Keyin | Rejada | Kichik |  | MAX 12; eval yutqazmaydi; kredit narxi mos; OpenAI Tier 2+ |
+| WDG-01 | Ilova bilan birga home screen widgetlar | Generatsiya / Sifat | Keyin | Rejada | O'rta |  | 1–3 widget ilova ranglari va ma'lumotlari bilan; kanvas/preview/Figma |
 | DVC-01 | O'lcham almashtirgich: 360 / 375 / 402 / 440 | Ko'rish / Ko'rish | Keyin | Rejada | O'rta |  | 4 o'lchamda render-audit toza |
 | DVC-02 | Render vaqtida safe-area va vh almashtirish | Ko'rish / Ko'rish | Keyin | Rejada | Kichik | DVC-01 | Saqlangan HTML o'zgarmaydi |
 | DVC-03 | O'zimiz chizgan bezellar: 12–15 telefon | Ko'rish / Ko'rish | Keyin | Rejada | O'rta | DVC-01, DVC-02 | Apple/Meta asseti yo'q |
@@ -399,6 +402,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | QA-01 | To'liq yo'l sinovi: ro'yxatdan o'tish → generatsiya → ko'rish → ulashish → eksport → xarid | Sinov / To'liq yo'l sinovi | MVP | Rejada | O'rta | BIL-10, SHR-02 | Production'da o'tadi |
 | QA-02 | Yuklama sinovi: 10 ta parallel generatsiya | Sinov / Yuklama | MVP | Rejada | Kichik | LIM-02 | Kredit ikki marta yechilmaydi, server qulamaydi, xarajat kutilgancha |
 | LCH-01 | 20–50 ta tanlangan foydalanuvchi bilan yopiq beta | Ishga tushirish / Beta | MVP | Rejada | Kichik | QA-01 | Shaxsiy takliflar yuborilgan |
+| WLT-01 | Waitlist: ulashilgan preview'dan email + izoh, qaysi post olib kelgani (ref), admin'da hisob | Ishga tushirish / Beta | MVP | Tayyor | Kichik | SHR-02 | Share sahifasida forma; bir email bir marta; ko'rish va yozilish ref bo'yicha dashboard'da |
 | LCH-02 | Fikr bildirish kanali | Ishga tushirish / Beta | MVP | Rejada | Kichik |  | Ilova ichida forma yoki Telegram guruhga havola |
 | LCH-03 | Beta muammolarini tuzatish, keyin ommaviy e'lon | Ishga tushirish / Ommaviy | MVP | Rejada | O'rta | LCH-01 | Betadagi to'siqlar tuzatilgan; ommaviy e'lon qilingan |
 

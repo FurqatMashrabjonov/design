@@ -25,6 +25,8 @@ export const projects = pgTable('projects', {
   userId: text('user_id'),
   // DSH-08: starred on the dashboard.
   favorite: boolean('favorite').notNull().default(false),
+  // SHR-02: set while the owner shares the preview (/s/<token>); null = private.
+  shareToken: text('share_token').unique(),
   createdAt: unix('created_at').notNull().default(now),
 })
 
@@ -269,6 +271,24 @@ export const orders = pgTable('orders', {
   currency: text('currency').notNull(),
   billingReason: text('billing_reason'),
   subscriptionId: text('subscription_id'),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+// WLT-01: one row per opening of a shared preview, by the post it came from.
+export const shareViews = pgTable('share_views', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  projectId: text('project_id').notNull(),
+  ref: text('ref'),
+  createdAt: unix('created_at').notNull().default(now),
+})
+
+// WLT-01: who asked to be let in, from which shared app and post, and what they wrote.
+export const waitlist = pgTable('waitlist', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  email: text('email').notNull().unique(),
+  ref: text('ref'),
+  projectId: text('project_id'),
+  note: text('note'),
   createdAt: unix('created_at').notNull().default(now),
 })
 

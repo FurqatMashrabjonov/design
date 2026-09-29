@@ -24,6 +24,7 @@ import { UndoStack, messageStep, pairStep } from '@/lib/undo-stack'
 import { FrameToolbar, FrameHandle } from '@/components/canvas/FrameToolbar'
 import { FrameContextMenu } from '@/components/canvas/FrameContextMenu'
 import { ShortcutsDialog } from '@/components/canvas/ShortcutsDialog'
+import { ShareDialog } from '@/components/canvas/ShareDialog'
 import { CodeDialog } from '@/components/canvas/CodeDialog'
 import { FigmaMark, ReactMark } from '@/components/BrandMarks'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,9 @@ function ProjectPage() {
   // The app's look (accent, light/dark, iOS/Android) is the project's, applied to every frame at render time.
   // State changes at once; the save is debounced so a colour drag does not write on every tick.
   const [themeOpen, setThemeOpen] = useState(false)
+  // SHR-02: whether the preview has a public link (its token), changed in the Share dialog.
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareToken, setShareToken] = useState(project.shareToken)
   const [theme, setTheme] = useState<AppTheme>(() => parseAppTheme(project.theme))
   const themeSave = useRef<{ timer?: ReturnType<typeof setTimeout>; before?: AppTheme }>({})
   useEffect(() => { if (!themeSave.current.timer) setTheme(parseAppTheme(project.theme)) }, [project.theme])
@@ -291,16 +295,6 @@ function ProjectPage() {
     }
   }
 
-  async function sharePreview() {
-    const first = [...screens].filter((s) => s.html).sort((a, b) => a.x - b.x)[0]
-    try {
-      await navigator.clipboard.writeText(`${location.origin}/preview/${project.id}${first ? `?s=${first.id}` : ''}`)
-      toast.success('Preview link copied')
-    } catch {
-      toast.error('Could not copy — clipboard access was blocked')
-    }
-  }
-
   // Every generation request goes through here — one, or one per selected screen — under a single Stop.
   async function run(bodies: Parameters<typeof generate>[0][]) {
     const ctl = new AbortController()
@@ -415,7 +409,8 @@ function ProjectPage() {
           await router.invalidate()
         }}
         device={project.device}
-        onShare={sharePreview}
+        onShare={() => setShareOpen(true)}
+        shared={!!shareToken}
         hasScreens={screens.some((s) => s.html)}
         onPreview={openPreview}
         onShortcuts={() => setShortcutsOpen(true)}
@@ -633,6 +628,7 @@ function ProjectPage() {
 
       <CodeDialog screen={code} onOpenChange={(open) => !open && setCode(null)} />
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ShareDialog open={shareOpen} onOpenChange={setShareOpen} projectId={project.id} token={shareToken} onToken={setShareToken} />
     </div>
   )
 }

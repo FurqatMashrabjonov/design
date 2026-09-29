@@ -5,6 +5,87 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (6)
+
+### SHR-02 + SHR-05 + WLT-01: a public preview link, a phone view, and a waitlist for build-in-public posts
+
+- **Share is a choice.** The canvas's Share button opens a dialog with two options: Private (the default, owner
+  only) and Public link. Public makes an unguessable `/s/<token>` (16 random bytes); turning it off drops the token,
+  so the old link dies, and turning it on again makes a new one.
+  - The dialog copies the link, or a link per channel (`?ref=reddit|x|threads`), so each post can be told apart.
+  - A public project shows a green dot on Share and "Public" on its dashboard card.
+- **`/s/$token` needs no sign-in and is view only.** It is the same preview stage as the owner's (moved to
+  `components/AppPreview.tsx`), without a way into the editor.
+  - Frames load `/api/thumb/<screen>?t=<token>`: the thumb route serves a shared project's current screens to
+    anyone holding its token; an old version (`?v=`), a wrong token or no token is still a 404.
+  - The loader gives a stranger no owner, no project id, no messages and no source: a screen's `html` is a
+    12-character hash used as the frame's version key, because the source is what the paid export sells.
+- **On a phone the app is the page (SHR-05).** Under 640px wide the preview draws no device and no arrows; the app
+  fills the screen with no drawn status bar (the phone's own browser has one). Screens are tapped through inside
+  the app. Swiping between screens was not built.
+- **Waitlist (WLT-01).**
+  - A shared preview carries "Join the waitlist": a card at the bottom right on a desktop, a slim top bar on a
+    phone.
+  - The form asks for an email and, optionally, what they would build or what they thought of this app.
+  - One row per email (`waitlist`): a second sign-up keeps the first `ref` and fills an empty note.
+  - Every open of a shared link is a `share_views` row with its `ref`.
+  - The admin dashboard has "Shared previews → waitlist" (views, sign-ups and rate per post) and the latest ten
+    sign-ups with their notes.
+- **Migration** `0008_share_and_waitlist`: `projects.share_token`, `share_views` and `waitlist`.
+- **Not done yet:** there is no per-IP limit on sign-ups (an email is stored once, so a bot fills rows, not credits).
+  "Views" counts opens, not people.
+- **Files:**
+  - New: `ShareController`, `Models/Waitlist`, `components/AppPreview.tsx`, `components/Waitlist.tsx`,
+    `components/canvas/ShareDialog.tsx`, `routes/s.$token.tsx`.
+  - Changed: `routes/preview.$projectId.tsx` (now thin), `routes/api/thumb/$screenId.ts`, `server/fns.ts`
+    (`shareProject`, `getSharedProject`, `joinWaitlist`), `Project` (`byShareToken`, `setShareToken`, `shared` on
+    the cards), `DashboardService.waitlist`, `admin.index.tsx`, `TopBar`, `p.$projectId.tsx`, `Dashboard.tsx`, and
+    the schema and migration.
+- **Verified:**
+  - `npm run check` (new block: token, relink, no source for strangers, the view counted by ref, off kills the
+    link, `cleanRef`, the email rule, one row per email) and `tsc` are clean.
+  - With curl and no cookie: the page is 200; a wrong token is 404; the thumb with the token is 200; without it, with a
+    wrong one, or with `?v=` it is 404. The page carries no source.
+  - In the browser: the Share dialog (Private → Public, link and channel links); the shared page on a desktop
+    (the chrome fades, the waitlist card stays); a sign-up stored with its ref and note; at 390×844 the full-screen
+    app with the waitlist bar, tapping through onboarding into the tabs; and the admin panel.
+  - The test data was removed afterwards.
+
+## 2026-09-29 (5)
+
+### ADM-20: admin dashboard — sold, LLM spend and profit first; tokens in dollars; less on screen
+
+- **Three large figures: Sold, LLM spend and Profit.** Each is compared with the window before (24h / 7d / 30d;
+  30 days is the default).
+  - Sold comes from the `orders` table, a fact. The old overview rebuilt revenue from credit grants.
+  - Profit is sold − fees (≈ 4% + $0.40 an order) − LLM spend, with the margin.
+- **LLM spend by token.**
+  - Input at full price, cached input (with the cache share), input cost and output cost.
+  - A table per model: calls, failures, input and cached tokens, output tokens, input $, output $ and the total.
+    The dollars are each model's list rates scaled to what was really charged, so DeepSeek's peak hours are
+    included and the parts add up.
+  - Local claude-cli rows are marked "local · free".
+- **Unit costs:** per app, per screen, failed calls, and today's spend against the budget.
+- **Chart:** 30 days of sold against LLM spend.
+- **Kept below:** only signups, active users, apps generated and MRR.
+- **Removed from the page:** credits sold/spent, churn, activation, p95s, requests, 5xx, latency and the latest
+  errors. They have their own pages.
+- **Sidebar.**
+  - Business: Dashboard, Users, Credits & revenue.
+  - AI: Generations, Models.
+  - Settings.
+  - Debug, folded (open when one of its pages is): Errors, Requests, Logs, Outgoing, Webhooks.
+- **Code.**
+  - `DashboardService` (window, byModel, daily, dashboard) and `adminDashboard` added.
+  - Removed as dead: `OverviewService.windowStats`, `overview`, `series` and `latestErrors`, and the
+    grants-based revenue SQL. It keeps MRR and the alerts.
+- **Tests.** Sold is the orders in dollars; fees, profit and tokens are checked; the per-model dollars add up to
+  what was spent and split at the list rates; the 30-day series has the order on its day.
+- **Verified in the browser:** the dashboard in dev data, the Debug fold, and the Generations, Users and Credits
+  pages. `npm run check` and `tsc` are clean.
+- **Note:** dev data shows MRR $12 with Sold $0. The live Starter plan's payment is not in `orders`; it
+  predates ADM-15 or was granted without an order.
+
 ## 2026-09-29 (4)
 
 ### THM-01: five app styles — every app no longer comes out in the same grey, white and eight colours

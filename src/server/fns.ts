@@ -7,6 +7,7 @@ import { ProjectController } from '@/app/Http/Controllers/ProjectController'
 import { HistoryController } from '@/app/Http/Controllers/HistoryController'
 import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
+import { ShareController, EMAIL, cleanRef } from '@/app/Http/Controllers/ShareController'
 import { AccountController } from '@/app/Http/Controllers/AccountController'
 import { CreditService } from '@/app/Services/CreditService'
 import { BillingController } from '@/app/Http/Controllers/BillingController'
@@ -68,6 +69,28 @@ export const renameProject = createServerFn({ method: 'POST' })
 export const deleteProject = createServerFn({ method: 'POST' })
   .validator((id: unknown) => idOf(id))
   .handler(async ({ data }) => (await requireProject(data), ProjectController.destroy(data)))
+
+/** SHR-02: the owner turns the public preview link on or off. */
+export const shareProject = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id), on: obj(d).on === true }))
+  .handler(async ({ data }) => (await requireProject(data.id), ShareController.share(data)))
+
+/** SHR-02: a shared preview — public, keyed by the unguessable token alone; a wrong token is a 404. */
+export const getSharedProject = createServerFn({ method: 'GET' })
+  .validator((d: unknown) => ({ token: idOf(obj(d).token), ref: cleanRef(obj(d).ref) }))
+  .handler(async ({ data }) => ShareController.shared(data.token, data.ref))
+
+/** WLT-01: a waitlist sign-up from a shared preview — public. */
+export const joinWaitlist = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const email = str(o.email, 254).trim()
+    if (!EMAIL.test(email)) throw new Error('Enter a valid email')
+    const note = o.note === undefined || o.note === '' ? null : str(o.note, 1000).trim() || null
+    return { token: o.token === undefined ? null : idOf(o.token), email, ref: cleanRef(o.ref), note }
+  })
+  // ponytail: no per-IP limit; an email is stored once, so a bot fills rows, not credits. Add one if spam shows up.
+  .handler(async ({ data }) => ShareController.join(data))
 
 export const favoriteProject = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ id: idOf(obj(d).id), favorite: obj(d).favorite === true }))

@@ -705,13 +705,14 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(await CreditService.priceOf('screen'), 2, 'reset: DeepSeek again')
 }
 
-// ADM-12: the overview's money (MRR, credits, margin estimate) and every alert at its threshold.
-// The clock is pinned in 2100, so the windows see only the rows seeded here.
+// ADM-12 / ADM-20: MRR, the dashboard's money (sold from orders, LLM spend, profit, tokens in dollars) and every
+// alert at its threshold. The clock is pinned in 2100, so the windows see only the rows seeded here.
 {
   const { OverviewService } = await import('../../Services/OverviewService.ts')
+  const { DashboardService } = await import('../../Services/DashboardService.ts')
   const { AdminController } = await import('./AdminController.ts')
   const { db } = await import('../../../database/connection.ts')
-  const { subscriptions, creditLedger, llmCalls, serverLogs, screens } = await import('../../../database/schema.ts')
+  const { subscriptions, creditLedger, llmCalls, serverLogs, screens, orders } = await import('../../../database/schema.ts')
   const { like } = await import('drizzle-orm')
   const T = Date.UTC(2100, 0, 15, 12) / 1000
   const has = async (key: string, now = T) => (await OverviewService.alerts(now)).some((a) => a.key === key)
@@ -738,16 +739,20 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     { id: 'o-l5', userId: 'o-u1', delta: 50, kind: 'refund', createdAt: T - 3600 },
     { id: 'o-l6', userId: 'o-u9', delta: 60, kind: 'signup', ref: 'signup:o-u9', createdAt: T - 3600 },
   ])
-  await db.insert(llmCalls).values({ id: 'o-c0', provider: 'deepseek', model: 'o-cheap', actionId: 'o-a1', costUsd: 1, ms: 4000, ok: true, createdAt: T - 7200 })
-  const w = await OverviewService.windowStats(T - 7 * 86400, T + 1)
-  assert.equal(w.creditsSold, 4700, 'plan grants and packs are sold credits; a signup grant is not')
-  assert.equal(w.creditsSpent, 250, 'holds net of refunds')
-  assert.equal(w.newPaying, 2)
-  assert.equal(w.churned, 1, 'the canceled plan churned in the window')
-  assert.equal(w.revenue.toFixed(2), '35.00', '$12 + $204/12 + $6')
-  const fees = 35 * 0.04 + (1 + 1 / 12 + 1) * 0.4
-  assert.equal(w.margin.toFixed(4), (35 - 1 - fees).toFixed(4), 'margin = revenue − LLM − fees')
-  assert.equal(w.p95GenMs, 4000, "an action's wall time")
+  // Sold is the provider's orders in dollars (a fact), not the ledger's grants; LLM spend is what the calls cost.
+  await db.insert(llmCalls).values({ id: 'o-c0', provider: 'deepseek', model: 'deepseek-flash', actionId: 'o-a1', promptTokens: 10000, cachedTokens: 8000, completionTokens: 2000, costUsd: 1, ms: 4000, ok: true, createdAt: T - 7200 })
+  await db.insert(orders).values([
+    { id: 'o-ord1', userId: 'o-u1', productKey: 'pack-500', amountCents: 600, currency: 'usd', createdAt: T - 86400 },
+    { id: 'o-ord2', userId: 'o-u2', productKey: 'pro-month', amountCents: 2400, currency: 'USD', createdAt: T - 2 * 86400 },
+  ])
+  const w = await DashboardService.window(T - 7 * 86400, T + 1)
+  assert.deepEqual([w.sold, w.orders, w.payingUsers], [30, 2, 2], 'sold is the orders, in dollars')
+  assert.equal(w.fees.toFixed(2), (30 * 0.04 + 2 * 0.4).toFixed(2), 'fees: 4% + $0.40 an order')
+  assert.equal(w.profit.toFixed(2), (30 - 2 - 1).toFixed(2), 'profit = sold − fees − LLM')
+  assert.deepEqual(w.tokens, { input: 2000, cached: 8000, cacheWrite: 0, output: 2000 })
+  const m = (await DashboardService.byModel(T - 7 * 86400, T + 1)).find((r) => r.model === 'deepseek-flash')!
+  assert.equal((m.inputUsd + m.outputUsd).toFixed(6), '1.000000', 'the parts add up to what was spent')
+  assert.equal(m.outputUsd.toFixed(4), (1200 / (324 + 1200)).toFixed(4), 'split at the list rates (in 2000×0.15 + 8000×0.003, out 2000×0.6)')
 
   // Budget: 80% of today's budget fires, just under does not.
   await AdminController.setSetting('adm', { key: 'limits.dailyBudgetUsd', value: '10' })
@@ -796,10 +801,10 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.ok(await has('paused'))
   await AdminController.setSetting('adm', { key: 'generation.paused', value: null })
 
-  const o = await OverviewService.overview(7, T)
-  assert.equal(o.series.length, 30)
-  assert.equal(Number(o.series.at(-2)!.revenue).toFixed(2), '6.00', 'the pack is on its day in the revenue series')
-  assert.ok(o.errors.some((e) => e.source === 'server') && o.errors.every((e, i) => i === 0 || Number(o.errors[i - 1]!.createdAt) >= Number(e.createdAt)), 'latest errors, newest first')
+  const dsh = await DashboardService.dashboard(7, T)
+  assert.equal(dsh.series.length, 30)
+  assert.equal(Number(dsh.series.at(-2)!.sold), 6, 'the $6 order is on its day')
+  await db.delete(orders).where(like(orders.id, 'o-%'))
   // The rows are in 2100: left behind, they would count toward every later "today".
   await db.delete(serverLogs).where(like(serverLogs.message, 'o-%'))
   await db.delete(llmCalls).where(like(llmCalls.id, 'o-%'))
@@ -1321,6 +1326,33 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   process.env.GENERATION_PAUSED = '1'
   assert.equal((await UsageService.refusal('someone-else'))?.status, 503, 'the stop switch')
   delete process.env.GENERATION_PAUSED
+}
+
+// --- SHR-02 / WLT-01: a public preview link, its views by post, and the waitlist ---
+{
+  const { ShareController, cleanRef, EMAIL } = await import('./ShareController.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { sql } = await import('drizzle-orm')
+  await Project.create({ id: 'shr-1', name: 'Shared', designSystem: 'konsta', device: 'mobile' })
+  await Screen.create({ id: 'shr-s1', projectId: 'shr-1', name: 'Home', prompt: 'p', html: 'export default function S() { return null }', x: 0, y: 0 })
+  await assert.rejects(ShareController.shared('nope', null), 'a token nobody has is not found')
+  const { token } = await ShareController.share({ id: 'shr-1', on: true })
+  assert.ok(token && token.length >= 20, 'sharing makes an unguessable token')
+  assert.equal((await ShareController.share({ id: 'shr-1', on: true })).token, token, 'sharing again keeps the link')
+  const view = await ShareController.shared(token!, 'reddit')
+  assert.equal(view.screens.length, 1)
+  assert.ok(!view.screens[0]!.html.includes('export'), 'a stranger never gets the source, only a version key')
+  assert.ok(!('userId' in view.project) && view.project.id === '', 'no owner, no project id')
+  assert.equal((await db.execute(sql`SELECT ref FROM share_views WHERE project_id = 'shr-1'`)).rows[0]?.ref, 'reddit', 'the view is counted by its post')
+  assert.equal((await ShareController.share({ id: 'shr-1', on: false })).token, null)
+  await assert.rejects(ShareController.shared(token!, null), 'turning sharing off kills the old link')
+  assert.equal(cleanRef('Reddit'), 'reddit')
+  assert.equal(cleanRef('a b<script>'), null, 'a ref is short and plain or nothing')
+  assert.ok(EMAIL.test('a@b.co') && !EMAIL.test('a@b') && !EMAIL.test('a b@c.de'))
+  assert.equal((await ShareController.join({ token: null, email: 'A@x.io', ref: 'x', note: null })).joined, true)
+  assert.equal((await ShareController.join({ token: null, email: 'a@x.io', ref: 'threads', note: 'a gym app' })).joined, false, 'one row per email')
+  const w = (await db.execute(sql`SELECT ref, note FROM waitlist WHERE email = 'a@x.io'`)).rows[0]
+  assert.deepEqual([w?.ref, w?.note], ['x', 'a gym app'], 'the first ref stays; a later note fills an empty one')
 }
 
 console.log('ok')

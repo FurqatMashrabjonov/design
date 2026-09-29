@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { createFileRoute, Link, notFound, Outlet } from '@tanstack/react-router'
-import { Activity, ArrowLeft, ArrowUpRight, Bug, Coins, Cpu, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users, Webhook } from 'lucide-react'
+import { createFileRoute, Link, notFound, Outlet, useRouterState } from '@tanstack/react-router'
+import { Activity, ArrowLeft, ArrowUpRight, Bug, ChevronDown, Coins, Cpu, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users, Webhook } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { adminCheck } from '../server/admin-fns'
 import { CommandPalette, CommandTrigger } from '../admin/CommandPalette'
@@ -23,26 +23,29 @@ export const Route = createFileRoute('/admin')({
 
 // ADM-10: sections in groups, so a new page slots into its group instead of a flat list.
 const GROUPS = [
+  // ADM-20: what an MVP runs on, first; the request/log/outgoing/webhook recorders (Telescope) are for chasing a
+  // production problem, so they sit together under Debug instead of crowding the list.
   {
-    label: 'Monitor',
+    label: 'Business',
     items: [
-      { to: '/admin', label: 'Overview', icon: Gauge, exact: true },
+      { to: '/admin', label: 'Dashboard', icon: Gauge, exact: true },
+      { to: '/admin/users', label: 'Users', icon: Users },
+      { to: '/admin/credits', label: 'Credits & revenue', icon: Coins },
+    ],
+  },
+  { label: 'AI', items: [{ to: '/admin/generations', label: 'Generations', icon: Activity }, { to: '/admin/providers', label: 'Models', icon: Cpu }] },
+  { label: 'System', items: [{ to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal }] },
+  {
+    label: 'Debug',
+    fold: true,
+    items: [
+      { to: '/admin/errors', label: 'Errors', icon: Bug },
       { to: '/admin/requests', label: 'Requests', icon: Globe },
       { to: '/admin/logs', label: 'Logs', icon: ScrollText },
-      { to: '/admin/errors', label: 'Errors', icon: Bug },
       { to: '/admin/outgoing', label: 'Outgoing', icon: ArrowUpRight },
       { to: '/admin/webhooks', label: 'Webhooks', icon: Webhook },
     ],
   },
-  { label: 'AI', items: [{ to: '/admin/generations', label: 'Generations', icon: Activity }, { to: '/admin/providers', label: 'Providers', icon: Cpu }] },
-  {
-    label: 'Business',
-    items: [
-      { to: '/admin/users', label: 'Users', icon: Users },
-      { to: '/admin/credits', label: 'Credits', icon: Coins },
-    ],
-  },
-  { label: 'System', items: [{ to: '/admin/settings', label: 'Settings', icon: SlidersHorizontal }] },
 ] as const
 const NAV = GROUPS.flatMap((g) => [...g.items] as (typeof GROUPS)[number]['items'][number][])
 
@@ -63,6 +66,10 @@ function AdminShell() {
   const { admin } = Route.useRouteContext()
   // SSR renders the open sidebar; the saved choice is read after mount so hydration matches.
   const [collapsed, setCollapsed] = useState(false)
+  // ADM-20: Debug is folded unless one of its pages is open.
+  const [debugOpen, setDebugOpen] = useState(false)
+  const path = useRouterState({ select: (st) => st.location.pathname })
+  const debugShown = debugOpen || GROUPS.some((g) => 'fold' in g && g.items.some((n) => path.startsWith(n.to)))
   // Not in head(): that runs for a refused visitor too and would name the page.
   useEffect(() => {
     document.title = `Admin · ${BRAND}`
@@ -126,10 +133,15 @@ function AdminShell() {
             <div key={g.label} className="space-y-0.5">
               {collapsed ? (
                 <div className="mx-2 my-1.5 border-t border-sidebar-border first:hidden" aria-hidden />
+              ) : 'fold' in g ? (
+                <button type="button" onClick={() => setDebugOpen((o) => !o)} aria-expanded={debugShown} className="flex w-full items-center justify-between rounded-sm px-2.5 pb-1 text-xs font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+                  {g.label}
+                  <ChevronDown className={`size-3.5 transition-transform duration-(--duration-fast) ${debugShown ? '' : '-rotate-90'}`} />
+                </button>
               ) : (
                 <p className="px-2.5 pb-1 text-xs font-medium text-muted-foreground">{g.label}</p>
               )}
-              {g.items.map((n) => (
+              {('fold' in g && !debugShown && !collapsed ? [] : g.items).map((n) => (
                 <Tip key={n.to} show={collapsed} label={n.label}>
                   <Link
                     to={n.to}
