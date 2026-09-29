@@ -5,6 +5,69 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-29 (4)
+
+### THM-01: five app styles — every app no longer comes out in the same grey, white and eight colours
+
+- **Research.** 47 top iOS apps across health, finance, food, learning, meditation and travel, from the Gummble
+  library:
+
+  | Style | Share | Examples |
+  |---|---|---|
+  | Clean | ~30% | Apple Health, N26, DoorDash |
+  | Midnight | ~25% | Apple Fitness, Up, Balance |
+  | Vivid | ~15% | Glovo, Duolingo, Streaks |
+  | Soft | ~15% | Headspace, Babbel, Headway |
+  | Editorial | ~15% | SIX, GetYourGuide, Wolt |
+
+  Every app we generated looked like Clean, in the same eight iOS hues.
+- **Why the sameness.**
+  - The planner prompt listed eight hues, and five apps in a row used exactly those.
+  - Konsta's iOS surfaces are constants (#efeff4 and #fff).
+  - The skill told the model to write `bg-white dark:bg-[#1c1c1e]` for every box.
+  - Every onboarding came from one example.
+- **`runtime/kit/styles.js`.** Surfaces, corners and fonts per style, light and dark, applied as CSS variables:
+  - Konsta's iOS and Material surfaces;
+  - `bg-page`, `bg-card`, `bg-card-2`, `border-line` and `rounded-card` (Tailwind `@theme` in `type-scale.css`);
+  - rounded type for Vivid and Soft, a serif display face for Editorial.
+
+  `mount` applies it after the accent. The export applies it too and ships the file.
+- **Colours come from the code.** `styleColors` picks the accent and the palette from the style's own sets by
+  the project id. The planner only picks the style and names the palette keys. A midnight app starts dark.
+- **Style cards.** The screen brief carries the style's card (`STYLE_CARDS`), which says how to compose,
+  onboarding included.
+- **Skill and lint.** The skill says to use `bg-card`/`bg-page` and never `bg-white`. The lint turns `bg-white`
+  (and its hard-coded dark pair) into `bg-card`. The detail example is updated.
+- **Theme.** `projects.theme` gains `style`; it is validated everywhere, sent in `od:look` and carried as `s=` in
+  the query. The render check measures a screen in its own mode.
+- **Style & colour panel.** Five labelled cards with a live preview. Switching recolours every screen in place;
+  choosing Midnight turns dark on.
+- **Tests.**
+  - Style parsing, and seeded colours that differ by project.
+  - Every surface ≥7:1 with the label colour, light and dark.
+  - Every accent ≥3.5:1 with white text. This caught five weak accents, which were darkened.
+  - The export carries `styles.js`.
+- **Eval on GPT-6 Luna** (8 briefs):
+
+  | | Before styles | thm01 | thm01b |
+  |---|---|---|---|
+  | Styles in use | 1 | 4 | **5 of 5** — Clean 1, Vivid 2, Soft 2, Editorial 2, Midnight 1 |
+  | Distinct accents | 5–6 (same 8 hues) | 7 | **8** |
+  | Judge vs the pre-style Luna run | — | 4–0–4 | **5–0–3** |
+  | Rubric overall | 3.14 | 3.19 | 3.11 |
+  | Rubric coherence | 3.63 | 3.88 | — |
+  | Problems per screen | 0.14 | 0.08 | 0.16 |
+  | Build | 100% | 100% | 100% |
+
+- **Fixes the eval found.**
+  - An accent picked apart from the palette clashed with it; the judge noticed ("a blue button on an orange
+    app"). The accent is now the palette's own colour, darkened to white-text contrast, skipping a colour that
+    turns muddy (a yellow).
+  - Plain FNV put `eval-shop` and `eval-travel` on the same colours; a murmur finaliser spreads them.
+  - Both have tests.
+  and cards), Vivid (accent-washed page) and Editorial (white page, serif titles); the project was put back to
+  Clean. `npm run check` and `tsc` are clean.
+
 ## 2026-09-29 (3)
 
 ### LLM-08 (in progress): OpenAI adapter — GPT-6 Luna and GPT-6 Sol — and Claude Opus 5.5 as pickable models

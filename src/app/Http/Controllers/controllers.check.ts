@@ -97,7 +97,7 @@ export default function Screen() {
   assert.ok(/<span>1\.5 L\s*<\/span>/.test(src), 'a chevron inside a richer after keeps the rest of the after')
   assert.ok(!/text-white/.test(src), 'white text on a tint() wash is dropped')
   assert.ok(/className="grid grid-cols-2 gap-3"/.test(src), 'px-4 on a Block is dropped (Block pads itself)')
-  assert.ok(src.includes('bg-white dark:bg-[#1c1c1e]') && src.includes('text-[11px]'), 'a lone bg-white gets its dark pair; text under 11px is raised to 11px')
+  assert.ok(src.includes('bg-card') && !src.includes('bg-white ') && src.includes('text-[11px]'), 'a white box becomes the style card (bg-card); text under 11px is raised to 11px')
   const rules = lint.findings.map((f) => f.rule)
   for (const r of ['blocktitle-in-block', 'list-item-outside-list', 'list-in-block', 'prominent-buttons', 'emoji-in-control', 'fixed-bottom-under-tabbar']) assert.ok(rules.includes(r), `the lint reports ${r}`)
   assert.equal(lintJsx('this is not { valid').findings.length, 0, 'a source that does not parse is left to the compiler')
@@ -135,7 +135,10 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const project = (await Project.find('p2'))!
   assert.equal(project.name, 'Tasky')
   assert.deepEqual(JSON.parse(project.navigation!).tabs.map((t: { id: string }) => t.id), ['today', 'me'])
-  assert.equal(JSON.parse(project.theme!).accent, '#ff375f')
+  // THM-01: the accent is the code's, from the style's set and the project id — not what the planner wrote.
+  const { styleColors } = await import('../../../lib/app-theme.ts')
+  const savedTheme = JSON.parse(project.theme!)
+  assert.deepEqual([savedTheme.accent, savedTheme.style], [styleColors('clean', [], 'p2').accent, 'clean'])
   const rows = (await Screen.forProject('p2')).sort((a, z) => a.x - z.x)
   assert.deepEqual(rows.map((s) => [s.slug, Boolean(s.html), Boolean(s.error)]), [['today', true, false], ['me', true, false], ['task', false, true]], 'tabs first; the failed screen keeps its slot')
   assert.ok(rows[0]!.html.startsWith('import') && !rows[0]!.html.includes('```'), 'the stored screen is the bare component')
@@ -1119,7 +1122,8 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const homeOut = files.find((f) => f.name.endsWith('screens/home.jsx'))!.data
   assert.ok(/import \{ BlockTitle \} from 'konsta\/react'/.test(homeOut) && /import \{ ChevronRight \} from 'lucide-react'/.test(homeOut) && /import \{ ListItem \} from '@od\/kit'/.test(homeOut), 'forgotten imports are written into the exported code')
   const app = JSON.parse(files.find((f) => f.name.endsWith('src/app.json'))!.data)
-  assert.deepEqual(app.theme, { accent: '#ff375f', dark: true, platform: 'material' })
+  assert.deepEqual(app.theme, { accent: '#ff375f', dark: true, platform: 'material', style: 'clean' })
+  assert.ok(names.includes('cafe-test/src/kit/styles.js'), 'the export carries the style module (THM-01)')
   const dir = mkdtempSync(join(tmpdir(), 'od-export-'))
   for (const f of files) { mkdirSync(dirname(join(dir, f.name)), { recursive: true }); writeFileSync(join(dir, f.name), f.data) }
   const root = join(dir, 'cafe-test')
@@ -1139,12 +1143,12 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
 // a boolean dark and one of two platforms reach the page.
 {
   const { parseAppTheme, themeFromQuery, themeQuery } = await import('../../../lib/app-theme.ts')
-  assert.deepEqual(parseAppTheme('{"accent":"#FF375F","dark":true,"platform":"material"}'), { accent: '#ff375f', dark: true, platform: 'material' })
-  assert.deepEqual(parseAppTheme({ accent: 'red;}</style>', dark: 'yes', platform: 'windows' }), { accent: '#5e5ce6', dark: false, platform: 'ios' }, 'anything else falls back')
-  const stored = parseAppTheme({ accent: '#ff9f0a' })
-  assert.deepEqual(themeFromQuery(new URLSearchParams('a=34c759&p=material&dark=1'), stored), { accent: '#34c759', dark: true, platform: 'material' })
-  assert.deepEqual(themeFromQuery(new URLSearchParams('a=zzz&p=x'), stored), stored, 'a bad query keeps the stored look')
-  assert.equal(themeQuery({ accent: '#34c759', dark: true, platform: 'material' }), 'a=34c759&p=material&dark=1')
+  assert.deepEqual(parseAppTheme('{"accent":"#FF375F","dark":true,"platform":"material","style":"midnight"}'), { accent: '#ff375f', dark: true, platform: 'material', style: 'midnight' })
+  assert.deepEqual(parseAppTheme({ accent: 'red;}</style>', dark: 'yes', platform: 'windows', style: 'x;}' }), { accent: '#5e5ce6', dark: false, platform: 'ios', style: 'clean' }, 'anything else falls back')
+  const stored = parseAppTheme({ accent: '#ff9f0a', style: 'soft' })
+  assert.deepEqual(themeFromQuery(new URLSearchParams('a=34c759&p=material&dark=1'), stored), { accent: '#34c759', dark: true, platform: 'material', style: 'soft' })
+  assert.deepEqual(themeFromQuery(new URLSearchParams('a=zzz&p=x&s=editorial'), stored), { ...stored, style: 'editorial' }, 'a bad query keeps the stored look; a style it names wins')
+  assert.equal(themeQuery({ accent: '#34c759', dark: true, platform: 'material', style: 'vivid' }), 'a=34c759&p=material&s=vivid&dark=1')
 }
 // PRV-02: on an open foldable a list sits left of what it opens; a screen that opens nothing fills the screen.
 {
@@ -1190,6 +1194,35 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     assert.equal(calls, 2, 'one wait, one retry')
   } finally {
     globalThis.fetch = saved
+  }
+}
+// THM-01: five styles. The planner picks one; the code picks the colours from that style's sets by the project id —
+// never the model's hex — and every surface and accent stays readable.
+{
+  const { parsePlan } = await import('../../Services/JsxGenerator.ts')
+  const { styleColors, readableOnWhite, APP_STYLES } = await import('../../../lib/app-theme.ts')
+  const { styleTokens } = await import('../../../../runtime/kit/styles.js')
+  const json = (style: string) => JSON.stringify({ appName: 'X', style, accent: '#ff9f0a', palette: ['steps', 'water'], tabs: [{ id: 'home', label: 'Home', icon: 'House' }], screens: [{ id: 'home', name: 'Home', kind: 'tab', tab: 'home', spec: '' }] })
+  const p = parsePlan(json('midnight'), 'x', 'project-1')
+  assert.equal(p.style, 'midnight')
+  assert.deepEqual({ accent: p.accent, palette: p.palette }, styleColors('midnight', ['steps', 'water'], 'project-1'), "the colours are the style's, by the seed")
+  assert.notEqual(parsePlan(json('midnight'), 'x', 'project-2').accent + JSON.stringify(parsePlan(json('midnight'), 'x', 'project-2').palette), p.accent + JSON.stringify(p.palette), 'another project, other colours')
+  assert.equal(parsePlan(json('neon-goth'), 'x', 'p').style, 'clean', 'an unknown style falls back')
+  const evalIds = ['habits', 'food', 'bank', 'travel', 'learn', 'meditate', 'shop', 'social'].map((b) => `eval-${b}`)
+  assert.ok(new Set(evalIds.map((id) => styleColors('editorial', [], id).accent)).size >= 5, 'eight apps of one style get at least five accents (plain FNV gave eval-shop and eval-travel the same)')
+  assert.notEqual(styleColors('vivid', ['a'], [...Array(200).keys()].map((i) => `s${i}`).find((id) => styleColors('vivid', ['a'], id).palette.a === '#ffc300')!).accent, readableOnWhite('#ffc300'), 'a yellow start is not darkened into mud; the next colour leads')
+  assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('soft')), palette: { steps: '#123456' } }), 'x').palette.steps, '#123456', 'without a seed an old plan keeps its colours')
+  const lum = (hex: string) => { const n = parseInt(hex.slice(1), 16); const f = (v: number) => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255) }
+  const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05)
+  for (const style of APP_STYLES) {
+    for (const dark of [false, true]) {
+      const t = styleTokens(style, '#2563eb', dark)
+      for (const surface of [t.page, t.card, t.card2]) assert.ok(ratio(dark ? '#ffffff' : '#000000', surface) >= 7, `${style} ${dark ? 'dark' : 'light'}: text on ${surface}`)
+    }
+    for (let i = 0; i < 40; i++) {
+      const { accent } = styleColors(style, [], `seed-${i}`)
+      assert.ok(ratio('#ffffff', accent) >= 3.5, `${style}: white on its accent ${accent}`)
+    }
   }
 }
 // HIG-17: over eight screens, what the brief asked for stays; a tab nobody asked for goes before an asked checkout.

@@ -30,7 +30,7 @@ export default function Screen() {
 
       <div className="grid grid-cols-3 gap-3 px-4 mt-2">
         {[['Streak', HABIT.streak, 'days'], ['Best', HABIT.best, 'days'], ['Rate', HABIT.rate, '%']].map(([k, v, u], n) => (
-          <div key={k} className="rounded-2xl p-3 text-center bg-white dark:bg-[#1c1c1e] vs-rise" style={{ animationDelay: `${n * 60}ms` }}>
+          <div key={k} className="rounded-card p-3 text-center bg-card vs-rise" style={{ animationDelay: `${n * 60}ms` }}>
             <div className="text-xs opacity-60">{k}</div>
             <div className="text-2xl font-bold" style={{ color: HABIT.color }}>{v}<span className="text-xs opacity-60 font-medium"> {u}</span></div>
           </div>

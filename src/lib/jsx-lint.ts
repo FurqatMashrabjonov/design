@@ -123,7 +123,9 @@ export function lintJsx(source: string): LintResult {
       // <Hero> picks white or ink for its colour (HIG-12); text-white on it would override that choice.
       const whiteOnHero = name === 'Hero' && hasClass(node, 'text-white')
       const doubleGutter = name === 'Block' && hasClass(node, 'px-4')
-      const loneWhite = hasClass(node, 'bg-white') && !/\bdark:bg-/.test(classText(node))
+      // THM-01: a white box is the style's card — bg-card follows every style and mode (bg-white stayed white on a
+      // midnight page); its hard-coded dark pair goes with it. Translucent whites (bg-white/20 over a photo) are not boxes.
+      const whiteBox = hasClass(node, 'bg-white')
       const parts = classParts(node)
       // A template className is left alone: a second className attribute would be a guess.
       const gapTitle = titleGap.has(node) && (parts.length === 0 || parts.some((p) => p.whole)) && !attr(node, 'className')?.value?.expression?.type?.startsWith('Template')
@@ -136,7 +138,7 @@ export function lintJsx(source: string): LintResult {
         // Block already pads its content to the list inset; px-4 on it doubles the gutter.
         if (doubleGutter) text = text.replace(/(^|\s)px-4(?=\s|$)/g, '$1')
         // A light surface with no dark pair turns into a white slab in dark mode.
-        if (loneWhite) text = text.replace(/(^|\s)bg-white(?=\s|$)/g, '$1bg-white dark:bg-[#1c1c1e]')
+        if (whiteBox) text = text.replace(/(^|\s)bg-white(?=\s|$)/g, '$1bg-card').replace(/(^|\s)dark:bg-\[#[0-9a-fA-F]{3,6}\](?=\s|$)/g, '$1')
         // Nothing smaller than Caption 2.
         text = text.replace(/\btext-\[(\d+(?:\.\d+)?)px\]/g, (m, px) => (Number(px) < MIN_TEXT_PX ? `text-[${MIN_TEXT_PX}px]` : m))
         // A whole class string is trimmed; a template's static part keeps its edge spaces (they separate it from ${…}).
@@ -145,7 +147,7 @@ export function lintJsx(source: string): LintResult {
       if (whiteOnTint) fixed.push('white-on-tint: dropped text-white on a tint() background')
       if (whiteOnHero) fixed.push('white-on-hero: dropped text-white on a Hero (it sets its own text colour)')
       if (doubleGutter) fixed.push('block-double-gutter: dropped px-4 on a Block')
-      if (loneWhite) fixed.push('lone-bg-white: added dark:bg-[#1c1c1e]')
+      if (whiteBox) fixed.push('white-box: bg-white became the style card (bg-card)')
       if (gapTitle) fixed.push('title-over-content: gave a BlockTitle with no Block/List under it a bottom gap')
       if (classParts(node).some((p) => /\btext-\[(\d+(?:\.\d+)?)px\]/.test(p.text) && [...p.text.matchAll(/\btext-\[(\d+(?:\.\d+)?)px\]/g)].some((m) => Number(m[1]) < MIN_TEXT_PX))) fixed.push(`tiny-text: raised text below ${MIN_TEXT_PX}px`)
 

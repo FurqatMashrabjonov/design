@@ -154,7 +154,7 @@ Open the address it prints; the app is laid out for a phone — use your browser
 
 - \`src/screens/\` — one file per screen. Screens move between each other with \`useNav()\` (\`push\`, \`pop\`, \`reset\` a tab).
 - \`src/kit/\` — the building blocks the screens use (rings, charts, photos, the tab bar).
-- \`src/app.json\` — the screens, the tabs and the theme: \`platform\` \`ios\` or \`material\` (Android), \`dark\`, \`accent\`.
+- \`src/app.json\` — the screens, the tabs and the theme: \`platform\` \`ios\` or \`material\` (Android), \`dark\`, \`accent\`, \`style\` (clean, midnight, vivid, soft or editorial).
 - \`src/styles.css\` — the accent colour (\`--color-brand-primary\`).
 - Photos are from [Pexels](https://www.pexels.com) (\`src/photos.json\`).
 
@@ -168,6 +168,7 @@ The code is yours.
     { name: 'src/kit/ui.jsx', data: read('runtime/kit/ui.jsx') },
     { name: 'src/kit/nav.jsx', data: read('runtime/kit/nav.jsx') },
     { name: 'src/kit/on-color.js', data: read('runtime/kit/on-color.js') },
+    { name: 'src/kit/styles.js', data: read('runtime/kit/styles.js') },
     { name: 'src/type-scale.css', data: read('runtime/type-scale.css') },
     { name: 'src/kit/index.js', data: `export * from './ui.jsx'\nexport { useNav, AppTabbar, usePhotos } from './nav.jsx'\nexport { ListItem } from './konsta.js'\n` },
     { name: 'src/kit/konsta.js', data: read('runtime/konsta.js').replace("export * from 'konsta/react'\n", '') },

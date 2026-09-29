@@ -61,7 +61,7 @@ function start(): Promise<Local> {
 // HIG-16: the same page is measured as iOS, then switched to Material in place (od:look, as the canvas switches
 // it) and measured again — one Chrome, two platforms; a Material-only problem is a real one (a searchbar that fits
 // iOS and runs past the edge on Android).
-const harness = (src: string, accent: string) => `<!doctype html><body style="margin:0"><iframe id="f" src="${src}" style="width:${W}px;height:${H}px;border:0"></iframe><pre id="out"></pre>
+const harness = (src: string, accent: string, dark: boolean) => `<!doctype html><body style="margin:0"><iframe id="f" src="${src}" style="width:${W}px;height:${H}px;border:0"></iframe><pre id="out"></pre>
 <script>
 const f = document.getElementById('f')
 const got = {}
@@ -74,7 +74,7 @@ addEventListener('message', (e) => {
   got[platform] = e.data
   if (platform === 'ios') {
     platform = 'material'
-    f.contentWindow.postMessage({ type: 'od:look', accent: ${JSON.stringify(accent)}, dark: false, platform: 'material' }, '*')
+    f.contentWindow.postMessage({ type: 'od:look', accent: ${JSON.stringify(accent)}, dark: ${dark}, platform: 'material' }, '*')
     setTimeout(ask, 1500)
   } else document.getElementById('out').textContent = JSON.stringify(got)
 })
@@ -100,10 +100,11 @@ export async function auditScreen(source: string, look: AppLook, slug: string, s
   if (!existsSync(CHROME)) return null
   const { origin, pages } = await start()
   const token = crypto.randomUUID()
-  const doc = await screenDocument(source, { ...look, dark: false, platform: 'ios' }, { slug })
+  // In the app's own mode (a midnight app is measured dark), as iOS first.
+  const doc = await screenDocument(source, { ...look, platform: 'ios' }, { slug })
   pages.set(`/s/${token}`, doc.replaceAll('/api/rt', `${origin}/api/rt`))
   // ?static: every entrance animation at its end, so the audit measures the settled screen.
-  pages.set(`/h/${token}`, harness(`/s/${token}?static`, /^#[0-9a-f]{6}$/i.test(look.accent) ? look.accent : '#5e5ce6'))
+  pages.set(`/h/${token}`, harness(`/s/${token}?static`, /^#[0-9a-f]{6}$/i.test(look.accent) ? look.accent : '#5e5ce6', look.dark === true))
   try {
     const dom = await dumpDom(`${origin}/h/${token}`, signal)
     const raw = dom.match(/<pre id="out">([\s\S]*?)<\/pre>/)?.[1]

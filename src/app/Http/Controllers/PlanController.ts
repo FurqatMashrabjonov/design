@@ -109,12 +109,14 @@ export const PlanController = {
         const order = new Map<string, number>()
         const failed: string[] = []
         try {
-          const plan: AppPlan = await planApp(brief, project.name, tally, abort.signal)
+          // THM-01: the project id seeds the style's colours, so two apps from one brief are not one app twice.
+          const plan: AppPlan = await planApp(brief, project.name, tally, abort.signal, project.id)
           const screenIds = plan.screens.map(() => crypto.randomUUID())
           log.push(`Planned ${plan.screens.length} screens, ${plan.tabs.length} tabs — ${((Date.now() - startedAt) / 1000).toFixed(1)}s`)
           await Project.rename(project.id, plan.appName)
           await Project.saveNavigation(project.id, { tabs: plan.tabs })
-          await Project.saveTheme(project.id, { accent: plan.accent })
+          // A midnight app is dark from the start (the switch still turns it light).
+          await Project.saveTheme(project.id, { accent: plan.accent, style: plan.style, dark: plan.style === 'midnight' })
           await Project.savePlan(project.id, plan)
           send({ type: 'plan', appName: plan.appName, screenIds, screens: plan.screens.map((s) => ({ name: s.name, kind: s.kind })) })
 
@@ -130,7 +132,7 @@ export const PlanController = {
             const t0 = Date.now()
             try {
               let checked: AuditOutcome | undefined
-              const look = { accent: plan.accent, dark: false, platform: 'ios' as const, tabs: plan.tabs }
+              const look = { accent: plan.accent, dark: plan.style === 'midnight', platform: 'ios' as const, style: plan.style, tabs: plan.tabs }
               const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal, 'screen', { look, slug: s.id, report: (o) => (checked = o) })
               const screen = await Screen.create({ ...place(s, i), html: jsx })
               drawn.push({ id: screen.id, name: screen.name, created: true })

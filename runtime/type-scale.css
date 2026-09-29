@@ -14,4 +14,16 @@
   --text-caption1: 12px; --text-caption1--line-height: 16px;
   --text-caption2: 11px; --text-caption2--line-height: 13px;
   --text-figure: 44px; --text-figure--line-height: 1; --text-figure--font-weight: 700; --text-figure--letter-spacing: -0.02em;
+  /* THM-01: the app style's surfaces and corners (runtime/kit/styles.js sets the variables): a screen writes bg-page,
+     bg-card, bg-card-2, border-line, rounded-card instead of bg-white / #1c1c1e, so its boxes follow the style. */
+  --color-page: var(--app-page, #f2f2f7);
+  --color-card: var(--app-card, #ffffff);
+  --color-card-2: var(--app-card-2, #f7f7f8);
+  --color-line: var(--app-line, #e5e5ea);
+  --radius-card: var(--app-radius, 16px);
 }
+
+/* THM-01: a style's fonts — the body for the whole app, the display face for large titles and the hero number. Set
+   only when the style has one (data-app-font / data-app-display on <html>), so Konsta's own stack stays otherwise. */
+[data-app-font] .k-app { font-family: var(--app-font-body); }
+[data-app-display] :is(.text-large-title, .text-title1, .text-title2, .text-figure, .k-navbar .h-13) { font-family: var(--app-font-display); }

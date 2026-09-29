@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from 'konsta/react'
 import { AppContext } from './kit/nav.jsx'
+import { applyStyle } from './kit/styles.js'
 import app from './app.json'
 import photos from './photos.json'
 import { screens } from './screens/index.js'
@@ -59,8 +60,10 @@ function Navigator() {
   )
 }
 
-const { dark, platform } = app.theme
+const { dark, platform, style, accent } = app.theme
 document.documentElement.classList.toggle('dark', dark)
+// THM-01: the app's style — surfaces, corners and fonts — as on the canvas.
+applyStyle(style, accent, dark)
 createRoot(document.getElementById('root')).render(
   <App theme={platform === 'material' ? 'material' : 'ios'} dark={dark} safeAreas className={dark ? 'dark' : ''}>
     <Navigator />

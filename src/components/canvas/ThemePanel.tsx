@@ -1,5 +1,6 @@
 import { Moon, Sun } from 'lucide-react'
-import { ACCENTS, type AppTheme } from '@/lib/app-theme'
+import { ACCENTS, APP_STYLES, type AppStyle, type AppTheme } from '@/lib/app-theme'
+import { styleTokens } from '../../../runtime/kit/styles.js'
 import { cn } from '@/lib/utils'
 
 // The app's look, in three decisions Konsta already knows how to draw. Platform (the same screens as iOS or as
@@ -25,10 +26,48 @@ export function AppLookSwitch(props: { theme: AppTheme; onChange: (t: AppTheme) 
   )
 }
 
+const STYLE_LABEL: Record<AppStyle, { name: string; hint: string }> = {
+  clean: { name: 'Clean', hint: 'Finance, productivity' },
+  midnight: { name: 'Midnight', hint: 'Dark, premium' },
+  vivid: { name: 'Vivid', hint: 'Bold, playful' },
+  soft: { name: 'Soft', hint: 'Calm, warm' },
+  editorial: { name: 'Editorial', hint: 'Photo-led, serif' },
+}
+
 export function ThemePanel(props: { theme: AppTheme; onChange: (t: AppTheme) => void }) {
   const { theme, onChange } = props
   return (
     <div className="space-y-6 text-sm">
+      {/* THM-01: the app's style — surfaces, corners and type of one of five looks of top apps. It recolours every screen
+          in place; a midnight app starts dark (the light/dark switch still decides). */}
+      <section>
+        <div className="mb-2 text-muted-foreground">Style</div>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Style">
+          {APP_STYLES.map((st) => {
+            const t = styleTokens(st, theme.accent, st === 'midnight' ? true : theme.dark)
+            const on = theme.style === st
+            return (
+              <button
+                key={st}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => onChange({ ...theme, style: st, dark: st === 'midnight' ? true : theme.style === 'midnight' ? false : theme.dark })}
+                className={cn('rounded-xl border p-2 text-left transition-colors duration-(--duration-fast) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', on ? 'border-foreground' : 'border-border hover:border-foreground/40')}
+              >
+                <span aria-hidden className="mb-2 flex h-14 flex-col justify-end gap-1 overflow-hidden p-1.5" style={{ background: t.page, borderRadius: Math.min(t.radius, 14) }}>
+                  <span className="flex items-center gap-1.5 px-1.5 py-1" style={{ background: t.card, borderRadius: Math.min(t.radius, 12) * 0.7 }}>
+                    <span className="size-2.5 rounded-full" style={{ background: theme.accent }} />
+                    <span className="h-1.5 flex-1 rounded-full" style={{ background: t.line }} />
+                  </span>
+                </span>
+                <span className="block font-medium" style={{ fontFamily: t.display || undefined }}>{STYLE_LABEL[st].name}</span>
+                <span className="block text-xs text-muted-foreground">{STYLE_LABEL[st].hint}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
       <section>
         <div className="mb-2 flex items-center justify-between text-muted-foreground">
           <span>Accent</span>

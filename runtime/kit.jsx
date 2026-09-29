@@ -12,6 +12,8 @@ import { AUDIT_SOURCE } from '../src/lib/render-audit.ts'
 export * from './kit/ui.jsx'
 import { STATIC } from './kit/ui.jsx'
 export { useNav, AppTabbar, usePhotos } from './kit/nav.jsx'
+export { STYLES, applyStyle, styleTokens } from './kit/styles.js'
+import { applyStyle, parseStyle } from './kit/styles.js'
 
 /** A screen that throws while rendering says so, instead of leaving a blank frame. */
 class Crash extends Component {
@@ -37,15 +39,17 @@ async function applyAccent(accent, material) {
 
 /** Renders one screen inside Konsta's <App>: the app's tabs, accent, light/dark and platform (iOS or Android /
  *  Material) come from the host — the same component is drawn natively for either platform. */
-export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform = 'ios', insets = null, tabs = [], screen = '', photos = {}, el = document.getElementById('root') } = {}) {
+export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform = 'ios', style = 'clean', insets = null, tabs = [], screen = '', photos = {}, el = document.getElementById('root') } = {}) {
   // A settled frame (?static): every entrance animation is at its end, so a screenshot shows the finished screen.
   if (STATIC) document.documentElement.classList.add('vs-static')
   const root = createRoot(el)
-  let look = { dark, accent, platform, insets }
+  let look = { dark, accent, platform, style: parseStyle(style), insets }
   const render = async () => {
     const material = look.platform === 'material'
     document.documentElement.classList.toggle('dark', look.dark)
     await applyAccent(look.accent, material).catch(() => {})
+    // THM-01: after the accent, so the style's surfaces win over Material's accent-derived ones.
+    applyStyle(look.style, look.accent, look.dark)
     root.render(
       <App theme={material ? 'material' : 'ios'} dark={look.dark} safeAreas className={look.dark ? 'dark' : ''} style={safeAreaStyle(look.insets)}>
         <AppContext value={{ tabs, screen, photos }}>
@@ -67,9 +71,10 @@ export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform
       dark: d.dark === true,
       platform: d.platform === 'material' ? 'material' : 'ios',
       accent: typeof d.accent === 'string' && /^#[0-9a-f]{6}$/i.test(d.accent) ? d.accent : look.accent,
+      style: d.style === undefined ? look.style : parseStyle(d.style),
       insets: parseInsets(d.insets),
     }
-    if (next.dark === look.dark && next.platform === look.platform && next.accent === look.accent && JSON.stringify(next.insets) === JSON.stringify(look.insets)) return
+    if (next.dark === look.dark && next.platform === look.platform && next.accent === look.accent && next.style === look.style && JSON.stringify(next.insets) === JSON.stringify(look.insets)) return
     look = next
     render()
   })

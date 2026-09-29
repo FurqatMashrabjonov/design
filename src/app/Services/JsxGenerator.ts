@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { completeJSON, jsonOnly, streamCompletion, type LlmUsage } from './LlmService'
 import type { AppLook } from './ScreenDocument'
-import { parseAppTheme, type AppTheme } from '@/lib/app-theme'
+import { parseAppTheme, parseStyleName, styleColors, type AppStyle, type AppTheme } from '@/lib/app-theme'
 
 // KON-00: an app is planned once (screens, tabs, accent, the data every screen shares) and each screen is
 // one Konsta component written from the skill, the Konsta API reference, the kit reference and one finished
@@ -23,11 +23,12 @@ export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Set
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
-export type AppPlan = { appName: string; summary: string; accent: string; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string }
+export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string }
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
-{"appName": string, "summary": "one sentence", "accent": "#rrggbb (one confident accent that suits the app)",
- "palette": {"camelCaseName": "#rrggbb", …} — 3–6 vivid, distinct colours, one per thing the app tracks or sorts by, named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); iOS system hues read well (#ff9f0a #0a84ff #30d158 #bf5af2 #ff375f #5e5ce6 #64d2ff #ffd60a),
+{"appName": string, "summary": "one sentence",
+ "style": the look of top apps like this one — "clean" (finance, productivity, booking, utilities, news), "midnight" (dark and premium: fitness, training, sleep, investing, nightlife), "vivid" (bold and playful: food delivery, learning, habits, kids, games, social fun), "soft" (calm and warm: meditation, wellness, journaling, reading, parenting, mental health) or "editorial" (photo-led and typographic: travel, fashion, recipes, lifestyle, events); pick what the brief's audience would expect, and if the brief names a look (dark, minimal, playful, cozy, luxury) follow it,
+ "palette": ["camelCaseName", …] — 3–6 names, one per thing the app tracks or sorts by, named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); the host colours them,
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
  "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
  "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
@@ -38,7 +39,7 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 /** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens —
  *  and when there are more, what the brief asked for stays (HIG-17: a checkout or a tracking screen used to be cut
  *  because the eight slots went to onboarding and the tabs first). */
-export function parsePlan(json: string, fallbackName: string): AppPlan {
+export function parsePlan(json: string, fallbackName: string, seed?: string): AppPlan {
   const raw = JSON.parse(jsonOnly(json)) as Partial<AppPlan> & { screens?: Partial<PlannedScreen>[]; tabs?: Partial<AppLook['tabs'][number]>[] }
   const tabs = (raw.tabs ?? []).slice(0, 5).map((t) => ({ id: slug(String(t.id ?? t.label ?? 'tab')), label: String(t.label ?? t.id ?? 'Tab').slice(0, 16), icon: TAB_ICONS.includes(String(t.icon)) ? String(t.icon) : 'House' }))
   const seen = new Set<string>()
@@ -73,13 +74,19 @@ export function parsePlan(json: string, fallbackName: string): AppPlan {
   if (!screens.length) throw new Error('The plan had no screens')
   const accent = /^#[0-9a-f]{6}$/i.test(String(raw.accent)) ? String(raw.accent) : '#5e5ce6'
   // The palette is pasted into every screen as code, so only identifiers and hex colours pass.
-  const palette = Object.fromEntries(Object.entries(raw.palette && typeof raw.palette === 'object' ? raw.palette : {}).filter(([k, v]) => /^[a-z][a-zA-Z0-9]{0,19}$/.test(k) && /^#[0-9a-f]{6}$/i.test(String(v))).slice(0, 6).map(([k, v]) => [k, String(v).toLowerCase()]))
-  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000) }
+  // THM-01: the style is one of five; the palette is names (an old plan's {name: hex} still reads). With a seed the
+  // colours are the code's, from the style's sets (styleColors); without one, what the plan carried.
+  const style = parseStyleName((raw as { style?: unknown }).style)
+  const given: Record<string, unknown> = Array.isArray(raw.palette) ? Object.fromEntries((raw.palette as unknown[]).map((k) => [String(k), ''])) : raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
+  const keys = Object.keys(given).filter((k) => /^[a-z][a-zA-Z0-9]{0,19}$/.test(k)).slice(0, 6)
+  const colors = seed ? styleColors(style, keys, seed) : null
+  const palette = colors ? colors.palette : Object.fromEntries(keys.filter((k) => /^#[0-9a-f]{6}$/i.test(String(given[k]))).map((k) => [k, String(given[k]).toLowerCase()]))
+  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000) }
 }
 
-export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal): Promise<AppPlan> {
+export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string): Promise<AppPlan> {
   const today = new Date().toISOString().slice(0, 10)
-  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}`, 4000, onUsage, undefined, signal, 'plan'), fallbackName)
+  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}`, 4000, onUsage, undefined, signal, 'plan'), fallbackName, seed)
   // A plan that does not parse draws nothing at all (1 of 16 DeepSeek plans on 2026-09-29, not reproducible), and
   // a plan is cheap, so it gets one more try.
   try {
@@ -93,11 +100,25 @@ export async function planApp(brief: string, fallbackName: string, onUsage: (u: 
 const kindLine = (s: PlannedScreen) =>
   s.kind === 'tab' ? `tab screen — AppTabbar active="${s.tab}"` : s.kind === 'first-run' ? 'first-run screen — no navbar, no tab bar' : `${s.kind} — back goes to ${s.parent}; no tab bar`
 
+/**
+ * THM-01: what each style asks of a screen. The host sets the surfaces, corners and fonts (runtime/kit/styles.js);
+ * the card says how to compose on them — the part only the model can do. Onboarding is part of it, because five
+ * styles with one onboarding layout were still five of the same app.
+ */
+export const STYLE_CARDS: Record<AppStyle, string> = {
+  clean: `Clean — the grouped iOS look of a finance or productivity app: bg-page with bg-card rounded-card groups and List strong inset rows; generous white space; the accent only for actions and selection; palette colours as small marks (rings, dots, tinted tiles), never as big fills. Onboarding: a light page, one composed illustration of the app's own thing (a mini card of its main screen), a title and one line.`,
+  midnight: `Midnight — a dark, premium app (the host runs it in dark mode): near-black page, bg-card rounded-card panels on it, big bold white numbers (text-figure), and colour only where it matters — one ring, one bar, one streak in the accent or a palette colour, glowing on black; moody full-bleed photos with text over a dark gradient; no pastel, no light washes. Onboarding: black, one big glowing figure (a Ring, a number, a photo), a bold two-line title.`,
+  vivid: `Vivid — bold and playful, like a food or learning app: the page is a light wash of the accent; big Hero blocks in the accent and palette colours carry the content (today's goal, the streak, categories), chunky rounded shapes (rounded-card is 24px), large emoji or icons on tinted tiles, large rounded buttons, a cheerful voice. Onboarding: each slide a full-colour Hero block with a big emoji or composed art and a short punchy title.`,
+  soft: `Soft — calm and warm, like a meditation or wellness app: a cream page (bg-page), soft bg-card rounded-card panels without hard borders, the palette as gentle washes (tint) rather than strong fills, rounded type (the host sets it), lots of air, one gentle illustration or photo per screen, a quiet voice; no loud gradients, no dense tables. Onboarding: a calm photo or illustration filling the top half, a quiet title, one soft button.`,
+  editorial: `Editorial — photo-led and typographic, like a travel or lifestyle app: large display titles (the host sets a serif for text-large-title, text-title1/2 and text-figure), full-width photos with the title over a dark gradient, few boxes — sections separated by space and hairlines (border-line) rather than cards, captions in text-footnote, the accent used sparingly for actions. Onboarding: a full-bleed Photo with a big serif title over it and one button.`,
+}
+
 /** What every screen of the app is told about the app. */
 export function appContext(plan: AppPlan): string {
   return `App: ${plan.appName} — ${plan.summary}
 Screens in this app (id — name — kind): ${plan.screens.map((s) => `${s.id} — ${s.name} — ${kindLine(s)}`).join('; ')}
 Tab ids for AppTabbar: ${plan.tabs.map((t) => t.id).join(', ') || '(none)'}. The accent is set by the host (text-primary / bg-primary).
+# STYLE — ${STYLE_CARDS[parseStyleName(plan.style)]}
 The app's palette — paste this line at the top of the file unchanged and colour each thing with its entry:
 const C = ${JSON.stringify(plan.palette ?? {})}
 
@@ -158,7 +179,7 @@ export function appLook(project: { theme: string | null; navigation: string | nu
     const n = JSON.parse(project.navigation ?? 'null')
     if (n && Array.isArray(n.tabs)) tabs = n.tabs.filter((t: { id?: unknown }) => typeof t?.id === 'string').map((t: { id: string; label?: string; icon?: string }) => ({ id: t.id, label: String(t.label ?? t.id), icon: TAB_ICONS.includes(String(t.icon)) ? String(t.icon) : 'House' }))
   } catch {}
-  return { accent: theme.accent, dark: theme.dark, platform: theme.platform, tabs }
+  return { accent: theme.accent, dark: theme.dark, platform: theme.platform, style: theme.style, tabs }
 }
 
 export const parseAppPlan = (json: string | null): AppPlan | null => {

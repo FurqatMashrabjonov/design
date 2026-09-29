@@ -22,7 +22,7 @@ export function serializeScreen(screenId: string): Promise<ODTree> {
 
 /** Tells a running screen the app's look; the kit's mount re-renders in place. */
 export const postLook = (w: Window | null | undefined, t: AppTheme, insets?: { top: number; bottom: number }) =>
-  w?.postMessage({ type: 'od:look', accent: t.accent, dark: t.dark, platform: t.platform, insets: insets ?? null }, '*')
+  w?.postMessage({ type: 'od:look', accent: t.accent, dark: t.dark, platform: t.platform, style: t.style, insets: insets ?? null }, '*')
 
 export type NavMessage = { action: 'push' | 'pop' | 'reset'; id?: string }
 

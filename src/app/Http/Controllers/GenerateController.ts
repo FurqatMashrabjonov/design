@@ -60,7 +60,8 @@ export const GenerateController = {
         try {
           // KON-13: a screen added, edited or redrawn from chat is measured and repaired like a planned one.
           let checked: AuditOutcome | undefined
-          const look = { accent: parseAppTheme(project.theme).accent, dark: false, platform: 'ios' as const, tabs: plan?.tabs ?? [] }
+          const theme = parseAppTheme(project.theme)
+          const look = { accent: theme.accent, dark: theme.dark, platform: 'ios' as const, style: theme.style, tabs: plan?.tabs ?? [] }
           const slug = target?.slug ?? added?.id ?? ''
           const jsx = await drawScreen(user, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen', { look, slug, report: (o) => (checked = o) })
           let changed: { id: string; name: string; versionId?: string; created?: boolean }

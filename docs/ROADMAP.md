@@ -40,6 +40,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | PRV-01 | Preview: qurilma tanlash — iPhone 18 Pro / Pro Max, Galaxy S26 Ultra; o'z 2D ramkalarimiz; Android → Material | Generatsiya / Ko'rish | MVP | Tayyor | O'rta | KON-11 | Qurilma almashadi, ekran shu kenglikda, ramka tashqi asset'siz |
 | PRV-02 | Preview: iPhone Duo (foldable) — yopiq 5.4" va ochiq 7.6", ichki ekranda ro'yxat + detail yonma-yon | Generatsiya / Ko'rish | Keyin | Rejada | O'rta | PRV-01 | Yopiq/ochiq almashadi, ochilish animatsiyasi |
 | PRV-03 | Preview foni: setkasiz tekis fon, telefon ortida ilova rangidan yumshoq nur, tugmalar 2 s harakatsizlikdan keyin yashirinadi | Generatsiya / Ko'rish | MVP | Tayyor | Kichik | PRV-01 | Ko'z faqat telefonda |
+| LLM-08 | OpenAI adapteri (GPT-6 Luna, GPT-6 Sol) + Claude Opus 5.5; Luna standart model | Generatsiya / Modellar | MVP | Tayyor | Kichik | LLM-07 | Hakam 6–0–2 DeepSeek'ga qarshi; 429 kutib qayta urinish |
+| THM-01 | 5 ta ilova uslubi (Clean, Midnight, Vivid, Soft, Editorial): AI tanlaydi, ranglarni kod tanlaydi, panelda almashadi | Generatsiya / Tema | MVP | Tayyor | O'rta | KON-11 | 8 brief'da 5/5 uslub, 8/8 accent; hakam 5–0–3 |
+| THM-02 | Onboarding va dashboard namunalari xilma-xilligi (3–4 layout, uslub va seed bo'yicha) | Generatsiya / Tema | Keyin | Rejada | Kichik | THM-01 | 8 ilovada ≥3 xil onboarding tuzilishi |
 | PRV-04 | Preview taqdimot rejimi: Fullscreen / P tugmasi — ekranda faqat telefon | Generatsiya / Ko'rish | Keyin | Rejada | Kichik | PRV-03 | Fullscreen API |
 
 ## B0 · Tayyor

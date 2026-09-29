@@ -69,7 +69,7 @@ The compiler rejects a file that breaks these:
 - `text-primary` / `bg-primary` is the app's accent (set by the host) for actions and selection.
 - Be confident with colour where it means something: a `Hero` card (it picks white or ink text itself — give its text no colour class), `tint(C.x)` washes behind icons, chips and selected items, coloured figures (`style={{ color: C.x }}`). Surfaces around them stay neutral.
 - Text must read: body and secondary text in the label colours; bright colours (yellow, mint, light green) as fills, not text on white.
-- Your own surfaces come in pairs: `bg-white dark:bg-[#1c1c1e]`, `text-black/55 dark:text-white/55`.
+- The app has a STYLE (in the brief) — follow its card for how to compose. The host sets its surfaces, corners and fonts: your own boxes are `bg-card` on the `bg-page` page, `bg-card-2` for a nested fill, `border-line` for hairlines, `rounded-card` for corners — never `bg-white`, `#fff` or `#1c1c1e`, or a style switch cannot reach them. Secondary text: `text-black/55 dark:text-white/55`.
 
 ## Emoji and photos
 

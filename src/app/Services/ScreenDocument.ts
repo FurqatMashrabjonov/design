@@ -7,7 +7,7 @@ import { cachedPhotos } from './PhotoService'
 // stylesheet, this screen's CSS and its compiled code, mounted with the app's tabs, accent and
 // light/dark. It is always served with `Content-Security-Policy: sandbox allow-scripts`, so it runs in an
 // opaque origin and never gets ours; the runtime answers it with CORS *.
-export type AppLook = { accent: string; dark: boolean; platform: 'ios' | 'material'; tabs: { id: string; label: string; icon: string }[] }
+export type AppLook = { accent: string; dark: boolean; platform: 'ios' | 'material'; style?: string; tabs: { id: string; label: string; icon: string }[] }
 
 // The runtime's URL carries its build (the mtime of exports.json), so a rebuilt kit is a new URL and the
 // hour-long cache on /api/rt never serves a page the old one.
@@ -27,7 +27,7 @@ export async function screenDocument(source: string, look: AppLook, opts: { slug
   const RT = runtimeUrl()
   // Only images.pexels.com URLs reach the page (PhotoService checks the host before caching).
   const photos = c.ok ? await cachedPhotos(source).catch(() => ({})) : {}
-  const mount = JSON.stringify({ dark: look.dark, accent: look.accent, platform: look.platform, tabs: look.tabs, screen: opts.slug, photos })
+  const mount = JSON.stringify({ dark: look.dark, accent: look.accent, platform: look.platform, style: look.style ?? 'clean', tabs: look.tabs, screen: opts.slug, photos })
   return `<!doctype html><html lang="en"${look.dark ? ' class="dark"' : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script type="importmap">${importMap(RT)}</script>
 <link rel="stylesheet" href="${RT}/runtime.css">${c.ok ? `<style>${c.css}</style>` : ''}

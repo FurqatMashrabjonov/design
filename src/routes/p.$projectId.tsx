@@ -441,7 +441,7 @@ function ProjectPage() {
           rail={
             <>
               <ScreensList screens={[...screens].sort((a, b) => a.x - b.x || a.y - b.y).map((sc) => ({ id: sc.id, name: sc.name }))} selected={selected} onSelect={focusScreen} />
-              <RailButton label="Colour" pressed={themeOpen} onClick={() => setThemeOpen((o) => !o)}>
+              <RailButton label="Style & colour" pressed={themeOpen} onClick={() => setThemeOpen((o) => !o)}>
                 <Palette />
               </RailButton>
             </>
@@ -627,7 +627,7 @@ function ProjectPage() {
         </div>
       </div>
 
-      <SidePanel open={themeOpen} title="Colour" onClose={() => setThemeOpen(false)}>
+      <SidePanel open={themeOpen} title="Style & colour" onClose={() => setThemeOpen(false)}>
         <ThemePanel theme={theme} onChange={changeTheme} />
       </SidePanel>
 
