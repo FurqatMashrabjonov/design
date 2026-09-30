@@ -5,6 +5,22 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-30 (6)
+
+### The product is Screenspell (screenspell.app)
+
+- **The name.** The owner bought screenspell.app on Cloudflare. It was checked beforehand: `.app`, `.design` and
+  `.dev` were free; so were X, LinkedIn, GitHub, Telegram, Product Hunt and npm; no app or company uses the name.
+  `.com` is a parked GoDaddy domain, and YouTube has a one-video channel.
+- **`lib/brand.ts`:** `BRAND` is now "Screenspell", there is a new `DOMAIN` constant (screenspell.app), and
+  `SUPPORT_EMAIL` is hello@screenspell.app, forwarded to the owner by Cloudflare Email Routing.
+- **Also changed:** the root page title, and the development email sender, which follows `BRAND`.
+- Everything that already read `BRAND` follows: the site header, page titles, the legal pages, the emails, the
+  admin and the unsubscribe page.
+- **Verified:**
+  - `npm run check` (the template test now expects "Hi from Screenspell") and `tsc` are clean.
+  - /pricing shows Screenspell in the header and the tab title.
+
 ## 2026-09-30 (5)
 
 ### UX audit follow-up: Chrome capped server-wide, and the small fixes from walking the app as a user

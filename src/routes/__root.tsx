@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { BRAND } from '@/lib/brand'
 import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -10,7 +11,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Design' },
+      { title: BRAND },
     ],
     links: [{ rel: 'stylesheet', href: css }],
     // DSH-09: the saved theme is applied before the first paint, so a dark page never flashes white.

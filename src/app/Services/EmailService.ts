@@ -6,10 +6,11 @@ import { all, one, unixNow, DAY } from '@/database/query'
 import { Setting } from '@/app/Models/Setting'
 import { renderEmail, SYSTEM_EMAILS, type EmailContent, type RenderedEmail, type SystemEmail } from '@/lib/emails'
 import { SecretService } from './SecretService'
+import { BRAND } from '@/lib/brand'
 
 // EML-01: every email the product sends goes through here — one provider, Resend (2026-09-29: 3 000 a month and
 // 100 a day free, one verified domain; a plain HTTPS call, so no SDK). The key is RESEND_API_KEY (admin panel or
-// .env), the sender EMAIL_FROM ("Design <hello@your-domain>", on the domain verified in Resend with its SPF and DKIM
+// .env), the sender EMAIL_FROM ("Screenspell <hello@screenspell.app>", on the domain verified in Resend with its SPF and DKIM
 // records). With no key, development prints the mail to the server log and keeps the last one for tests;
 // production refuses, so nothing claims to be sent that was not.
 // EML-03: every mail is logged in `emails`; system emails take their words from the admin's template (settings,
@@ -45,7 +46,7 @@ export const setEmailTransport = (t: typeof send, p?: typeof pace) => {
 
 /** The sender. Until the domain is verified, development sends from Resend's own test address, which only
  *  delivers to the Resend account's owner — enough to see a real mail land. */
-const sender = () => process.env.EMAIL_FROM || (process.env.NODE_ENV === 'production' ? undefined : 'Design <onboarding@resend.dev>')
+const sender = () => process.env.EMAIL_FROM || (process.env.NODE_ENV === 'production' ? undefined : `${BRAND} <onboarding@resend.dev>`)
 const appUrl = () => (process.env.BETTER_AUTH_URL || 'http://localhost:3000').replace(/\/$/, '')
 
 // The unsubscribe link carries the address and an HMAC of it, so it works without a sign-in and cannot be forged

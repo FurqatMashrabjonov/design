@@ -1383,7 +1383,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   // A template an admin changed is what goes out; reset puts the default back.
   await EmailService.saveTemplate('waitlist', { subject: 'Hi from {{brand}}', heading: 'Hello', body: 'Soon.' })
   await ShareController.join({ token: null, email: 'second@mail.io', ref: null, note: null })
-  assert.equal(sent.at(-1)!.subject, 'Hi from Design', "the admin's words, {{brand}} filled in")
+  assert.equal(sent.at(-1)!.subject, 'Hi from Screenspell', "the admin's words, {{brand}} filled in")
   await EmailService.saveTemplate('waitlist', null)
   assert.equal((await EmailService.template('waitlist')).subject, SYSTEM_EMAILS.waitlist.content.subject)
 
