@@ -62,6 +62,7 @@ export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform
   reportHeight(el)
   answerSerialize()
   answerAudit()
+  answerPick()
   // The host changes the look in place (od:look) — iOS ↔ Android, light ↔ dark, accent — so a theme switch
   // re-renders this screen instead of reloading the page. Only the parent is listened to, and only valid values pass.
   window.addEventListener('message', (e) => {
@@ -105,6 +106,63 @@ function reportHeight(root) {
   attach()
   window.addEventListener('load', () => send())
   for (const ms of [300, 1000, 2500]) setTimeout(() => send(), ms)
+}
+
+// REG-02: the host turns on picking (od:pick) to change one element. The pointer outlines the element under it —
+// the nearest one the compiler marked with where it is in the source (data-od-loc) — and a click names it back
+// (od:picked: its place, what it is, its text) instead of doing what the app would do. Escape cancels. Only the
+// parent may switch it on.
+function answerPick() {
+  let on = false
+  let box = null
+  const target = (el) => (el && el.closest ? el.closest('[data-od-loc]') : null)
+  const kind = (el) =>
+    el.matches('button, [role=button], .k-button') ? 'Button'
+      : el.matches('.k-list-item, li') ? 'Row'
+        : el.matches('img, [data-od-photo]') ? 'Photo'
+          : el.matches('svg') ? 'Icon'
+            : el.matches('h1, h2, h3, .k-navbar, [class*=title]') ? 'Title'
+              : el.matches('input, textarea, select, .k-list-input') ? 'Field'
+                : 'Element'
+  function outline(el) {
+    if (!box) {
+      box = document.createElement('div')
+      box.setAttribute('aria-hidden', 'true')
+      box.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483647;border:2px solid #6c5ce7;border-radius:6px;background:rgba(108,92,231,.08);transition:all 80ms ease-out'
+      document.body.appendChild(box)
+    }
+    const r = el.getBoundingClientRect()
+    Object.assign(box.style, { display: 'block', left: `${r.left - 2}px`, top: `${r.top - 2}px`, width: `${r.width + 4}px`, height: `${r.height + 4}px` })
+  }
+  const hide = () => box && (box.style.display = 'none')
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'od:pick') return
+    on = !!e.data.on
+    document.documentElement.style.cursor = on ? 'crosshair' : ''
+    if (!on) hide()
+  })
+  document.addEventListener('pointermove', (e) => {
+    if (!on) return
+    const el = target(e.target)
+    el ? outline(el) : hide()
+  }, true)
+  const swallow = (e) => {
+    if (!on) return
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  for (const t of ['pointerdown', 'mousedown', 'pointerup', 'mouseup']) document.addEventListener(t, swallow, true)
+  document.addEventListener('click', (e) => {
+    if (!on) return
+    swallow(e)
+    const el = target(e.target)
+    if (!el) return
+    const text = (el.innerText || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40)
+    window.parent.postMessage({ type: 'od:picked', loc: el.getAttribute('data-od-loc'), kind: kind(el), text }, '*')
+  }, true)
+  window.addEventListener('keydown', (e) => {
+    if (on && e.key === 'Escape') window.parent.postMessage({ type: 'od:picked', loc: null }, '*')
+  })
 }
 
 // FIG-10: the host asks for this screen as a tree of layers (Copy to Figma). The serializer reads the page the

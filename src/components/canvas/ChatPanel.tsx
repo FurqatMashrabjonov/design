@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ArrowDown, CircleAlert, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
+import { ArrowDown, CircleAlert, Image as ImageIcon, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
 import { copyText } from '@/lib/clipboard'
 import type { MessageRow } from '@/app/Models/Message'
 import { parseMeta } from '@/lib/agent-messages'
@@ -151,6 +151,12 @@ function UserMessage({ message, onEdit }: { message: MessageRow; onEdit: (text: 
   return (
     <div className="od-rise group flex flex-col items-end gap-0.5">
       <p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-3.5 py-2 text-sm text-primary-foreground shadow-1">{message.text}</p>
+      {/* REG-01: the pictures themselves are not kept; the message says it had them. */}
+      {(parseMeta(message.meta).images ?? 0) > 0 && (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <ImageIcon className="size-3.5" /> {parseMeta(message.meta).images === 1 ? 'with a reference image' : `with ${parseMeta(message.meta).images} reference images`}
+        </span>
+      )}
       {/* CHAT-04: the actions every chat has, shown when the pointer is on the message. */}
       <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         <IconAction title="Edit and resend" onClick={() => onEdit(message.text)}>
@@ -279,16 +285,17 @@ function BeforeAfter(props: { screenId: string; versionId: string; device: strin
   const frame = (src: string, label: string) => (
     <figure className="min-w-0">
       <div className="overflow-hidden rounded-lg border bg-card" style={{ width, height: Math.round(width * 1.6) }}>
-        <iframe src={src} title={label} aria-hidden tabIndex={-1} loading="lazy" sandbox="allow-scripts" className="pointer-events-none origin-top-left border-0" style={{ width: 390, height: 390 * 1.6, transform: `scale(${width / 390})` }} />
+        {/* KON-10: a picture of that version, not the app running — a long chat has many of these. */}
+        <img src={src} alt="" aria-hidden loading="lazy" decoding="async" className="block object-cover object-top" style={{ width, height: Math.round(width * 1.6) }} />
       </div>
       <figcaption className="mt-1 text-center text-xs text-muted-foreground">{label}</figcaption>
     </figure>
   )
   return (
     <button type="button" onClick={props.onOpen} className="flex items-start gap-3 rounded-lg p-1 text-left hover:bg-muted/60" title="Show on the canvas">
-      {frame(`/api/thumb/${props.screenId}?v=${encodeURIComponent(props.versionId)}`, 'Before')}
+      {frame(`/api/shot/${props.screenId}?v=${encodeURIComponent(props.versionId)}`, 'Before')}
       <span className="self-center text-muted-foreground">→</span>
-      {frame(`/api/thumb/${props.screenId}`, 'After')}
+      {frame(`/api/shot/${props.screenId}`, 'After')}
     </button>
   )
 }

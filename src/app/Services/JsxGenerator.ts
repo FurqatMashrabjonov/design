@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { completeJSON, jsonOnly, streamCompletion, type LlmUsage } from './LlmService'
+import { completeJSON, jsonOnly, streamCompletion, type LlmUsage, type RefImage } from './LlmService'
+import { REF_IMAGE_NOTE } from '@/lib/ref-images'
 import type { AppLook } from './ScreenDocument'
 import { parseAppTheme, parseStyleName, styleColors, type AppStyle, type AppTheme } from '@/lib/app-theme'
 
@@ -84,9 +85,9 @@ export function parsePlan(json: string, fallbackName: string, seed?: string): Ap
   return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000) }
 }
 
-export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string): Promise<AppPlan> {
+export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string, images?: RefImage[]): Promise<AppPlan> {
   const today = new Date().toISOString().slice(0, 10)
-  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}`, 4000, onUsage, undefined, signal, 'plan'), fallbackName, seed)
+  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}${images?.length ? '\nReference image attached: choose the style that matches its look, and let its screens shape which screens this app has.' : ''}`, 4000, onUsage, images, signal, 'plan'), fallbackName, seed)
   // A plan that does not parse draws nothing at all (1 of 16 DeepSeek plans on 2026-09-29, not reproducible), and
   // a plan is cheap, so it gets one more try.
   try {
@@ -161,12 +162,31 @@ ${instruction}
 Rewrite the whole file with that change and nothing else changed. Keep its data, navigation and structure unless the change asks otherwise.`
 }
 
+/** REG-02: change one element. The model answers with that element alone; the code splices it into the file, so
+ *  the rest of the screen cannot drift. */
+export function elementBrief(plan: AppPlan | null, s: { name: string; slug: string | null }, source: string, element: string, instruction: string): string {
+  return `${plan ? appContext(plan) + '\n\n' : ''}# THE SCREEN — ${s.name}${s.slug ? ` (id ${s.slug})` : ''}
+\`\`\`jsx
+${source}
+\`\`\`
+
+# THE ONE ELEMENT TO CHANGE
+\`\`\`jsx
+${element}
+\`\`\`
+
+# CHANGE
+${instruction}
+
+Reply with only the new version of that one element, as a single JSX element in one \`\`\`jsx block — not the file, no imports, no other elements. It replaces exactly that element in the file, so use only variables, data and components the file already has (or Konsta, @od/kit and lucide-react components, which are imported for you).`
+}
+
 /** The component in a reply: the first fenced block, or the whole reply when there is none. */
 export const extractJsx = (text: string) => ((text.match(/```(?:jsx|tsx|js|javascript)?\s*\n([\s\S]*?)```/) ?? [null, text])[1] ?? '').trim() + '\n'
 
-export async function writeScreen(user: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, site: 'screen' | 'edit' = 'screen'): Promise<string> {
+export async function writeScreen(user: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, site: 'screen' | 'edit' = 'screen', images?: RefImage[]): Promise<string> {
   let out = ''
-  for await (const d of streamCompletion(screenSystem(), user, signal, onUsage, undefined, site)) out += d
+  for await (const d of streamCompletion(screenSystem(), images?.length ? user + REF_IMAGE_NOTE : user, signal, onUsage, images, site)) out += d
   return extractJsx(out)
 }
 

@@ -12,9 +12,11 @@ export function ScreensList(props: {
   screens: { id: string; name: string }[]
   selected: string | null
   onSelect: (id: string) => void
+  /** Opening the list closes whatever side panel it would land on (the Style & colour panel). */
+  onOpen?: () => void
 }) {
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => open && props.onOpen?.()}>
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>

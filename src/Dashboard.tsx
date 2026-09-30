@@ -1,6 +1,6 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { ArrowUp, Globe, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Search, Sparkles, Star, Trash2 } from 'lucide-react'
+import { ArrowUp, Globe, Grid2x2, Home, LayoutList, MoreHorizontal, Pencil, Play, Search, Sparkles, Star, Trash2 } from 'lucide-react'
 import { createProject, deleteProject, favoriteProject, renameProject } from './server/fns'
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
@@ -25,22 +25,27 @@ type User = { name: string; email: string }
 
 const VIEW_KEY = 'od:projects-view'
 
-/** The project's first screen, loaded only when the card scrolls into view. */
+/** KON-10: a screen as a picture (/api/shot), loaded when it scrolls into view — an image, not the whole app. The
+ *  picture is taller than the phone by a strip Chrome adds, so it is cropped to the phone from the top. If no picture
+ *  can be made (no Chrome on the server), the live frame stands in. */
 export function Thumb({ screenId, device, width }: { screenId: string; device: string; width: number }) {
   const size = frameSize(device)
-  const scale = width / size.width
-  return (
-    <iframe
-      src={`/api/thumb/${screenId}`}
-      title=""
-      aria-hidden
-      tabIndex={-1}
-      loading="lazy"
-      sandbox="allow-scripts"
-      className="pointer-events-none origin-top-left border-0 bg-card"
-      style={{ width: size.width, height: size.height, transform: `scale(${scale})` }}
-    />
-  )
+  const [live, setLive] = useState(false)
+  const height = Math.round((width * size.height) / size.width)
+  if (live)
+    return (
+      <iframe
+        src={`/api/thumb/${screenId}`}
+        title=""
+        aria-hidden
+        tabIndex={-1}
+        loading="lazy"
+        sandbox="allow-scripts"
+        className="pointer-events-none origin-top-left border-0 bg-card"
+        style={{ width: size.width, height: size.height, transform: `scale(${width / size.width})` }}
+      />
+    )
+  return <img src={`/api/shot/${screenId}`} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} onError={() => setLive(true)} className="block bg-card object-cover object-top" style={{ width, height }} />
 }
 
 export function ago(unix: number) {
@@ -90,7 +95,8 @@ function ProjectMenu({ card, onRename, onDelete }: { card: Card; onRename: () =>
           <MoreHorizontal className="size-4" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-44">
+        {card.screenCount > 0 && <DropdownMenuItem onSelect={() => window.open(`/preview/${card.id}`, '_blank', 'noopener')}><Play /> Open preview</DropdownMenuItem>}
         <DropdownMenuItem onSelect={onRename}><Pencil /> Rename</DropdownMenuItem>
         <DropdownMenuItem variant="destructive" onSelect={onDelete}><Trash2 /> Delete</DropdownMenuItem>
       </DropdownMenuContent>
@@ -358,9 +364,15 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
                 label="Describe your app"
                 hint="iPhone · up to 8 screens · light and dark"
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
-                onSubmit={async (prompt) => {
+                attachments
+                onSubmit={async (prompt, images) => {
                   try {
                     const { id } = await createProject({ data: { brief: prompt } })
+                    if (images?.length) {
+                      try {
+                        sessionStorage.setItem(`od:brief-images:${id}`, JSON.stringify(images))
+                      } catch {}
+                    }
                     navigate({ to: '/p/$projectId', params: { projectId: id }, search: { brief: prompt } })
                   } catch (e) {
                     reportError(e) // BIL-14: over the plan's project count opens the upgrade dialog

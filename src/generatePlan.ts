@@ -8,7 +8,7 @@ export type PlanEvent =
   | { type: 'done' }
   | { type: 'error'; message: string }
 
-export type PlanRequest = { brief: string }
+export type PlanRequest = { brief: string; images?: string[] }
 
 // Streams /api/generate-plan (newline-delimited JSON) and calls onEvent for each line.
 export async function generatePlan(projectId: string, request: PlanRequest, onEvent: (e: PlanEvent) => void, signal?: AbortSignal) {

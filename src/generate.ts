@@ -9,6 +9,10 @@ export async function generate(
     editScreenId?: string
     /** Redraw this screen from its stored spec (also how a failed screen is retried); `prompt` is ignored. */
     regenerateScreenId?: string
+    /** REG-01: reference pictures (data URLs) for this one request. */
+    images?: string[]
+    /** REG-02: change only this element of editScreenId — its place in the source and how to name it. */
+    element?: { loc: string; label: string }
   },
   onText: (text: string) => void,
   signal?: AbortSignal,

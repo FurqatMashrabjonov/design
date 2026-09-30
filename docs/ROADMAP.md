@@ -26,7 +26,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KON-07 | Kanvas + Preview jsx uchun (Preview'da butun ilova jonli) | Generatsiya / Kanvas | MVP | Tayyor | O'rta | KON-04, KON-06 | 20 ekran silliq; push/pop/tab; dark/aksent |
 | KON-08 | Tahrir, undo, versiyalar JSX ustida | Generatsiya / Tahrirlash | MVP | Tayyor | Katta | KON-07 | Element tahriri, chat, Cmd+Z, ‹ › ishlaydi |
 | KON-09 | Eksport: React + Vite zip va bitta faylli HTML | Generatsiya / Fayllar | Keyin | Rejada | O'rta | KON-07 | npm run dev ishlaydi; HTML internetsiz |
-| KON-10 | Thumbnail (headless PNG) + eval/hakam jsx ekranlarda | Generatsiya / Render | MVP | Rejada | Kichik | KON-04 | Dashboard va eval sheet'lari jsx'dan |
+| KON-10 | Thumbnail (headless PNG) + eval/hakam jsx ekranlarda | Generatsiya / Render | MVP | Tayyor | Kichik | KON-04 | Dashboard va eval sheet'lari jsx'dan |
 | KON-11 | Material (Android) ko'rinishi: theme=material | Generatsiya / Tema | MVP | Tayyor | Kichik | KON-07 | iOS/Android almashadi |
 | KON-12 | Konsta ekranlarida haqiqiy fotosuratlar: kit <Photo q> slot, serverda Pexels bilan to'ldiriladi (image_cache) | Generatsiya / Render | MVP | Tayyor | O'rta | KON-02, KON-03 | Rasm bo'ladigan joyda haqiqiy foto |
 | KON-13 | Render tekshiruvi + bitta tuzatish chaqiruvi | Generatsiya / Sifat | MVP | Tayyor | O'rta | KON-12 | Judge spacing/polish oshadi |
@@ -142,6 +142,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | GQ-34 | Ember — soft tonal tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-32 | habit/fitness/health/learning/food; audit 0.571 |
 | GQ-35 | Volt — qora sport tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | O'rta | GQ-34 | fitness/media/commerce; audit 0.81 |
 | CLN-01 | Tozalash: o'lik kod, DRY, desktop yo'li, o'ylab topilgan palitra | Generatsiya / Sifat | MVP | Tayyor | O'rta | GQ-33 | kod sof −1404, prompt matni −1994; mobil promptlar bayt-bayt bir xil |
+| UI-30 | Generatsiya effekti: chuqur blur o'rniga chiziladigan skeleton, accent nur va nozik chegara | Muharrir / Kanvas | MVP | Tayyor | Kichik |  | Skeleton+nur; edit'da ekran ko'rinadi; reveal 450ms |
+| REG-01 | Regressiya: rasm biriktirish JSX pipeline'da | Generatsiya / Asosiy | MVP | Tayyor | O'rta | LLM-02, IMG-01, IMG-02 | Plan/ekran/edit rasmni ko'radi |
+| REG-02 | Regressiya: bitta elementni tanlab AI bilan o'zgartirish JSX'da | Muharrir / Tahrirlash | MVP | Tayyor | O'rta | EDT-17, EDT-23, UI-20 | Element tanlanadi; faqat u o'zgaradi |
 | CHAT-10 | Chat oddiy chatdek: agent log yo'q, javob gap bilan, yuborilgan xabar darhol ko'rinadi | Muharrir / Kanvas | MVP | Tayyor | Kichik |  | Log faqat meta va admin'da; progress belgilar bilan |
 | CLN-02 | Tozalash 2: DB so'rovlari va hajmi, o'lik kod, DRY/KISS/YAGNI/SOLID; Postgres hajm prognozi | Generatsiya / Sifat | MVP | Tayyor | O'rta | CLN-01 | −484 qator; SQL yordamchilari bitta; /api/rt yozilmaydi; hajm jadvali |
 | GQ-36 | Misollar va landing — 5 ta telefon tizimi | Generatsiya / Dizayn tizimlari | MVP | Tayyor | Kichik | CLN-01 | Dashboard va landing faqat 5 ta telefon tizimidagi haqiqiy ekranlar; misol o'z tizimini tanlaydi |

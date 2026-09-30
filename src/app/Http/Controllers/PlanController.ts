@@ -13,6 +13,9 @@ import { auditBrief } from '@/lib/render-audit'
 import { planApp, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
+import { parseRefImages } from '@/lib/ref-images'
+import { ShotService } from '@/app/Services/ShotService'
+import type { RefImage } from '@/app/Services/LlmService'
 
 // POST { projectId, brief } → newline-delimited JSON events (PlanEvent in src/generatePlan.ts).
 // KON-00: plan the app once, then write every screen as a Konsta component in parallel. A screen that does
@@ -34,8 +37,9 @@ export type AuditOutcome = { found: number; left: number; repaired: boolean }
  *  (KON-13) drawn in headless Chrome and measured; if a person would see something broken — text cut off, a card
  *  on a heading, a row off the screen, half a phone empty — it is rewritten once with exactly those findings, and
  *  the rewrite is kept only if it builds and fewer problems are left. */
-export async function drawScreen(user: string, tally: (u: import('@/app/Services/LlmService').LlmUsage) => void, signal: AbortSignal, site: 'screen' | 'edit' = 'screen', audit?: { look: AppLook; slug: string; report?: (o: AuditOutcome) => void }): Promise<string> {
-  let jsx = linted(await writeScreen(user, tally, signal, site))
+export async function drawScreen(user: string, tally: (u: import('@/app/Services/LlmService').LlmUsage) => void, signal: AbortSignal, site: 'screen' | 'edit' = 'screen', audit?: { look: AppLook; slug: string; report?: (o: AuditOutcome) => void }, images?: RefImage[], first?: string): Promise<string> {
+  // REG-02: `first` is a source already written (an element spliced in); it goes through the same lint, build and check.
+  let jsx = linted(first ?? (await writeScreen(user, tally, signal, site, images)))
   let built = await compileScreen(jsx)
   if (!built.ok) {
     jsx = linted(await writeScreen(`${user}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`jsx\n${jsx}\`\`\`\nThe compiler said: ${built.errors.join('; ')}\nWrite the whole file again with those fixed.`, tally, signal, site))
@@ -83,6 +87,12 @@ export const PlanController = {
     if (!project) return new Response('Project not found', { status: 404 })
     const brief = typeof body.brief === 'string' ? body.brief.trim() : ''
     if (!brief || brief.length > 4000) return new Response('Brief must be 1-4000 characters', { status: 400 })
+    let images: RefImage[] | undefined
+    try {
+      images = parseRefImages(body.images)
+    } catch (e) {
+      return new Response(e instanceof Error ? e.message : 'Invalid images', { status: 400 })
+    }
 
     const enc = new TextEncoder()
     const abort = PlanRuns.start(project.id)
@@ -97,7 +107,7 @@ export const PlanController = {
           try { controller.enqueue(enc.encode(JSON.stringify(obj) + '\n')) } catch {}
         }
         const startedAt = Date.now()
-        await Message.add({ projectId: project.id, role: 'user', kind: 'plan', text: brief })
+        await Message.add({ projectId: project.id, role: 'user', kind: 'plan', text: brief, meta: images ? { images: images.length } : undefined })
         const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
         const tally = (u: typeof usage) => {
           usage.promptTokens += u.promptTokens
@@ -110,7 +120,7 @@ export const PlanController = {
         const failed: string[] = []
         try {
           // THM-01: the project id seeds the style's colours, so two apps from one brief are not one app twice.
-          const plan: AppPlan = await planApp(brief, project.name, tally, abort.signal, project.id)
+          const plan: AppPlan = await planApp(brief, project.name, tally, abort.signal, project.id, images)
           const screenIds = plan.screens.map(() => crypto.randomUUID())
           log.push(`Planned ${plan.screens.length} screens, ${plan.tabs.length} tabs — ${((Date.now() - startedAt) / 1000).toFixed(1)}s`)
           await Project.rename(project.id, plan.appName)
@@ -133,8 +143,9 @@ export const PlanController = {
             try {
               let checked: AuditOutcome | undefined
               const look = { accent: plan.accent, dark: plan.style === 'midnight', platform: 'ios' as const, style: plan.style, tabs: plan.tabs }
-              const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal, 'screen', { look, slug: s.id, report: (o) => (checked = o) })
+              const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal, 'screen', { look, slug: s.id, report: (o) => (checked = o) }, images)
               const screen = await Screen.create({ ...place(s, i), html: jsx })
+              ShotService.warm(project.id, jsx, s.id) // KON-10: the dashboard's picture, ready before anyone asks
               drawn.push({ id: screen.id, name: screen.name, created: true })
               order.set(screen.id, i)
               log.push(`${s.name} — ${((Date.now() - t0) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`)

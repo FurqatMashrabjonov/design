@@ -4,12 +4,24 @@ import { Project } from '@/app/Models/Project'
 import { Screen, type ScreenRow } from '@/app/Models/Screen'
 import { ScreenVersion } from '@/app/Models/ScreenVersion'
 import { Message } from '@/app/Models/Message'
-import { editBrief, parseAppPlan, screenBrief, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
+import { editBrief, elementBrief, parseAppPlan, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { nextFramePosition } from '@/canvas'
 import { parseAppTheme } from '@/lib/app-theme'
 import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/lib/agent-messages'
+import { parseRefImages } from '@/lib/ref-images'
+import { ShotService } from '@/app/Services/ShotService'
+import type { RefImage } from '@/app/Services/LlmService'
 
 export const ERROR_MARK = '<!--GEN_ERROR:'
+
+/** REG-02: a spliced element keeps the file's indentation — its later lines sit where the old element's did. */
+export function reindent(piece: string, file: string, at: number): string {
+  const indent = file.slice(file.lastIndexOf('\n', at - 1) + 1, at).match(/^\s*/)![0]
+  const lines = piece.split('\n')
+  const rest = lines.slice(1).filter((l) => l.trim())
+  const common = rest.length ? Math.min(...rest.map((l) => l.match(/^\s*/)![0].length)) : 0
+  return [lines[0], ...lines.slice(1).map((l) => (l.trim() ? indent + l.slice(common) : l))].join('\n')
+}
 
 // POST { projectId, prompt, editScreenId?, regenerateScreenId? } → text/plain: empty on success, or an
 // ERROR_MARK line. KON-00: every change rewrites the screen's component — an edit hands the model the
@@ -24,13 +36,25 @@ export const GenerateController = {
     const editId = typeof body.editScreenId === 'string' && body.editScreenId ? body.editScreenId : null
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
     if (!regenerateId && (!prompt || prompt.length > 4000)) return new Response('Prompt must be 1-4000 characters', { status: 400 })
+    let images: RefImage[] | undefined
+    try {
+      images = regenerateId ? undefined : parseRefImages(body.images)
+    } catch (e) {
+      return new Response(e instanceof Error ? e.message : 'Invalid images', { status: 400 })
+    }
 
     let target: ScreenRow | undefined
     if (regenerateId || editId) {
       target = await Screen.findInProject((regenerateId ?? editId)!, project.id)
       if (!target) return new Response('Screen not found', { status: 404 })
     }
-    const kind: MessageKind = regenerateId ? 'regenerate' : target ? 'edit' : 'add'
+    // REG-02: one element of the screen, named by its place in the stored source (the compiler's data-od-loc).
+    const loc = editId && typeof body.element?.loc === 'string' ? /^(\d{1,6}):(\d{1,6})$/.exec(body.element.loc) : null
+    const span = loc && target ? { start: Number(loc[1]), end: Number(loc[2]) } : null
+    const element = span && span.start < span.end && span.end <= target!.html.length && target!.html[span.start] === '<'
+      ? { ...span, source: target!.html.slice(span.start, span.end), label: typeof body.element.label === 'string' ? body.element.label.slice(0, 60) : 'Element' }
+      : null
+    const kind: MessageKind = regenerateId ? 'regenerate' : element ? 'element' : target ? 'edit' : 'add'
     const planned = (s: ScreenRow): PlannedScreen => ({
       id: s.slug ?? s.id, name: s.name, spec: s.spec || s.prompt,
       kind: s.screenType === 'root-tab' ? 'tab' : s.screenType === 'modal-flow' ? 'modal' : 'push',
@@ -46,7 +70,7 @@ export const GenerateController = {
 
     const startedAt = Date.now()
     const ask = regenerateId ? `Regenerate “${target!.name}”` : prompt
-    await Message.add({ projectId: project.id, role: 'user', kind, text: ask, meta: target ? { screens: [{ id: target.id, name: target.name }] } : undefined })
+    await Message.add({ projectId: project.id, role: 'user', kind, text: element ? `${ask} — ${element.label}` : ask, meta: target || images ? { ...(target && { screens: [{ id: target.id, name: target.name }] }), ...(images && { images: images.length }) } : undefined })
     if (regenerateId && target?.html) await FeedbackController.record(project.id, target.id, 'regenerate')
     const usage = { promptTokens: 0, cachedTokens: 0, completionTokens: 0 }
     const tally = (u: typeof usage) => { usage.promptTokens += u.promptTokens; usage.cachedTokens += u.cachedTokens; usage.completionTokens += u.completionTokens }
@@ -63,11 +87,20 @@ export const GenerateController = {
           const theme = parseAppTheme(project.theme)
           const look = { accent: theme.accent, dark: theme.dark, platform: 'ios' as const, style: theme.style, tabs: plan?.tabs ?? [] }
           const slug = target?.slug ?? added?.id ?? ''
-          const jsx = await drawScreen(user, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen', { look, slug, report: (o) => (checked = o) })
+          // An element: the model writes that element alone, and it is spliced in. If the result does not build, the
+          // whole-file edit (told which element) is the fallback, through drawScreen's own retry.
+          let first: string | undefined
+          if (element && target) {
+            const piece = (await writeScreen(elementBrief(plan, { name: target.name, slug: target.slug }, target.html, element.source, prompt), tally, abort.signal, 'edit', images)).trim()
+            if (piece.startsWith('<') && !/^import\s|export\s+default/m.test(piece)) first = target.html.slice(0, element.start) + reindent(piece, target.html, element.start) + target.html.slice(element.end)
+          }
+          const brief = element ? `${user}\n\nChange only this element and leave the rest of the file exactly as it is:\n\`\`\`jsx\n${element.source}\n\`\`\`` : user
+          const jsx = await drawScreen(brief, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen', { look, slug, report: (o) => (checked = o) }, images, first)
           let changed: { id: string; name: string; versionId?: string; created?: boolean }
           if (target) {
             const versionId = target.html ? await ScreenVersion.captureFrom(target) : undefined
             await Screen.updateContent(target.id, { name: target.name, prompt: regenerateId ? target.prompt : prompt, html: jsx })
+            ShotService.warm(project.id, jsx, target.slug ?? target.id)
             changed = { id: target.id, name: target.name, versionId }
           } else {
             const pos = nextFramePosition(await Screen.positions(project.id), project.device)
@@ -79,7 +112,7 @@ export const GenerateController = {
           }
           await Message.add({
             projectId: project.id, role: 'agent', kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'regenerate', screen: changed.name, version: changed.created ? undefined : (await ScreenVersion.count(changed.id)) + 1 }),
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: element?.label, version: changed.created ? undefined : (await ScreenVersion.count(changed.id)) + 1 }),
             meta: { screens: [changed], log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])], durationMs: Date.now() - startedAt },
           })
         } catch (e) {

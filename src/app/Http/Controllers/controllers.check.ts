@@ -1,6 +1,7 @@
 // Run with the alias hook and a throwaway database (see package.json "check"). DeepSeek is a stub.
 import assert from 'node:assert'
 
+process.env.SCREEN_SHOTS = '0' // KON-10: no picture is warmed for every screen a test draws
 delete process.env.PEXELS_API_KEY // image slots must not reach the network from a test
 process.env.LLM_MODEL = 'deepseek-flash' // the stubs below answer in DeepSeek's shape and the credit tests price its profile
 process.env.RENDER_AUDIT = "0" // KON-13: no headless Chrome per stub screen; the audit has its own test below
@@ -1424,7 +1425,74 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.match(r, /I designed 2 screens across 2 tabs\./)
   assert.match(r, /Settings didn't come out — use Try again on that frame\./)
   assert.ok(!/Tabs:|Designed|Tokens/.test(r), 'no log lines in the reply')
-  assert.equal(planReply({ appName: 'X', summary: 'Mindloom helps founders', drawn: [], failed: [], tabs: [] }), "Here's X — Mindloom helps founders.", 'a name at the start keeps its capital')
+  assert.equal(planReply({ appName: 'X', summary: 'Mindloom helps founders', drawn: [], failed: [], tabs: [] }), "Here's X. Mindloom helps founders.", 'a name at the start keeps its capital')
+  assert.equal(planReply({ appName: 'Palabrae', summary: 'Learn practical Spanish', drawn: [], failed: [], tabs: [] }), "Here's Palabrae. Learn practical Spanish.", 'never “— Learn”')
+}
+
+// --- REG-01: a reference picture reaches the planner and every screen call; bad ones are refused at the edge ---
+{
+  const { parseRefImages } = await import('../../../lib/ref-images.ts')
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+  assert.deepEqual(parseRefImages([png]), [{ dataUrl: png }])
+  assert.equal(parseRefImages(undefined), undefined)
+  assert.throws(() => parseRefImages(['https://evil.example/x.png']), /PNG, JPEG or WebP/, 'a remote URL never reaches a model')
+  assert.throws(() => parseRefImages(['data:image/svg+xml;base64,PHN2Zz4=']), /PNG, JPEG or WebP/, 'no SVG')
+  assert.throws(() => parseRefImages([png, png, png]), /At most 2/)
+  await Project.create({ id: 'img-1', name: 'Img', designSystem: 'konsta', device: 'mobile' })
+  sent = []
+  reply = (req) => planReply(req) ?? sse(page('Drawn'))
+  await post(PlanController, { projectId: 'img-1', brief: 'Like this, please', images: [png] })
+  const withPic = (u: unknown) => Array.isArray(u) && u.some((part) => (part as { type?: string }).type === 'image_url')
+  assert.ok(sent.length >= 2 && sent.every((r) => withPic(r.user)), 'the planner and every screen see the picture')
+  assert.ok(sent.filter((r) => !r.json).every((r) => JSON.stringify(r.user).includes('REFERENCE IMAGE')), 'screens are told what the picture is for')
+  const msg = (await Message.forProject('img-1')).find((m) => m.role === 'user')!
+  assert.match(msg.meta ?? '', /"images":1/, 'the message says it had a picture; the picture is not stored')
+  assert.ok(!(msg.meta ?? '').includes('base64'))
+  assert.match(await post(PlanController, { projectId: 'img-1', brief: 'x', images: ['data:text/html;base64,PGgxPg=='] }), /PNG, JPEG or WebP/)
+}
+
+// --- REG-02: one element — the compiler marks where each is; the model writes that element alone and it is spliced ---
+{
+  const { compileScreen } = await import('../../Services/ScreenCompiler.ts')
+  const { GenerateController } = await import('./GenerateController.ts')
+  const src = "import { Page, Navbar, Block } from 'konsta/react'\nexport default function Screen() {\n  return <Page><Navbar title=\"Home\" /><Block className=\"p-4\">Hello</Block></Page>\n}\n"
+  const start = src.indexOf('<Block'), end = src.indexOf('</Block>') + '</Block>'.length
+  const built = await compileScreen(src)
+  assert.ok(built.ok && built.js.includes(`"data-od-loc": "${start}:${end}"`), 'each element carries its place in the stored source')
+  const noImport = src.replace("import { Page, Navbar, Block } from 'konsta/react'\n", '')
+  const b2 = await compileScreen(noImport)
+  const s2 = noImport.indexOf('<Block')
+  assert.ok(b2.ok && b2.js.includes(`"data-od-loc": "${s2}:`), 'offsets are the stored text, not the one with imports added')
+
+  await Project.create({ id: 'el-1', name: 'El', designSystem: 'konsta', device: 'mobile' })
+  await Screen.create({ id: 'el-s1', projectId: 'el-1', name: 'Home', prompt: 'p', html: src, x: 0, y: 0 })
+  sent = []
+  reply = () => sse('```jsx\n<Block className="p-4">Hello, Maya</Block>\n```')
+  await post(GenerateController, { projectId: 'el-1', prompt: 'greet Maya', editScreenId: 'el-s1', element: { loc: `${start}:${end}`, label: 'Element “Hello”' } })
+  const after = (await Screen.find('el-s1'))!.html
+  assert.equal(after, src.slice(0, start) + '<Block className="p-4">Hello, Maya</Block>' + src.slice(end), 'only that element changed; the rest is byte for byte')
+  assert.ok(sent[0]!.user.includes('THE ONE ELEMENT TO CHANGE') && sent[0]!.user.includes('Hello</Block>'), 'the model is shown the element')
+  const reply1 = (await Message.forProject('el-1')).filter((m) => m.role === 'agent').at(-1)!
+  assert.equal(reply1.kind, 'element')
+  assert.match(reply1.text, /Element “Hello” on “Home”/)
+
+  const { reindent } = await import('./GenerateController.ts')
+  assert.equal(reindent('<Button>\n  Go\n</Button>', '  x\n        <Button>', 12), '<Button>\n          Go\n        </Button>', 'a spliced element keeps the file\'s indentation')
+  // A place that is not an element (or out of range) is not an element edit: the whole screen is changed instead.
+  reply = () => sse(page('Whole'))
+  await post(GenerateController, { projectId: 'el-1', prompt: 'x', editScreenId: 'el-s1', element: { loc: '1:5', label: 'x' } })
+  assert.match((await Screen.find('el-s1'))!.html, /Whole/)
+}
+
+// --- KON-10: a picture's key follows the source and the look, so a changed screen or theme is never shown stale ---
+{
+  const { ShotService } = await import('../../Services/ShotService.ts')
+  const look = { accent: '#ff375f', dark: false, platform: 'ios' as const, style: 'clean' as const, tabs: [] }
+  const k = ShotService.key('A', look)
+  assert.equal(ShotService.key('A', { ...look }), k, 'the same screen in the same look is the same picture')
+  assert.notEqual(ShotService.key('B', look), k, 'a changed screen is a new picture')
+  assert.notEqual(ShotService.key('A', { ...look, dark: true }), k, 'dark is a new picture')
+  assert.notEqual(ShotService.key('A', { ...look, style: 'midnight' as const }), k, 'a new style is a new picture')
 }
 
 console.log('ok')

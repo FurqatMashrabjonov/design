@@ -2,13 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { askUpgrade, reportError } from '../credits'
-import { CircleX, Code2, FileDown, Palette, Plus, Smartphone, X } from 'lucide-react'
+import { CircleX, Code2, FileDown, MousePointerClick, Palette, Plus, Smartphone, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, getScreenCode, saveScreenHeight, saveAppTheme, revertMessage, stepVersion, restoreScreen, rateScreen } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan, type PlanEvent } from '../generatePlan'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
 import { PromptBox } from '../PromptBox'
-import { FrameLabel, GeneratingVeil, ScreenFrame, ScreenSkeleton, screenForNav, serializeScreen } from '../ScreenFrame'
+import { FrameLabel, GeneratingVeil, ScreenFrame, ScreenSkeleton, screenForNav, serializeScreen, type PickedElement } from '../ScreenFrame'
+
+/** How a picked element is named in the composer and the chat: what it is and its text. */
+const elementLabel = (p: { kind: string; text: string }) => (p.text ? `${p.kind} “${p.text.length > 28 ? `${p.text.slice(0, 27)}…` : p.text}”` : p.kind)
 import { copyTreesToFigma } from '@/lib/figma-copy'
 import { AppLookSwitch, ThemePanel } from '@/components/canvas/ThemePanel'
 import { parseAppTheme, themeQuery, type AppTheme } from '@/lib/app-theme'
@@ -89,6 +92,7 @@ function ProjectPage() {
 
   function selectScreen(id: string | null) {
     setSelectedIds(id ? [id] : [])
+    setPicked((p) => (p && p.screenId === id ? p : null))
   }
   function focusScreen(id: string) {
     selectScreen(id)
@@ -153,7 +157,8 @@ function ProjectPage() {
       if (t instanceof Element && t.closest('input, textarea, [contenteditable="true"], [role="dialog"], [role="menu"]')) return
       const cmd = (e.metaKey || e.ctrlKey) && !e.altKey
       const chosen = screens.filter((s) => selectedIds.includes(s.id))
-      if (e.key === 'Escape') selectScreen(null)
+      if (e.key === 'Escape' && picked) setPicked(null)
+      else if (e.key === 'Escape') selectScreen(null)
       else if (cmd && e.key.toLowerCase() === 'z') {
         e.preventDefault()
         undo(e.shiftKey)
@@ -186,6 +191,9 @@ function ProjectPage() {
   // A planned run: the plan arrives first, then each screen as it is saved.
   const [plan, setPlan] = useState<(PlanShape & { screenIds: string[] }) | null>(null)
   const [planning, setPlanning] = useState(false)
+  // REG-02: the element picked in the selected screen (the next message changes only it). A lone selected screen
+  // is always pickable — click the screen to select it, click inside it to pick an element (EDT-24's flow).
+  const [picked, setPicked] = useState<(PickedElement & { screenId: string }) | null>(null)
   // What the person just sent: shown in the chat at once, until the stored message arrives with the reply.
   const [asked, setAsked] = useState('')
   const [status, setStatus] = useState<Record<number, ScreenStatus>>({})
@@ -217,13 +225,13 @@ function ProjectPage() {
       setPlanErrors((p) => ({ ...p, [e.index]: e.message }))
     }
   }
-  function runPlan(brief: string) {
+  function runPlan(brief: string, images?: string[]) {
     setPlanning(true)
     const ctl = new AbortController()
     inFlight.current = ctl
     setWorking(true)
     setWorkStarted(Date.now())
-    generatePlan(project.id, { brief }, onPlanEvent, ctl.signal)
+    generatePlan(project.id, { brief, images }, onPlanEvent, ctl.signal)
       .catch((err) => {
         if (!(err instanceof DOMException && err.name === 'AbortError')) reportError(err)
       })
@@ -240,7 +248,14 @@ function ProjectPage() {
     const brief = search.brief
     router.navigate({ to: '.', search: {}, replace: true }) // drop ?brief so a reload never re-triggers
     setAsked(brief)
-    runPlan(brief)
+    // REG-01: pictures attached on the dashboard ride here in sessionStorage (a URL is no place for them).
+    let images: string[] | undefined
+    try {
+      const key = `od:brief-images:${project.id}`
+      images = JSON.parse(sessionStorage.getItem(key) ?? 'null') ?? undefined
+      sessionStorage.removeItem(key)
+    } catch {}
+    runPlan(brief, images)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -337,10 +352,16 @@ function ProjectPage() {
   const lastPrompt = [...messages].reverse().find((m) => m.role === 'user')?.text
 
   // No screens yet: the message plans the app. Otherwise it changes the selected screens, or adds one.
-  async function submitPrompt(prompt: string) {
+  async function submitPrompt(prompt: string, images?: string[]) {
     setAsked(prompt)
-    if (screens.length === 0 && !planning) return runPlan(prompt)
-    await run(selectedIds.length ? selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id })) : [{ prompt, projectId: project.id }])
+    if (screens.length === 0 && !planning) return runPlan(prompt, images)
+    // REG-02: a picked element narrows the change to that element of its screen.
+    if (picked && selectedIds.length === 1 && selectedIds[0] === picked.screenId) {
+      const element = { loc: picked.loc, label: elementLabel(picked) }
+      setPicked(null)
+      return run([{ prompt, projectId: project.id, editScreenId: picked.screenId, element, images }])
+    }
+    await run(selectedIds.length ? selectedIds.map((id) => ({ prompt, projectId: project.id, editScreenId: id, images })) : [{ prompt, projectId: project.id, images }])
   }
   async function regenerateScreen(id: string) {
     selectScreen(id)
@@ -441,7 +462,7 @@ function ProjectPage() {
           insets={canvasInsets}
           rail={
             <>
-              <ScreensList screens={[...screens].sort((a, b) => a.x - b.x || a.y - b.y).map((sc) => ({ id: sc.id, name: sc.name }))} selected={selected} onSelect={focusScreen} />
+              <ScreensList screens={[...screens].sort((a, b) => a.x - b.x || a.y - b.y).map((sc) => ({ id: sc.id, name: sc.name }))} selected={selected} onSelect={focusScreen} onOpen={() => setThemeOpen(false)} />
               <RailButton label="Style & colour" pressed={themeOpen} onClick={() => setThemeOpen((o) => !o)}>
                 <Palette />
               </RailButton>
@@ -477,7 +498,7 @@ function ProjectPage() {
                   </FrameLabel>
                   <div className="relative overflow-hidden shadow-phone" style={{ width: f.width, height: f.height, borderRadius: 'var(--radius-phone)' }}>
                     <ScreenSkeleton className="absolute inset-0" />
-                    <GeneratingVeil show />
+                    <GeneratingVeil show mode="draw" accent={theme.accent} />
                   </div>
                 </figure>
               )
@@ -503,6 +524,8 @@ function ProjectPage() {
                     busy={busyIds.includes(s.id)}
                     height={frameHeight(s)}
                     onHeight={(h) => reportHeight(s.id, h)}
+                    picking={!multi && !busyIds.includes(s.id) && selectedIds[0] === s.id}
+                    onPick={(p) => (p ? setPicked({ ...p, screenId: s.id }) : picked ? setPicked(null) : selectScreen(null))}
                     // A tap on a link or tab in the selected screen shows where it leads, on the canvas.
                     onNav={(nav) => {
                       const target = nav.id ? screenForNav(screens, nav.id) : undefined
@@ -601,6 +624,15 @@ function ProjectPage() {
                     <Smartphone className="size-3 shrink-0 text-muted-foreground" />
                     <span className="truncate">{multi ? `${selectedIds.length} screens` : selectedScreen.name}</span>
                   </button>
+                  {picked && picked.screenId === selectedScreen.id && (
+                    <span className="inline-flex min-w-0 items-center gap-1 rounded-md bg-selection/15 px-2 py-1 font-medium text-foreground" title="The next message changes only this element">
+                      <MousePointerClick className="size-3 shrink-0" />
+                      <span className="truncate">{elementLabel(picked)}</span>
+                      <button type="button" onClick={() => setPicked(null)} className="-mr-1 rounded p-0.5 text-muted-foreground hover:text-foreground" aria-label="Change the whole screen instead">
+                        <X className="size-3" />
+                      </button>
+                    </span>
+                  )}
                   <button type="button" onClick={() => selectScreen(null)} className="ml-auto shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" title="Step out (Esc)" aria-label="Step out">
                     <X className="size-3.5" />
                   </button>
@@ -613,7 +645,9 @@ function ProjectPage() {
                 : multi
                   ? `Describe a change for all ${selectedIds.length} screens…`
                   : selectedScreen
-                    ? 'Describe the change…'
+                    ? picked
+                      ? `Change ${elementLabel(picked)}…`
+                      : 'Describe the change — or click something in the screen to change just that…'
                     : screens.length
                       ? 'Add another screen to this app…'
                       : 'Describe your app…'
@@ -624,6 +658,7 @@ function ProjectPage() {
             queued={queued}
             onQueue={setQueued}
             lastPrompt={lastPrompt}
+            attachments
             onSubmit={submitPrompt}
           />
         </div>

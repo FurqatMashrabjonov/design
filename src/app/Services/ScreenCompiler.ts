@@ -187,6 +187,18 @@ export async function compileScreen(input: string): Promise<Compiled> {
   }
   if (errors.length) return { ok: false, errors: [...new Set(errors)] }
 
+  // REG-02: every JSX element carries where it is in the stored source (data-od-loc="start:end"), so a click in the
+  // frame names exactly the code to change. Offsets are the stored text's: the imports resolveNames prepended are
+  // taken off. A component that does not pass the attribute on is picked through its nearest ancestor that does.
+  const shift = source.length - input.length
+  ;(function tag(n: unknown): void {
+    if (!n || typeof n !== 'object') return
+    if (Array.isArray(n)) return n.forEach(tag)
+    const node = n as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (node.type === 'JSXElement' && node.openingElement?.name?.end != null && node.start - shift >= 0) splices.push([node.openingElement.name.end, node.openingElement.name.end, ` data-od-loc="${node.start - shift}:${node.end - shift}"`])
+    for (const [k, v] of Object.entries(node)) if (k !== 'loc' && typeof v === 'object') tag(v)
+  })(ast.program)
+
   // 4. JSX → JS; specifiers stay as written, the frame's import map resolves them.
   let src = source
   for (const [s, e, r] of splices.sort((a, b) => b[0] - a[0])) src = src.slice(0, s) + r + src.slice(e)

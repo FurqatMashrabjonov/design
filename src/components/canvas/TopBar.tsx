@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { AccountMenu } from '@/components/AccountMenu'
 import { CreditsBadge } from '@/credits'
 import { applyDark } from '@/components/ThemeToggle'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,10 +89,6 @@ export function TopBar(props: {
                 <Keyboard /> Keyboard shortcuts <DropdownMenuShortcut>?</DropdownMenuShortcut>
               </DropdownMenuItem>
             )}
-            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-              Konsta UI · iOS
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDelete(true)}>
               <Trash2 /> Delete project
             </DropdownMenuItem>

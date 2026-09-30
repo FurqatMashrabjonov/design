@@ -5,6 +5,167 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-30 (5)
+
+### UX audit follow-up: Chrome capped server-wide, and the small fixes from walking the app as a user
+
+- **Chrome is capped** (`RenderAudit` `withChrome`, `CHROME_MAX`, default 3).
+  - Before, render checks started a Chrome per screen with no limit: a planned app checks four at once, so ten
+    users planning together would start forty. KON-10's pictures had their own separate cap.
+  - Now every headless Chrome, checks and pictures alike, waits for a slot.
+  - Measured: eight checks at once ran at most 3 Chromes, all measured, in 11.0s (10.6s uncapped).
+  - Memory: macOS RSS over-counts Chrome (a page is 18 processes sharing libraries). On a Linux server one is
+    commonly 200–400 MB for a second or three, so the cap holds the peak near 1 GB.
+- **Fixes from the walkthrough:**
+  - The chat reply never reads "— Learn…". A summary that does not start with a/an/the is its own sentence:
+    "Here's Palabrae. Learn practical Spanish…" (tested).
+  - The project menu no longer shows the internal label "Konsta UI · iOS".
+  - Opening the Screens list closes the Style & colour panel, instead of the two overlapping.
+  - A dashboard card's menu has "Open preview" (for a project with screens), and the menu is wide enough for it.
+- **Checked and not a bug:**
+  - The "first click does nothing" seen in testing is the test browser's background tab, which Chrome throttles
+    (`visibilityState: hidden`). A production build hydrates from 17 files / 161 KB.
+  - "Home and Projects both active" was a hover.
+- **Files:** `RenderAudit.ts`, `ShotService.ts`, `agent-messages.ts`, `TopBar.tsx`, `ScreensList.tsx`,
+  `routes/p.$projectId.tsx`, `Dashboard.tsx`, `controllers.check.ts` and CLAUDE.md.
+- **Verified:** `npm run check` and `tsc` are clean; the Chrome cap was measured; the card menu was checked in the
+  browser; a production build and server were run on another port for the hydration check.
+
+## 2026-09-30 (4)
+
+### KON-10: screens that are only shown are pictures — dashboard, sidebar, list, admin, chat before/after
+
+- **Before:** every place that showed a screen ran the whole app in an iframe (React, Konsta and the screen's
+  code). The dashboard ran **45** at once for 13 projects, most still blank after five seconds, and a grid/list
+  switch loaded them all again. Each chat edit added two more.
+- **Now there is `/api/shot/$screenId`, a PNG:**
+  - `screenshotScreen` uses the render check's private server and Chrome. The screen is framed at exactly 390×844,
+    because headless Chrome lays a page out at least 500px wide and 87px shorter than its window (measured). The
+    window is made taller by that much, and the `<img>` crops the strip.
+  - It is taken at scale 0.6: 234×559, about 35 KB, sharp at card size on a retina screen.
+  - `ShotService` keeps pictures in `screen_shots` (migration `0010`) by a key of the source and the look (accent,
+    dark, platform, style, tabs). A changed screen or theme is a new picture and never a stale one; the ETag is that
+    key.
+  - Pictures are warmed right after a screen is drawn or edited (`SCREEN_SHOTS=0` in tests); otherwise they are
+    made on first ask, with at most three Chromes at a time and one per key.
+  - Access is the same as `/api/thumb` (owner, admin, or a shared token for current screens).
+- **Changed on the page:**
+  - `Thumb` (dashboard cards, sidebar, list view, admin) is an `<img>`, lazy and cropped from the top. It falls back
+    to the live frame if no picture can be made.
+  - The chat's before/after uses `/api/shot?v=`. The "before" of a new edit is the old screen's existing picture
+    (the same key).
+- **`scripts/backfill-shots.ts`:** run once after deploying. On dev, 105 screens took 78s and 3.6 MB.
+- **Measured:**
+  - The dashboard loads 0 iframes and 45 images instead of 45 apps.
+  - A picture is served in ~120 ms from the table (2 ms in the service) and made in ~3 s once.
+- **Files:**
+  - New: `ShotService.ts`, `routes/api/shot/$screenId.ts`, `migrations/0010_screen_shots.ts`,
+    `scripts/backfill-shots.ts`.
+  - Changed: `RenderAudit.ts` (`screenshotScreen`), `Dashboard.tsx` (`Thumb`), `ChatPanel.tsx`,
+    `PlanController.ts`, `GenerateController.ts`, `migrate.ts`, `controllers.check.ts` and CLAUDE.md.
+- **Verified:**
+  - `npm run check` (the key follows source, dark and style) and `tsc` are clean.
+  - The pictures were looked at: framing fixed from a clipped first attempt.
+  - In the browser: the dashboard (cards and sidebar show pictures, no iframes) and the chat's before/after (the
+    green button and the red header, before and after).
+
+## 2026-09-30 (3)
+
+### REG-02: pick one element and change only it, on the Konsta/JSX pipeline
+
+- **Follow-up, the same day, on the owner's word:** no button. A lone selected screen is always pickable: click
+  the screen to select it, click inside it to pick an element, Esc drops the element, Esc again the screen. The
+  composer hints at it ("…or click something in the screen to change just that") and then reads "Change Button
+  “Done”…".
+  - A tap inside the selected screen now picks rather than navigates; Preview is for clicking through.
+  - Checked in the browser: select → click "Done" → the chip → Esc clears it.
+
+- **The regression:** element selection and "Edit with AI" (EDT-17/23/24, UI-20) were HTML-era. Since KON-00 a
+  change always rewrote the whole screen.
+- **How it works now:**
+  - **Compiler:** every JSX element carries `data-od-loc="start:end"`, its place in the stored source. The
+    offsets are the stored text's; the imports `completeImports` prepends are taken off. The stored source and the
+    export stay clean.
+  - **Kit:** pick mode (`od:pick` from the parent only). The pointer outlines the nearest marked element; a click
+    answers `od:picked` with its place, kind (Button, Row, Photo, Icon, Title, Field or Element) and text, and does
+    not do what the app would do. Esc cancels.
+  - **Canvas:**
+    - The selected screen's toolbar has "Select element", which shows "Click an element…" while it is on.
+    - The composer shows the pick as a chip, e.g. Button “Start timer” ×.
+    - The next message goes with `element: { loc, label }`.
+  - **Server:**
+    - `elementBrief` shows the model the file and that element, and asks for that element alone.
+    - `GenerateController` splices the answer in (`reindent` keeps the file's indentation) and passes it to
+      `drawScreen` as `first`: the same lint, build, photos and render check.
+    - If the answer is not one element, or does not build, the whole-file edit (told which element) is the
+      fallback through `drawScreen`'s retry.
+    - A place that is not an element, or is out of range, is a normal screen edit.
+    - The message is kind `element` and undoable.
+- **Files:** `ScreenCompiler.ts`, `runtime/kit.jsx` (`answerPick`; the runtime was rebuilt), `ScreenFrame.tsx`
+  (`picking`, `onPick`, `parsePicked`), `FrameToolbar.tsx`, `routes/p.$projectId.tsx`, `generate.ts`,
+  `JsxGenerator.ts` (`elementBrief`), `PlanController.ts` (`drawScreen` `first`), `GenerateController.ts`
+  (`reindent`) and `controllers.check.ts`.
+- **Verified:**
+  - `npm run check`: the compiled JS carries the right offsets, with and without added imports; an element edit
+    changes exactly that span; the model is shown the element; the reply is kind `element`; a bad place falls back
+    to the whole screen; `reindent` works.
+  - `tsc` is clean.
+  - In the browser (Stillhour → Today): Select element → click "Start timer" → the chip → "full-width green button
+    that says Begin session" → "Updated Button “Start timer” on “Today” — now v2" with before and after.
+  - A diff of the stored source shows only that `<Button>` changed.
+
+## 2026-09-30 (2)
+
+### REG-01: reference pictures work again on the Konsta/JSX pipeline
+
+- **The regression:** since KON-00 the paperclip was never switched on (`attachments`), and neither
+  `PlanController` nor `GenerateController` read images, although `LlmService` could send them. LLM-02 and
+  IMG-01/02 had silently stopped working.
+- **Now:**
+  - The paperclip is on in the canvas composer and the dashboard box: two pictures at most, 1 MB each.
+  - `parseRefImages` accepts PNG, JPEG and WebP data URLs only. A remote URL, SVG or HTML is refused, and the
+    guard refuses a body over 3.2 MB.
+  - A planned app shows the picture to the planner (the style is chosen from it) and to every screen call.
+  - An edit or an added screen shows it to that call.
+  - Screen calls get `REF_IMAGE_NOTE`: take the picture's visual language within the app's own style and palette,
+    and never its text or data.
+  - The picture is not stored. The user message's meta records `images: n`, and the chat shows "with a reference
+    image".
+  - From the dashboard the pictures reach the canvas through `sessionStorage`, never the URL.
+- **Files:**
+  - New: `lib/ref-images.ts`.
+  - Changed: `JsxGenerator` (`writeScreen` and `planApp` take images), `PlanController` (`drawScreen` and
+    `stream`), `GenerateController`, `server/guard.ts`, `generate.ts`, `generatePlan.ts`,
+    `routes/p.$projectId.tsx`, `Dashboard.tsx`, `ChatPanel.tsx`, `agent-messages.ts` and `controllers.check.ts`.
+- **Verified:**
+  - `npm run check`: the validator rejects remote, SVG, HTML and a third picture; the planner and every screen call
+    carry the image; screens get the note; the message meta says `images: 1` with no base64 stored.
+  - `tsc` is clean.
+  - In the browser: on the canvas, "Add a leaderboard screen… like this picture" with a leaderboard screenshot
+    drew "Streaks" with the same structure (a hero card with rank and streak, a ranked list with Maya Chen at #4)
+    in the app's own style.
+  - From the dashboard with a picture: the plan started and its message recorded `images: 1`.
+
+## 2026-09-30
+
+### UI-30: a frame at work — a sketching skeleton and a light in the app's colour instead of a deep blur
+
+- **Before:** a waiting slot sat under a 40px blur, three layers deep, that hid its own skeleton, so eight grey
+  smudges were all anyone saw.
+- **Now `GeneratingVeil` has three modes:**
+  - `draw`: nothing is drawn yet. The skeleton's blocks sketch in one after another, a soft band in the app's
+    accent sweeps down (2.6s), and the frame's edge breathes in the same colour. There is no blur.
+  - `edit`: the screen being changed stays visible, dimmed a little (2px), under the same light.
+  - `load`: one 6px blur, fading out in 450ms once the page has drawn.
+- Transform and opacity only, inside `prefers-reduced-motion: no-preference`. The old `.od-veil` rules are gone.
+- **Files:** `ScreenFrame.tsx` (`GeneratingVeil`, `ScreenSkeleton` with a per-block `--i`), `styles.css`
+  (`.od-gen*`) and `routes/p.$projectId.tsx`.
+- **Verified:**
+  - `npm run check` and `tsc` are clean.
+  - In the browser, a new app: seven slots sketched in with the violet accent's light and edge, then each screen
+    resolved as it finished.
+  - A single-screen edit was also run.
+
 ## 2026-09-29 (11)
 
 ### LEG-01…04: terms, privacy, refunds and contact pages

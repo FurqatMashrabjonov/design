@@ -45,6 +45,14 @@ export function screenForNav<T extends { slug: string | null; screenType: string
   return screens.find((s) => s.slug === id) ?? screens.find((s) => s.screenType === 'root-tab' && s.activeTabId === id)
 }
 
+/** REG-02: the element a person picked in a frame — where it is in the source, what it looks like, its text. */
+export type PickedElement = { loc: string; kind: string; text: string }
+/** A picked message from the page, trusted only in shape: a loc is two offsets, the rest short text. */
+export function parsePicked(d: { loc?: unknown; kind?: unknown; text?: unknown }): PickedElement | null {
+  if (typeof d.loc !== 'string' || !/^\d{1,6}:\d{1,6}$/.test(d.loc)) return null
+  return { loc: d.loc, kind: typeof d.kind === 'string' ? d.kind.slice(0, 20) : 'Element', text: typeof d.text === 'string' ? d.text.slice(0, 40) : '' }
+}
+
 export function ScreenFrame(props: {
   screenId: string
   html: string
@@ -64,6 +72,9 @@ export function ScreenFrame(props: {
   height?: number
   /** The page measured its content; the canvas lays the frame out at that height and saves it. */
   onHeight?: (height: number) => void
+  /** REG-02: pick one element in this screen; the kit answers with its place in the source (null = cancelled). */
+  picking?: boolean
+  onPick?: (p: PickedElement | null) => void
 }) {
   const f = frameSize(props.device)
   const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -88,6 +99,10 @@ export function ScreenFrame(props: {
     const t = setInterval(() => iframeRef.current?.contentWindow?.postMessage({ type: 'od:measure' }, '*'), 1000)
     return () => clearInterval(t)
   }, [ready, src])
+  // REG-02: picking is switched in the running page, and again whenever the page (re)loads.
+  useEffect(() => {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'od:pick', on: Boolean(props.picking) }, '*')
+  }, [props.picking, ready])
   useEffect(() => {
     const id = props.screenId
     serializers.set(id, () => {
@@ -106,6 +121,7 @@ export function ScreenFrame(props: {
       if (e.source !== iframeRef.current?.contentWindow) return
       const nav = parseNav(e.data)
       if (nav) return latest.current.onNav?.(nav)
+      if (e.data?.type === 'od:picked') return latest.current.onPick?.(parsePicked(e.data))
       if (e.data?.type === 'od:serialized' && typeof e.data.requestId === 'string') {
         const wait = waits.get(e.data.requestId)
         if (!wait) return
@@ -147,22 +163,26 @@ export function ScreenFrame(props: {
           className={cn('block w-full border-0', active ? 'pointer-events-auto' : 'pointer-events-none')}
           style={{ height: iframeHeight }}
         />
-        <GeneratingVeil show={Boolean(props.busy) || !ready} />
+        <GeneratingVeil show={Boolean(props.busy) || !ready} mode={props.busy ? 'edit' : 'load'} accent={props.theme.accent} />
       </div>
     </figure>
   )
 }
 
-/** Over a frame that is being drawn or is still loading, the screen is held under a deep blur; when it is
- *  ready the blur resolves — deep, then light, then sharp — the way macOS's Image Playground reveals a picture.
- *  Three blur layers fade out one after another (opacity only, so eight frames at once stay smooth). */
-export function GeneratingVeil(props: { show: boolean }) {
+/** UI-30: what a frame shows while it works. `draw` — nothing yet, over the skeleton: a light in the app's accent
+ *  sweeps down and the edge breathes, no blur. `edit` — the screen stays visible, lightly dimmed, under the same
+ *  light. `load` — the page is still starting: one light blur that resolves when it is ready. */
+export function GeneratingVeil(props: { show: boolean; mode?: 'draw' | 'edit' | 'load'; accent?: string }) {
+  const mode = props.mode ?? 'load'
   return (
-    <div aria-hidden className="od-veil pointer-events-none absolute inset-0 z-10" data-show={props.show || undefined}>
-      {/* The canvas is often at 30–50% zoom, so the deepest layer is strong enough to read at that scale. */}
-      <div className="od-veil-l1 absolute inset-0 bg-card/40 backdrop-blur-[40px] backdrop-saturate-150" />
-      <div className="od-veil-l2 absolute inset-0 backdrop-blur-[14px]" />
-      <div className="od-veil-l3 absolute inset-0 backdrop-blur-[4px]" />
+    <div aria-hidden className="od-gen z-10" data-show={props.show || undefined} data-mode={mode} style={props.accent ? ({ '--gen-accent': props.accent } as CSSProperties) : undefined}>
+      <div className="od-gen-dim" />
+      {mode !== 'load' && (
+        <>
+          <div className="od-gen-scan" />
+          <div className="od-gen-edge" />
+        </>
+      )}
     </div>
   )
 }
@@ -182,26 +202,29 @@ export function FrameLabel(props: { width: number; children: ReactNode; free?: b
 
 /** UI-13: a screen-shaped shimmer in the studio's tokens, for a slot that has nothing to show yet. */
 export function ScreenSkeleton(props: { className?: string; style?: CSSProperties }) {
+  let n = 0
+  // Each block sketches itself in after the one above it (UI-30), so the slot reads as a screen being drawn.
+  const i = (style: CSSProperties, className?: string) => <i className={className} style={{ ...style, '--i': n++ } as CSSProperties} />
   return (
     <div className={cn('od-skel pointer-events-none flex flex-col gap-3.5 bg-card px-5 pt-14 pb-6', props.className)} style={props.style} aria-hidden>
-      <i style={{ height: 14, width: '38%' }} />
-      <i style={{ height: 30, width: '70%' }} />
-      <i style={{ height: 150, borderRadius: 20 }} />
+      {i({ height: 14, width: '38%' })}
+      {i({ height: 30, width: '70%' })}
+      {i({ height: 150, borderRadius: 20 })}
       <div className="flex gap-3">
-        <i style={{ height: 64, flex: 1 }} />
-        <i style={{ height: 64, flex: 1 }} />
+        {i({ height: 64, flex: 1 })}
+        {i({ height: 64, flex: 1 })}
       </div>
-      <i style={{ height: 14, width: '30%', marginTop: 6 }} />
-      {[0, 1, 2].map((n) => (
-        <div key={n} className="flex items-center gap-3">
-          <i style={{ height: 44, width: 44, borderRadius: 14 }} />
+      {i({ height: 14, width: '30%', marginTop: 6 })}
+      {[0, 1, 2].map((k) => (
+        <div key={k} className="flex items-center gap-3">
+          {i({ height: 44, width: 44, borderRadius: 14 })}
           <div className="flex flex-1 flex-col gap-2">
-            <i style={{ height: 12, width: '65%' }} />
-            <i style={{ height: 10, width: '40%' }} />
+            {i({ height: 12, width: '65%' })}
+            {i({ height: 10, width: '40%' })}
           </div>
         </div>
       ))}
-      <i className="mt-auto" style={{ height: 56, borderRadius: 28 }} />
+      {i({ height: 56, borderRadius: 28 }, 'mt-auto')}
     </div>
   )
 }

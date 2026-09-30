@@ -23,6 +23,8 @@ export type MessageMeta = {
   /** Set once this message's changes were undone from the chat. */
   reverted?: boolean
   stopped?: boolean
+  /** REG-01: how many reference pictures the person's message carried (the pictures themselves are not kept). */
+  images?: number
   /** For a theme message: the theme before it, so it can be undone. */
   previousTheme?: unknown
 }
@@ -55,7 +57,10 @@ export function friendlyError(raw: string): string {
 /** The reply to a planned app, said the way a person would: what it is, how much is there, what to do next. The
  *  screens themselves are chips under the message, so they are not listed again here. */
 export function planReply(p: { appName: string; summary: string; drawn: string[]; failed: string[]; tabs: string[]; stopped?: boolean }): string {
-  const about = p.summary ? `Here's ${p.appName} — ${p.summary.replace(/^(A|An|The)\b/, (w) => w.toLowerCase()).replace(/\.?$/, '.')}` : `Here's ${p.appName}.`
+  // "Here's X — a/an/the …" reads on; a summary that starts any other way ("Learn practical Spanish…") is its own
+  // sentence, so its capital is never wrong.
+  const summary = p.summary.trim().replace(/\.?$/, '.')
+  const about = !p.summary.trim() ? `Here's ${p.appName}.` : /^(A|An|The)\b/.test(summary) ? `Here's ${p.appName} — ${summary.replace(/^\w+/, (w) => w.toLowerCase())}` : `Here's ${p.appName}. ${summary}`
   const lines = [about]
   if (p.drawn.length) lines.push(`I designed ${plural(p.drawn.length, 'screen')}${p.tabs.length ? ` across ${plural(p.tabs.length, 'tab')}` : ''}. Tap one to jump to it, or tell me what to change.`)
   if (p.failed.length) lines.push(`${list(p.failed)} didn't come out — use Try again on ${p.failed.length === 1 ? 'that frame' : 'those frames'}.`)

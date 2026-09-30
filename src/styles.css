@@ -404,15 +404,22 @@ svg.lucide { stroke-width: 1.75; }
 }
 /* /SHR-03 preview */
 
-/* The veil over a frame that is being drawn or is still loading (ScreenFrame GeneratingVeil). Shown: all three
-   blur layers at once, so the screen sits under a deep blur. Hidden: they fade out deepest first — the blur
-   resolves from deep to light to sharp, as macOS's Image Playground reveals a picture. Opacity only. */
-.od-veil > div { opacity: 0; }
-.od-veil[data-show] > div { opacity: 1; }
+/* UI-30: a frame at work. Drawing (nothing yet): the skeleton sketches itself in, a soft light in the app's accent
+   sweeps down it and the edge breathes in the same colour — no blur. Editing: the screen stays in view, a touch
+   dimmed, under the same light. Loading or done: one light blur that resolves in 450ms. Transform and opacity
+   only, so eight frames at once stay smooth; with reduced motion the light and the breathing stay still. */
+.od-gen { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 450ms var(--motion-ease-out); }
+.od-gen[data-show] { opacity: 1; transition-duration: 150ms; }
+.od-gen-dim { position: absolute; inset: 0; }
+.od-gen[data-mode='load'] .od-gen-dim { background: color-mix(in oklab, var(--card) 70%, transparent); backdrop-filter: blur(6px); }
+.od-gen[data-mode='edit'] .od-gen-dim { background: color-mix(in oklab, var(--card) 35%, transparent); backdrop-filter: blur(2px); }
+.od-gen-scan { position: absolute; left: 0; right: 0; top: -30%; height: 30%; background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--gen-accent, var(--primary)) 38%, transparent) 65%, transparent); }
+.od-gen-edge { position: absolute; inset: 0; border-radius: inherit; opacity: .5; box-shadow: inset 0 0 0 calc(2px / var(--canvas-scale, 1)) color-mix(in oklab, var(--gen-accent, var(--primary)) 80%, transparent), inset 0 0 calc(36px / var(--canvas-scale, 1)) color-mix(in oklab, var(--gen-accent, var(--primary)) 35%, transparent); }
+@keyframes od-gen-scan { to { transform: translateY(433%); } }
+@keyframes od-gen-breathe { 50% { opacity: 1; } }
+@keyframes od-skel-draw { from { opacity: 0; transform: scaleX(.55); } }
 @media (prefers-reduced-motion: no-preference) {
-  .od-veil > div { transition: opacity 700ms var(--motion-ease-out); }
-  .od-veil .od-veil-l1 { transition-duration: 600ms; }
-  .od-veil .od-veil-l2 { transition-delay: 300ms; }
-  .od-veil .od-veil-l3 { transition-delay: 700ms; }
-  .od-veil[data-show] > div { transition-duration: 200ms; transition-delay: 0ms; }
+  .od-gen[data-show] .od-gen-scan { animation: od-gen-scan 2.6s var(--motion-ease-out) infinite; }
+  .od-gen[data-show] .od-gen-edge { animation: od-gen-breathe 2.6s ease-in-out infinite; }
+  .od-skel i { transform-origin: left center; animation: od-skel 1.5s linear infinite, od-skel-draw 520ms var(--motion-ease-out) calc(var(--i, 0) * 80ms) both; }
 }

@@ -15,6 +15,8 @@ export async function guardGeneration(request: Request, run: (req: Request, user
   const user = await userFrom(request)
   if (!user) return new Response('Sign in to continue', { status: 401 })
   const text = await request.text()
+  // REG-01: two reference images at ~1 MB each, plus the prompt; nothing bigger is read further.
+  if (text.length > 3_200_000) return new Response('Request too large', { status: 413 })
   let body: Record<string, unknown> = {}
   try {
     body = JSON.parse(text || '{}')
