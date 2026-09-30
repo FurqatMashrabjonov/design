@@ -61,7 +61,7 @@ function Login() {
       <main className="relative flex flex-1 items-center justify-center px-4 pb-16">
       <div className="w-full max-w-sm space-y-6">
         <div className="space-y-2 text-center">
-          <BrandMark className="mx-auto mb-5 size-11 rounded-md [&>span]:size-4" />
+          <BrandMark className="mx-auto mb-5 size-11" />
           <h1 className="text-2xl sm:text-3xl">Sign in to <Em>{BRAND}</Em></h1>
           <p className="text-sm text-muted-foreground">Describe an app. Get all of it.</p>
         </div>

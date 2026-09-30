@@ -9,24 +9,42 @@ import { cn } from '@/lib/utils'
 // brand at all, so leaving the landing felt like leaving the product.
 
 import { BRAND } from '@/lib/brand'
+import { MARK_S, WORDMARK, WORDMARK_VIEWBOX } from '@/lib/brand-paths'
 export { BRAND }
 
 const link = 'rounded-sm transition-colors duration-(--duration-base) hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
-/** The logo chip: a lime tile with an ink square. The one mark, used by every surface. */
+/** The logo: a lime phone with an S, tilted, on an ink tile (fixed colours, the same in light and dark). The one
+ *  mark, used by every surface; public/favicon.svg and docs/brand are drawn from the same paths. */
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span className={cn('grid size-7 place-items-center rounded-sm bg-primary shadow-1', className)}>
-      <span className="size-2.5 rounded-[3px] bg-brand-ink" />
+    <span className={cn('inline-block size-7 shrink-0 overflow-hidden rounded-[22%] shadow-1', className)}>
+      <svg viewBox="0 0 100 100" className="block size-full" aria-hidden>
+        <rect width="100" height="100" fill="#1a1511" />
+        <g transform="rotate(-10 50 50)">
+          <rect x="23" y="13" width="54" height="74" rx="14" fill="#c6f648" />
+          <rect x="43" y="18" width="14" height="4.5" rx="2.25" fill="#1a1511" />
+          <path d={MARK_S} fill="#1a1511" />
+        </g>
+      </svg>
     </span>
+  )
+}
+
+/** "screenspell" in the logo's own letters; takes the text colour. */
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <svg viewBox={WORDMARK_VIEWBOX} className={cn('h-[.8em] w-auto', className)} role="img" aria-label={BRAND}>
+      <path d={WORDMARK} fill="currentColor" />
+    </svg>
   )
 }
 
 export function BrandLink() {
   return (
-    <Link to="/" className={cn('flex items-center gap-2 font-semibold tracking-tight', link)}>
+    <Link to="/" className={cn('flex items-center gap-2 text-foreground', link)} aria-label={BRAND}>
       <BrandMark />
-      {BRAND}
+      <Wordmark className="h-3.5" />
     </Link>
   )
 }

@@ -154,7 +154,7 @@ export async function auditScreen(source: string, look: AppLook, slug: string, s
 const CHROME_BARS = 87
 /** A card shows a phone ~112px wide (224 device pixels on a retina screen): 0.6 of a phone keeps it sharp there at a
  *  third of the bytes. */
-const SHOT_SCALE = 0.6
+const SHOT_SCALE = Number(process.env.SHOT_SCALE) || 0.6 // brand pictures take a sharper one
 
 export async function screenshotScreen(source: string, look: AppLook, slug: string): Promise<Buffer | null> {
   if (!existsSync(CHROME)) return null

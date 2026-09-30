@@ -410,6 +410,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | WLT-01 | Waitlist: ulashilgan preview'dan email + izoh, qaysi post olib kelgani (ref), admin'da hisob | Ishga tushirish / Beta | MVP | Tayyor | Kichik | SHR-02 | Share sahifasida forma; bir email bir marta; ko'rish va yozilish ref bo'yicha dashboard'da |
 | LCH-02 | Fikr bildirish kanali | Ishga tushirish / Beta | MVP | Rejada | Kichik |  | Ilova ichida forma yoki Telegram guruhga havola |
 | LCH-03 | Beta muammolarini tuzatish, keyin ommaviy e'lon | Ishga tushirish / Ommaviy | MVP | Rejada | O'rta | LCH-01 | Betadagi to'siqlar tuzatilgan; ommaviy e'lon qilingan |
+| BRD-01 | Logo: qiyshiq telefon + Unbounded S — sayt, favicon, email, og:image, ijtimoiy tarmoq fayllari | Ishga tushirish / Sayt | MVP | Tayyor | O'rta |  | BrandMark/Wordmark har joyda bitta; favicon.svg/.ico, apple-touch-icon, og.png ishlaydi; docs/brand da avatar va X banner |
 
 ## B7 · MVP dan keyin
 

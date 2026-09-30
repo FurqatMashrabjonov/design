@@ -1,4 +1,4 @@
-import { BRAND } from '@/lib/brand'
+import { BRAND, DOMAIN } from '@/lib/brand'
 
 // EML-01/03: the product's emails — plain, one action each, readable with images off. An email is content (subject,
 // heading, body, an optional button) put into one layout, as html + text (the text part keeps spam filters and
@@ -45,7 +45,7 @@ export function renderEmail(c: EmailContent, o: { url?: string; unsubscribeUrl?:
     : `You got this because this address was entered on ${esc(BRAND)}. If that wasn't you, ignore it.`
   const html = `<!doctype html><html><body style="margin:0;background:#f6f4ef;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#16140f">
 <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px">
-<p style="margin:0 0 24px;font-weight:700;font-size:15px">${esc(BRAND)}</p>
+<p style="margin:0 0 24px;font-weight:700;font-size:15px"><img src="https://${DOMAIN}/email-logo.png" width="28" height="28" alt="" style="vertical-align:middle;margin-right:8px;border:0">${esc(BRAND)}</p>
 <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3">${esc(heading)}</h1>
 ${paras.map((t) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.55;color:#3b382f">${esc(t).replace(/\n/g, '<br>')}</p>`).join('\n')}${
     button ? `\n<p style="margin:28px 0"><a href="${esc(button.url)}" style="background:#16140f;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:10px;font-weight:600;display:inline-block">${esc(button.label)}</a></p>` : ''

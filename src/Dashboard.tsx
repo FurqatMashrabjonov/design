@@ -8,6 +8,7 @@ import { BRAND } from './Landing'
 import { reportError, useCredits } from './credits'
 import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { BrandMark } from '@/components/SiteChrome'
 import { frameSize } from './canvas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -292,11 +293,7 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
     </section>
   )
 
-  const logo = (
-    <span className="grid size-7 place-items-center rounded-sm bg-primary shadow-1">
-      <span className="size-2.5 rounded-[3px] bg-brand-ink" />
-    </span>
-  )
+  const logo = <BrandMark />
   const navItem = 'flex h-9 items-center gap-2.5 rounded-sm px-2.5 transition-colors'
 
   return (

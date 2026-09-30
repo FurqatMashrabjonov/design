@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { BRAND } from '@/lib/brand'
+import { BRAND, DOMAIN } from '@/lib/brand'
 import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -12,8 +12,18 @@ export const Route = createRootRoute({
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       { title: BRAND },
+      // A link pasted anywhere shows the logo card (public/og.png, from scripts/brand-assets.mjs).
+      { property: 'og:site_name', content: BRAND },
+      { property: 'og:image', content: `https://${DOMAIN}/og.png` },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:image', content: `https://${DOMAIN}/og.png` },
     ],
-    links: [{ rel: 'stylesheet', href: css }],
+    links: [
+      { rel: 'stylesheet', href: css },
+      { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+      { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+    ],
     // DSH-09: the saved theme is applied before the first paint, so a dark page never flashes white.
     scripts: [{ children: "try{if(localStorage.getItem('od:theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}" }],
   }),

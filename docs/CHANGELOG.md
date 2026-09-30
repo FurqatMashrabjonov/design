@@ -5,6 +5,35 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-30 (7)
+
+### BRD-01 — the logo
+
+- **The mark.** A lime phone tilted −10° with a Dynamic Island and an Unbounded 900 "S", on an ink tile (ink
+  `#1a1511`, lime `#c6f648`). Chosen by the owner over v1–v6 concepts: no AI sparkle (every AI product has one), and
+  no two S's side by side (a bold "SS" reads as the Nazi insignia). The favicon drops the island, which is lost at
+  16px, and takes a bigger S.
+- **Outlines, not a font.** `scripts/brand-assets.mjs` turns the letters into paths (opentype.js + @fontsource/unbounded,
+  installed with `--no-save`, not dependencies) and writes `src/lib/brand-paths.ts`, `public/` (favicon.svg,
+  favicon.ico with 16 and 32 px, apple-touch-icon.png, og.png 1200×630, email-logo.png) and `docs/brand/` (mark,
+  lime mark, lockups for light and dark, 400×400 avatars in ink and lime, the 1500×500 X banner). PNGs are drawn by
+  the local Chrome. Rerunning it gives the same paths byte for byte.
+- **Where it shows.** `BrandMark` (`SiteChrome.tsx`) is the new mark, fixed colours in light and dark; `Wordmark`
+  draws "screenspell" in the logo's letters with the text colour, used by `BrandLink` in the public header. The
+  dashboard's own copy of the old chip is replaced by `BrandMark`; the login mark lost its old child sizing. The root
+  head links the favicons and the apple-touch-icon, and sets `og:image` / `twitter:card` to `https://screenspell.app/og.png`.
+  Emails carry the mark from `https://screenspell.app/email-logo.png` (empty alt, so nothing shows until the domain
+  serves it).
+- **X profile (same day, after the owner set it up).** The banner now says what the product does: the lockup and
+  "Describe an app. Get *every screen.*" on the left, above where X puts the avatar, and three real screens of one app
+  the owner generated (a habit tracker: Today, Reminders, Insights; kept in `docs/brand/screens/`) tilted like the
+  mark on the right. They were shot at 2× with the product's own `screenshotScreen` — `SHOT_SCALE` in the
+  environment now overrides its 0.6 for such one-off sharp pictures. The avatars' phone is ~10% smaller so it breathes inside X's circle crop.
+- Files: `scripts/brand-assets.mjs`, `src/lib/brand-paths.ts`, `src/app/Services/RenderAudit.ts`, `src/components/SiteChrome.tsx`, `src/Dashboard.tsx`,
+  `src/routes/login.tsx`, `src/routes/__root.tsx`, `src/lib/emails.ts`, `public/*`, `docs/brand/*`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; in the browser the header (light and dark), dashboard
+  sidebar and `/favicon.svg` show the new mark, and the head carries the icon and og tags.
+
 ## 2026-09-30 (6)
 
 ### The product is Screenspell (screenspell.app)
