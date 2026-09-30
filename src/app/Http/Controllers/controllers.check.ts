@@ -103,6 +103,9 @@ export default function Screen() {
   // A BlockTitle over anything but a Block or List gets a gap, or the next card covers its descenders (LinguaBloom).
   const titled = lintJsx(`export default function Screen() { return <Page><BlockTitle className="!mt-8">Plan</BlockTitle><div className="px-4" /><BlockTitle>Rows</BlockTitle><List /><BlockTitle>Bare</BlockTitle>{[1].map((i) => <div key={i} />)}</Page> }`).source
   assert.ok(titled.includes('className="!mt-8 !mb-2">Plan') && titled.includes('<BlockTitle className="!mb-2">Bare') && titled.includes('<BlockTitle>Rows'), titled)
+  // An icon-only Button would take the full row (Konsta's default) and push a centred title under the arrows.
+  const arrows = lintJsx(`export default function Screen() { return <div className="flex"><Button clear rounded><ChevronLeft className="w-5" /></Button><div>Sep</div><Button inline><X /></Button><Button>Save</Button><Button className="w-full"><Plus /></Button></div> }`).source
+  assert.ok(arrows.includes('<Button inline clear rounded><ChevronLeft') && arrows.includes('<Button inline><X') && arrows.includes('<Button>Save') && arrows.includes('<Button className="w-full"><Plus'), arrows)
   const again = lintJsx(src)
   assert.equal(again.source, src, 'the lint is idempotent: fixing a fixed screen changes nothing')
   // HIG-12: named text styles compile to Apple's sizes; Hero picks its text colour; text-white on a Hero is dropped.

@@ -5,6 +5,34 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-30 (8)
+
+### Lint: an icon-only Button is inline (and the habit tracker polished for the launch posts)
+
+- **The trap.** A Konsta `Button` is full width unless `inline`. The habit tracker's calendar put ‹ and › buttons
+  either side of "September 2026" in a flex row; both took the row and slid the title under the right arrow. Two
+  edits asking the model to fix it produced the same, correct-looking JSX — the model was right about the layout
+  and wrong about Konsta. Per the rule, a failure with one right answer is fixed in code: `lintJsx` adds `inline` to
+  a `Button` whose only child is one self-closing component (an icon), unless it is segmented or sets its own width.
+  Test in `controllers.check.ts` (arrows get `inline`; a text button, an already-inline one and a `w-full` one are
+  left alone).
+- **The launch app.** The owner's habit tracker (project 294eb848…, the source of the X banner) was reviewed at full
+  size and edited through the product's own edit flow: Profile's weekly goal now agrees with Insights (22 of 20,
+  110%), the onboarding cards no longer hide each other's lines (and lost the ✨), the calendar header is one line,
+  the reminder rows are aligned. Then the lint (this rule plus the existing `bg-white` → `bg-card`) was applied to its
+  stored screens, each change captured as a version first, so every step can be undone from the canvas.
+- **Launch posts, made the same way every time.** `scripts/social-posts.ts --project <id>` shoots a project's
+  screens at 2× (iOS, Material and dark looks, through `screenshotScreen`) and draws three 16:9 images for X and
+  Threads (the app and its prompt, iOS beside Android, light beside dark) and a five-slide 4:5 Instagram carousel in
+  the brand's one style, into `docs/brand/posts/<app>/`. It is honest by default: the quote is the project's first
+  message, the count is the screens the plan drew, and the copy says when the screens were edited afterwards. The
+  `social-posts` skill (`.claude/skills/social-posts/SKILL.md`) is the workflow around it: review every screen at full
+  size, fix through the product's own edit flow (a trap that survives two edits becomes a lint rule), run the script,
+  check the images, write the captions per platform. First set: Ritualoop, `docs/brand/posts/ritualoop/`.
+- Files: `src/lib/jsx-lint.ts`, `src/app/Http/Controllers/controllers.check.ts`, `scripts/social-posts.ts`,
+  `.claude/skills/social-posts/SKILL.md`, `CLAUDE.md`, `docs/brand/posts/ritualoop/*`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; all nine screens re-shot and checked by eye.
+
 ## 2026-09-30 (7)
 
 ### BRD-01 — the logo

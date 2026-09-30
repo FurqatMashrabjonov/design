@@ -411,6 +411,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LCH-02 | Fikr bildirish kanali | Ishga tushirish / Beta | MVP | Rejada | Kichik |  | Ilova ichida forma yoki Telegram guruhga havola |
 | LCH-03 | Beta muammolarini tuzatish, keyin ommaviy e'lon | Ishga tushirish / Ommaviy | MVP | Rejada | O'rta | LCH-01 | Betadagi to'siqlar tuzatilgan; ommaviy e'lon qilingan |
 | BRD-01 | Logo: qiyshiq telefon + Unbounded S — sayt, favicon, email, og:image, ijtimoiy tarmoq fayllari | Ishga tushirish / Sayt | MVP | Tayyor | O'rta |  | BrandMark/Wordmark har joyda bitta; favicon.svg/.ico, apple-touch-icon, og.png ishlaydi; docs/brand da avatar va X banner |
+| BRD-02 | Ijtimoiy tarmoq postlari: bitta stilda rasm + caption (skill + skript) | Ishga tushirish / Sayt | MVP | Tayyor | Kichik | BRD-01 | scripts/social-posts.ts loyihadan X/Threads (16:9) va Instagram (4:5) rasmlarini chizadi; social-posts skill ekranlarni tekshirish, tuzatish va captionlarni beradi |
 
 ## B7 · MVP dan keyin
 

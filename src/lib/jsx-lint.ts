@@ -157,6 +157,14 @@ export function lintJsx(source: string): LintResult {
         if (name === 'Card' && ancestors[ancestors.length - 1] === 'Block') report('card-in-block', '<Card> directly inside <Block>: both add the side margin. Use the Card on its own.', textOf(node.openingElement, source))
         if (name === 'List' && ancestors[ancestors.length - 1] === 'Block') report('list-in-block', '<List> inside a <Block>: a card inside a card, with the inset twice. A List is its own group — place it directly on the Page.', textOf(node.openingElement, source))
       }
+      // A Konsta Button is full width unless `inline`: an icon-only one (‹ › beside a month title) then squeezes
+      // whatever shares its row, and the title slid under the arrows. Segmented buttons stretch on purpose.
+      const kids = (node.children ?? []).filter((c: Node) => !(c.type === 'JSXText' && !c.value.trim()))
+      const iconOnly = name === 'Button' && kids.length === 1 && kids[0].type === 'JSXElement' && kids[0].openingElement.selfClosing && /^[A-Z]/.test(nameOf(kids[0]))
+      if (iconOnly && !attr(node, 'inline') && !attr(node, 'segmented') && !attr(node, 'segmentedStrong') && !/(^|\s)w-/.test(classText(node))) {
+        edits.push([node.openingElement.name.end, node.openingElement.name.end, ' inline'])
+        fixed.push('icon-button-inline: made an icon-only Button inline (Konsta buttons are full width)')
+      }
       if (name === 'Button' && attr(node, 'large')) largeButtons++
       if (name === 'AppTabbar') tabbar = true
       if (/\bfixed\b/.test(classText(node)) && /\bbottom-0\b/.test(classText(node))) fixedBottom = node
