@@ -50,12 +50,12 @@ for (const [f, s] of Object.entries(files)) fs.writeFileSync(`${REPO}/${f}`, s)
 
 // PNGs through headless Chrome: its viewport is ≥500 wide and 87px shorter than the window, so render big and crop.
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-function png(out, w, h, body) {
+function png(out, w, h, body, scale = 1) {
   const html = `png/${out}.html`
   fs.writeFileSync(html, `<!doctype html><html><body style="margin:0;height:100vh;display:grid;place-items:center;background:transparent">${body}</body></html>`)
   const file = `png/${out}.png`
-  execFileSync(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1', '--default-background-color=00000000', `--window-size=${Math.max(w, 600)},${h + 200}`, `--screenshot=${process.cwd()}/${file}`, `file://${process.cwd()}/${html}`], { stdio: 'ignore' })
-  execFileSync('sips', ['--cropToHeightWidth', String(h), String(w), file], { stdio: 'ignore' })
+  execFileSync(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--force-device-scale-factor=${scale}`, '--default-background-color=00000000', `--window-size=${Math.max(w, 600)},${h + 200}`, `--screenshot=${process.cwd()}/${file}`, `file://${process.cwd()}/${html}`], { stdio: 'ignore' })
+  execFileSync('sips', ['--cropToHeightWidth', String(h * scale), String(w * scale), file], { stdio: 'ignore' })
   return file
 }
 const block = (w, h, bg, inner) => `<div style="width:${w}px;height:${h}px;background:${bg}">${inner}</div>`
@@ -67,28 +67,29 @@ png('fav32', 32, 32, svg(32, 32, tile({ small: true }), '0 0 100 100'))
 png('apple-touch-icon', 180, 180, block(180, 180, INK, svg(180, 180, phone(), '4 4 92 92')))   // iOS rounds it itself
 png('email-logo', 56, 56, svg(56, 56, tile(), '0 0 100 100'))
 // Avatars (full bleed; the platforms crop a circle)
-png('avatar-ink-400', 400, 400, block(400, 400, INK, svg(400, 400, phone(), '-13 -13 126 126')))
-png('avatar-lime-400', 400, 400, block(400, 400, LIME, svg(400, 400, phone({ body: INK, ink: LIME }), '-13 -13 126 126')))
+png('avatar-ink', 400, 400, block(400, 400, INK, svg(400, 400, phone(), '-13 -13 126 126')), 2)
+png('avatar-lime', 400, 400, block(400, 400, LIME, svg(400, 400, phone({ body: INK, ink: LIME }), '-13 -13 126 126')), 2)
 // og:image and the X banner: the lockup on ink, the domain under it
 const hero = (W, H, h, sub) => { const l = lockup(h, PAPER); const x = (W - l.w) / 2, y = (H - h) / 2 - (sub ? h * .25 : 0)
   return block(W, H, INK, place(W, H, `<g transform="translate(${x} ${y})">${l.inner}</g>` + (sub ? `<text x="${W / 2}" y="${y + h * 1.75}" text-anchor="middle" font-family="-apple-system,Helvetica,Arial" font-size="${h * .26}" fill="#a39d8f">${sub}</text>` : ''))) }
 png('og', 1200, 630, hero(1200, 630, 150, 'Describe an app. Get every screen.'))
-// The X banner says what the product does: the name and the promise on the left (above where the avatar sits), three
+// The X banner says what the product does: the name and the promise at the top left (X's avatar covers the left below
+// y≈320 of 500), three
 // real screens from an eval run (docs/brand/screens) tilted like the mark on the right.
 {
   const font = (f) => `file://${REPO}/node_modules/${f}`
-  const l = lockup(60, PAPER)
+  const l = lockup(52, PAPER)
   const shots = ['habit-today', 'habit-reminders', 'habit-insights']
   const phones = shots.map((n, i) => { const w = 232, x = 860 + i * 205, y = [70, 30, 95][i]
     return `<div style="position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${Math.round(w * 844 / 390)}px;transform:rotate(-8deg);border:7px solid #2b2521;border-radius:38px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.45);z-index:${i === 1 ? 2 : 1}"><img src="file://${REPO}/docs/brand/screens/${n}.png" style="width:100%;display:block"></div>` }).join('')
-  png('x-banner-1500x500', 1500, 500, `<style>
+  png('x-banner', 1500, 500, `<style>
     @font-face{font-family:IS;src:url(${font('@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2')})}
     @font-face{font-family:ISerif;font-style:italic;src:url(${font('@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2')})}</style>
     <div style="position:relative;width:1500px;height:500px;overflow:hidden;background:radial-gradient(circle at 76% 45%, rgba(198,246,72,.16), transparent 55%) ${INK};font-family:IS">
-      <div style="position:absolute;left:110px;top:92px">${svg(Math.ceil(l.w), 60, l.inner)}
-        <div style="isolation:isolate;margin-top:34px;font-size:58px;line-height:1.08;font-weight:600;letter-spacing:-.02em;color:${PAPER}">Describe an app.<br>Get <span style="position:relative;font-family:ISerif;font-style:italic;font-weight:400;letter-spacing:0"><span style="position:absolute;left:0;right:0;bottom:.06em;height:.16em;background:${LIME};opacity:.9;z-index:-1"></span>every screen.</span></div>
-        <div style="margin-top:22px;font-size:20px;color:#a39d8f">iOS + Android · click-through · React &amp; Figma export</div>
-      </div>${phones}</div>`)
+      <div style="position:absolute;left:110px;top:52px">${svg(Math.ceil(l.w), 52, l.inner)}
+        <div style="isolation:isolate;margin-top:24px;font-size:52px;line-height:1.08;font-weight:600;letter-spacing:-.02em;color:${PAPER}">Describe an app.<br>Get <span style="position:relative;font-family:ISerif;font-style:italic;font-weight:400;letter-spacing:0"><span style="position:absolute;left:0;right:0;bottom:.06em;height:.16em;background:${LIME};opacity:.9;z-index:-1"></span>every screen.</span></div>
+        <div style="margin-top:16px;font-size:19px;color:#a39d8f">iOS + Android · click-through · React &amp; Figma export</div>
+      </div>${phones}</div>`, 2)
 }
 
 // favicon.ico: two PNG entries (16, 32) in one ICO
@@ -99,7 +100,7 @@ ents.forEach((b, i) => { const s = [16, 32][i], o = 6 + 16 * i; head.writeUInt8(
 fs.writeFileSync(`${REPO}/public/favicon.ico`, Buffer.concat([head, ...ents]))
 
 for (const f of ['apple-touch-icon', 'email-logo', 'og']) fs.copyFileSync(`png/${f}.png`, `${REPO}/public/${f}.png`)
-for (const f of ['avatar-ink-400', 'avatar-lime-400', 'x-banner-1500x500', 'og']) fs.copyFileSync(`png/${f}.png`, `${REPO}/docs/brand/${f}.png`)
+for (const f of ['avatar-ink', 'avatar-lime', 'x-banner', 'og']) fs.copyFileSync(`png/${f}.png`, `${REPO}/docs/brand/${f}.png`)
 fs.writeFileSync(`${REPO}/src/lib/brand-paths.ts`, `// The logo as outlines (Unbounded 900, SIL OFL), so no page loads the font. Made by scripts/brand-assets.mjs.
 /** The S inside the phone, in the mark's 100×100 box. */
 export const MARK_S = '${P.S}'
