@@ -5,6 +5,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-09-30 (9)
+
+### Posts from a list of scenarios; Instagram at 9:16
+
+- **Scenarios in Notion.** A new database, *Post ssenariylari* (under the MVP plan page): twenty app ideas across
+  health, money, food, learning, travel, shopping, social and fun, each with the one sentence to give the product,
+  the audience, why it makes a good picture, the style we expect, and a status (Navbatda → Yasaldi → Joylandi).
+  Ritualoop is row 0, posted.
+- **From a sentence to posts.** `scripts/social-posts.ts --brief "…"` creates a project owned by the admin
+  (`ADMIN_EMAILS`, or `--email`) and plans it through `PlanController` — the same path as the eval — then draws the
+  posts from it. The `social-posts` skill picks the next scenario, runs it, reviews the screens, and updates the row.
+- **Instagram is 9:16** (1080×1920 at 2×): the owner found 4:5 did not fit what they post. Titles start below
+  y=250 so the profile grid's middle 3:4 keeps them; the phones are larger and centred.
+- Files: `scripts/social-posts.ts`, `.claude/skills/social-posts/SKILL.md`, `docs/brand/posts/ritualoop/ig-*.png`.
+- Verified: `npx tsc --noEmit` clean; Ritualoop's slides redrawn and checked by eye. The `--brief` path has not
+  been run yet (it spends a generation); it is the eval's own sequence.
+
 ## 2026-09-30 (8)
 
 ### Lint: an icon-only Button is inline (and the habit tracker polished for the launch posts)

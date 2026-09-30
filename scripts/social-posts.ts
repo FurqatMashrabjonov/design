@@ -1,9 +1,11 @@
 // Launch posts for X, Threads and Instagram from one project, in the brand's one style (ink, lime, Instrument
 // type, the Screenspell lockup): three 16:9 images (the app and its prompt, iOS beside Android, light beside dark)
-// and a five-slide 4:5 carousel, drawn at 2× from the project's own screens. Used by the `social-posts` skill.
+// and a five-slide 9:16 Instagram set (key content inside the middle 3:4, which the profile grid shows), drawn at 2× from the project's own screens. Used by the `social-posts` skill.
 //
 //   node --env-file=.env --import ./scripts/alias-hook.mjs scripts/social-posts.ts --project <id>
 //        [--prompt "cleaned-up prompt"] [--count 8] [--edited yes|no] [--out docs/brand/posts/<name>]
+//   … scripts/social-posts.ts --brief "one sentence" [--email owner@…]   # plan a new app first (a real generation,
+//        on the default model, owned by the admin so it shows on their dashboard), then draw its posts
 //
 // Honest by default: the quote is the project's first message, the count is the screens the plan drew, and the
 // copy says when the screens were edited afterwards. Needs Postgres, the local Google Chrome and macOS `sips`.
@@ -19,10 +21,23 @@ const { all, one } = await import('@/database/query')
 const { ShotService } = await import('@/app/Services/ShotService')
 const { screenshotScreen } = await import('@/app/Services/RenderAudit')
 const { parseAppPlan } = await import('@/app/Services/JsxGenerator')
+const { Project } = await import('@/app/Models/Project')
+const { PlanController } = await import('@/app/Http/Controllers/PlanController')
 
 const arg = (k: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : undefined }
-const projectId = arg('project')
-if (!projectId) throw new Error('--project <id> is required')
+let projectId = arg('project')
+const brief = arg('brief')?.trim()
+if (brief) {
+  // The same path the eval takes: a project, then the planner and every screen through PlanController.
+  const email = (arg('email') ?? process.env.ADMIN_EMAILS?.split(',')[0] ?? '').trim().toLowerCase()
+  const owner = (await all<{ id: string }>(sql`SELECT id FROM "user" WHERE lower(email) = ${email}`))[0]
+  if (!owner) throw new Error(`No user with the email ${email || '(none)'} — pass --email`)
+  projectId = crypto.randomUUID()
+  await Project.create({ id: projectId, name: 'Untitled', designSystem: 'konsta', device: 'mobile', userId: owner.id })
+  await (await PlanController.stream(new Request('http://posts/api', { method: 'POST', body: JSON.stringify({ projectId, brief }) }))).text()
+  console.error(`planned ${projectId}`)
+}
+if (!projectId) throw new Error('--project <id> or --brief "…" is required')
 const REPO = process.cwd()
 const project = await one<{ name: string; plan: string | null }>(sql`SELECT name, plan FROM projects WHERE id = ${projectId}`)
 const plan = parseAppPlan(project.plan)
@@ -84,12 +99,13 @@ const quote = `“${esc(prompt.length > 150 ? prompt.slice(0, 147) + '…' : pro
 png('x-1-hero', 1600, 900, head(`One sentence.<br><em>${N} screens.</em>`, quote) + row([phone(a, 240, 'margin-top:90px'), phone(b, 240, 'margin-top:20px'), phone(c, 240, 'margin-top:60px')], 790, 40))
 png('x-2-ios-android', 1600, 900, head('Same app.<br><em>Native on both.</em>', 'One design, drawn as iOS and as Android (Material You) — switch with one tap.') + row([labelled(home, 290, 'iOS'), labelled(`${home}-android`, 290, 'Android')], 820, 110, 50))
 png('x-3-light-dark', 1600, 900, head('Light <em>and</em> dark.<br>Both included.', 'Every screen comes in both. Pick a style and the colours follow everywhere.') + row([labelled(last, 290, 'Light'), labelled(`${last}-dark`, 290, 'Dark')], 820, 110, 50))
-png('ig-1', 1080, 1350, `<div style="position:absolute;left:80px;top:90px;right:80px">${mark}<div style="margin-top:40px;font-size:84px;line-height:1.02;font-weight:600;letter-spacing:-.03em">One sentence.<br><em>${N} screens.</em></div><div style="margin-top:22px;font-size:28px;color:${MUTED}">Swipe to see the app →</div></div>` + row([phone(home, 330, 'transform:rotate(-7deg)'), phone(third, 330, 'transform:rotate(6deg);margin-top:50px')], 150, 560, 50))
-png('ig-2', 1080, 1350, `<div style="position:absolute;left:80px;top:90px;font-size:56px;font-weight:600;letter-spacing:-.02em">The whole flow,<br><em>designed.</em></div>` + row(pick.slice(0, 3).map((f, i) => phone(f, 290, `margin-top:${40 + i * 70}px`)), 60, 300, 20))
-png('ig-3', 1080, 1350, `<div style="position:absolute;left:80px;top:90px;font-size:56px;font-weight:600;letter-spacing:-.02em">iOS <em>and</em> Android.</div>` + row([labelled(home, 420, 'iOS'), labelled(`${home}-android`, 420, 'Android')], 90, 280, 60))
-png('ig-4', 1080, 1350, `<div style="position:absolute;left:80px;top:90px;font-size:56px;font-weight:600;letter-spacing:-.02em">Light <em>and</em> dark.</div>` + row([labelled(third, 420, 'Light'), labelled(`${third}-dark`, 420, 'Dark')], 90, 280, 60))
-png('ig-5', 1080, 1350, `<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div>${mark.replace('height:34px', 'height:60px;margin:0 auto')}<div style="margin-top:50px;font-size:72px;line-height:1.05;font-weight:600;letter-spacing:-.03em">Describe an app.<br>Get <em>every screen.</em></div><div style="margin-top:30px;font-size:30px;color:${MUTED}">Beta opens soon — follow to get in first.</div></div></div>`)
-
+// Instagram, 9:16 (1080×1920); the profile grid shows the middle 3:4, so titles start below y=250.
+const igTitle = (t: string) => `<div style="position:absolute;left:80px;top:260px;right:80px;font-size:68px;line-height:1.05;font-weight:600;letter-spacing:-.02em">${t}</div>`
+png('ig-1', 1080, 1920, `<div style="position:absolute;left:80px;top:260px;right:80px">${mark}<div style="margin-top:44px;font-size:96px;line-height:1.02;font-weight:600;letter-spacing:-.03em">One sentence.<br><em>${N} screens.</em></div><div style="margin-top:26px;font-size:30px;line-height:1.35;color:${MUTED}">${quote}</div></div>` + row([phone(home, 380, 'transform:rotate(-7deg)'), phone(third, 380, 'transform:rotate(6deg);margin-top:60px')], 110, 860, 50))
+png('ig-2', 1080, 1920, igTitle('The whole flow,<br><em>designed.</em>') + row(pick.slice(0, 3).map((f, i) => phone(f, 310, `margin-top:${i * 100}px`)), 45, 600, 15))
+png('ig-3', 1080, 1920, igTitle('iOS <em>and</em> Android.') + row([labelled(home, 460, 'iOS'), labelled(`${home}-android`, 460, 'Android')], 60, 520, 40))
+png('ig-4', 1080, 1920, igTitle('Light <em>and</em> dark.') + row([labelled(third, 460, 'Light'), labelled(`${third}-dark`, 460, 'Dark')], 60, 520, 40))
+png('ig-5', 1080, 1920, `<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div>${mark.replace('height:34px', 'height:64px;margin:0 auto')}<div style="margin-top:56px;font-size:84px;line-height:1.05;font-weight:600;letter-spacing:-.03em">Describe an app.<br>Get <em>every screen.</em></div><div style="margin-top:34px;font-size:34px;color:${MUTED}">Beta opens soon — follow to get in first.</div></div></div>`)
 fs.rmSync(TMP, { recursive: true })
 console.log(JSON.stringify({ out: OUT, app: plan.appName, prompt, count, edited, screens: { hero: [a, b, c], iosAndroid: home, lightDark: [last, third] } }))
 process.exit(0)

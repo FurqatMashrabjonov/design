@@ -9,10 +9,18 @@ The owner builds Screenspell in public. A post shows one app made in the product
 `#1a1511`, lime `#c6f648`, Instrument Sans with Instrument Serif italic for the one emphasised word, the Screenspell
 lockup). Never invent a new look per post; the style lives in `scripts/social-posts.ts`.
 
-## 1. Pick the project
+## 1. Pick the project — or make one from a scenario
 
-- The owner usually pastes a canvas link: `http://localhost:3000/p/<projectId>` — the id is the last segment.
-- If none is given, list recent projects (`SELECT id, name, created_at FROM projects ORDER BY created_at DESC LIMIT 10`
+- **An existing app:** the owner pastes a canvas link, `http://localhost:3000/p/<projectId>` (the id is the last
+  segment).
+- **A scenario from Notion** ("keyingi post", "meditatsiya postini qil"): the scenarios live in the Notion database
+  **Post ssenariylari** (data source `collection://76d1cb70-a300-4417-87f3-5494b11e3a96`, under the MVP plan page).
+  Take the row the owner names, else the lowest `Tartib` whose `Holat` is `Navbatda`. Its `Prompt` goes to the
+  product word for word: `scripts/social-posts.ts --brief "<Prompt>"` plans and draws the app (a real generation on
+  the default model, about ten cents; the project is the admin's, so it shows on their dashboard) and prints
+  `planned <projectId>`. Then set the row's `Holat` to `Yasaldi` and `Loyiha` to the canvas link. When the owner says
+  it is posted: `Joylandi` and `Joylangan sana`.
+- Neither given: list recent projects (`SELECT id, name, created_at FROM projects ORDER BY created_at DESC LIMIT 10`
   against `DATABASE_URL`) and ask which one.
 
 ## 2. Make the screens worth posting (before any image)
@@ -38,6 +46,8 @@ node --env-file=.env --import ./scripts/alias-hook.mjs scripts/social-posts.ts -
   [--edited yes|no] [--out docs/brand/posts/<app>]
 ```
 
+(After a `--brief` run, review the new screens as in step 2 and rerun with `--project <id>` if anything was edited.)
+
 It prints what it used (app, prompt, count, edited, which screens). Check it:
 
 - **Honesty is the rule.** The quote must be the project's real first message (typos may be fixed). `--count` is how
@@ -47,7 +57,8 @@ It prints what it used (app, prompt, count, edited, which screens). Check it:
 - Then read every image: nothing cut off, the phones not clipped awkwardly, the text readable.
 
 Output (`docs/brand/posts/<app>/`): `x-1-hero.png`, `x-2-ios-android.png`, `x-3-light-dark.png` (16:9, for X and
-Threads) and `ig-1.png` … `ig-5.png` (4:5 carousel, in that order).
+Threads) and `ig-1.png` … `ig-5.png` (9:16, in that order; the key content sits in the middle 3:4, which Instagram's
+profile grid shows).
 
 ## 4. Captions, in English, one block per platform
 
@@ -59,7 +70,7 @@ game changer", no attacks on other tools). Quote the real prompt. End with a que
   in the last reply, never the first post. Pin post 1 if it is the best so far.
 - **Threads** — one post with the three 16:9 images, conversational, ending in a question; one topic tag
   (`#buildinpublic`, `#indiehackers` or `#uidesign`).
-- **Instagram** — the carousel `ig-1` → `ig-5`, a short caption and 4–6 hashtags (`#appdesign #uidesign
+- **Instagram** — the five 9:16 slides `ig-1` → `ig-5` (a carousel, or stories one by one), a short caption and 4–6 hashtags (`#appdesign #uidesign
   #buildinpublic #mobileapp …`). `ig-1` is the cover.
 
 Links: only once the site is deployed; each gets its own `?ref=` (`?ref=x-<app>`, `?ref=threads-<app>`,
