@@ -6,6 +6,7 @@ import { auth, isAdmin } from '@/app/Services/AuthService'
 import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { RequestContext } from '@/app/Services/RequestContext'
+import { AccessService } from '@/app/Services/AccessService'
 
 export class HttpError extends Error {
   status: number
@@ -17,15 +18,19 @@ export class HttpError extends Error {
 
 export type SessionUser = { id: string; name: string; email: string; image?: string | null; admin: boolean }
 
-/** The signed-in user for a request, or null. A banned user counts as signed out (ADM-04). */
+/** The signed-in user for a request, or null. A banned user counts as signed out (ADM-04), and so does anyone
+ *  but an admin while the app is waitlist-only (ACC-02). */
 export async function userFrom(request: Request): Promise<SessionUser | null> {
   const s = await auth.api.getSession({ headers: request.headers })
   if (!s) return null
   const u = s.user as typeof s.user & { role?: string | null; banned?: boolean | null; banExpires?: Date | null }
   if (u.banned && (!u.banExpires || new Date(u.banExpires) > new Date())) return null
+  // ACC-02: in waitlist mode only an admin is signed in — a session from before the switch counts as signed out.
+  const admin = isAdmin(u)
+  if (!(await AccessService.allows(admin))) return null
   const rc = RequestContext.get()
   if (rc) rc.userId = u.id // OBS-10: the request log names who asked
-  return { id: u.id, name: u.name, email: u.email, image: u.image, admin: isAdmin(u) }
+  return { id: u.id, name: u.name, email: u.email, image: u.image, admin }
 }
 
 /** ADM-01: only an admin gets past; anyone else gets the same 404 as a page that does not exist. */

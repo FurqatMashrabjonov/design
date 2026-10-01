@@ -1,12 +1,24 @@
 import type { ReactNode } from 'react'
 import { BRAND, DOMAIN } from '@/lib/brand'
-import { Outlet, createRootRoute, HeadContent, Scripts } from '@tanstack/react-router'
+import { Outlet, createRootRoute, HeadContent, Scripts, useRouteContext } from '@tanstack/react-router'
+import { getAccess } from '../server/fns'
+import type { AccessMode } from '@/app/Services/AccessService'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { CreditsDialog } from '../credits'
 import css from '../styles.css?url'
 
+// ACC-01: waitlist-only or open, for every page. Asked once per page load in the browser (a switch in the panel
+// shows on the next load); the server checks it again on every call that matters.
+let browserAccess: AccessMode | undefined
+
 export const Route = createRootRoute({
+  beforeLoad: async (): Promise<{ access: AccessMode }> => {
+    if (typeof window !== 'undefined' && browserAccess) return { access: browserAccess }
+    const { mode } = await getAccess()
+    if (typeof window !== 'undefined') browserAccess = mode
+    return { access: mode }
+  },
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -50,3 +62,6 @@ function RootDocument({ children }: { children: ReactNode }) {
     </html>
   )
 }
+
+/** ACC-01: 'waitlist' while only admins may sign in; the pages show the waitlist instead of sign-in. */
+export const useAccess = (): AccessMode => useRouteContext({ from: '__root__' }).access

@@ -6,6 +6,8 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS, type ProductKey } from '@/lib/credit-prices'
 import { buy } from '../credits'
+import { WaitlistButton } from '@/components/Waitlist'
+import { useAccess } from './__root'
 
 // BIL-12: the plans and what a credit buys, in public. Every number comes from lib/credit-prices.ts,
 // the same table the server charges from, so this page cannot promise a price the product does not keep.
@@ -24,6 +26,7 @@ const bestSaving = Math.max(...PLANS.map((p) => Math.floor((1 - p.yearly / p.mon
 
 function Pricing() {
   const [yearly, setYearly] = useState(false)
+  const access = useAccess()
   const tiers = [
     { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', 'Light and dark', 'Clickable preview'] },
     ...PLANS.map((p) => ({
@@ -75,7 +78,9 @@ function Pricing() {
               ))}
             </ul>
             <div className="mt-auto pt-6">
-              {t.id === 'free' ? (
+              {access === 'waitlist' ? (
+                <WaitlistButton size="lg" label="Join the waitlist" className={`w-full ${t.id === 'pro' ? 'font-semibold' : ''}`} />
+              ) : t.id === 'free' ? (
                 <Link to="/login" className={buttonVariants({ variant: 'outline', size: 'lg', className: 'w-full' })}>
                   Start free
                 </Link>
@@ -98,9 +103,11 @@ function Pricing() {
               <p className="text-sm font-medium">{p.credits.toLocaleString('en')} credits</p>
               <p className="text-xl font-semibold tabular-nums">${p.usd}</p>
               <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · never expire</p>
-              <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => buy(`pack-${p.credits}` as ProductKey)}>
-                Buy
-              </Button>
+              {access === 'open' && (
+                <Button variant="outline" size="sm" className="mt-3 w-full" onClick={() => buy(`pack-${p.credits}` as ProductKey)}>
+                  Buy
+                </Button>
+              )}
             </div>
           ))}
         </div>

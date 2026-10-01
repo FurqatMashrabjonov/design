@@ -13,7 +13,7 @@ export const Route = createFileRoute('/admin/settings')({
   component: ControlsPage,
 })
 
-type Key = 'generation.paused' | 'limits.callsPerDay' | 'limits.dailyBudgetUsd'
+type Key = 'generation.paused' | 'limits.callsPerDay' | 'limits.dailyBudgetUsd' | 'access.mode'
 
 function ControlsPage() {
   const d = Route.useLoaderData()
@@ -37,6 +37,22 @@ function ControlsPage() {
     <>
       <PageTitle title="Settings" sub="Changes apply to the next request — no deploy. Every change is logged below." />
       <div className="grid gap-4 lg:grid-cols-3">
+        {/* ACC-05: waitlist-only (only admins sign in) or open to everyone. */}
+        <Panel title="Access">
+          <p className="text-sm">{d.access.mode === 'waitlist' ? <Badge tone="warn">Waitlist only</Badge> : <Badge tone="good">Open</Badge>}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {d.access.env
+              ? `Set by ACCESS_MODE=${d.access.env} in the server environment — change it there.`
+              : d.access.mode === 'waitlist'
+                ? 'Only admins can sign in. Everyone else sees “Join the waitlist” on the site and is refused at sign-in.'
+                : 'Anyone can sign up and get the free credits.'}
+          </p>
+          {!d.access.env && (
+            <Button className="mt-3 w-full" variant={d.access.mode === 'waitlist' ? 'default' : 'outline'} onClick={() => set('access.mode', d.access.mode === 'waitlist' ? 'open' : 'waitlist', d.access.mode === 'waitlist' ? 'Open to everyone' : 'Waitlist only')}>
+              {d.access.mode === 'waitlist' ? 'Open to everyone' : 'Back to waitlist only'}
+            </Button>
+          )}
+        </Panel>
         <Panel title="Generation">
           <p className="text-sm">{paused ? <Badge tone="bad">Paused</Badge> : <Badge tone="good">Running</Badge>}</p>
           <p className="mt-2 text-xs text-muted-foreground">

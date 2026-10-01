@@ -6,6 +6,36 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01 (2)
+
+### ACC-01…05: waitlist-only until the promotion ends — only admins sign in
+
+- `src/app/Services/AccessService.ts` (new): `mode()` — env `ACCESS_MODE`, else setting `access.mode`, else
+  production `waitlist` / development `open`; cached 10 s, cleared when the panel changes it; `allows(admin)`.
+  `src/lib/access.ts`: the refusal text.
+- `src/app/Services/AuthService.ts`: `user.create.before` and `session.create.before` refuse a non-admin in waitlist
+  mode (`APIError FORBIDDEN`); `sendMagicLink` mails nothing to one. `src/server/auth.ts`: `userFrom` returns null
+  for a non-admin in waitlist mode (sessions made before the switch).
+- `AdminController` (`access.mode` setting), `AdminStatsService.controls` (`access`), `routes/admin.settings.tsx`
+  (Access panel).
+- `src/server/fns.ts` `getAccess`; `routes/__root.tsx` puts the mode in the router context (`useAccess`, asked once
+  per page load in the browser).
+- `components/Waitlist.tsx`: `WaitlistDialog` split from the button; a share is optional (ref `landing`), a note can
+  be passed in. `SiteChrome` header, `Landing` (prompt → waitlist with the prompt as the note; badge), `pricing`
+  (plan buttons → waitlist, no pack buy), `login` (invite-only notice, `errorCallbackURL` back to /login).
+- `controllers.check.ts`: production defaults to waitlist, development to open; an old account's session is signed
+  out and cannot generate (401); no link mailed to a new or old non-admin; no user or session made (Google's path);
+  an admin signs in; `ACCESS_MODE` wins; open again restores everyone. Also fixed the email test leaving
+  `NODE_ENV` as the string 'undefined'.
+
+Verified: `npm run check`, `npx tsc --noEmit` clean. Dev server with `ACCESS_MODE=waitlist`, headless Chrome as a
+guest: header shows only "Join the waitlist"; typing a prompt and pressing Design it opens the waitlist with the prompt
+as the note; joining shows "You're on the list" and stores the row (ref `landing`, the note); pricing shows the
+waitlist on every plan and no Buy; /login shows the invite-only notice. Signed in as admin in Chrome: the dashboard
+opens in waitlist mode; Settings → Access switches to Waitlist only (a guest's landing changes at once) and back to
+Open, each logged in admin_actions. Notion was down (500), so the rows are in ROADMAP.md to be copied there.
+
 ## 2026-10-01
 
 ### Fix: generation refused as "Cross-site request refused" on screenspell.app (Railway)

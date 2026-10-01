@@ -1417,7 +1417,8 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   delete process.env.RESEND_API_KEY
   if (was === undefined) delete process.env.EMAIL_FROM
   else process.env.EMAIL_FROM = was
-  process.env.NODE_ENV = env
+  if (env === undefined) delete process.env.NODE_ENV // assigning undefined would leave the string 'undefined'
+  else process.env.NODE_ENV = env
 }
 
 // --- CHAT: the plan reply reads like a person, never a log ---
@@ -1511,6 +1512,57 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const { publicOrigin } = await import('../../../server/guard.ts')
   assert.equal(publicOrigin(req(), 'https://screenspell.app/x'), 'https://screenspell.app', 'payment return URLs use the public origin')
   assert.equal(publicOrigin(req(), ''), 'http://localhost:8080', 'with no public URL (dev) the request origin')
+}
+
+{
+  // ACC-01/02: waitlist-only — nobody but an admin signs in, new or old; open — everyone, as before.
+  const { AccessService } = await import('../../Services/AccessService.ts')
+  const { auth, devMail } = await import('../../Services/AuthService.ts')
+  const { userFrom } = await import('../../../server/auth.ts')
+  const { guardGeneration } = await import('../../../server/guard.ts')
+  const { Setting } = await import('../../Models/Setting.ts')
+  const setMode = async (m: 'waitlist' | 'open' | null) => (await Setting.set('access.mode', m), AccessService.clear())
+  const nodeEnv = process.env.NODE_ENV
+  process.env.NODE_ENV = 'production'
+  await setMode(null)
+  assert.equal(await AccessService.mode(), 'waitlist', 'production starts waitlist-only, so a fresh deploy is never open by accident')
+  process.env.NODE_ENV = 'development' // magic links land in devMail, not in a mail provider
+  AccessService.clear()
+  assert.equal(await AccessService.mode(), 'open', 'development is open by default')
+  process.env.ADMIN_EMAILS = `${process.env.ADMIN_EMAILS ?? ''},owner@acc.test`
+  // Sign in by magic link and return the session cookie.
+  const signIn = async (email: string) => {
+    // The link is kept in devMail before it is mailed; this process has no mail provider, so the send fails after.
+    await auth.api.signInMagicLink({ body: { email, callbackURL: '/' }, headers: new Headers() }).catch((e) => assert.match(String(e), /Email is not set up/))
+    if (!devMail.lastLink) throw new Error(`no link for ${email}; NODE_ENV=${process.env.NODE_ENV}`)
+    const token = new URL(devMail.lastLink.url).searchParams.get('token')!
+    const res = await auth.api.magicLinkVerify({ query: { token, callbackURL: '/' }, headers: new Headers(), asResponse: true })
+    const cookie = (res.headers.getSetCookie?.() ?? [res.headers.get('set-cookie') ?? '']).map((c) => c.split(';')[0]).join('; ')
+    return new Request('http://localhost/x', { headers: { cookie } })
+  }
+  const early = await signIn('early@acc.test') // an account made while the site was open
+  assert.equal((await userFrom(early))?.email, 'early@acc.test')
+
+  await setMode('waitlist')
+  assert.equal(await userFrom(early), null, 'in waitlist mode a session from before counts as signed out')
+  const refusedGen = await guardGeneration(new Request('http://localhost/api/generate-plan', { method: 'POST', headers: early.headers, body: '{}' }), async () => new Response('ran'))
+  assert.equal(refusedGen.status, 401, 'and cannot generate')
+  await assert.rejects(auth.api.signInMagicLink({ body: { email: 'new@acc.test', callbackURL: '/' }, headers: new Headers() }), /invite-only/, 'no sign-in link is mailed to a non-admin')
+  await assert.rejects(auth.api.signInMagicLink({ body: { email: 'early@acc.test', callbackURL: '/' }, headers: new Headers() }), /invite-only/, 'nor to an account from before')
+  const ctx = await auth.$context
+  await assert.rejects(ctx.internalAdapter.createUser({ email: 'google@acc.test', name: 'G', emailVerified: true }, { method: 'oauth' }), /invite-only/, 'no account is made (the path Google takes)')
+  await assert.rejects(ctx.internalAdapter.createSession((await ctx.internalAdapter.findUserByEmail('early@acc.test'))!.user.id), /invite-only/, 'no session is made for an old account')
+  const owner = await signIn('owner@acc.test')
+  assert.equal((await userFrom(owner))?.admin, true, 'an admin signs in while waitlist-only')
+
+  process.env.ACCESS_MODE = 'open'
+  assert.equal((await userFrom(early))?.email, 'early@acc.test', 'ACCESS_MODE in the environment wins over the panel')
+  delete process.env.ACCESS_MODE
+  await setMode('open')
+  assert.equal((await userFrom(early))?.email, 'early@acc.test', 'open again: everyone as before')
+  await setMode(null)
+  if (nodeEnv === undefined) delete process.env.NODE_ENV
+  else process.env.NODE_ENV = nodeEnv
 }
 
 console.log('ok')

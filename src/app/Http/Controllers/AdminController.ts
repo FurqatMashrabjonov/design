@@ -17,6 +17,7 @@ import { BillingController } from './BillingController'
 import { EmailService, unsubscribeUrl, type CampaignInput } from '@/app/Services/EmailService'
 import { renderEmail, type EmailContent, type SystemEmail } from '@/lib/emails'
 
+import { AccessService, ACCESS_MODES } from '@/app/Services/AccessService'
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
 
@@ -25,6 +26,8 @@ const billable = (v: string) => isUsableModel(v) && !!CREDIT_PRICES[v]
 /** The settings an admin may change from the panel, and how each value is checked. */
 export const ADMIN_SETTINGS = {
   'generation.paused': (v: string) => v === '1',
+  // ACC-01: waitlist-only or open to everyone.
+  'access.mode': (v: string) => (ACCESS_MODES as readonly string[]).includes(v),
   'limits.callsPerDay': (v: string) => /^\d{1,6}$/.test(v),
   'limits.dailyBudgetUsd': (v: string) => /^\d{1,5}(\.\d{1,2})?$/.test(v),
   // LLM-07: the model each call site runs on, and the one a failed call is retried on ('' = none).
@@ -119,6 +122,7 @@ export const AdminController = {
     if (d.value !== null && !ADMIN_SETTINGS[d.key](d.value)) throw new Error('Invalid value')
     await Setting.set(d.key, d.value)
     if (d.key.startsWith('llm.')) clearLlmSettings() // this server reads the new model at once
+    if (d.key === 'access.mode') AccessService.clear()
     await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
   },
 

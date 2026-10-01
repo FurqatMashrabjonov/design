@@ -8,6 +8,9 @@ import { db } from '@/database/connection'
 import { account, session, user, verification } from '@/database/schema'
 import { CreditService } from './CreditService'
 import { Project } from '@/app/Models/Project'
+import { APIError } from 'better-auth/api'
+import { eq } from 'drizzle-orm'
+import { AccessService, WAITLIST_ONLY } from './AccessService'
 
 // Accounts (B1). Sign-in is Google or a magic link sent to your email — no passwords are stored
 // (AUTH-01). Better Auth owns sessions and the four auth tables; everything else in the app only
@@ -33,11 +36,24 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        // ACC-02: while the app is waitlist-only, no new account is made except an admin's (Google or a link).
+        before: async (created) => {
+          if (!(await AccessService.allows(isAdmin(created)))) throw new APIError('FORBIDDEN', { message: WAITLIST_ONLY })
+        },
         // OWN-05: projects made before accounts existed belong to the first person who signs in.
         after: async (created) => {
           await Project.adoptOrphans(created.id)
           // BIL-07: every new account starts with free credits.
           await CreditService.signupGrant(created.id)
+        },
+      },
+    },
+    // ACC-02: an account made earlier (while open, or in testing) does not get a session in waitlist mode either.
+    session: {
+      create: {
+        before: async (created) => {
+          const u = (await db.select({ email: user.email, role: user.role }).from(user).where(eq(user.id, created.userId)))[0]
+          if (!(await AccessService.allows(!!u && isAdmin(u)))) throw new APIError('FORBIDDEN', { message: WAITLIST_ONLY })
         },
       },
     },
@@ -47,6 +63,8 @@ export const auth = betterAuth({
       expiresIn: 15 * 60,
       // EML-01: sent through Resend; with no key, development logs it and production refuses (EmailService).
       sendMagicLink: async ({ email, url }) => {
+        // ACC-02: no link is mailed that would only be refused when it is opened.
+        if (!(await AccessService.allows(isAdmin({ email })))) throw new APIError('FORBIDDEN', { message: WAITLIST_ONLY })
         if (process.env.NODE_ENV !== 'production') devMail.lastLink = { email, url }
         await EmailService.system('magic-link', email, { url })
       },

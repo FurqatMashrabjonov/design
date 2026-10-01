@@ -5,6 +5,7 @@ import { Setting } from '@/app/Models/Setting'
 import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 import { adminEmails } from './AuthService'
+import { AccessService } from './AccessService'
 import { paging, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 
 // ADM-02…08: what the admin panel reads. Plain aggregate SQL over the tables the product already
@@ -126,6 +127,7 @@ export const AdminStatsService = {
       limits,
       settings,
       envPaused: process.env.GENERATION_PAUSED === '1',
+      access: { mode: await AccessService.mode(), env: AccessService.envMode() },
       system: { ...counts!, provider: process.env.LLM_PROVIDER || 'deepseek', node: process.version, env: process.env.NODE_ENV || 'development' },
       actions,
     }

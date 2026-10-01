@@ -4,6 +4,18 @@
 
 Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: `Tayyor` · `Jarayonda` · `Rejada` · `Bloklangan`. Qatorlar qurish tartibida.
 
+## ACC · Kirish rejimi — waitlist (2026-10-01, promo tugaguncha)
+
+> Notion API 2026-10-01 da xato berdi ("Cross-cell memcached"); bu qatorlar Notion'ga ko'chirilishi kerak.
+
+| ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
+|---|---|---|---|---|---|---|---|
+| ACC-01 | Kirish rejimi: admin paneldagi `access.mode` (waitlist \| open), env `ACCESS_MODE` ustun, production'da standart waitlist | Kirish | MVP | Tayyor | Kichik |  | Sozlama admin_actions'ga yoziladi; test: rejim, env ustunligi, production standarti |
+| ACC-02 | Server himoyasi: waitlist rejimida yangi akkaunt, magic link va eski akkaunt sessiyasi rad etiladi; admin o'tadi | Kirish | MVP | Tayyor | O'rta | ACC-01 | Test: yangi user rad, eski sessiya chiqariladi, generatsiya 401, admin kiradi; open'da avvalgidek |
+| ACC-03 | Landing/pricing/login waitlist rejimida: Join the waitlist; prompt yuborilsa brief bilan waitlist oynasi (ref `landing`) | Kirish | MVP | Tayyor | O'rta | ACC-01 | Brauzerda: landing'dan yozilish, brief saqlanadi |
+| ACC-05 | Admin: Settings'da Access kaliti (Waitlist only \| Open) | Kirish | MVP | Tayyor | Kichik | ACC-01 | Brauzerda kalit ikki tomonga ishlaydi, log yoziladi |
+| ACC-06 | Waitlist'dan bittalab Invite (beta): taklif qilingan email waitlist rejimida ham kiradi | Kirish | Keyin | Rejada | Kichik | ACC-02 |  |
+
 ## KON · Konsta UI + JSX (2026-09-27 qarori — navbatda birinchi)
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |

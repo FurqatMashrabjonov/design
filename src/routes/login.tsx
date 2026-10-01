@@ -7,10 +7,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { BRAND, BrandLink, BrandMark, DotBackdrop, Em } from '@/components/SiteChrome'
+import { WaitlistButton } from '@/components/Waitlist'
+import { WAITLIST_ONLY } from '@/lib/access'
+import { useAccess } from './__root'
 
 // AUTH-05: one page, two ways in — Google, or a link sent to your email. No passwords.
 export const Route = createFileRoute('/login')({
-  validateSearch: (s: Record<string, unknown>): { next?: string } => (typeof s.next === 'string' && s.next.startsWith('/') && !s.next.startsWith('//') ? { next: s.next } : {}),
+  // `error` is set by Better Auth when it refuses a sign-in (ACC-02: waitlist-only) and sends the person back here.
+  validateSearch: (s: Record<string, unknown>): { next?: string; error?: string } => ({
+    ...(typeof s.next === 'string' && s.next.startsWith('/') && !s.next.startsWith('//') ? { next: s.next } : {}),
+    ...(typeof s.error === 'string' && s.error ? { error: s.error.slice(0, 80) } : {}),
+  }),
   beforeLoad: async ({ search }) => {
     const { user } = await getSession()
     if (user) throw redirect({ to: search.next ?? '/' })
@@ -22,8 +29,11 @@ export const Route = createFileRoute('/login')({
 
 function Login() {
   const { methods } = Route.useLoaderData()
-  const { next } = Route.useSearch()
+  const { next, error: refused } = Route.useSearch()
   const callbackURL = next ?? '/'
+  // ACC-02: a refused sign-in comes back to this page, not to Better Auth's own error page.
+  const errorCallbackURL = '/login'
+  const access = useAccess()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState<'google' | 'email' | null>(null)
   const [sent, setSent] = useState(false)
@@ -32,7 +42,7 @@ function Login() {
   async function google() {
     setBusy('google')
     setError('')
-    const { error } = await authClient.signIn.social({ provider: 'google', callbackURL })
+    const { error } = await authClient.signIn.social({ provider: 'google', callbackURL, errorCallbackURL })
     if (error) {
       setError(error.message ?? 'Google sign-in failed')
       setBusy(null)
@@ -44,7 +54,7 @@ function Login() {
     if (!/^\S+@\S+\.\S+$/.test(email)) return setError('Enter a valid email address')
     setBusy('email')
     setError('')
-    const { error } = await authClient.signIn.magicLink({ email, callbackURL })
+    const { error } = await authClient.signIn.magicLink({ email, callbackURL, errorCallbackURL })
     setBusy(null)
     if (error) setError(error.message ?? 'Could not send the link')
     else setSent(true)
@@ -65,6 +75,12 @@ function Login() {
           <h1 className="text-2xl sm:text-3xl">Sign in to <Em>{BRAND}</Em></h1>
           <p className="text-sm text-muted-foreground">Describe an app. Get all of it.</p>
         </div>
+        {(access === 'waitlist' || refused) && (
+          <div className="rounded-lg border bg-card p-4 text-center text-sm shadow-1">
+            <p>{access === 'waitlist' ? WAITLIST_ONLY : 'That sign-in did not work — try again.'}</p>
+            {access === 'waitlist' && <WaitlistButton size="sm" className="mt-3 rounded-full" />}
+          </div>
+        )}
         {sent ? (
           <div className="rounded-lg border bg-card p-5 text-center text-sm shadow-1">
             <Mail className="mx-auto mb-2 size-6 text-foreground" />

@@ -3,6 +3,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { Plus, Sparkles } from 'lucide-react'
 import { PromptBox } from './PromptBox'
 import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
+import { WaitlistDialog } from '@/components/Waitlist'
+import { useAccess } from '@/routes/__root'
 import { CREDIT_PRICES, SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 
 // MKT-01: the public page. The prompt typed here survives sign-in: it is kept
@@ -27,6 +29,9 @@ const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery wi
 function HeroPrompt({ big = false }: { big?: boolean }) {
   const navigate = useNavigate()
   const [fill, setFill] = useState<{ text: string; key: number }>()
+  // ACC-03: waitlist-only — the prompt goes into the waitlist as the person's note instead of into an app.
+  const access = useAccess()
+  const [waitlist, setWaitlist] = useState<string | null>(null)
   // A style page (MKT-06) can hand the landing a prompt on its way here; it stays in storage so it
   // survives signing in, where index.tsx picks it up and starts the project.
   // Read after mount, not during the first render: the server has no sessionStorage, so reading it in
@@ -46,12 +51,14 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
         placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
         fill={fill}
         onSubmit={async (prompt) => {
+          if (access === 'waitlist') return setWaitlist(prompt.slice(0, 1000))
           try {
             sessionStorage.setItem(PENDING_PROMPT, prompt.slice(0, 2000))
           } catch {}
           await navigate({ to: '/login', search: { next: '/' } })
         }}
       />
+      <WaitlistDialog open={waitlist !== null} onOpenChange={(o) => !o && setWaitlist(null)} note={waitlist ?? ''} />
       {big && (
         <>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
@@ -71,6 +78,7 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
 
 
 export function Landing() {
+  const access = useAccess()
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <SiteHeader onLanding />
@@ -80,7 +88,7 @@ export function Landing() {
         <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:pt-24">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <Sparkles className="size-3.5" /> {SIGNUP_CREDITS} free credits · no card needed
+            <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · we let people in a few at a time' : `${SIGNUP_CREDITS} free credits · no card needed`}
           </span>
           <h1 className="text-4xl sm:text-6xl">
             Describe an app. <br />Get <Em>all of it</Em>.

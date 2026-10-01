@@ -15,6 +15,7 @@ import { PRODUCTS } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { publicOrigin } from './guard'
+import { AccessService } from '@/app/Services/AccessService'
 import { getRequest } from '@tanstack/react-start/server'
 import { signInMethods } from '@/app/Services/AuthService'
 import { str, num, obj, oneOf, idOf } from './validate'
@@ -23,6 +24,9 @@ import { str, num, obj, oneOf, idOf } from './validate'
 
 /** The signed-in user (or null) and how one can sign in — for the login page and the account menu. */
 export const getSession = createServerFn({ method: 'GET' }).handler(async () => ({ user: await userFrom(getRequest()), methods: signInMethods }))
+
+/** ACC-01: public — whether the site is waitlist-only, so the pages show the waitlist instead of sign-in. */
+export const getAccess = createServerFn({ method: 'GET' }).handler(async () => ({ mode: await AccessService.mode() }))
 
 export const deleteAccount = createServerFn({ method: 'POST' }).handler(async () => AccountController.destroy((await requireUser()).id))
 

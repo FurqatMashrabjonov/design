@@ -3,6 +3,8 @@ import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
+import { WaitlistButton } from '@/components/Waitlist'
+import { useAccess } from '@/routes/__root'
 
 // UI-15: the public pages share the landing's header and footer. Before, only the landing had a
 // site header; pricing, playbook and the system pages had a bare "← Design" link and login had no
@@ -66,6 +68,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 /** `/#examples` from any page; on the landing itself the hash alone keeps the scroll smooth. */
 export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
   const examples = onLanding ? '#examples' : '/#examples'
+  const access = useAccess()
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
@@ -76,8 +79,15 @@ export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
         </nav>
         <div className="flex items-center gap-1">
           <ThemeToggle />
-          <Link to="/login" className={cn(buttonVariants({ variant: 'ghost' }), 'hidden text-muted-foreground sm:inline-flex')}>Sign in</Link>
-          <Link to="/login" className={buttonVariants({ className: 'ml-1 font-semibold' })}>Start free</Link>
+          {/* ACC-03: while the app is waitlist-only there is no way in from the site, only the waitlist. */}
+          {access === 'waitlist' ? (
+            <WaitlistButton className="ml-1 font-semibold" />
+          ) : (
+            <>
+              <Link to="/login" className={cn(buttonVariants({ variant: 'ghost' }), 'hidden text-muted-foreground sm:inline-flex')}>Sign in</Link>
+              <Link to="/login" className={buttonVariants({ className: 'ml-1 font-semibold' })}>Start free</Link>
+            </>
+          )}
         </div>
       </div>
     </header>
