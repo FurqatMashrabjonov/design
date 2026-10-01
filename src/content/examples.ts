@@ -5,7 +5,9 @@
 // sm/<slug>.jpg (440 wide) for the cards; the source of each screen is in docs/showcase/<id>/.
 export type Example = { id: string; name: string; prompt: string; screens: { slug: string; name: string }[] }
 
-export const exampleShot = (id: string, slug: string, size: 'sm' | 'full' = 'full') => `/examples/${id}/${size === 'sm' ? 'sm/' : ''}${slug}.jpg`
+// Raise when the pictures are re-made: Cloudflare and browsers keep /examples for hours, so a new picture needs a new URL.
+const SHOTS_VERSION = 2
+export const exampleShot = (id: string, slug: string, size: 'sm' | 'full' = 'full') => `/examples/${id}/${size === 'sm' ? 'sm/' : ''}${slug}.jpg?v=${SHOTS_VERSION}`
 
 export const EXAMPLES: Example[] = [
   {

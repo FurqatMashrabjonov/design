@@ -18,6 +18,8 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
   icon; `.od-img` styles in `styles.css` (motion only inside no-preference). Used by the landing gallery (cards and
   dialog), dashboard thumbnails (`onFail` → the live frame, after one retry) and the chat's before/after.
 - `NavProgress` (root): a 2px lime bar while a page loads, after 150 ms. Router `defaultPreload: 'intent'`.
+- Cloudflare in front of the site keeps `/examples` for 4 hours (`max-age=14400`), so the re-made pictures did not
+  show; `exampleShot` adds `?v=<SHOTS_VERSION>` — raise it whenever the pictures are re-made.
 - Showcase pictures re-made through CDP at exactly 390×844 (device metrics) instead of a window: the window-based
   shot left the app ~87px short, so the tab bar floated above an empty strip. Same nine apps, same 65 screens.
 - Landing: hero bottom padding; `text-balance` headings; "Idea to prototype in a minute."; examples are a swipe row
