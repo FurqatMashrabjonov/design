@@ -9,6 +9,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01 (5)
+
+### Landing examples on an iPhone 18 Pro Max frame
+
+- The showcase pictures re-made at the iPhone 18 Pro Max viewport (440×956, safe areas 54/34, 2x → 880×1912) and
+  shown inside the studio's own `DeviceFrame` (bezel, Dynamic Island, 9:41 status bar, home indicator — drawn by us,
+  no Apple artwork); the status bar is white on the one dark (midnight) app (`Example.dark`). Cards show three phones
+  at 0.2 (zoomed to 0.8 on a phone so the row is not clipped), the dialog every phone at 0.54.
+- `SHOTS_VERSION` 3 (Cloudflare keeps `/examples` for 4 hours).
+
+Verified: `npx tsc --noEmit`, `npm run check` clean; headless Chrome at 1280 and 390 wide: every card shows three
+framed phones, the dialog shows all of an app's screens framed, no horizontal scroll.
+
 ## 2026-10-01 (4)
 
 ### UI-31: loading states everywhere; showcase pictures fill the phone; landing spacing
