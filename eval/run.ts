@@ -22,10 +22,10 @@ import { ImageCache } from '@/app/Models/ImageCache'
 import { auditScreen } from '@/app/Services/RenderAudit'
 import { sourceMetrics } from './metrics'
 
-const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false }, model: { type: 'string' } } })
+const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false }, model: { type: 'string' }, briefs: { type: 'string', default: 'eval/briefs.json' } } })
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const OUT = resolve('eval/out', opt.label!)
-const briefs = (JSON.parse(readFileSync('eval/briefs.json', 'utf8')) as { id: string; brief: string }[]).filter((b) => !opt.only || opt.only.split(',').includes(b.id))
+const briefs = (JSON.parse(readFileSync(opt.briefs, 'utf8')) as { id: string; brief: string }[]).filter((b) => !opt.only || opt.only.split(',').includes(b.id))
 
 // Tokens per brief: the listener runs inside the brief's async context.
 const ctx = new AsyncLocalStorage<string>()

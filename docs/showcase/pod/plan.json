@@ -1,0 +1,102 @@
+{
+  "appName": "Lowtide",
+  "summary": "A dark, immersive podcast player for picking up episodes where you left off, discovering trending shows and tracking your listening.",
+  "accent": "#dc6614",
+  "style": "midnight",
+  "palette": {
+    "tech": "#22d3ee",
+    "trueCrime": "#f97316",
+    "comedy": "#facc15",
+    "news": "#f472b6",
+    "science": "#34d399",
+    "business": "#818cf8"
+  },
+  "tabs": [
+    {
+      "id": "home",
+      "label": "Home",
+      "icon": "House"
+    },
+    {
+      "id": "search",
+      "label": "Search",
+      "icon": "Search"
+    },
+    {
+      "id": "library",
+      "label": "Library",
+      "icon": "Layers"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "Three slides on a dark gradient with stacked floating cover art. Slide 1 reads 'Every story, one tap away'. Slide 2 is 'Pick what you love' with a selectable category chip grid. Slide 3 is 'Listen your way', covering speed, sleep timer and offline downloads. A primary 'Start listening' button goes to home, with page dots and a Skip link.",
+      "asked": false
+    },
+    {
+      "id": "home",
+      "name": "Home",
+      "kind": "tab",
+      "tab": "home",
+      "spec": "Greeting 'Good evening, Maya' over a deep gradient, then a 'Continue listening' horizontal row of wide cards with square cover, episode title, time left and a thin progress bar in the show's palette colour; tapping a card opens now-playing. Next is 'New episodes' from followed shows as a list with cover, show, title, date and duration, where each row opens episode-detail. Then curated 'Trending in Tech' and 'True crime' rows of large square cover art that open show-page. A floating mini-player above the tab bar shows Signal & Noise Ep. 214 and also opens now-playing.",
+      "asked": true
+    },
+    {
+      "id": "search",
+      "name": "Search",
+      "kind": "tab",
+      "tab": "search",
+      "spec": "Large 'Search' title with a rounded search field for 'Shows, episodes, people', then a 'Recent searches' chip row. Below is a 'Browse categories' 2-column grid of tall gradient tiles in palette colours with an emoji and label (Tech, True Crime, Comedy, News, Science, Business, Health, History); tapping a tile or a result opens show-page.",
+      "asked": true
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "kind": "tab",
+      "tab": "library",
+      "spec": "Segmented control for Shows, Downloads and Queue. Shows is a 3-column grid of followed show covers with new-episode count badges that open show-page. Downloads lists episodes with size and a storage summary bar of '1.8 GB of 64 GB'. Queue is a reorderable list with Up Next and total time 3 h 41 m, where rows open episode-detail.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "Avatar, name and 'Listening since 2024' header, then a big gradient stat card showing 142 hours listened this year with a 12-day streak. A weekly bar chart shows minutes per day coloured by category, followed by a 'Top categories' breakdown bar and a 'Top shows' ranked list that opens show-page. The page ends with settings rows for playback defaults, downloads and notifications.",
+      "asked": true
+    },
+    {
+      "id": "now-playing",
+      "name": "Now Playing",
+      "kind": "modal",
+      "parent": "home",
+      "spec": "Full-screen sheet with a blurred cover-colour gradient background, a grab handle and a large square cover art hero, then the episode title and show name, which opens show-page. A scrubber shows chapter tick marks, the current chapter name 'Why chips got political', elapsed 32:10 and remaining −26:28. The control row has skip back 15, a big play/pause button and skip forward 30, with a bottom bar for playback speed (1.5×), sleep timer (End of episode), AirPlay and a queue button. A 'Chapters' button opens episode-detail.",
+      "asked": true
+    },
+    {
+      "id": "show-page",
+      "name": "Show",
+      "kind": "push",
+      "parent": "home",
+      "spec": "Hero of large cover art over a gradient sampled from the cover, with show title, host, category chip and a ★ 4.8 rating. Below it is a primary Follow/Following button with a notifications bell, then an expandable description. An 'Episodes' list follows with sort by Newest, where each row shows date, title, a two-line summary, duration, a play button and a download icon, and opens episode-detail.",
+      "asked": true
+    },
+    {
+      "id": "episode-detail",
+      "name": "Episode",
+      "kind": "push",
+      "parent": "show-page",
+      "spec": "Header with small cover, show name linking back to show-page, the episode title, date and duration, and a primary Play button showing time left with download and add-to-queue buttons beside it. A 'Show notes' section holds paragraphs, guest bio and links. Then a 'Chapters' list with timestamp, chapter title and a playing indicator on the current chapter, where tapping a chapter opens now-playing at that time.",
+      "asked": true
+    }
+  ],
+  "data": "User: Maya Okafor, listening since 2024, 142 h listened in 2026, 12-day streak, follows 9 shows, top category Tech (38%), True Crime 27%, Science 15%, Comedy 12%, News 8%. Weekly minutes Mon–Sun (Sep 28–Oct 4 week, today Thu Oct 1): 48, 62, 35, 71, 0, 0, 0.\nShows:\n- Signal & Noise — host Priya Raman, Tech, 💡 tech, ★4.8, 214 episodes, followed, photo: \"neon circuit board\", desc: weekly deep dives on chips, AI and the people building them.\n- Byte Sized — host Dev Malik, Tech, ⚡ tech, ★4.6, followed, photo: \"laptop glowing dark desk\"\n- The Stack — hosts Lena Brooks & Omar Haddad, Tech, 🧱 tech, ★4.7, photo: \"server room blue lights\"\n- Founders After Dark — host Jules Moreau, Business, 🌙 business, ★4.5, followed, photo: \"city skyline at night\"\n- Cold Ledger — host Nora Quinn, True Crime, 🔍 trueCrime, ★4.9, followed, photo: \"foggy forest road night\"\n- Vanished in Vermont — host Eli Carter, True Crime, 🕯️ trueCrime, ★4.7, photo: \"abandoned farmhouse snow\"\n- The Missing Hour — host Rosa Delgado, True Crime, ⏳ trueCrime, ★4.6, followed, photo: \"old clock dark room\"\n- Deep Field — host Dr. Amara Bello, Science, 🔭 science, ★4.8, followed, photo: \"galaxy night sky\"\n- Half Joking — hosts Sam Ortiz & Kat Lee, Comedy, 😂 comedy, ★4.4, followed, photo: \"microphone neon stage\"\n- Morning Brief — Daily News, News, 📰 news, ★4.3, followed, photo: \"newspaper coffee morning\"\nNow playing: Signal & Noise Ep. 214 \"The Chip War, Explained\", released yesterday (Sep 30), 58:38, position 32:10, speed 1.5×, sleep timer End of episode. Chapters: 00:00 Intro; 04:12 A tiny transistor; 15:40 Taiwan's foundry bet; 27:05 Why chips got political (current); 41:30 The race for 2nm; 52:18 What's next. Show notes: Priya talks with semiconductor analyst Dr. Kenji Watanabe about how a few factories became the world's most strategic assets. Guest: Kenji Watanabe, author of 'Silicon Borders'.\nContinue listening: Signal & Noise Ep. 214 (55% played, 26 m left); Cold Ledger S3E6 \"The Second Witness\" (30%, 31 m left); Deep Field \"Life on Europa?\" (80%, 9 m left); Half Joking #88 \"We Tried Silent Retreats\" (15%, 52 m left).\nNew episodes (followed): Morning Brief \"Thursday, Oct 1\" today 18 m; Founders After Dark \"Building in a Downturn\" today 47 m; The Missing Hour Ep. 41 \"The Lighthouse Keeper\" yesterday 54 m; Byte Sized \"Is Your Phone Listening?\" Tue 22 m; Deep Field \"Life on Europa?\" Mon 44 m.\nSignal & Noise episode list: 214 The Chip War, Explained — Sep 30, 58 m; 213 Open Models vs Closed — Sep 23, 1 h 4 m; 212 Inside a Robot Kitchen — Sep 16, 49 m; 211 The Battery Breakthrough — Sep 9, 55 m; 210 Who Owns Your Voice? — Sep 2, 1 h 1 m.\nTrending in Tech: The Stack, Byte Sized, Signal & Noise. True crime row: Vanished in Vermont, Cold Ledger, The Missing Hour.\nDownloads: Signal & Noise 214 (54 MB), Cold Ledger S3E6 (61 MB), The Missing Hour 41 (50 MB); 1.8 GB of 64 GB used.\nQueue (Up Next, 3 h 41 m): Signal & Noise 214 (26 m left), The Missing Hour 41 (54 m), Founders After Dark \"Building in a Downturn\" (47 m), Deep Field \"Life on Europa?\" (9 m left), Signal & Noise 213 (1 h 4 m), Morning Brief Oct 1 (18 m).\nTop shows this year: 1 Signal & Noise 31 h, 2 Cold Ledger 22 h, 3 Deep Field 17 h, 4 Half Joking 12 h.\nCategories: Tech 💻 tech, True Crime 🔍 trueCrime, Comedy 😂 comedy, News 📰 news, Science 🔬 science, Business 💼 business, Health 🫀 science, History 🏛️ news.\nRecent searches: \"semiconductors\", \"Cold Ledger\", \"space\"."
+}

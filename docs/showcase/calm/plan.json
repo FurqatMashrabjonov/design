@@ -1,0 +1,98 @@
+{
+  "appName": "Hushwell",
+  "summary": "A soft, slow meditation and sleep companion with guided sessions, mood check-ins and night-themed sleep stories that help you ease stress, rest deeply and find focus.",
+  "accent": "#a78034",
+  "style": "soft",
+  "palette": {
+    "sleep": "#c99a3e",
+    "anxiety": "#c07580",
+    "focus": "#5f9e94",
+    "breathing": "#8a7bb0",
+    "stories": "#d0845a"
+  },
+  "tabs": [
+    {
+      "id": "today",
+      "label": "Today",
+      "icon": "Sparkles"
+    },
+    {
+      "id": "library",
+      "label": "Library",
+      "icon": "BookOpen"
+    },
+    {
+      "id": "sleep",
+      "label": "Sleep",
+      "icon": "Star"
+    },
+    {
+      "id": "stats",
+      "label": "Stats",
+      "icon": "ChartColumn"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "welcome",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "Three slow slides on a warm cream background. Slide one shows a calm illustration of a moon over still water with the line 'Breathe in. You're here.'. Slide two asks 'What brings you to Hushwell?' with three large soft cards: Ease stress (anxiety colour), Sleep better (sleep colour), Find focus (focus colour). Maya picks Sleep better. Slide three confirms 'We'll start gently, 10 minutes a day' with a reminder time of 9:30 PM. The primary 'Begin' button opens today.",
+      "asked": true
+    },
+    {
+      "id": "today",
+      "name": "Today",
+      "kind": "tab",
+      "tab": "today",
+      "spec": "Opens with a time-of-day greeting, 'Good evening, Maya', and a small flame pill showing the 6-day streak. The hero is a soft gradient card recommending 'Unwind After Work', 10 min with Elena Ward, plus a Play button that opens player. Below it, a 'How are you feeling?' row of five mood faces (Awful, Low, Okay, Good, Calm) with today's 'Okay' selected. A 'Continue' row shows 'Body Scan for Rest' at 4 of 12 min, and a 'Tonight' teaser card for the story 'The Lighthouse Keeper' opens sleep-stories.",
+      "asked": true
+    },
+    {
+      "id": "library",
+      "name": "Library",
+      "kind": "tab",
+      "tab": "library",
+      "spec": "Starts with a large 'Library' title and a search field. A row of category chips follows: Sleep, Anxiety, Focus and Breathing, each in its palette colour, with Anxiety selected. Below are a featured wide card for 'Soften the Worry', 12 min, and a two-column grid of session cards with photos, titles, guide names and duration pills. Tapping any card opens player.",
+      "asked": true
+    },
+    {
+      "id": "sleep-stories",
+      "name": "Sleep Stories",
+      "kind": "tab",
+      "tab": "sleep",
+      "spec": "A dark night-theme screen with a deep indigo starfield header that reads 'Drift off, Maya' and the subtitle 'Tonight's story'. The hero is 'The Lighthouse Keeper', narrated by Thomas Reed, 32 min, with a glowing Listen button that opens player. Below it are 'New this week' and 'Narrator favourites': a list of story cards with photos, narrators and durations, plus a sleep timer pill (45 min) and a 'Wind-down sounds' row of Rain, Ocean, Fireplace and Brown noise.",
+      "asked": true
+    },
+    {
+      "id": "stats",
+      "name": "Your Progress",
+      "kind": "tab",
+      "tab": "stats",
+      "spec": "The hero is a big figure, 58 minutes this week, with a soft bar chart of minutes for Mon–Sun beneath it, where today (Thu) is highlighted. Two tiles follow: the current streak of 6 days and the longest streak of 14 days. A mood trend line covers the last 7 days, from Low up to Calm, with mood faces on the axis. A 'By category' breakdown shows the minutes for Sleep, Anxiety, Focus and Breathing as coloured bars.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "A soft avatar header shows Maya Lindqvist, a member since August, and the goal 'Sleep better'. Three totals sit beneath it: 47 sessions, 612 minutes and a 14-day longest streak. Next comes a 'Saved' list of favourite sessions, each of which opens player. The settings rows are Daily reminder 9:30 PM, Bedtime mode, Ambient sound default (Rain), Hushwell Plus (active, renews Nov 3) and Help. The screen ends with a quiet 'Change goal' button that reopens the goal question from welcome.",
+      "asked": true
+    },
+    {
+      "id": "player",
+      "name": "Now Playing",
+      "kind": "modal",
+      "parent": "today",
+      "spec": "A full-screen calm player with a large rounded artwork (dusk over a quiet lake) and the title 'Unwind After Work' with the guide's name 'Elena Ward'. In the centre, a progress ring timer reads 3:42 of 10:00. Below it sit the controls: back 15s, a big play/pause button, forward 15s. An ambient sound toggle row lets the user switch Rain, Ocean or Forest at a soft volume (Rain is on), and a chevron at the top dismisses the player.",
+      "asked": true
+    }
+  ],
+  "data": "Person: Maya Lindqvist, goal Sleep better, current streak 6 days, longest streak 14 days, 47 sessions total, 612 minutes total, member since August 2026, Hushwell Plus active (renews Nov 3, 2026), reminder 9:30 PM, ambient default Rain. Today: Thu Oct 1 2026, evening, mood check-in 'Okay'. Moods: 😣 Awful, 😔 Low, 😐 Okay, 🙂 Good, 😌 Calm. Mood trend Fri Sep 25 → Thu Oct 1: Low, Okay, Good, Okay, Good, Calm, Okay. Minutes this week (Mon–Sun): Mon 14, Tue 10, Wed 22, Thu 12, Fri 0, Sat 0, Sun 0 = 58 min. By category this week: Sleep 26 min, Anxiety 16 min, Focus 6 min, Breathing 10 min. Guides: Elena Ward (meditation), Jonah Okafor (breathing), Priya Nair (focus). Narrators: Thomas Reed, Isla Moreno, Grace Hall. Recommended now playing: 'Unwind After Work' — 10 min, Elena Ward, 🌅, anxiety, photo: \"dusk over quiet lake\", progress 3:42 of 10:00, ambient Rain on. Continue: 'Body Scan for Rest' — 12 min, Elena Ward, 🛏️, sleep, photo: \"soft linen bed morning\", 4 of 12 min done. Library sessions: 'Soften the Worry' 12 min Elena Ward 🍃 anxiety photo: \"misty green forest path\" (featured); 'Box Breathing' 5 min Jonah Okafor 🫁 breathing photo: \"calm ocean horizon\"; 'Deep Work Primer' 15 min Priya Nair 🎯 focus photo: \"tidy desk morning light\"; 'Falling Asleep Gently' 20 min Elena Ward 🌙 sleep photo: \"moonlit bedroom window\"; 'Panic Pause' 3 min Jonah Okafor 🌊 anxiety photo: \"waves on smooth stones\"; '4-7-8 Wind Down' 8 min Jonah Okafor 💨 breathing photo: \"candle in dark room\"; 'Single-Task Focus' 10 min Priya Nair ☕ focus photo: \"steaming tea cup\"; 'Rain on the Roof' 25 min Elena Ward 🌧️ sleep photo: \"rain on window glass\". Sleep stories: tonight 'The Lighthouse Keeper' 32 min Thomas Reed 🏮 stories photo: \"lighthouse at night sea\"; 'Night Train to Kyoto' 41 min Isla Moreno 🚆 stories photo: \"train window night lights\" (new this week); 'The Snowbound Cabin' 28 min Grace Hall 🏔️ stories photo: \"snowy cabin warm glow\" (new this week); 'Lavender Fields of Provence' 35 min Isla Moreno 💜 stories photo: \"lavender field at dusk\"; 'The Slow River' 30 min Thomas Reed 🛶 stories photo: \"canoe on misty river\". Sleep timer 45 min. Wind-down sounds: 🌧️ Rain, 🌊 Ocean, 🔥 Fireplace, 🟤 Brown noise. Saved favourites: 'Falling Asleep Gently', 'Box Breathing', 'The Lighthouse Keeper'."
+}

@@ -1,0 +1,102 @@
+{
+  "appName": "Atelier Bank",
+  "summary": "A calm, premium euro neobank for freelancers to hold money, manage cards, send payments, track spending and get invoices paid.",
+  "accent": "#8b5cf6",
+  "style": "clean",
+  "palette": {
+    "income": "#f59e0b",
+    "software": "#8b5cf6",
+    "workspace": "#ef4444",
+    "food": "#06b6d4",
+    "travel": "#ec4899",
+    "transport": "#84cc16"
+  },
+  "tabs": [
+    {
+      "id": "home",
+      "label": "Home",
+      "icon": "House"
+    },
+    {
+      "id": "insights",
+      "label": "Insights",
+      "icon": "ChartColumn"
+    },
+    {
+      "id": "invoices",
+      "label": "Invoices",
+      "icon": "Inbox"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "There are three calm slides, each with a large illustration. The first says 'Your studio's bank, in your pocket' and shows the coral and metal cards. The second says 'Get paid faster' and shows an invoice marked Paid. The third says 'See where every euro goes' and shows a donut. Page dots run along the bottom, with a Get started primary button and a Log in text link.",
+      "asked": false
+    },
+    {
+      "id": "home",
+      "name": "Home",
+      "kind": "tab",
+      "tab": "home",
+      "spec": "The hero is the total balance of €18,420.65 in large type, with a +€4,800 this-week income chip and quick actions for Send, Request and Add money. Below it a horizontal carousel shows the coral virtual card and the black metal card, each opening card-detail. The Latest transactions list shows merchant logo circles, names, categories and amounts, and each row opens transaction-detail. The Send button opens send-money.",
+      "asked": true
+    },
+    {
+      "id": "insights",
+      "name": "Insights",
+      "kind": "tab",
+      "tab": "insights",
+      "spec": "The hero is a donut chart of September spending, €3,240.80 in total, split by category in palette colours, with a legend. The next section compares this month to last month as twin bars against August's €2,880.40, showing +12.5%. A Top merchants list follows with logos, visit counts and totals, and each row opens transaction-detail.",
+      "asked": true
+    },
+    {
+      "id": "invoices",
+      "name": "Invoices",
+      "kind": "tab",
+      "tab": "invoices",
+      "spec": "A summary card at the top shows €12,600 outstanding, split into €8,400 pending and €4,200 overdue. Segmented tabs for Paid, Pending and Overdue filter the list below, which shows each invoice's client logo initial, invoice number, due date, amount and a status pill. A prominent Create invoice button sits at the bottom of the list.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "The header shows Lucas Moreau's avatar, his name, 'Designer · Paris' and a Metal plan badge. Account rows show the IBAN, with a copy button, and the business details. A Settings list covers security, notifications, linked accounts, tax pot at 25% and help. The Cards row opens card-detail.",
+      "asked": false
+    },
+    {
+      "id": "card-detail",
+      "name": "Card",
+      "kind": "push",
+      "parent": "home",
+      "spec": "The hero is large card art for the selected card, here the black metal card •• 0937, with a Show details button for number, expiry and CVV. Below it a settings list has a Freeze card toggle, a Monthly spending limit slider showing €1,240 spent of €3,000, View PIN behind Face ID, and toggles for online payments and contactless. The card's last few transactions sit at the bottom and open transaction-detail.",
+      "asked": true
+    },
+    {
+      "id": "send-money",
+      "name": "Send money",
+      "kind": "modal",
+      "parent": "home",
+      "spec": "The top row shows recent contacts as round avatars, with Camille Laurent selected and highlighted. A large centred amount of €450.00 is entered with a big number keypad, above a 'From: Main account €18,420.65' pill. A note field reads 'Moodboard shoot — split'. The primary action is a full-width Send €450.00 button.",
+      "asked": true
+    },
+    {
+      "id": "transaction-detail",
+      "name": "Transaction",
+      "kind": "push",
+      "parent": "home",
+      "spec": "The hero is a map snippet pinned at the merchant's location, with the merchant logo, name and the amount −€8.40 overlaid below it. Detail rows show date and time, card used, category chip, address and status. A receipt section shows the itemised lines and VAT, with an Attach receipt photo button. Actions at the bottom are Split bill and Report a problem.",
+      "asked": true
+    }
+  ],
+  "data": "Owner: Lucas Moreau, freelance brand designer, Paris 11e. Plan: Metal. IBAN FR76 3000 4012 3400 0098 7654 321. Tax pot: €4,120 (25%).\nTotal balance: €18,420.65. Income this week: +€4,800.00. Main account: €18,420.65.\nCards: Coral virtual card •• 4821, Visa, used online, status active, limit €1,500, spent €386.20 this month. Black metal card •• 0937, Mastercard World Elite, physical, status active (not frozen), limit €3,000, spent €1,240 this month, PIN set.\nTransactions (today is Thu 1 Oct 2026):\n- Café Kitsuné Palais Royal ☕ food, −€8.40, today 09:12, metal •• 0937. Address: 51 Galerie de Montpensier, 75001 Paris. Map photo: \"Palais Royal garden Paris\". Receipt: Flat white €4.80, Croissant €3.60, VAT 10% €0.76, total €8.40.\n- Studio Nomade (client) 💼 income, +€4,800.00, yesterday, invoice INV-2026-041\n- Figma 🎨 software, −€45.00, yesterday, virtual •• 4821\n- Adobe Creative Cloud 🖌️ software, −€77.99, Mon 28 Sep, virtual •• 4821\n- WeWork La Fayette 🏢 workspace, −€320.00, Mon 28 Sep, metal •• 0937\n- Uber 🚗 transport, −€18.60, Sat 26 Sep, metal •• 0937\n- SNCF Paris→Lyon 🚄 travel, −€89.00, Fri 25 Sep, metal •• 0937\n- Le Mary Celeste 🍷 food, −€62.50, Fri 25 Sep, metal •• 0937\nContacts (avatars): Camille Laurent (photographer), Hugo Bernard, Inès Dubois, Théo Martin, Sarah Cohen. Send draft: €450.00 to Camille Laurent, note \"Moodboard shoot — split\", from Main account.\nInsights, September 2026: total spent €3,240.80 vs August €2,880.40 (+12.5%). By category: workspace 🏢 €960.00, software 💻 €742.30, travel ✈️ €688.50, food 🍽️ €612.40, transport 🚕 €237.60. Top merchants: WeWork La Fayette €960.00 (3), SNCF €412.00 (4), Adobe €233.97 (3), Café Kitsuné €96.60 (12), Uber €148.20 (9).\nInvoices: outstanding €12,600 (pending €8,400, overdue €4,200).\n- INV-2026-041 Studio Nomade, €4,800, Paid on 30 Sep\n- INV-2026-039 Maison Verlaine, €2,350, Paid on 18 Sep\n- INV-2026-043 Atelier Lumière, €5,200, Pending, due 15 Oct\n- INV-2026-044 Bloom Cosmetics, €3,200, Pending, due 22 Oct\n- INV-2026-037 Café Ribot, €1,700, Overdue, due 12 Sep\n- INV-2026-038 Nordwind GmbH, €2,500, Overdue, due 20 Sep\nOnboarding photos: \"coral credit card closeup\", \"designer desk Paris studio\", \"calm minimal workspace\"."
+}

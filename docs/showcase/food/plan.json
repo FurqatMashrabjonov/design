@@ -1,0 +1,102 @@
+{
+  "appName": "Kiezbite",
+  "summary": "A warm, photo-led food delivery app for Berlin's local neighbourhood restaurants, from browsing and building a basket to live courier tracking.",
+  "accent": "#7b61ff",
+  "style": "vivid",
+  "palette": {
+    "pizza": "#7b61ff",
+    "burgers": "#ff3d7f",
+    "asian": "#00a8e8",
+    "vegan": "#58cc02",
+    "dessert": "#ff9f1c",
+    "drinks": "#ff6b35"
+  },
+  "tabs": [
+    {
+      "id": "home",
+      "label": "Home",
+      "icon": "House"
+    },
+    {
+      "id": "basket",
+      "label": "Basket",
+      "icon": "ShoppingBag"
+    },
+    {
+      "id": "orders",
+      "label": "Orders",
+      "icon": "Inbox"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "User"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome to Kiezbite",
+      "kind": "first-run",
+      "spec": "Three swipeable slides, each with a large appetising photo and a short title: 'Your Kiez, delivered', 'Local kitchens, not chains' and 'Track every bite live'. The page dots and a primary 'Set delivery address' button lead into home, with a 'Skip' link at top right.",
+      "asked": false
+    },
+    {
+      "id": "home",
+      "name": "Home",
+      "kind": "tab",
+      "tab": "home",
+      "spec": "The top shows the delivery address pill (Oderberger Str. 21) with a chevron, then a search field 'Restaurants, dishes, cuisines'. Below are horizontal cuisine chips with emoji (Pizza, Burgers, Asian, Vegan, Dessert, Drinks), then a full-width gradient promo banner '€5 off your first 3 orders – code BERLIN5'. The main section is 'Popular near you': large restaurant cards with big food photos, a heart, name, cuisine, ★ rating, delivery time and fee. Each card opens restaurant.",
+      "asked": true
+    },
+    {
+      "id": "basket",
+      "name": "Basket",
+      "kind": "tab",
+      "tab": "basket",
+      "spec": "The header shows 'Pizzeria Ruffiano' with the delivery address and an ETA of 25 min. Below are item rows with a photo, name, chosen options, a quantity stepper and the price, then a promo code row with BERLIN5 applied (−€5.00). A fee breakdown lists subtotal, delivery, service fee and discount, with a bold total of €39.78. The primary 'Checkout · €39.78' button opens order-tracking.",
+      "asked": true
+    },
+    {
+      "id": "orders",
+      "name": "Orders",
+      "kind": "tab",
+      "tab": "orders",
+      "spec": "At the top is an 'Active' card for order #RB-4821 from Pizzeria Ruffiano with a live progress bar and 'Arriving 19:42', which opens order-tracking. Below is 'Past orders': rows with the restaurant photo, name, date, item count, total and a 'Reorder' pill. Tapping a past restaurant opens restaurant.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "The header has Lena's avatar and name, then a gradient stats card (34 orders, €62 saved, Kiez Gold member). The sections are Saved addresses (Home, Work), Payment (Visa •• 4417, PayPal), Favourite restaurants as photo chips that open restaurant, Promo codes, Notifications, Help and Log out. Orders count links to orders.",
+      "asked": true
+    },
+    {
+      "id": "restaurant",
+      "name": "Pizzeria Ruffiano",
+      "kind": "push",
+      "parent": "home",
+      "spec": "The hero is a full-bleed cover photo with back and heart buttons, then the restaurant name, ★ 4.8 (1.2k), cuisine and an info strip for delivery 20–30 min, €1.99 fee and €12 minimum. A sticky segmented row of menu sections (Popular, Pizza, Antipasti, Dolci, Drinks) leads into dish rows with a thumbnail photo, name, short description, price and a round + add button. Tapping a dish opens dish. A floating 'View basket · 5 items · €41.80' bar opens basket.",
+      "asked": true
+    },
+    {
+      "id": "dish",
+      "name": "Pizza Diavola",
+      "kind": "modal",
+      "parent": "restaurant",
+      "spec": "A large photo of the dish fills the top half, followed by its name, description and base price €12.90. Below are a required 'Size' radio group (Medium 30cm, Large 34cm +€2.50) and an optional 'Extras' checkbox list (Burrata +€3.00, Extra 'nduja +€1.80, Basil oil +€0.80). The footer has a quantity stepper and the primary 'Add to basket · €18.40' button, which returns to restaurant.",
+      "asked": true
+    },
+    {
+      "id": "order-tracking",
+      "name": "Order on its way",
+      "kind": "push",
+      "parent": "basket",
+      "spec": "The top half is a map with the courier's bike pin, the restaurant and home pins, and a route line, topped by a big 'Arriving 19:42 · 12 min' figure. A vertical step tracker runs from Order accepted through Preparing, Picked up and On the way to Delivered, with the current step highlighted. A courier card shows Malik's photo, rating and bike, with a green call button and a message button. Below is a collapsible order summary (#RB-4821, 5 items, €39.78).",
+      "asked": true
+    }
+  ],
+  "data": "User: Lena Hoffmann, lena.hoffmann@mail.de, +49 151 2384 6610, avatar photo: \"smiling woman curly hair\"; member Kiez Gold; 34 orders; €62 saved. Addresses: Home – Oderberger Str. 21, 10435 Berlin (Prenzlauer Berg), 3rd floor, ring 'Hoffmann'; Work – Torstraße 140, 10119 Berlin. Payment: Visa •• 4417 (default), PayPal. Today: Thu 1 Oct 2026.\nPromo: BERLIN5 = €5 off, 3 orders, 2 left.\nCuisine chips: 🍕 Pizza (pizza), 🍔 Burgers (burgers), 🍜 Asian (asian), 🥗 Vegan (vegan), 🍰 Dessert (dessert), 🧋 Drinks (drinks).\nRestaurants (Popular near you):\n1. Pizzeria Ruffiano – Neapolitan pizza, Kastanienallee 54 – ★4.8 (1.2k) – 20–30 min – €1.99 fee – min €12 – 🍕 pizza – photo: \"wood fired margherita pizza\"; cover photo: \"pizza oven warm restaurant\".\n2. Kreuzberg Burger Werk – smash burgers – ★4.7 (980) – 25–35 min – €2.49 – 🍔 burgers – photo: \"juicy smash burger fries\".\n3. Saigon Kitchen – Vietnamese – ★4.6 (740) – 15–25 min – Free delivery – 🍜 asian – photo: \"steaming pho noodle bowl\".\n4. Grüne Gabel – vegan bowls – ★4.9 (510) – 20–30 min – €0.99 – 🥗 vegan – photo: \"colorful vegan buddha bowl\".\n5. Kaffeehaus Süß – cakes & coffee – ★4.8 (430) – 15–20 min – €1.49 – 🍰 dessert – photo: \"cheesecake slice coffee cup\".\nPizzeria Ruffiano menu: Popular / Pizza – Margherita €10.50 (photo: \"margherita pizza basil\") 🍕 pizza; Pizza Diavola €12.90 (spicy salami, 'nduja, fior di latte; photo: \"spicy salami pizza\") 🍕 pizza; Quattro Formaggi €13.50 (photo: \"four cheese pizza\") 🍕 pizza; Funghi e Tartufo €14.90 (photo: \"truffle mushroom pizza\") 🍕 pizza. Antipasti – Burrata e Pomodori €9.80 (photo: \"burrata tomato salad\") 🥗 vegan; Arancini (3) €7.20 (photo: \"golden arancini rice balls\") 🍕 pizza. Dolci – Tiramisu €6.50 (photo: \"tiramisu in glass\") 🍰 dessert; Cannoli (2) €5.90 (photo: \"sicilian cannoli pistachio\") 🍰 dessert. Drinks – San Pellegrino 0.5l €3.20 (photo: \"sparkling water bottle\") 🧋 drinks; Chinotto €3.50 (photo: \"italian soda bottle\") 🧋 drinks.\nDish options (Pizza Diavola): Size – Medium 30cm (base €12.90), Large 34cm +€2.50; Extras – Burrata +€3.00, Extra 'nduja +€1.80, Basil oil +€0.80. Selected: Large + Burrata, qty 1 = €18.40.\nBasket (Pizzeria Ruffiano): Pizza Diavola (Large, Burrata) ×1 €18.40; Margherita ×1 €10.50; Tiramisu ×1 €6.50; San Pellegrino 0.5l ×2 €6.40. 5 items. Subtotal €41.80; Delivery €1.99; Service fee €0.99; BERLIN5 −€5.00; Total €39.78. ETA 25 min.\nActive order #RB-4821: same basket, total €39.78, Visa •• 4417, placed today 19:17, ETA 19:42 (12 min left). Steps: Order accepted 19:18 ✓, Preparing 19:20 ✓, Picked up 19:34 ✓, On the way (current), Delivered. Courier: Malik Yilmaz, ★4.9, e-bike, 1,240 deliveries, photo: \"smiling courier with bike\".\nPast orders: Kreuzberg Burger Werk – yesterday (30 Sep), 2 items, €24.60 🍔 burgers; Saigon Kitchen – Sat 26 Sep, 3 items, €31.40 🍜 asian; Grüne Gabel – Tue 22 Sep, 2 items, €19.80 🥗 vegan; Kaffeehaus Süß – Sun 20 Sep, 3 items, €14.90 🍰 dessert.\nFavourites: Pizzeria Ruffiano, Grüne Gabel, Saigon Kitchen.\nOnboarding photos: \"friends sharing pizza table\", \"chef plating dish kitchen\", \"courier cycling berlin street\"."
+}

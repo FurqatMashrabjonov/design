@@ -1,0 +1,93 @@
+{
+  "appName": "Stride Half",
+  "summary": "A friendly running coach that takes first-timers from base miles to a confident half-marathon finish, one plan, one run, one split at a time.",
+  "accent": "#3b82f6",
+  "style": "clean",
+  "palette": {
+    "easyRun": "#3b82f6",
+    "tempo": "#10b981",
+    "intervals": "#f59e0b",
+    "longRun": "#8b5cf6",
+    "rest": "#ef4444"
+  },
+  "tabs": [
+    {
+      "id": "today",
+      "label": "Today",
+      "icon": "Activity"
+    },
+    {
+      "id": "plan",
+      "label": "Plan",
+      "icon": "Calendar"
+    },
+    {
+      "id": "progress",
+      "label": "Progress",
+      "icon": "ChartColumn"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "User"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "There are three slides with bold run-type colour gradients. Slide 1 reads 'Your first half, coached' with a runner illustration. Slide 2, 'Pick your race and goal', shows the Lisbon Half on 14 Mar 2027 and a 2:05:00 goal picker. Slide 3, 'A plan that fits your week', has run-day toggles Tue/Thu/Sat/Sun. The primary action is a Build My Plan button that leads to today.",
+      "asked": false
+    },
+    {
+      "id": "today",
+      "name": "Today",
+      "kind": "tab",
+      "tab": "today",
+      "spec": "Greeting 'Bom dia, Maya' with a race countdown chip ('164 days to Lisbon Half'). The hero is a progress ring for this week: 1 of 4 runs and 5 of 25 km done, with four small day dots underneath, coloured by run type. Next comes today's workout card in the tempo colour: 'Tempo Run · 6 km', pace target 5:45/km, a warm-up/cool-down note and a big full-width Start button that opens live-run. Below sits a 'Coming up' list for Saturday's easy run and Sunday's long run, plus a coach tip card.",
+      "asked": true
+    },
+    {
+      "id": "training-plan",
+      "name": "Training Plan",
+      "kind": "tab",
+      "tab": "plan",
+      "spec": "The header shows the goal: 'Lisbon Half · 14 Mar 2027 · Goal 2:05:00'. Below it is an overall progress bar for the base block (week 3 of 10). Next comes a segmented control for Base and Race (16 wks). Each week is a collapsible card with its date range, total km and run chips coloured by type, each one ticked, today or upcoming. Past weeks show checkmarks, and Race weeks 1–16 start 23 Nov and build to a 19 km peak in week 13 before the taper. Tapping today's tempo chip opens live-run.",
+      "asked": true
+    },
+    {
+      "id": "progress",
+      "name": "Progress",
+      "kind": "tab",
+      "tab": "progress",
+      "spec": "The hero is a weekly distance bar chart covering the last 8 weeks, with this week partial. Two highlight cards follow: Longest Run (12.4 km, Sun 27 Sep) and Total This Year (412 km). Below them is an average-pace trend line chart falling from 6:52 to 6:18/km, with the goal-pace line at 5:55. The page ends with a Recent Runs list where each row is coloured by run type, and tapping a row opens run-summary.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "An avatar header shows Maya Ferreira, 32, Lisbon, with chips for her 9-run streak and level 'Base Builder'. Next is a Shoes section with mileage bars against a 700 km lifespan and an Add Shoe button. Settings rows cover units (km), the audio coach voice and cue interval, heart-rate strap, rest-day reminders, Apple Health sync and race goal, ending with Sign out.",
+      "asked": true
+    },
+    {
+      "id": "live-run",
+      "name": "Live Run",
+      "kind": "modal",
+      "parent": "today",
+      "spec": "The top half is a full-bleed map with the route traced in the tempo colour and a pulsing location dot. Below it, huge numbers show elapsed time 21:14 as the hero, with distance 3.68 km and current pace 5:41/km in large tiles beside it. A target-pace bar shows whether Maya is ahead or behind 5:45/km. At the bottom are a round Pause button and a long-press Finish button that opens run-summary.",
+      "asked": true
+    },
+    {
+      "id": "run-summary",
+      "name": "Run Summary",
+      "kind": "push",
+      "parent": "live-run",
+      "spec": "The top shows a route map card with a gold 'Personal Best · Fastest 5K 28:41' badge overlaid. A stat row follows: 6.02 km, 34:41, 5:46/km average, 162 bpm average and 412 kcal. Next is a splits-per-kilometre bar chart with six bars and the fastest split highlighted, then heart-rate zones as horizontal stacked bars Z1–Z5 with minutes. The primary action is a Save Run button, with a secondary Share option.",
+      "asked": true
+    }
+  ],
+  "data": "Runner: Maya Ferreira, 32, Lisbon 🇵🇹, level 'Base Builder', streak 9 runs, total 2026: 412 km. Goal: Lisbon Half Marathon 21.1 km, Sun 14 Mar 2027, goal time 2:05:00 (goal pace 5:55/km), 164 days to go.\nPlan: Base block 10 weeks (14 Sep–22 Nov 2026), then Race plan 16 weeks (23 Nov 2026–14 Mar 2027). Peak long run 19 km in race week 13, taper weeks 15–16.\nBase week 1 (14–20 Sep) 20 km ✓ all 4 runs. Base week 2 (21–27 Sep) 23 km ✓ all 4 runs. Base week 3 (28 Sep–4 Oct, current): target 25 km, 4 runs, done 1 run / 5 km.\n– Tue 29 Sep: Easy Run 5 km 🟢 easyRun, 33:05, 6:37/km ✓\n– Thu 1 Oct (TODAY): Tempo Run 6 km 🔥 tempo, target 5:45/km, 1 km warm-up + 4 km tempo + 1 km cool-down\n– Sat 3 Oct: Easy Run 4 km 🟢 easyRun, ~6:40/km\n– Sun 4 Oct: Long Run 10 km 🏃 longRun, ~6:45/km\n– Mon/Wed/Fri: Rest 😴 rest\nBase week 4 (5–11 Oct) 26 km includes Intervals 6×400 m ⚡ intervals.\nLive run (today's tempo in progress): elapsed 21:14, 3.68 km, current pace 5:41/km, HR 164 bpm, route along Avenida Ribeira das Naus → Cais do Sodré riverside.\nRun summary (today, Thu 1 Oct, Tempo): 6.02 km, 34:41, avg pace 5:46/km, avg HR 162 bpm, max 178, 412 kcal, elevation +38 m. Splits: km1 5:58, km2 5:47, km3 5:42, km4 5:44, km5 5:39 (fastest), km6 5:36→ partial 0.02. HR zones: Z1 3 min, Z2 6 min, Z3 11 min, Z4 12 min, Z5 3 min. Personal Best 🏅: Fastest 5K 28:41 (previous 29:30). Route photo: \"Lisbon riverside running path\".\nWeekly distance (last 8 weeks, km): 11 Aug 14, 18 Aug 16, 25 Aug 15, 1 Sep 18, 8 Sep 17, 14 Sep 20, 21 Sep 23, 28 Sep 5 (in progress).\nLongest run: 12.4 km, Sun 27 Sep, 1:23:10, 6:42/km 🏃 longRun. Avg pace trend (monthly): Jun 6:52, Jul 6:41, Aug 6:30, Sep 6:18/km.\nRecent runs: Thu 1 Oct Tempo 6.02 km 5:46/km; Tue 29 Sep Easy 5 km 6:37; Sun 27 Sep Long 12.4 km 6:42; Sat 26 Sep Easy 4 km 6:35; Thu 24 Sep Intervals 5.5 km 6:05.\nShoes: 👟 Cloudrunner Glide 3 (daily trainer) 284 km of 700, photo: \"blue running shoes\"; 👟 Tempo Flyer (speed days) 96 km of 600, photo: \"orange racing shoes\"; retired Trail Pace 2 at 712 km.\nSettings: units km, audio coach 'Coach Ana' every 1 km, HR strap Polar H10 connected, rest-day reminders on 08:00, Apple Health sync on."
+}

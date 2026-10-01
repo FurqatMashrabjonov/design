@@ -7,6 +7,29 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01 (3)
+
+### Landing rewritten around prototypes, with nine real examples
+
+The landing promised "Get all of it"; what we make is a clickable prototype. Copy rewritten from scratch:
+- Hero "Describe an app idea. Tap through the prototype.", button "Prototype it"; how it works in three steps;
+  a "Good for / Not a finished app" block (no backend, not App Store ready, sample data); FAQ rewritten (real app?
+  who is it for?); waitlist-aware CTA. The credits strip is gone. Title, meta description and the login line follow.
+- Examples (`#examples`, the header link that pointed nowhere): `components/ExampleGallery.tsx` — a card per app
+  (three screens, the prompt) opens every screen in a dialog. `src/content/examples.ts` lists them;
+  pictures in `public/examples/<id>/` (+ `sm/` thumbnails, 4.3 MB for the cards).
+- The nine apps: ten prompts in `eval/showcase-briefs.json` drawn through the real pipeline on Claude Opus 5.5
+  (claude-cli) — 77 screens, 100% built, 0 crashes; re-pictured with `screenshotScreen` at 2x with the plan's style and
+  an iPhone's safe areas. The sneaker store and four broken screens are left out, nothing shown is edited; sources
+  and plans in `docs/showcase/` for posts.
+- `eval/run.ts`: `--briefs <file>`. `ScreenDocument`: `AppLook.insets` (optional) reaches `mount`, for pictures with a
+  status bar.
+
+Verified: `npx tsc --noEmit`, `npm run check` clean. Headless Chrome at 1280 and 390 wide, as a guest in waitlist
+mode: the hero reads the new line, nine cards with all thumbnails loaded, no horizontal scroll; a card opens its
+dialog with all its screens (Stride Half, 7).
+
 ## 2026-10-01 (2)
 
 ### ACC-01…05: waitlist-only until the promotion ends — only admins sign in

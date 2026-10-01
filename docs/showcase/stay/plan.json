@@ -1,0 +1,101 @@
+{
+  "appName": "Hideaway",
+  "summary": "A photo-led boutique booking app for cabins, villas, treehouses and chalets in remarkable places, from Lofoten to Bali.",
+  "accent": "#a16207",
+  "style": "editorial",
+  "palette": {
+    "cabins": "#a16207",
+    "villas": "#047857",
+    "treehouses": "#6b21a8",
+    "chalets": "#be185d",
+    "beachHouses": "#0e7490"
+  },
+  "tabs": [
+    {
+      "id": "explore",
+      "label": "Explore",
+      "icon": "Search"
+    },
+    {
+      "id": "wishlists",
+      "label": "Wishlists",
+      "icon": "Heart"
+    },
+    {
+      "id": "trips",
+      "label": "Trips",
+      "icon": "Plane"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "There are three full-bleed photo slides with serif headlines: 'Stay somewhere unforgettable' (Lofoten cabin), 'Handpicked by people who travel' (Tuscan villa) and 'Save places, plan together' (Bali treehouse). Page dots sit along the bottom, with a Skip link at the top. The last slide has a Start exploring button that opens explore.",
+      "asked": false
+    },
+    {
+      "id": "explore",
+      "name": "Explore",
+      "kind": "tab",
+      "tab": "explore",
+      "spec": "At the top sits a rounded floating search pill split into Where / When / Who; tapping When or Who opens date-guests. Below it is a horizontal row of category icons (Cabins, Villas, Treehouses, Chalets, Beach houses), with the active one underlined. Under that is a vertical feed of big edge-to-edge photo cards with a dot pager, a heart in the corner, and the title, location, rating and bold price per night. Tapping a card opens stay-detail.",
+      "asked": true
+    },
+    {
+      "id": "wishlists",
+      "name": "Wishlists",
+      "kind": "tab",
+      "tab": "wishlists",
+      "spec": "A large serif title sits above a 2-column grid of collections. Each collection has a rounded mosaic cover photo, the collection name and a saved count. A 'Recently viewed' collection comes first, and a + button in the nav bar creates a new list. Tapping a saved stay opens stay-detail.",
+      "asked": true
+    },
+    {
+      "id": "trips",
+      "name": "Trips",
+      "kind": "tab",
+      "tab": "trips",
+      "spec": "The hero is a large photo card for the upcoming Lofoten trip with a countdown chip ('In 22 days'), the dates, and Directions and Message host buttons. Under it is the newly reserved Tuscany stay as a smaller upcoming row. A 'Where you've been' section lists past trips as photo rows with dates and a 'Leave a review' link. Tapping any trip opens stay-detail.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "The hero is an identity card with the avatar, name, home city and stats (trips taken, reviews, years on Hideaway). Below it is a gradient promo card inviting the user to host their own hideaway. Grouped settings lists follow: Personal info, Payments (Visa •••• 4821), Notifications, Language & currency (EUR), Help and Log out.",
+      "asked": true
+    },
+    {
+      "id": "stay-detail",
+      "name": "Stay detail",
+      "kind": "push",
+      "parent": "explore",
+      "spec": "The hero is a full-bleed swipeable photo gallery with back, share and heart buttons. Below it come the serif title, location, rating and review count, then a host row with avatar and Superhost badge. Next are a 2-column amenities grid with icons, a rounded location map card, and a reviews section with a big star average and horizontally scrolling review cards. A sticky bottom bar shows €340 night, Nov 13–17, and a Reserve button. Reserve opens checkout, and tapping the dates opens date-guests.",
+      "asked": true
+    },
+    {
+      "id": "date-guests",
+      "name": "Dates & guests",
+      "kind": "modal",
+      "parent": "stay-detail",
+      "spec": "This is a sheet with a segmented Dates / Guests switch. The month calendar for November 2026 shows the selected range Nov 13–17 as filled endpoints joined by a soft band, with a '4 nights' caption. The guest list has steppers for Adults (2), Children (1) and Infants (0). The footer has a 'Clear' link and a primary Save button that returns to stay-detail.",
+      "asked": true
+    },
+    {
+      "id": "checkout",
+      "name": "Confirm and pay",
+      "kind": "push",
+      "parent": "stay-detail",
+      "spec": "At the top is a summary card with the stay thumbnail, title, rating, dates Nov 13–17 and 2 adults, 1 child, with an Edit link to date-guests. Below it is the price breakdown list (4 nights × €340, cleaning, service fee, taxes) ending in a bold total of €1,674. Next come a payment method row (Visa •••• 4821) and a cancellation policy note. A full-width Confirm and pay button leads to trips.",
+      "asked": true
+    }
+  ],
+  "data": "User: Elena Marsh, London, avatar 👩🏻, member since 2023, 7 trips taken, 5 reviews written, payment Visa •••• 4821, currency EUR.\n\nStays:\n1) Reine Fisherman's Rorbu. Lofoten, Norway. Cabin 🛖, palette cabins. €210/night, rating 4.96 (184 reviews). Host Ingrid (Superhost, 6 years). 2 bedrooms, 4 guests. Amenities: wood stove, sauna, fjord view, Wi-Fi, kitchen, kayaks. Photo: \"red cabin fjord mountains\".\n2) Villa Cipresso. Val d'Orcia, Tuscany, Italy. Villa 🏡, palette villas. €340/night, rating 4.92 (126 reviews). Host Marco (Superhost, 4 years). 3 bedrooms, 6 guests. Amenities: infinity pool, olive grove, wine cellar, Wi-Fi, outdoor kitchen, free parking. Photo: \"stone villa cypress hills\".\n3) Canopy Nest Treehouse. Ubud, Bali, Indonesia. Treehouse 🌴, palette treehouses. €165/night, rating 4.98 (302 reviews). Host Wayan (Superhost). 1 bedroom, 2 guests. Amenities: jungle view, plunge pool, outdoor shower, breakfast, yoga deck, Wi-Fi. Photo: \"bamboo treehouse jungle\".\n4) Chalet Edelweiss. Zermatt, Swiss Alps, Switzerland. Chalet 🏔️, palette chalets. €480/night, rating 4.94 (98 reviews). Host Anna. 4 bedrooms, 8 guests. Amenities: Matterhorn view, hot tub, fireplace, ski storage, sauna, Wi-Fi. Photo: \"wooden chalet snowy peaks\".\n5) Amed Driftwood House. Amed, Bali, Indonesia. Beach house 🌊, palette beachHouses. €190/night, rating 4.89 (71 reviews). Photo: \"beach house ocean sunset\".\n6) Lyngen Glass Igloo Cabin. Northern Norway. Cabin ❄️, palette cabins. €295/night, rating 4.97 (63 reviews). Photo: \"glass cabin northern lights\".\n\nReviews of Villa Cipresso: Sophie, Sep 2026, ★5, \"Sunsets over the cypresses were unreal, Marco left us his own olive oil.\" James, Aug 2026, ★5, \"The pool and the silence. Perfect family week.\" Lucía, Aug 2026, ★4, \"Gorgeous house; the road up is gravel, so drive slowly.\" Location: 8 min to Pienza.\n\nCurrent booking (stay-detail, date-guests, checkout and Trips all share this): Villa Cipresso, Thu Nov 13 – Mon Nov 17 2026, 4 nights, 2 adults, 1 child, 0 infants. Price: 4 × €340 = €1,360, cleaning €85, service fee €168, taxes €61, total €1,674. Free cancellation until Nov 6.\n\nUpcoming trip (hero on Trips): Reine Fisherman's Rorbu, Fri Oct 23 – Tue Oct 27 2026, 4 nights, 2 adults, paid €980, check-in from 15:00, countdown \"In 22 days\".\n\nPast trips: Chalet Edelweiss, Feb 12–16 2026, 4 guests, reviewed ★5. Canopy Nest Treehouse, Jun 3–8 2026, 2 guests, \"Leave a review\" pending.\n\nWishlists:\n- Recently viewed: 6 saved; cover Villa Cipresso.\n- Nordic Escapes: 4 saved (Reine Rorbu, Lyngen Igloo Cabin); cover photo \"red cabin fjord mountains\".\n- Bali Someday: 3 saved (Canopy Nest, Amed Driftwood); cover photo \"bamboo treehouse jungle\".\n- Ski Week '27: 2 saved (Chalet Edelweiss); cover photo \"wooden chalet snowy peaks\".\nHearted stays: Villa Cipresso, Canopy Nest, Chalet Edelweiss, Reine Rorbu.\n\nExplore categories: Cabins 🛖, Villas 🏡, Treehouses 🌴, Chalets 🏔️, Beach houses 🌊. Default search placeholder: \"Anywhere · Any week · Add guests\"."
+}

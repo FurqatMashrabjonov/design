@@ -1,0 +1,107 @@
+{
+  "appName": "Saffron & Sage",
+  "summary": "A fresh, editorial recipe and weekly meal-planning app that turns what's in your fridge into a planned week, a cook-along kitchen guide and a shopping list sorted by aisle.",
+  "accent": "#047857",
+  "style": "editorial",
+  "palette": {
+    "breakfast": "#047857",
+    "lunch": "#6b21a8",
+    "dinner": "#be185d",
+    "produce": "#0e7490",
+    "dairy": "#111111",
+    "pantry": "#b91c1c"
+  },
+  "tabs": [
+    {
+      "id": "discover",
+      "label": "Discover",
+      "icon": "Compass"
+    },
+    {
+      "id": "plan",
+      "label": "Plan",
+      "icon": "Calendar"
+    },
+    {
+      "id": "list",
+      "label": "List",
+      "icon": "ShoppingCart"
+    },
+    {
+      "id": "saved",
+      "label": "Saved",
+      "icon": "Bookmark"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "Three photo-led slides with large serif headlines: 'Cook what you crave' (Discover), 'Plan your week in minutes' (meal plan grid), 'Shop by aisle, waste less' (shopping list). The last slide asks for diet and household size with chips, then a 'Start cooking' button opens discover.",
+      "asked": false
+    },
+    {
+      "id": "discover",
+      "name": "Discover",
+      "kind": "tab",
+      "tab": "discover",
+      "spec": "Large serif greeting 'Good evening, Maya' with a search field below, then a horizontal row of 'What's in your fridge' ingredient chips (salmon, spinach, eggs, chickpeas, feta, lemon) that filter suggestions. The hero is a full-bleed featured recipe photo card (Miso Butter Salmon) with title, time and calories overlaid, opening recipe. Below sit two horizontally scrolling photo-card collections, 'Dinner in 20 Minutes' and 'Healthy & Bright', each card opening recipe.",
+      "asked": true
+    },
+    {
+      "id": "plan",
+      "name": "Meal Plan",
+      "kind": "tab",
+      "tab": "plan",
+      "spec": "Header 'This week · Sep 28 – Oct 4' with week arrows and a summary strip (18 of 21 meals planned, avg 1,840 kcal/day). A horizontal day selector Mon–Sun highlights today, Thursday Oct 1, followed by a vertical list of all seven days, each with breakfast, lunch and dinner slots shown as rounded recipe thumbnails with name and time; empty slots show a dashed '+ Add' tile. Tapping a filled slot opens recipe; the primary button 'Build shopping list' opens list.",
+      "asked": true
+    },
+    {
+      "id": "list",
+      "name": "Shopping List",
+      "kind": "tab",
+      "tab": "list",
+      "spec": "Title 'Shopping list' with a progress figure '9 of 24 items' and a thin progress bar as the hero, plus a note 'For 7 recipes this week'. Items are grouped into aisle sections (Produce, Fish & Meat, Dairy & Eggs, Pantry, Bakery) each with a coloured header, and every row has a checkbox, the item name, its quantity and the recipe it's for; checked items strike through and sink. Primary action is an 'Add item' field at the top; recipe names link to recipe.",
+      "asked": true
+    },
+    {
+      "id": "saved",
+      "name": "Saved Recipes",
+      "kind": "tab",
+      "tab": "saved",
+      "spec": "Serif title with a count '24 saved' and filter chips (All, Dinner, Breakfast, Under 30 min, Vegetarian). A two-column grid of tall photo cards shows each saved recipe with its name, time and a filled bookmark; tapping opens recipe. A small 'Cooked 3×' badge marks favourites cooked before.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "Avatar, name and a stats row (42 recipes cooked, 6-week planning streak, 24 saved) at top. A 'Dietary preferences' section shows toggle chips for diet (Pescatarian selected), allergies (Tree nuts) and dislikes (cilantro), followed by household size (2), daily calorie goal (1,900 kcal) and a list of settings rows (units, notifications for meal reminders, connected grocery store). Primary action 'Save preferences'.",
+      "asked": true
+    },
+    {
+      "id": "recipe",
+      "name": "Recipe",
+      "kind": "push",
+      "parent": "discover",
+      "spec": "Big edge-to-edge photo of Miso Butter Salmon with bookmark and back buttons, then serif title, author byline and a row of four stats: time, difficulty, calories, rating. A servings stepper (default 2) rescales the ingredient list below, shown as checkbox rows with quantities and an 'Add to shopping list' link to list, followed by numbered steps in readable paragraphs. Sticky bottom bar holds the primary 'Start cooking' button opening cooking-mode and a secondary 'Add to plan' that opens plan.",
+      "asked": true
+    },
+    {
+      "id": "cooking-mode",
+      "name": "Cooking Mode",
+      "kind": "modal",
+      "parent": "recipe",
+      "spec": "Full-screen, distraction-free view with a slim progress bar (Step 3 of 6) and a close button at top. The hero is the current step in very large serif text with the needed ingredients as small chips beneath. A big circular countdown timer (08:00) with start/pause sits below the text; Previous and Next buttons span the bottom, with the final step turning Next into 'Done — enjoy!'.",
+      "asked": true
+    }
+  ],
+  "data": "User: Maya Okafor, Brooklyn, pescatarian, allergic to tree nuts, dislikes cilantro, household 2, calorie goal 1,900 kcal/day, 42 recipes cooked, 6-week planning streak, 24 saved recipes. Today Thursday Oct 1 2026; week Mon Sep 28 – Sun Oct 4; 18 of 21 meals planned, avg 1,840 kcal/day.\nFridge chips: 🐟 salmon, 🥬 spinach, 🥚 eggs, 🫘 chickpeas, 🧀 feta, 🍋 lemon.\nRecipes (emoji, colour, time, difficulty, kcal/serving, rating, photo):\n- Miso Butter Salmon with Bok Choy — 🐟 dinner, 25 min, Easy, 520 kcal, ★4.8 (2.1k), by Hana Mori, photo: \"glazed salmon bok choy\" — FEATURED.\n- Lemony Chickpea & Spinach Stew — 🫘 dinner, 30 min, Easy, 430 kcal, ★4.7, photo: \"chickpea spinach stew bowl\".\n- Shrimp Tacos with Lime Slaw — 🌮 dinner, 20 min, Easy, 480 kcal, ★4.6, photo: \"shrimp tacos lime slaw\".\n- Crispy Gnocchi with Burst Tomatoes — 🍅 dinner, 20 min, Easy, 560 kcal, ★4.9, photo: \"crispy gnocchi cherry tomatoes\".\n- Harissa Roasted Cod & Couscous — 🐠 dinner, 35 min, Medium, 510 kcal, ★4.7, photo: \"roasted cod couscous plate\".\n- Mushroom Risotto with Peas — 🍄 dinner, 45 min, Medium, 590 kcal, ★4.8, photo: \"creamy mushroom risotto\".\n- Greek Salad Grain Bowl with Feta — 🥗 lunch, 15 min, Easy, 450 kcal, ★4.6, photo: \"greek grain bowl feta\".\n- Tuna White Bean Salad — 🥫 lunch, 10 min, Easy, 390 kcal, ★4.5, photo: \"tuna white bean salad\".\n- Roasted Tomato Soup & Grilled Cheese — 🥪 lunch, 30 min, Easy, 620 kcal, ★4.8, photo: \"tomato soup grilled cheese\".\n- Spinach Feta Egg Muffins — 🥚 breakfast, 25 min, Easy, 210 kcal, ★4.6, photo: \"spinach egg muffins\".\n- Overnight Oats with Berries — 🫐 breakfast, 5 min, Easy, 340 kcal, ★4.7, photo: \"overnight oats berries jar\".\n- Shakshuka with Feta — 🍳 breakfast, 25 min, Easy, 380 kcal, ★4.9, photo: \"shakshuka skillet feta\".\n- Avocado Toast with Chili Egg — 🥑 breakfast, 10 min, Easy, 360 kcal, ★4.5, photo: \"avocado toast fried egg\".\nCollections: 'Dinner in 20 Minutes' = Shrimp Tacos, Crispy Gnocchi, Avocado Toast, Tuna White Bean Salad. 'Healthy & Bright' = Lemony Chickpea Stew, Greek Grain Bowl, Harissa Cod, Overnight Oats.\nRecipe detail — Miso Butter Salmon, servings 2 (stepper 1–8): 2 salmon fillets (300 g) ✓; 2 tbsp white miso ✓; 2 tbsp unsalted butter; 1 tbsp mirin; 1 tsp soy sauce; 2 heads baby bok choy, halved; 1 garlic clove, grated; 1 cup jasmine rice; 1 scallion, sliced; 1 tsp sesame seeds. Steps: 1 Rinse rice and cook in 1¼ cups water, 15 min. 2 Heat oven to 220°C / 425°F; line a tray. 3 Mash miso, softened butter, mirin and garlic; spread over salmon. Timer 8:00 — roast salmon and bok choy 8 minutes. 4 Switch to broil for 2 minutes until glaze caramelises (timer 2:00). 5 Drizzle bok choy with soy sauce. 6 Serve over rice, top with scallion and sesame. Cooking mode currently on Step 3 of 6, timer 08:00.\nMeal plan (B / L / D): Mon Sep 28 — Overnight Oats / Tuna White Bean Salad / Lemony Chickpea Stew. Tue Sep 29 — Spinach Feta Egg Muffins / Greek Grain Bowl / Shrimp Tacos. Wed Sep 30 — Overnight Oats / leftover Chickpea Stew / Crispy Gnocchi. Thu Oct 1 (today) — Avocado Toast / Greek Grain Bowl / Miso Butter Salmon. Fri Oct 2 — Spinach Feta Egg Muffins / Tuna White Bean Salad / Harissa Roasted Cod. Sat Oct 3 — Shakshuka / Tomato Soup & Grilled Cheese / empty. Sun Oct 4 — empty / empty / Mushroom Risotto.\nShopping list (24 items, 9 checked, for 7 recipes): Produce 🥬 (produce) — baby bok choy 2 heads (Miso Salmon) ✓, spinach 200 g ✓, lemons 3 ✓, cherry tomatoes 500 g, scallions 1 bunch, cremini mushrooms 300 g, avocados 2, garlic 1 bulb ✓, frozen peas 1 cup. Fish & Meat 🐟 (dinner) — salmon fillets 2 × 150 g ✓, cod fillets 2 × 170 g, shrimp 400 g. Dairy & Eggs 🧀 (dairy) — eggs 12 ✓, feta 200 g ✓, unsalted butter 250 g, parmesan 80 g, cheddar 150 g. Pantry 🫙 (pantry) — white miso 1 tub ✓, chickpeas 2 cans, arborio rice 300 g, couscous 250 g, harissa paste 1 jar, rolled oats 500 g. Bakery 🍞 (breakfast) — sourdough loaf 1, corn tortillas 8.\nSaved (24; first shown): Miso Butter Salmon (Cooked 3×), Crispy Gnocchi (Cooked 2×), Shakshuka, Mushroom Risotto, Lemony Chickpea Stew (Cooked 4×), Shrimp Tacos, Harissa Cod, Overnight Oats.\nProfile settings: units Metric, meal reminder 5:30 pm, grocery store FreshMarket Park Slope."
+}

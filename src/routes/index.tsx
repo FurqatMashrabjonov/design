@@ -15,8 +15,8 @@ export const Route = createFileRoute('/')({
   loader: ({ context }) => (context.user ? getHome() : null),
   head: () => ({
     meta: [
-      { title: `${BRAND} — design a whole mobile app from one prompt` },
-      { name: 'description', content: 'Describe an app and get every screen built from native iOS components: shared data, one navigation, light and dark. Click through it and change it in the chat.' },
+      { title: `${BRAND} — clickable mobile app prototypes from one prompt` },
+      { name: 'description', content: 'Describe an app idea and tap through a clickable prototype: every screen planned together, native iOS look, real navigation. Change it in the chat and share it.' },
     ],
   }),
   component: Index,

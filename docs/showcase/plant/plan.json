@@ -1,0 +1,101 @@
+{
+  "appName": "Leaflet",
+  "summary": "A fresh, botanical plant care companion for city apartments that tracks every plant by room, schedules watering and misting, identifies new plants by camera and diagnoses problems.",
+  "accent": "#8a7bb0",
+  "style": "soft",
+  "palette": {
+    "water": "#8a7bb0",
+    "mist": "#d0845a",
+    "fertilize": "#6f9e80",
+    "rotate": "#9b7bb8",
+    "repot": "#5f8fc0"
+  },
+  "tabs": [
+    {
+      "id": "plants",
+      "label": "Plants",
+      "icon": "Leaf"
+    },
+    {
+      "id": "today",
+      "label": "Today",
+      "icon": "ListChecks"
+    },
+    {
+      "id": "identify",
+      "label": "Identify",
+      "icon": "Camera"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome",
+      "kind": "first-run",
+      "spec": "Three swipeable slides on a soft green background with botanical illustrations. Slide 1 says 'Every plant, on schedule'. Slide 2 says 'Snap to identify any plant'. Slide 3 says 'Diagnose problems in seconds'. Page dots sit at the bottom, and the primary 'Get started' button opens my-plants.",
+      "asked": false
+    },
+    {
+      "id": "my-plants",
+      "name": "My plants",
+      "kind": "tab",
+      "tab": "plants",
+      "spec": "A large title with a soft summary line (7 plants · 2 need water). Below it are room filter chips (All, Living room, Bedroom, Balcony), then a two-column grid of rounded photo cards. Each card shows the plant's nickname, species and a water-due badge coloured water (Today, Tomorrow, In 9 days, or a red Overdue). Tapping a card opens plant-detail, and the primary + button in the top bar opens add-plant.",
+      "asked": true
+    },
+    {
+      "id": "today",
+      "name": "Today",
+      "kind": "tab",
+      "tab": "today",
+      "spec": "The hero is a green gradient card with a progress ring showing 2 of 5 care tasks done, the date (Thursday, Oct 1) and a 12-day care streak. Below it, tasks are grouped by room (Living room, Bedroom, Balcony). Each row has a checkbox, a plant thumbnail, the action with a palette-coloured icon (water, mist, rotate, fertilize) and the plant name, and tapping a row opens plant-detail. A small 'Coming up this week' section lists tomorrow's and Saturday's tasks.",
+      "asked": true
+    },
+    {
+      "id": "identify",
+      "name": "Identify",
+      "kind": "tab",
+      "tab": "identify",
+      "spec": "A dark full-screen camera viewfinder with a rounded white scan frame, corner brackets and a hint ('Center a leaf in the frame'), plus a large shutter button and a gallery button. After a scan, a bottom result card slides up with a photo, the species name (Peace lily, Spathiphyllum wallisii), a 94% confidence bar and two alternates (Anthurium 4%, Calla lily 2%). Its primary 'Add to my plants' action opens add-plant.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "An avatar header shows Lena Park, Plant parent · Level 4, with stats for 7 plants, a 12-day streak and 148 tasks done. Below it is a Rooms section of photo cards for Living room, Bedroom and Balcony, each showing its plant count, light level and humidity. The section ends with an 'Add room' button. A settings list follows with reminder time, units, a vacation mode toggle and help.",
+      "asked": true
+    },
+    {
+      "id": "plant-detail",
+      "name": "Plant detail",
+      "kind": "push",
+      "parent": "my-plants",
+      "spec": "A full-bleed hero photo of Monty the Monstera with its nickname, species (Monstera deliciosa) and room. Next comes a row of needs tiles for light (bright indirect), humidity (60%), water (every 7 days) and temperature. A watering schedule card shows the last and next watering plus a 7-day strip with water, mist and fertilize dots. Below that are a horizontal growth photo timeline (Jun, Jul, Aug, Sep, today) and care notes. The primary 'Mark as watered' button sits at the bottom, and a 'Something wrong?' row opens plant-doctor.",
+      "asked": true
+    },
+    {
+      "id": "plant-doctor",
+      "name": "Plant doctor",
+      "kind": "push",
+      "parent": "plant-detail",
+      "spec": "A header shows the plant being checked (Monty, Monstera) and a grid of symptom chips with emoji: yellow leaves, brown tips, drooping, spots, pests and leaf drop. Yellow leaves is selected. A diagnosis card follows, showing the likely cause (Overwatering, 82% match) and a short explanation, then numbered recovery steps with checkboxes. The primary 'Add steps to Today' button sends the steps to the today screen.",
+      "asked": true
+    },
+    {
+      "id": "add-plant",
+      "name": "Add plant",
+      "kind": "modal",
+      "parent": "my-plants",
+      "spec": "A three-step sheet with a progress bar. Step 1 is the species, prefilled as Peace lily with a photo. Step 2 asks for a nickname and room as selectable cards (Living room, Bedroom, Balcony) with light level. Step 3 sets the pot size and when the plant was last watered, then previews the generated care schedule with water, mist and fertilize rows. The primary 'Add Lily' button adds the plant and returns to my-plants.",
+      "asked": true
+    }
+  ],
+  "data": "User: Lena Park, Brooklyn apartment, Plant parent Level 4, 12-day care streak, 148 tasks done, reminders at 8:00 AM. Today is Thu Oct 1, 2026.\nRooms: Living room (south window, bright indirect, 48% humidity, 3 plants, photo: bright living room plants), Bedroom (east window, medium light, 55% humidity, 3 plants, photo: cozy bedroom houseplants), Balcony (full sun, outdoor, 1 plant, photo: city balcony herbs).\nPlants:\n- Monty: Monstera deliciosa 🌿, Living room, water every 7 days, last watered Sep 24, due Today, light bright indirect, humidity 60%, 18–27°C, color water, photo: monstera in white pot. Growth timeline: Jun 12 (3 leaves), Jul 15, Aug 20, Sep 18, Oct 1 (6 leaves, new fenestrated leaf). Notes: 'New leaf unfurling, keep away from radiator'; 'Fertilized Sep 15'.\n- Stripes: Calathea orbifolia 🍃, Bedroom, mist daily, water every 5 days, next water Sat Oct 3, humidity 70%, color mist, photo: calathea striped leaves.\n- Figgy: Fiddle leaf fig 🌳, Living room, rotate weekly, water every 10 days, next water Mon Oct 5, color rotate, photo: fiddle leaf fig tree.\n- Coin: Pilea peperomioides 🪴, Living room, water every 6 days, Overdue 1 day, color water, photo: pilea pancake plant.\n- Goldie: Golden pothos 🌱, Bedroom, water every 7 days, due Sat Oct 3, color water, photo: trailing golden pothos.\n- Sly: Snake plant 🌵, Bedroom, water every 14 days, due Sat Oct 10, color water, photo: snake plant ceramic pot.\n- Basil: Sweet basil 🌿, Balcony, water every 2 days, due Tomorrow, fertilize today, color fertilize, photo: basil pot on balcony.\nToday tasks (2 of 5 done): Living room: Water Monty (Monstera) [water] ☐; Rotate Figgy (Fiddle leaf fig) [rotate] ☑ done 8:12 AM; Water Coin (Pilea) [water] ☐ overdue. Bedroom: Mist Stripes (Calathea) [mist] ☑ done 8:05 AM. Balcony: Fertilize Basil [fertilize] ☐.\nComing up: Fri Oct 2 water Basil, mist Stripes. Sat Oct 3 water Stripes, water Goldie. Mon Oct 5 water Figgy.\nIdentify result: Peace lily (Spathiphyllum wallisii) 🌸 94% confidence, alternates Anthurium 4% and Calla lily 2%, photo: peace lily white flower.\nAdd plant flow: nickname Lily, Peace lily, room Bedroom, medium pot 15 cm, last watered Today. Generated schedule: water every 7 days (next Thu Oct 8) [water], mist twice weekly [mist], fertilize monthly from Nov 1 [fertilize], repot spring 2027 [repot]. After adding, the app has 8 plants and the Bedroom 4.\nPlant doctor (Monty): symptoms 🟡 Yellow leaves (selected), 🤎 Brown tips, 🥀 Drooping, ⚫ Spots, 🐛 Pests, 🍂 Leaf drop. Diagnosis: Overwatering, 82% match; also possible Low light 12%, Nutrient deficiency 6%. Steps: 1. Check the top 5 cm of soil, and only water when it's dry. 2. Make sure the pot drains, and empty the saucer. 3. Remove fully yellow leaves at the base. 4. Stretch watering to every 10 days for 3 weeks. 5. Check again on Thu Oct 22."
+}

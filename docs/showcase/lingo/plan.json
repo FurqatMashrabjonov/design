@@ -1,0 +1,94 @@
+{
+  "appName": "Charlo",
+  "summary": "A bright, game-like Spanish learning app where Aziz follows a winding path of bite-sized lessons, earns XP and crowns, keeps his streak alight and climbs a weekly league.",
+  "accent": "#009978",
+  "style": "vivid",
+  "palette": {
+    "xp": "#ffc300",
+    "streak": "#00c49a",
+    "hearts": "#7b61ff",
+    "gems": "#ff3d7f",
+    "crowns": "#00a8e8",
+    "words": "#58cc02"
+  },
+  "tabs": [
+    {
+      "id": "learn",
+      "label": "Learn",
+      "icon": "House"
+    },
+    {
+      "id": "words",
+      "label": "Words",
+      "icon": "BookOpen"
+    },
+    {
+      "id": "league",
+      "label": "League",
+      "icon": "Star"
+    },
+    {
+      "id": "profile",
+      "label": "Profile",
+      "icon": "CircleUser"
+    }
+  ],
+  "screens": [
+    {
+      "id": "onboarding",
+      "name": "Welcome to Charlo",
+      "kind": "first-run",
+      "spec": "Three playful slides with a bouncing mascot, Charlo the parrot. Slide 1 has a big 'Hola!' bubble and the line 'Learn Spanish in 5 minutes a day'. Slide 2 is 'I want to learn…', a grid of language cards with flag emojis, Spanish 🇪🇸 preselected with a thick green border. Slide 3 is 'Pick a daily goal', three chunky tiles: Casual 5 min, Regular 10 min (selected) and Serious 20 min. A full-width 'Let's go!' button leads to learning-path.",
+      "asked": true
+    },
+    {
+      "id": "learning-path",
+      "name": "Learn",
+      "kind": "tab",
+      "tab": "learn",
+      "spec": "A top bar shows the 🇪🇸 flag, a 🔥21 streak, 💎 gems and ❤️ hearts. Below it sits a colourful Unit 2 banner card, 'Food & Drinks', with a 'Guidebook' chip. A winding zig-zag path of round lesson nodes follows. Completed nodes are gold with crowns, the current node 'Ordering at a café' glows and pulses under a 'START' bubble, and locked nodes are grey, with a treasure chest midway and a Unit 3 header below. Tapping the glowing node opens lesson.",
+      "asked": true
+    },
+    {
+      "id": "vocabulary",
+      "name": "Words",
+      "kind": "tab",
+      "tab": "words",
+      "spec": "A gradient hero card reads '248 words learned' with a weekly +36 chip. Filter chips follow: All, Food, Greetings, Travel and Weak. A list of words follows, each with an emoji, the Spanish word, its English translation and a 4-bar strength meter coloured green, yellow or red. A sticky 'Practice weak words' button opens lesson.",
+      "asked": true
+    },
+    {
+      "id": "leaderboard",
+      "name": "Gold League",
+      "kind": "tab",
+      "tab": "league",
+      "spec": "The hero is a shiny gold shield badge with 'Gold League' and 'Ends in 3 days'. A ranked list of avatars with names and weekly XP follows, with the top 5 under a green 'Promotion zone' divider. Aziz's row is highlighted at #4 with 412 XP. The bottom 3 sit under a red 'Demotion zone' divider. Tapping Aziz's row opens profile.",
+      "asked": true
+    },
+    {
+      "id": "profile",
+      "name": "Profile",
+      "kind": "tab",
+      "tab": "profile",
+      "spec": "A big round avatar shows Aziz with 'Joined March 2026' and a 🇪🇸 flag. A 2×2 stat grid shows 🔥 21-day streak, ⚡ 1 840 total XP, 🏆 Gold league and 👑 14 crowns. An XP-this-week bar chart covers Mon–Sun. An 'Achievements' section lists badges with progress bars: Wildfire, Sage, Scholar and Champion. The 'View league' row opens leaderboard.",
+      "asked": true
+    },
+    {
+      "id": "lesson",
+      "name": "Lesson",
+      "kind": "push",
+      "parent": "learning-path",
+      "spec": "The top row has a close X, a thick green progress bar at 7 of 10 and ❤️ 4 hearts. The prompt 'Which one is \"la manzana\"?' sits beside a speaker button. A large photo card leads into a 2×2 grid of four answer tiles, each with an emoji and an English word, and the correct tile, apple, is selected with a blue outline. A bottom 'Check' button turns into a green 'Correct! ¡Muy bien!' sheet with 'Continue', which opens lesson-result.",
+      "asked": true
+    },
+    {
+      "id": "lesson-result",
+      "name": "Lesson complete",
+      "kind": "modal",
+      "parent": "lesson",
+      "spec": "Confetti bursts over Charlo cheering 'Lesson complete!'. Three stat cards follow: Total XP +15 in yellow, Accuracy 90% in green and Streak 🔥 22 days in orange. A streak flame banner reads 'You extended your streak!', and a small league line reads 'You moved up to #3 in Gold League'. The primary 'Continue' button returns to learning-path, and a secondary 'View league' button opens leaderboard.",
+      "asked": true
+    }
+  ],
+  "data": "Learner: Aziz Karimov, avatar 🧑🏻 on a teal background, learning Spanish 🇪🇸, daily goal 10 min (Regular), joined March 2026, streak 21 days (becomes 22 after today's lesson), total XP 1 840, this week 412 XP, Gold League rank #4 (moves to #3 after the lesson), 14 crowns, 💎 gems 1 260, ❤️ hearts 4 of 5, 248 words learned (+36 this week).\nMascot: Charlo the parrot 🦜.\nOnboarding languages: Spanish 🇪🇸 (selected), French 🇫🇷, Italian 🇮🇹, German 🇩🇪, Portuguese 🇧🇷, Japanese 🇯🇵. Goals: Casual 5 min, Regular 10 min (selected), Serious 20 min.\nPath: Unit 1 'Basics' (green, complete, 5/5 crowns): Hola!, Introductions, Family, Numbers, Colors. Unit 2 'Food & Drinks' (yellow, current): Fruits 👑 done, At the market 👑 done, Ordering at a café (current, glowing, 0/1), treasure chest, Cooking, Restaurant (locked). Unit 3 'Travel' ✈️ (locked): Airport, Hotel, Directions.\nToday's lesson 'Ordering at a café', question 7 of 10: 'Which one is \"la manzana\"?', photo: 'red apple on table'. Tiles are 🍎 apple (correct, palette xp), 🍌 banana, 🥖 bread and 🧀 cheese. Answer sheet: 'Correct! ¡Muy bien!'\nLesson result: +15 XP (xp), accuracy 90% (crowns), streak 🔥 22 days (streak), time 4:12.\nGold League this week (ends in 3 days, top 5 promote, bottom 3 demote): 1 Sofia M. 👩🏽 655 XP; 2 Lucas R. 👨🏼 590; 3 Mei Lin 👩🏻 448; 4 Aziz 🧑🏻 412 (you); 5 Omar K. 👨🏾 398; 6 Hannah B. 👱🏻‍♀️ 361; 7 Diego P. 🧔🏽 340; 8 Aiko T. 👩🏻‍🦰 302; 9 Noah W. 👦🏼 275; 10 Priya S. 👩🏾 240; 11 Jonas F. 🧑🏼 198 (demotion); 12 Elena V. 👵🏻 154 (demotion); 13 Tom H. 👨🏻 96 (demotion).\nXP this week (Thu–Wed, today Thursday Oct 1): Thu 0 before the lesson, Fri 72, Sat 45, Sun 90, Mon 60, Tue 85, Wed 60.\nVocabulary (strength out of 4): 🍎 la manzana – apple 4 (words); ☕ el café – coffee 4; 🥖 el pan – bread 3; 💧 el agua – water 4; 🧀 el queso – cheese 2; 🍌 el plátano – banana 3; 🍷 el vino – wine 1 (weak); 🐟 el pescado – fish 1 (weak); 👋 hola – hello 4; 🙏 gracias – thank you 4; ✈️ el aeropuerto – airport 2; 🏨 el hotel – hotel 3; 🍽️ la cuenta – the bill 1 (weak).\nAchievements: Wildfire 🔥 (streak) 21/30 days, level 4; Sage ⚡ (xp) 1 840/2 000 XP, level 5; Scholar 📚 (words) 248/300 words, level 3; Champion 🏆 (gems) reach Diamond League, 3/5 leagues; Flawless 💎 (hearts) 6/10 perfect lessons; Crowned 👑 (crowns) 14/20 crowns."
+}
