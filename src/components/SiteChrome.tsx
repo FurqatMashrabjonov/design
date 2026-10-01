@@ -75,7 +75,7 @@ export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
         <BrandLink />
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
           <a href={examples} className={link}>Examples</a>
-          <Link to="/pricing" className={link} activeProps={{ className: 'text-foreground' }}>Pricing</Link>
+          {access === 'open' && <Link to="/pricing" className={link} activeProps={{ className: 'text-foreground' }}>Pricing</Link>}
         </nav>
         <div className="flex items-center gap-1">
           <ThemeToggle />
@@ -96,13 +96,14 @@ export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
 
 export function SiteFooter({ onLanding = false }: { onLanding?: boolean }) {
   const home = onLanding ? '' : '/'
+  const access = useAccess()
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
         <span>© {new Date().getFullYear()} {BRAND}</span>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <a href={`${home}#examples`} className={link}>Examples</a>
-          <Link to="/pricing" className={link}>Pricing</Link>
+          {access === 'open' && <Link to="/pricing" className={link}>Pricing</Link>}
           <a href={`${home}#faq`} className={link}>FAQ</a>
           <Link to="/contact" className={link}>Contact</Link>
           <Link to="/terms" className={link}>Terms</Link>

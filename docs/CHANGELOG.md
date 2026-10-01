@@ -10,6 +10,19 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01 (6)
+
+### Pricing closed while waitlist-only
+
+- `routes/pricing.tsx`: in waitlist mode a non-admin is redirected to `/` (on the server too: 307); an admin still
+  sees it. `SiteChrome`: the header and footer drop the Pricing link in waitlist mode. The legal pages keep their
+  in-text link (it lands on the home page meanwhile).
+
+Verified: `npx tsc --noEmit`, `npm run check` clean. Dev server in waitlist mode, headless Chrome as a guest: /pricing
+lands on the home page (SSR 307), no /pricing link on the landing or in /terms' header and footer; signed in as an
+admin by magic link: /pricing opens ("Pay for what you make.").
+
 ## 2026-10-01 (5)
 
 ### Landing examples on an iPhone 18 Pro Max frame

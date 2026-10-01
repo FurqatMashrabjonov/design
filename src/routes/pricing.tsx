@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { getSession } from '../server/fns'
 import { Check } from 'lucide-react'
 import { BRAND, Em, Eyebrow, SitePage } from '@/components/SiteChrome'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -12,6 +13,12 @@ import { useAccess } from './__root'
 // BIL-12: the plans and what a credit buys, in public. Every number comes from lib/credit-prices.ts,
 // the same table the server charges from, so this page cannot promise a price the product does not keep.
 export const Route = createFileRoute('/pricing')({
+  // ACC-03: while the app is waitlist-only there is nothing to buy; only an admin still sees the page.
+  beforeLoad: async ({ context }) => {
+    if (context.access !== 'waitlist') return
+    const { user } = await getSession()
+    if (!user?.admin) throw redirect({ to: '/' })
+  },
   head: () => ({
     meta: [
       { title: `Pricing — ${BRAND}` },
