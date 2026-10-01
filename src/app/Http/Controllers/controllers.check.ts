@@ -1498,4 +1498,19 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.notEqual(ShotService.key('A', { ...look, style: 'midnight' as const }), k, 'a new style is a new picture')
 }
 
+{
+  // SEC-01 behind a proxy: the request URL is internal, the browser's Origin is the public site.
+  const { crossSite } = await import('../../../server/guard.ts')
+  const req = (origin?: string) => new Request('http://localhost:8080/api/generate-plan', { method: 'POST', headers: origin ? { origin } : {} })
+  assert.equal(crossSite(req('https://screenspell.app'), 'https://screenspell.app'), false, 'the public origin is this site')
+  assert.equal(crossSite(req('http://localhost:8080'), 'https://screenspell.app'), false, 'the request URL origin is this site')
+  assert.equal(crossSite(req(), 'https://screenspell.app'), false, 'no Origin header passes')
+  assert.equal(crossSite(req('https://evil.example'), 'https://screenspell.app'), true, 'another site is refused')
+  assert.equal(crossSite(req('https://screenspell.app.evil.example'), 'https://screenspell.app'), true, 'a look-alike host is refused')
+  assert.equal(crossSite(req('https://screenspell.app'), 'not a url'), true, 'a malformed public URL adds nothing')
+  const { publicOrigin } = await import('../../../server/guard.ts')
+  assert.equal(publicOrigin(req(), 'https://screenspell.app/x'), 'https://screenspell.app', 'payment return URLs use the public origin')
+  assert.equal(publicOrigin(req(), ''), 'http://localhost:8080', 'with no public URL (dev) the request origin')
+}
+
 console.log('ok')

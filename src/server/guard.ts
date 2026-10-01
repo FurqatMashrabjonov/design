@@ -8,10 +8,29 @@ import '@/app/Services/SecretService' // ADM-13: model calls take their key from
 import '@/app/Services/ProviderStatsService' // ADM-14: the circuit breaker reads model health from llm_calls
 import { Credit } from '@/app/Models/Credit'
 
-export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>): Promise<Response> {
-  // SEC-01: a state-changing POST must come from this site, not from a page elsewhere.
+/** SEC-01: a state-changing POST must come from this site, not from a page elsewhere. Behind a proxy (Railway)
+ *  the request's own URL is the internal one (http://…:8080), so the site's public origin, BETTER_AUTH_URL,
+ *  counts as this site too. A request with no Origin (not a browser's cross-site POST) passes. */
+/** The site's address as the browser sees it: BETTER_AUTH_URL, else the request's own (no proxy, e.g. dev). */
+export function publicOrigin(request: Request, publicUrl = process.env.BETTER_AUTH_URL): string {
+  try {
+    if (publicUrl) return new URL(publicUrl).origin
+  } catch {}
+  return new URL(request.url).origin
+}
+
+export function crossSite(request: Request, publicUrl = process.env.BETTER_AUTH_URL): boolean {
   const origin = request.headers.get('origin')
-  if (origin && origin !== new URL(request.url).origin) return new Response('Cross-site request refused', { status: 403 })
+  if (!origin) return false
+  const ours = new Set([new URL(request.url).origin])
+  try {
+    if (publicUrl) ours.add(new URL(publicUrl).origin)
+  } catch {} // a malformed BETTER_AUTH_URL adds nothing
+  return !ours.has(origin)
+}
+
+export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>): Promise<Response> {
+  if (crossSite(request)) return new Response('Cross-site request refused', { status: 403 })
   const user = await userFrom(request)
   if (!user) return new Response('Sign in to continue', { status: 401 })
   const text = await request.text()

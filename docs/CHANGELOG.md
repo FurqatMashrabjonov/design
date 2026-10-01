@@ -5,6 +5,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01
+
+### Fix: generation refused as "Cross-site request refused" on screenspell.app (Railway)
+
+Behind Railway's proxy a request's own URL is the internal `http://…:8080`, so the same-origin check (SEC-01)
+compared the browser's `https://screenspell.app` with it and refused every generation from the live site. The
+billing return URLs had the same mistake (Polar would send a buyer back to the internal address).
+- `src/server/guard.ts`: `crossSite(request)` — this site is the request's origin or `BETTER_AUTH_URL`'s; no Origin
+  passes; `publicOrigin(request)` — `BETTER_AUTH_URL`, else the request's own (dev).
+- `src/routes/api/stop-plan.ts`, `guardGeneration`: use `crossSite`. `src/server/fns.ts`: checkout and portal return
+  to `publicOrigin`.
+- `controllers.check.ts`: public origin, internal origin and no Origin pass; another site, a look-alike host and a
+  malformed public URL are refused; `publicOrigin` with and without the public URL.
+
+Also on Railway (no code): a Postgres service, `DATABASE_URL`, `NODE_ENV`, `BETTER_AUTH_URL`/`SECRET`, `SECRETS_KEY`,
+`ADMIN_EMAILS`, `EMAIL_FROM`, Google OAuth keys; build `npm run build:runtime && npm run build`; deploys `konsta`.
+
+Verified: `npm run check`, `npx tsc --noEmit`, `npm run build` clean; on the live site after deploy (below).
+
 ## 2026-09-30 (9)
 
 ### Posts from a list of scenarios; Instagram at 9:16

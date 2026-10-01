@@ -14,6 +14,7 @@ import { BillingController } from '@/app/Http/Controllers/BillingController'
 import { PRODUCTS } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
+import { publicOrigin } from './guard'
 import { getRequest } from '@tanstack/react-start/server'
 import { signInMethods } from '@/app/Services/AuthService'
 import { str, num, obj, oneOf, idOf } from './validate'
@@ -40,11 +41,11 @@ export const startCheckout = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ key: oneOf(obj(d).key, PRODUCTS.map((p) => p.key)) }))
   .handler(async ({ data }) => {
     const user = await requireUser()
-    return BillingController.checkout(user, data.key, new URL(getRequest().url).origin)
+    return BillingController.checkout(user, data.key, publicOrigin(getRequest()))
   })
 
 /** BIL-11: the provider's billing portal for the signed-in user. */
-export const openBillingPortal = createServerFn({ method: 'POST' }).handler(async () => BillingController.portal((await requireUser()).id, new URL(getRequest().url).origin))
+export const openBillingPortal = createServerFn({ method: 'POST' }).handler(async () => BillingController.portal((await requireUser()).id, publicOrigin(getRequest())))
 
 export const getHome = createServerFn({ method: 'GET' }).handler(async () => ProjectController.index((await requireUser()).id))
 

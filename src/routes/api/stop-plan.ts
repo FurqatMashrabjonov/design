@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { userFrom } from '@/server/auth'
+import { crossSite } from '@/server/guard'
 import { Project } from '@/app/Models/Project'
 import { PlanRuns } from '@/app/Services/PlanRuns'
 
@@ -9,8 +10,7 @@ export const Route = createFileRoute('/api/stop-plan')({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const origin = request.headers.get('origin')
-        if (origin && origin !== new URL(request.url).origin) return new Response('Cross-site request refused', { status: 403 })
+        if (crossSite(request)) return new Response('Cross-site request refused', { status: 403 })
         const user = await userFrom(request)
         if (!user) return new Response('Sign in to continue', { status: 401 })
         const body = (await request.json().catch(() => ({}))) as { projectId?: unknown }
