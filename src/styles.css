@@ -335,6 +335,26 @@ svg.lucide { stroke-width: 1.75; }
     animation: od-skel 1.5s linear infinite;
 }
 @keyframes od-skel { to { background-position: -200% 0; } }
+/* UI-31: a page on its way — a 2px lime fill across the top (lime is a fill, never text). Still with reduced motion. */
+.od-nav-progress { position: fixed; inset: 0 0 auto 0; z-index: 100; height: 2px; background: var(--primary); transform-origin: left; transform: scaleX(.6); pointer-events: none; }
+@media (prefers-reduced-motion: no-preference) {
+    .od-nav-progress { animation: od-nav-progress 1.6s var(--motion-ease-out) infinite; }
+}
+@keyframes od-nav-progress { 0% { transform: scaleX(0); opacity: 1; } 70% { transform: scaleX(.85); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+/* UI-31: a picture on its way (LoadingImage) — its box shimmers like a waiting frame, then the picture fades in over
+   it; a picture that never came stays a quiet block. With reduced motion it is the block, then the picture. */
+.od-img { background: var(--muted); }
+.od-img[data-state='loaded'] { background: transparent; }
+.od-img > img { opacity: 0; }
+.od-img[data-state='loaded'] > img { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) {
+    .od-img[data-state='loading'] {
+        background: linear-gradient(90deg, var(--muted) 25%, color-mix(in oklab, var(--muted) 45%, var(--card)) 50%, var(--muted) 75%);
+        background-size: 200% 100%;
+        animation: od-skel 1.5s linear infinite;
+    }
+    .od-img > img { transition: opacity var(--duration-slow) var(--motion-ease-out); }
+}
 /* The drawing step's progress: lime as a fill on a muted track. */
 .od-progress { height: 3px; border-radius: 999px; background: var(--muted); overflow: hidden; }
 .od-progress > span { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width var(--duration-base, 200ms) ease-out; }

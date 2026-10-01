@@ -8,6 +8,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-01 (4)
+
+### UI-31: loading states everywhere; showcase pictures fill the phone; landing spacing
+
+- A broken thumbnail on the live landing (a picture that failed once during a deploy showed its alt text):
+  `components/LoadingImage.tsx` — shimmer until loaded, fade-in, two retries with a growing pause, never a broken
+  icon; `.od-img` styles in `styles.css` (motion only inside no-preference). Used by the landing gallery (cards and
+  dialog), dashboard thumbnails (`onFail` → the live frame, after one retry) and the chat's before/after.
+- `NavProgress` (root): a 2px lime bar while a page loads, after 150 ms. Router `defaultPreload: 'intent'`.
+- Showcase pictures re-made through CDP at exactly 390×844 (device metrics) instead of a window: the window-based
+  shot left the app ~87px short, so the tab bar floated above an empty strip. Same nine apps, same 65 screens.
+- Landing: hero bottom padding; `text-balance` headings; "Idea to prototype in a minute."; examples are a swipe row
+  on a phone (nine stacked cards were ~3 000px) and a 3×3 grid from 768px; section spacing tighter on a phone
+  (page 6 789 → 3 985px tall at 390 wide).
+
+Verified: `npx tsc --noEmit`, `npm run check` clean. Headless Chrome, waitlist mode, at 390, 768 and 1280: no
+horizontal scroll, every card and picture loads; on simulated slow 3G a dialog shows its phone-shaped skeletons, then
+the pictures; a click to /pricing on slow 3G shows the progress bar.
+
 ## 2026-10-01 (3)
 
 ### Landing rewritten around prototypes, with nine real examples

@@ -5,6 +5,7 @@ import { createProject, deleteProject, favoriteProject, renameProject } from './
 import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
 import { BRAND } from './Landing'
+import { LoadingImage } from '@/components/LoadingImage'
 import { reportError, useCredits } from './credits'
 import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -46,7 +47,9 @@ export function Thumb({ screenId, device, width }: { screenId: string; device: s
         style={{ width: size.width, height: size.height, transform: `scale(${width / size.width})` }}
       />
     )
-  return <img src={`/api/shot/${screenId}`} alt="" aria-hidden loading="lazy" decoding="async" draggable={false} onError={() => setLive(true)} className="block bg-card object-cover object-top" style={{ width, height }} />
+  // UI-31: a picture made on first ask can take a few seconds; its slot shimmers meanwhile, and only after a retry
+  // does the live frame stand in.
+  return <LoadingImage src={`/api/shot/${screenId}`} alt="" aria-hidden retries={1} onFail={() => setLive(true)} imgClassName="object-top" style={{ width, height }} />
 }
 
 export function ago(unix: number) {

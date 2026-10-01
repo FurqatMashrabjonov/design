@@ -80,11 +80,11 @@ export function Landing() {
       {/* Hero */}
       <section className="relative">
         <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
-        <div className="relative mx-auto max-w-3xl px-4 pt-16 text-center sm:pt-24">
+        <div className="relative mx-auto max-w-3xl px-4 pt-16 pb-16 text-center sm:pt-24 sm:pb-20">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
             <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · we let people in a few at a time' : `${SIGNUP_CREDITS} free credits · no card needed`}
           </span>
-          <h1 className="text-4xl sm:text-6xl">
+          <h1 className="text-4xl text-balance sm:text-6xl">
             Describe an app idea. <br />Tap through the <Em>prototype</Em>.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
@@ -98,10 +98,10 @@ export function Landing() {
 
       {/* Real prototypes, as generated */}
       {EXAMPLES.length > 0 && <section id="examples" className="border-y border-border bg-card/60">
-        <div className="mx-auto max-w-6xl px-4 py-20">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow>Examples</Eyebrow>
-            <h2 className="text-2xl sm:text-4xl">Each one from a <Em>single</Em> prompt.</h2>
+            <h2 className="text-2xl text-balance sm:text-4xl">Each one from a <Em>single</Em> prompt.</h2>
             <p className="mt-3 text-muted-foreground">Screens exactly as {BRAND} drew them, not retouched. Open one to see every screen.</p>
           </div>
           <div className="mt-12">
@@ -111,20 +111,20 @@ export function Landing() {
       </section>}
 
       {/* How it works */}
-      <section id="how" className="mx-auto max-w-6xl px-4 py-24">
+      <section id="how" className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="text-2xl sm:text-4xl">From idea to prototype in <Em>a minute</Em>.</h2>
+          <h2 className="text-2xl text-balance sm:text-4xl">Idea to prototype in <Em>a minute</Em>.</h2>
         </div>
-        <div className="mt-14 grid gap-5 md:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-5 md:grid-cols-3">
           {[
             ['01', 'Describe the idea', 'What the app is for and what people do in it — a sentence is enough.'],
             ['02', 'Get the prototype', 'The screens, the tabs and the sample data are planned together, then every screen is drawn at once.'],
             ['03', 'Tap, test, change', 'Click through it like a real app, ask the chat for changes, share a link to it.'],
           ].map(([n, t, d]) => (
-            <div key={n} className="rounded-xl border border-border bg-card p-7 shadow-1">
+            <div key={n} className="rounded-xl border border-border bg-card p-6 shadow-1 sm:p-7">
               <span className="font-mono text-sm text-muted-foreground">{n}</span>
-              <p className="mt-6 text-xl">{t}</p>
+              <p className="mt-4 text-xl sm:mt-6">{t}</p>
               <p className="mt-2 text-muted-foreground">{d}</p>
             </div>
           ))}
@@ -132,8 +132,8 @@ export function Landing() {
       </section>
 
       {/* What a prototype is, and is not */}
-      <section className="mx-auto max-w-4xl px-4 pb-24">
-        <div className="grid gap-5 md:grid-cols-2">
+      <section className="mx-auto max-w-4xl px-4 pb-16 sm:pb-24">
+        <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-7 shadow-1">
             <p className="text-lg font-medium">Good for</p>
             <ul className="mt-4 space-y-3 text-sm">
@@ -154,7 +154,7 @@ export function Landing() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-3xl px-4 pb-24">
+      <section id="faq" className="mx-auto max-w-3xl px-4 pb-16 sm:pb-24">
         <div className="text-center">
           <Eyebrow>FAQ</Eyebrow>
           <h2 className="text-2xl sm:text-3xl">Questions, answered.</h2>
@@ -182,7 +182,7 @@ export function Landing() {
       </section>
 
       {/* Final CTA */}
-      <section className="px-4 pb-24">
+      <section className="px-4 pb-16 sm:pb-24">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-xl bg-inverse [--ring:var(--inverse-foreground)] px-6 py-16 text-center text-inverse-foreground ring-1 ring-border sm:py-20">
           <div className="pointer-events-none absolute -top-32 left-1/2 size-[480px] -translate-x-1/2 rounded-full bg-primary opacity-25 blur-3xl" />
           <h2 className="relative text-2xl sm:text-4xl">What would you like to prototype?</h2>

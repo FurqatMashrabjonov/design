@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { LoadingImage } from '@/components/LoadingImage'
 import { ArrowDown, CircleAlert, Image as ImageIcon, Copy, Loader2, Pencil, Plus, RotateCw, Sparkles, Undo2 } from 'lucide-react'
 import { copyText } from '@/lib/clipboard'
 import type { MessageRow } from '@/app/Models/Message'
@@ -286,7 +287,7 @@ function BeforeAfter(props: { screenId: string; versionId: string; device: strin
     <figure className="min-w-0">
       <div className="overflow-hidden rounded-lg border bg-card" style={{ width, height: Math.round(width * 1.6) }}>
         {/* KON-10: a picture of that version, not the app running — a long chat has many of these. */}
-        <img src={src} alt="" aria-hidden loading="lazy" decoding="async" className="block object-cover object-top" style={{ width, height: Math.round(width * 1.6) }} />
+        <LoadingImage src={src} alt="" aria-hidden imgClassName="object-top" style={{ width, height: Math.round(width * 1.6) }} />
       </div>
       <figcaption className="mt-1 text-center text-xs text-muted-foreground">{label}</figcaption>
     </figure>

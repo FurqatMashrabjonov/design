@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EXAMPLES, exampleShot, type Example } from '@/content/examples'
+import { LoadingImage } from '@/components/LoadingImage'
 
 // The landing's examples: each prototype as a card (its prompt and three screens); a click opens every screen of it,
 // full size, in a row you scroll. Pictures only — the screens as they were drawn (see content/examples.ts).
@@ -9,24 +10,25 @@ export function ExampleGallery() {
   const [open, setOpen] = useState<Example | null>(null)
   return (
     <>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/* A row to swipe on a phone (nine cards stacked were 3 000px of scrolling), a grid from sm up. */}
+      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3">
         {EXAMPLES.map((ex) => (
           <button
             key={ex.id}
             type="button"
             onClick={() => setOpen(ex)}
-            className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="group flex w-[82%] shrink-0 snap-center flex-col overflow-hidden rounded-xl sm:w-auto border border-border bg-card text-left shadow-1 transition duration-(--duration-base) ease-out hover:-translate-y-0.5 hover:shadow-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <div className="flex justify-center gap-2 bg-background/60 px-4 pt-5">
               {ex.screens.slice(0, 3).map((sc, i) => (
-                <img
+                <LoadingImage
                   key={sc.slug}
                   src={exampleShot(ex.id, sc.slug, 'sm')}
                   alt={`${ex.name} — ${sc.name}`}
-                  loading="lazy"
                   width={440}
                   height={952}
-                  className={`w-[30%] rounded-t-[14px] border border-b-0 border-border object-cover object-top shadow-2 ${i === 1 ? '' : 'mt-4'} aspect-[390/600]`}
+                  imgClassName="object-top"
+                  className={`aspect-[390/600] w-[30%] rounded-t-[14px] border border-b-0 border-border shadow-2 ${i === 1 ? '' : 'mt-4'}`}
                 />
               ))}
             </div>
@@ -56,7 +58,7 @@ export function ExampleGallery() {
               <div className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-3 sm:-mx-7 sm:px-7">
                 {open.screens.map((sc) => (
                   <figure key={sc.slug} className="m-0 shrink-0 snap-start">
-                    <img src={exampleShot(open.id, sc.slug)} alt={`${open.name} — ${sc.name}`} width={780} height={1688} className="w-[240px] rounded-[30px] border border-border shadow-2 sm:w-[260px]" />
+                    <LoadingImage src={exampleShot(open.id, sc.slug)} alt={`${open.name} — ${sc.name}`} width={780} height={1688} className="aspect-[390/844] w-[240px] rounded-[30px] border border-border shadow-2 sm:w-[260px]" />
                     <figcaption className="mt-2 text-center text-xs text-muted-foreground">{sc.name}</figcaption>
                   </figure>
                 ))}

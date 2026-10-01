@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { BRAND, DOMAIN } from '@/lib/brand'
-import { Outlet, createRootRoute, HeadContent, Scripts, useRouteContext } from '@tanstack/react-router'
+import { Outlet, createRootRoute, HeadContent, Scripts, useRouteContext, useRouterState } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { getAccess } from '../server/fns'
 import type { AccessMode } from '@/app/Services/AccessService'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -53,6 +54,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="antialiased">
+        <NavProgress />
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         {/* UI-21: top centre — the canvas keeps its corners for tools (bottom-right was the zoom cluster). */}
         <Toaster position="top-center" offset={16} />
@@ -65,3 +67,16 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 /** ACC-01: 'waitlist' while only admins may sign in; the pages show the waitlist instead of sign-in. */
 export const useAccess = (): AccessMode => useRouteContext({ from: '__root__' }).access
+
+/** UI-31: a thin bar at the top while a page is on its way, shown only when it takes longer than a blink (150 ms),
+ *  so a slow connection never feels like a click that did nothing. */
+function NavProgress() {
+  const loading = useRouterState({ select: (s) => s.isLoading })
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    if (!loading) return setShown(false)
+    const t = setTimeout(() => setShown(true), 150)
+    return () => clearTimeout(t)
+  }, [loading])
+  return shown ? <div role="progressbar" aria-label="Loading" className="od-nav-progress" /> : null
+}
