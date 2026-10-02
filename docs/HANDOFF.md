@@ -1,7 +1,37 @@
 # Topshiriq: ishni boshqa kompyuterda davom ettirish
 
-> Yozilgan: 2026-09-21, yangilangan 2026-09-28. Eng yangi ish: **`konsta`** branch. **Boshlash: §0000 — HIG ishi (HIG-11 navbatda).**
+> Yozilgan: 2026-09-21, yangilangan 2026-10-02. Eng yangi ish: **`konsta`** branch. **Boshlash: §00000 — billing tayyor, PRC-05 qaror kutmoqda.**
 > (Eskisi: `canvas-planner` branch — HTML davri.) Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
+
+## 00000. ENG SO'NGGI (2026-10-02): billing va pricing — branch `konsta`
+
+**Tayyor (hammasi push qilingan, oxirgi commit `feat(pricing): PRC-04`):**
+- BIL-20…25: `/pricing` waitlist rejimida ham ochiq; `/billing` sahifasi (tarif, oylik kredit bar, paketlar,
+  tarix); dashboard sidebar'da `UpgradePanel`; upgrade dialogida Monthly/Yearly; `LowCredits` qatori;
+  checkout ochilmasa `PaymentsSoonDialog` (waitlist `ref=payments`); Admin → Settings → Payments (Polar holati).
+- PRC-02: Free'da 3 ta export (server sanaydi, `export_uses`, migratsiya **0011**). PRC-03: Free egasining share
+  linkida "Made with Screenspell", pullikda toza. PRC-04: yangi pricing sahifasi (kartalar, kalkulyator,
+  taqqoslash, FAQ). Narxlar o'zgarmadi: $12/$24, yillik $9/$17.
+
+**Ochiq — PRC-05 (Pro'da premium model), egasining qarori kerak:**
+- GPT-6 Sol eval'da Luna'dan yaxshi emas (2 yutdi / 2 durang / 2 yutqazdi, 3.26 vs 3.14, ~20× qimmat;
+  `eval/out/gpt6-sol`). Pro'ning 3000 krediti Sol'da ~18 app, Luna'da ~200.
+- Lokal Anthropic/Gemini kaliti yo'q (`.env`da faqat OpenAI, DeepSeek). Variant: Anthropic kaliti berilsa
+  `npm run eval -- --label prc05 --model claude-sonnet-5 --vs onb01` + `npm run judge -- prc05 --vs onb01`
+  (~$2–3). Yutmasa — PRC-05 `Keyin`ga.
+
+**Egasi qiladigan ishlar (prod):**
+- Polar onboarding: nom Screenspell, support email (Cloudflare Email Routing → `hello@screenspell.app`),
+  bank hisobi (USD/SWIFT, lotin yozuvidagi ism). Org hali `checkout_payments: false`.
+- Railway: `POLAR_SERVER=production`, prod Polar token admin panelga; webhook secret'ni almashtirish.
+- Deploy'da migratsiya 0011 ishga tushishi kerak.
+
+**Kontent:** post skill'i (`social-posts`), videolar (`reel.mjs`), captionlar Google Drive "Screenspell Content"
+papkasida; ssenariylar Notion "Post ssenariylari" bazasida. Postlar faqat **prod**da (screenspell.app) qilinadi.
+
+**Yangi laptopda:** `git checkout konsta && git pull`, `npm install`, `npm run build:runtime`, `.env` (kalitlar,
+`DATABASE_URL`, `SECRETS_KEY`), Postgres'da migratsiyalar, `npm run dev`. Push: 
+`git -c credential.helper='!gh auth git-credential' push origin konsta`.
 
 ## 0000. ENG SO'NGGI (2026-09-28 kech): Apple HIG bo'yicha generatsiyani to'g'rilash — branch `konsta`
 
