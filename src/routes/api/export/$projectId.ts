@@ -18,9 +18,9 @@ export const Route = createFileRoute('/api/export/$projectId')({
         const user = await userFrom(request)
         const project = user ? (user.admin ? await Project.find(params.projectId) : await Project.findOwned(params.projectId, user.id)) : undefined
         if (!user || !project) return new Response('Not found', { status: 404 })
-        if (!(await CreditService.limitsFor(user.id, user.admin)).export) {
-          return Response.json({ error: 'plan', limit: 'export' }, { status: 402 })
-        }
+        // PRC-02: Free has a few tries; one is taken only once the file is built, so a failed build costs none.
+        const refused = () => Response.json({ error: 'plan', limit: 'export' }, { status: 402 })
+        if ((await CreditService.exportsLeft(user.id, user.admin)) === 0) return refused()
         const q = new URL(request.url).searchParams
         const theme = themeFromQuery(q, parseAppTheme(project.theme))
         const screens = await Screen.forProject(project.id)
@@ -28,13 +28,16 @@ export const Route = createFileRoute('/api/export/$projectId')({
         const look = { ...project, theme: JSON.stringify(theme) }
         // CODE-02: ?format=html — one file that opens anywhere.
         if (q.get('format') === 'html') {
-          return new Response(await exportHtml(look, screens), {
+          const html = await exportHtml(look, screens)
+          if (!(await CreditService.useExport(user.id, user.admin, 'html', project.id))) return refused()
+          return new Response(html, {
             headers: { 'content-type': 'text/html; charset=utf-8', 'content-disposition': `attachment; filename="${fileSlug(project.name)}.html"`, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
               // Generated code never runs as a page of our origin, even if the attachment is opened in place.
               'content-security-policy': 'sandbox allow-scripts' },
           })
         }
         const files = await exportReact(look, screens)
+        if (!(await CreditService.useExport(user.id, user.admin, 'react', project.id))) return refused()
         const body = zip(files)
         return new Response(body as Uint8Array<ArrayBuffer>, {
           headers: {

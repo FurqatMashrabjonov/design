@@ -6,7 +6,7 @@ import { BrandLink } from '@/components/SiteChrome'
 import { AccountMenu } from '@/components/AccountMenu'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { appsFor, PACKS, PLANS, screensFor, type ProductKey } from '@/lib/credit-prices'
+import { appsFor, FREE_EXPORTS, PACKS, PLANS, screensFor, type ProductKey } from '@/lib/credit-prices'
 import { buy, manageBilling } from '../credits'
 
 // BIL-21: the account's money in one place — the plan in force and when it renews, what this month's plan credits
@@ -53,7 +53,7 @@ function BillingPage() {
               {b.interval && <Badge variant="outline">{b.interval === 'year' ? 'Yearly' : 'Monthly'}</Badge>}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {b.plan === 'free' ? `1 project · no export` : b.renews ? `${b.cancelling ? 'Ends' : 'Renews'} ${day(b.renews)} · ${b.projects === null ? 'unlimited projects' : `${b.projects} projects`} · export included` : 'Export included'}
+              {b.plan === 'free' ? `1 project · ${b.exportsLeft} of ${FREE_EXPORTS} free exports left` : b.renews ? `${b.cancelling ? 'Ends' : 'Renews'} ${day(b.renews)} · ${b.projects === null ? 'unlimited projects' : `${b.projects} projects`} · export included` : 'Export included'}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               {b.plan === 'free' ? (

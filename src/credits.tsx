@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { toast } from 'sonner'
 import { getCredits, notifyWhenPaymentsOpen, openBillingPortal, startCheckout } from './server/fns'
-import { appsFor, CREDIT_PRICES, PACKS, PAYMENTS_CLOSED, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
+import { appsFor, CREDIT_PRICES, FREE_EXPORTS, PACKS, PAYMENTS_CLOSED, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -62,12 +62,12 @@ export function reportError(e: unknown) {
   toast.error(e instanceof Error ? e.message : String(e))
 }
 
-type CreditState = { balance: number; plan: 'starter' | 'pro' | null; canExport: boolean; month: { granted: number; left: number } | null }
+type CreditState = { balance: number; plan: 'starter' | 'pro' | null; canExport: boolean; exportsLeft: number | null; month: { granted: number; left: number } | null }
 
 /** The balance and plan, reloaded when a generation ends. `enabled: false` asks nothing (the root dialog asks only
  *  once it opens — it is mounted on every page, signed-out shared previews included). */
 export function useCredits(initial?: number, enabled = true): CreditState | undefined {
-  const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null, canExport: false, month: null })
+  const [state, setState] = useState<CreditState | undefined>(initial === undefined ? undefined : { balance: initial, plan: null, canExport: false, exportsLeft: null, month: null })
   useEffect(() => {
     if (!enabled) return
     let live = true
@@ -191,7 +191,7 @@ export function CreditsDialog() {
   const [title, text] = out
     ? [out.balance ? 'Not enough credits' : 'You’re out of credits', `${out.message} Nothing was charged. A whole app is ${p.plan + p.draw} credits, a screen ${p.screen}, an element edit ${p.element}.`]
     : why === 'export'
-      ? ['Export is on Starter and Pro', 'Download the app as code, copy screens as HTML or paste them into Figma with a paid plan. Your screens stay here either way.']
+      ? [`You’ve used your ${FREE_EXPORTS} free exports`, 'Starter and Pro export without limits — a React project, one HTML file, or editable layers in Figma. Your screens stay here either way.']
       : ['Project limit reached', `Your plan includes ${projects} project${projects === 1 ? '' : 's'}. Delete one, or move to a plan with more room.`]
   // A subscriber short of credits tops up with a pack (packs are for subscribers only); everything else is a plan.
   const offerPacks = out !== null && plan !== null && plan !== undefined

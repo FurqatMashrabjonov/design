@@ -396,6 +396,18 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'pack granted')
   assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'duplicate')
   assert.equal(await Credit.balance('payer'), 1700)
+  // PRC-02: Free exports three times in all (counted on the server, two at once cannot both take the last try);
+  // a plan exports without limit.
+  {
+    assert.equal(await CreditService.exportsLeft('free-x'), 3)
+    assert.ok(await CreditService.useExport('free-x', false, 'react', null))
+    const both = await Promise.all([CreditService.useExport('free-x', false, 'figma', null), CreditService.useExport('free-x', false, 'html', null), CreditService.useExport('free-x', false, 'figma', null)])
+    assert.equal(both.filter(Boolean).length, 2, 'only the two tries left are granted, even at once')
+    assert.equal(await CreditService.exportsLeft('free-x'), 0)
+    assert.equal(await CreditService.useExport('free-x', false, 'react', null), false, 'the fourth is refused')
+    assert.equal(await CreditService.exportsLeft('payer'), null, 'a plan is unlimited')
+    for (let i = 0; i < 5; i++) assert.ok(await CreditService.useExport('payer', false, 'react', null))
+  }
   // BIL-21: the billing page splits the balance into this month's plan credits and the pack credits that never lapse.
   {
     const page = await BillingController.page('payer')

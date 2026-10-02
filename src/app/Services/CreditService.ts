@@ -4,7 +4,8 @@ import { creditLedger } from '@/database/schema'
 import { Credit, type Executor } from '@/app/Models/Credit'
 import { modelFor, type Site } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
-import { CREDIT_PRICES, PLAN_LIMITS, SIGNUP_CREDITS, productOf, type ActionKind, type Limits, type PlanId } from '@/lib/credit-prices'
+import { CREDIT_PRICES, FREE_EXPORTS, PLAN_LIMITS, SIGNUP_CREDITS, productOf, type ActionKind, type ExportKind, type Limits, type PlanId } from '@/lib/credit-prices'
+import { all } from '@/database/query'
 import { monthIndex, Subscription } from '@/app/Models/Subscription'
 
 // BIL-05/06/07: charging credits for actions. The prices themselves live in lib/credit-prices.ts,
@@ -63,6 +64,30 @@ export const CreditService = {
   async limitsFor(userId: string, admin = false): Promise<{ plan: PlanId } & Limits> {
     const plan: PlanId = productOf((await Subscription.activeFor(userId))?.productKey)?.plan ?? 'free'
     return { plan, ...(admin ? { projects: null, export: true } : PLAN_LIMITS[plan]) }
+  },
+
+  /** PRC-02: how many of Free's tries are left (null: unlimited — a plan or an admin). */
+  async exportsLeft(userId: string, admin = false): Promise<number | null> {
+    if ((await CreditService.limitsFor(userId, admin)).export) return null
+    const [r] = await all<{ n: number }>(sql`SELECT count(*)::int AS n FROM export_uses WHERE user_id = ${userId}`)
+    return Math.max(0, FREE_EXPORTS - (r?.n ?? 0))
+  },
+
+  /** PRC-02: one export, recorded; refused (false) once Free's tries are used. A per-user advisory lock makes the
+   *  count and the insert one step, so two exports at once cannot both take the last try. */
+  async useExport(userId: string, admin: boolean, kind: ExportKind, projectId: string | null): Promise<boolean> {
+    if ((await CreditService.limitsFor(userId, admin)).export) {
+      await db.execute(sql`INSERT INTO export_uses (user_id, project_id, kind) VALUES (${userId}, ${projectId}, ${kind})`)
+      return true
+    }
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${'export:' + userId}))`)
+      const r = await tx.execute(sql`
+        INSERT INTO export_uses (user_id, project_id, kind)
+        SELECT ${userId}, ${projectId}, ${kind} WHERE (SELECT count(*) FROM export_uses WHERE user_id = ${userId}) < ${FREE_EXPORTS}
+        RETURNING id`)
+      return r.rows.length > 0
+    })
   },
 
   /** BIL-07: the free start. Keyed by the user, so it is granted once however often it is called. */

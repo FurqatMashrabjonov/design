@@ -65,6 +65,7 @@ export const BillingController = {
       month: grant ? { granted: grant.delta, left: planLeft } : null,
       packCredits: Math.max(0, balance - planLeft),
       canExport: limits.export,
+      exportsLeft: await CreditService.exportsLeft(userId, admin),
       projects: limits.projects,
       history: history.map((h) => ({ id: h.id, at: h.createdAt, delta: h.delta, kind: h.kind, note: h.note })),
     }

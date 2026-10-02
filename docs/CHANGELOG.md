@@ -11,6 +11,27 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (10)
+
+### PRC-02 — Free gets three exports to try
+
+- **Pricing decisions (the owner, 2026-10-02):** prices stay ($12 / $24); Free gets three exports to try; Pro gets a
+  premium model (PRC-05, after an eval).
+- **Why.** Export — the thing people pay for — was closed on Free, so nobody could try it; and the Figma copy, built
+  in the browser, had no gate at all. Now every export is a row in `export_uses` (migration 0011). Free may export
+  three times in all (React, HTML or Figma): `/api/export` refuses when none are left and takes a try only after the
+  file is built; the canvas asks `claimFigmaExport` before building a Figma copy. The count and the insert run under a
+  per-user advisory lock. A refusal opens the upgrade dialog, now titled "You've used your 3 free exports".
+- Copy follows: /pricing's Free column, /billing ("2 of 3 free exports left"), the sidebar tip and the landing FAQ.
+- Files: `src/database/migrations/0011_export_uses.ts`, `src/database/migrate.ts`, `src/lib/credit-prices.ts`,
+  `src/app/Services/CreditService.ts`, `src/routes/api/export/$projectId.ts`, `src/server/fns.ts`,
+  `src/routes/p.$projectId.tsx`, `src/credits.tsx`, `src/routes/pricing.tsx`, `src/routes/billing.tsx`,
+  `src/app/Http/Controllers/BillingController.ts`, `src/components/UpgradePanel.tsx`, `src/Landing.tsx`,
+  `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (three tries, three requests at once grant only the two left, the fourth refused, a plan
+  unlimited); `npx tsc --noEmit` and `npm run check` clean; the local database migrated; /pricing renders the new
+  Free line. Production needs the migration on its next deploy.
+
 ## 2026-10-02 (9)
 
 ### BIL-24 — running low is said before it stops you

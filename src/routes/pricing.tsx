@@ -4,7 +4,7 @@ import { Check } from 'lucide-react'
 import { BRAND, Em, Eyebrow, SitePage } from '@/components/SiteChrome'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { appsFor, CREDIT_PRICES, PACKS, PLANS, SIGNUP_CREDITS, type ProductKey } from '@/lib/credit-prices'
+import { appsFor, CREDIT_PRICES, FREE_EXPORTS, PACKS, PLANS, SIGNUP_CREDITS, type ProductKey } from '@/lib/credit-prices'
 import { buy } from '../credits'
 import { WaitlistButton } from '@/components/Waitlist'
 import { useAccess } from './__root'
@@ -30,7 +30,7 @@ function Pricing() {
   const [yearly, setYearly] = useState(false)
   const access = useAccess()
   const tiers = [
-    { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', 'Light and dark', 'Clickable preview'] },
+    { id: 'free', name: 'Free', price: 0, note: 'no card', credits: `${SIGNUP_CREDITS} credits, once`, apps: appsFor(SIGNUP_CREDITS), features: ['1 project', `${FREE_EXPORTS} exports to try — React, HTML or Figma`, 'iOS + Android, light and dark', 'Clickable preview and share link'] },
     ...PLANS.map((p) => ({
       id: p.id,
       name: p.name,

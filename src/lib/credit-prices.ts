@@ -39,6 +39,9 @@ export const PLANS = [
  */
 export type PlanId = 'free' | 'starter' | 'pro'
 export type Limits = { projects: number | null; export: boolean }
+/** PRC-02: Free may export this many times in all (React, HTML or Figma), to try it; plans are unlimited. */
+export const FREE_EXPORTS = 3
+export type ExportKind = 'react' | 'html' | 'figma'
 export const PLAN_LIMITS: Record<PlanId, Limits> = {
   free: { projects: 1, export: false },
   starter: { projects: 5, export: true },

@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Download, Link2, Smartphone, Moon, Code2 } from 'lucide-react'
 import { FigmaMark } from '@/components/BrandMarks'
 import { useCredits } from '@/credits'
-import { appsFor, CREDIT_PRICES, PLANS, screensFor } from '@/lib/credit-prices'
+import { appsFor, CREDIT_PRICES, FREE_EXPORTS, PLANS, screensFor } from '@/lib/credit-prices'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +17,7 @@ function slidesFor(plan: 'starter' | 'pro' | null): Slide[] {
   return [
     {
       title: 'Export to React & Figma',
-      text: plan ? 'Download a React project, one HTML file, or paste editable layers into Figma.' : 'Take your screens out as a React project, an HTML file or Figma layers.',
+      text: plan ? 'Download a React project, one HTML file, or paste editable layers into Figma.' : `Take your screens out as a React project, an HTML file or Figma layers — ${FREE_EXPORTS} tries on Free.`,
       icons: [<Code2 key="c" />, <FigmaMark key="f" />, <Download key="d" />],
       cta: plan ? undefined : { label: 'Unlock export', to: '/billing' },
     },

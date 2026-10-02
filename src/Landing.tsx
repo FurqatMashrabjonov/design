@@ -171,7 +171,7 @@ export function Landing() {
             ['What is ' + BRAND + '?', 'An AI tool that turns an app idea into a full set of mobile screens you can click through, edit and export.'],
             ['Do I need design skills?', 'No. If you can describe the app, you can design it. Designers use it to skip the blank page.'],
             ['What kinds of apps can it design?', 'Any mobile app: health, finance, food, learning, social, shopping and more.'],
-            ['Can I export my designs?', 'Yes, on paid plans: editable layers for Figma, a React project, or a single HTML file.'],
+            ['Can I export my designs?', 'Yes: editable layers for Figma, a React project, or a single HTML file. Free includes three exports to try; Starter and Pro export without limits.'],
             ['Is it a finished app?', 'No. It is the design and a clickable prototype, with sample data and no backend: a strong starting point for whoever builds it.'],
             access === 'waitlist'
               ? ['When can I try it?', 'We are letting people in a few at a time. Join the waitlist and tell us what you would prototype — it helps us decide who goes first.']

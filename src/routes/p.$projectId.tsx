@@ -3,7 +3,7 @@ import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/rea
 import { toast } from 'sonner'
 import { askUpgrade, LowCredits, reportError } from '../credits'
 import { CircleX, Code2, FileDown, MousePointerClick, Palette, Plus, Smartphone, X } from 'lucide-react'
-import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, getScreenCode, saveScreenHeight, saveAppTheme, revertMessage, stepVersion, restoreScreen, rateScreen } from '../server/fns'
+import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, getScreenCode, saveScreenHeight, saveAppTheme, revertMessage, stepVersion, restoreScreen, rateScreen, claimFigmaExport } from '../server/fns'
 import { generate } from '../generate'
 import { generatePlan, type PlanEvent } from '../generatePlan'
 import { frameSize, nextFramePosition, FRAME_GAP } from '../canvas'
@@ -397,6 +397,8 @@ function ProjectPage() {
     const chosen = fromId && !(selectedIds.length > 1 && selectedIds.includes(fromId)) ? drawn.filter((sc) => sc.id === fromId) : selectedIds.length ? drawn.filter((sc) => selectedIds.includes(sc.id)) : drawn
     if (!chosen.length) return toast.error('Nothing to copy yet')
     const ordered = [...chosen].sort((a, z) => a.y - z.y || a.x - z.x)
+    // PRC-02: Free's tries are counted on the server before the copy is built.
+    if (!(await claimFigmaExport({ data: { projectId: project.id } }).catch(() => ({ ok: false }))).ok) return askUpgrade('export')
     const id = toast.loading(ordered.length === 1 ? 'Preparing layers for Figma…' : `Preparing ${ordered.length} screens for Figma…`)
     try {
       const items = []

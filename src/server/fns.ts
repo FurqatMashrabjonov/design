@@ -37,7 +37,7 @@ export const getCredits = createServerFn({ method: 'GET' }).handler(async () => 
   const limits = await CreditService.limitsFor(user.id, user.admin)
   // BIL-22: this month's plan credits (granted, left) for the sidebar's bar; plan credits are spent first.
   const grant = limits.plan === 'free' ? undefined : await Credit.lastPlanGrant(user.id)
-  return { balance: await Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export, month: grant ? { granted: grant.delta, left: Math.max(0, grant.delta - grant.usedSince) } : null }
+  return { balance: await Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export, exportsLeft: await CreditService.exportsLeft(user.id, user.admin), month: grant ? { granted: grant.delta, left: Math.max(0, grant.delta - grant.usedSince) } : null }
 })
 
 /** BIL-09: a hosted checkout for one product; the page goes to the returned URL. */
@@ -46,6 +46,14 @@ export const startCheckout = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const user = await requireUser()
     return BillingController.checkout(user, data.key, publicOrigin(getRequest()))
+  })
+
+/** PRC-02: a Figma copy is built in the browser, so it asks first: true takes one of Free's tries (or is unlimited). */
+export const claimFigmaExport = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId) }))
+  .handler(async ({ data }) => {
+    const { user, project } = await requireProject(data.projectId)
+    return { ok: await CreditService.useExport(user.id, user.admin, 'figma', project.id) }
   })
 
 /** BIL-21: everything the billing page shows, for the signed-in person. */
