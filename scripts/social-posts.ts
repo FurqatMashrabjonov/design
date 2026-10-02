@@ -4,6 +4,7 @@
 //
 //   node --env-file=.env --import ./scripts/alias-hook.mjs scripts/social-posts.ts --project <id>
 //        [--prompt "cleaned-up prompt"] [--count 8] [--edited yes|no] [--out docs/brand/posts/<name>]
+//   add --share to turn on the project's public preview link and print it with a ?ref= per platform
 //   … scripts/social-posts.ts --brief "one sentence" [--email owner@…]   # plan a new app first (a real generation,
 //        on the default model, owned by the admin so it shows on their dashboard), then draw its posts
 //
@@ -23,6 +24,8 @@ const { screenshotScreen } = await import('@/app/Services/RenderAudit')
 const { parseAppPlan } = await import('@/app/Services/JsxGenerator')
 const { Project } = await import('@/app/Models/Project')
 const { PlanController } = await import('@/app/Http/Controllers/PlanController')
+const { ShareController } = await import('@/app/Http/Controllers/ShareController')
+const { DOMAIN } = await import('@/lib/brand')
 
 const arg = (k: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : undefined }
 let projectId = arg('project')
@@ -70,7 +73,11 @@ const shoot = async (id: string, tag: string, l: typeof look) => {
 }
 for (const id of new Set([a, b, c, home, last, third, ...pick.slice(0, 4)])) await shoot(id, '', look)
 await shoot(home, '-android', { ...look, platform: 'material' })
-for (const id of new Set([last, third])) await shoot(id, '-dark', { ...look, dark: true })
+// The canvas strip: every screen in a row, the way the canvas shows them (first-run, tabs, then the rest), at most six.
+const strip = [...pick, ...plan.screens.map((s) => s.id).filter((id) => bySlug.has(id) && !pick.includes(id))].slice(0, 6)
+const nameOf = (id: string) => plan.screens.find((s) => s.id === id)?.name ?? id
+for (const id of strip) if (!fs.existsSync(join(TMP, `${id}.png`))) await shoot(id, '', look)
+for (const id of new Set([last, third, ...strip])) await shoot(id, '-dark', { ...look, dark: true })
 
 // The one style.
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -86,9 +93,9 @@ const phone = (f: string, w: number, extra = '') => `<div style="width:${w}px;he
 const labelled = (f: string, w: number, label: string) => `<div style="display:flex;flex-direction:column;align-items:center;gap:18px">${phone(f, w)}<span class="pill">${label}</span></div>`
 const row = (items: string[], x: number, y: number, gap = 26) => `<div style="position:absolute;left:${x}px;top:${y}px;display:flex;gap:${gap}px;align-items:flex-start">${items.join('')}</div>`
 const head = (title: string, sub: string) => `<div style="position:absolute;left:90px;top:200px;max-width:600px">${mark}<div style="margin-top:36px;font-size:60px;line-height:1.06;font-weight:600;letter-spacing:-.02em">${title}</div><div style="margin-top:18px;font-size:22px;line-height:1.4;color:${MUTED}">${sub}</div></div>`
-function png(name: string, w: number, h: number, inner: string) {
+function png(name: string, w: number, h: number, inner: string, bg = `radial-gradient(circle at 70% 40%, rgba(198,246,72,.13), transparent 60%) ${INK}`, ink = PAPER) {
   const html = join(TMP, `${name}.html`), file = join(OUT, `${name}.png`)
-  fs.writeFileSync(html, `<!doctype html><html><head>${css}</head><body style="margin:0;height:100vh;display:grid;place-items:center"><div style="position:relative;isolation:isolate;width:${w}px;height:${h}px;overflow:hidden;background:radial-gradient(circle at 70% 40%, rgba(198,246,72,.13), transparent 60%) ${INK};font-family:IS;color:${PAPER}">${inner}</div></body></html>`)
+  fs.writeFileSync(html, `<!doctype html><html><head>${css}</head><body style="margin:0;height:100vh;display:grid;place-items:center"><div style="position:relative;isolation:isolate;width:${w}px;height:${h}px;overflow:hidden;background:${bg};font-family:IS;color:${ink}">${inner}</div></body></html>`)
   execFileSync(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=2', '--allow-file-access-from-files', `--window-size=${w},${h + 200}`, `--screenshot=${join(REPO, file)}`, `file://${html}`], { stdio: 'ignore' })
   execFileSync('sips', ['--cropToHeightWidth', String(h * 2), String(w * 2), file], { stdio: 'ignore' }) // sips crops around the centre
 }
@@ -106,6 +113,29 @@ png('ig-2', 1080, 1920, igTitle('The whole flow,<br><em>designed.</em>') + row(p
 png('ig-3', 1080, 1920, igTitle('iOS <em>and</em> Android.') + row([labelled(home, 460, 'iOS'), labelled(`${home}-android`, 460, 'Android')], 60, 520, 40))
 png('ig-4', 1080, 1920, igTitle('Light <em>and</em> dark.') + row([labelled(third, 460, 'Light'), labelled(`${third}-dark`, 460, 'Dark')], 60, 520, 40))
 png('ig-5', 1080, 1920, `<div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div>${mark.replace('height:34px', 'height:64px;margin:0 auto')}<div style="margin-top:56px;font-size:84px;line-height:1.05;font-weight:600;letter-spacing:-.03em">Describe an app.<br>Get <em>every screen.</em></div><div style="margin-top:34px;font-size:34px;color:${MUTED}">Beta opens soon — follow to get in first.</div></div></div>`)
+// LinkedIn and X, 1.91:1 — the screens on the canvas as the product shows them, each named above its frame.
+for (const dark of [false, true]) {
+  const W = 1600, H = 838, gap = 26, n = strip.length
+  // phone() adds a bezel of w/32 on each side, so the outer width is w + 2·round(w/32)
+  const w = Math.min(230, Math.floor((W - 160 - gap * (n - 1)) / n / (1 + 1 / 16)))
+  const outer = w + 2 * Math.round(w / 32)
+  const dots = dark ? 'rgba(243,241,236,.09)' : 'rgba(26,21,17,.13)'
+  const label = (id: string) => `<div style="font:500 13px IS;color:${dark ? MUTED : '#6b665c'};margin:0 0 10px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${w}px">⠿ ${esc(nameOf(id))}</div>`
+  const frames = strip.map((id) => `<div>${label(id)}${phone(dark ? `${id}-dark` : id, w, 'box-shadow:0 18px 40px rgba(0,0,0,.22)')}</div>`)
+  const top = Math.max(40, Math.round((H - (w * 800) / 390 - 30) / 2))
+  const lock = dark ? mark : mark.replace(/#f3f1ec/gi, INK)
+  png(`strip-${dark ? 'dark' : 'light'}`, W, H, row(frames, Math.round((W - (n * outer + (n - 1) * gap)) / 2), top, gap) + `<div style="position:absolute;right:36px;bottom:26px;opacity:.9">${lock.replace('height:34px', 'height:22px')}</div>`,
+    `radial-gradient(${dots} 1.2px, transparent 1.2px) 0 0/22px 22px, ${dark ? INK : PAPER}`, dark ? PAPER : INK)
+}
+
+// The live preview: anyone with the link taps through the app (SHR-02). Each platform gets its own ref.
+let links: Record<string, string> | undefined
+if (process.argv.includes('--share')) {
+  const { token } = await ShareController.share({ id: projectId, on: true })
+  const base = `https://${DOMAIN}/s/${token}?ref=`
+  links = Object.fromEntries(['x', 'threads', 'linkedin', 'ig'].map((p) => [p, `${base}${p}-${slug}`.slice(0, base.length + 32)]))
+}
+
 fs.rmSync(TMP, { recursive: true })
-console.log(JSON.stringify({ out: OUT, app: plan.appName, prompt, count, edited, screens: { hero: [a, b, c], iosAndroid: home, lightDark: [last, third] } }))
+console.log(JSON.stringify({ out: OUT, links, app: plan.appName, prompt, count, edited, screens: { hero: [a, b, c], iosAndroid: home, lightDark: [last, third], strip } }))
 process.exit(0)

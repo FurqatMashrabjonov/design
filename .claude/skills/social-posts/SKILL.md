@@ -1,11 +1,12 @@
 ---
 name: social-posts
-description: Make launch posts for X, Threads and Instagram from a Screenspell project — images in the brand's one style plus ready-to-paste captions. Use when the owner asks for a post, post images, a carousel, or "post qilib ber" / "post yasab ber" for an app made in Screenspell.
+description: Make posts for X, LinkedIn, Threads and Instagram from a Screenspell project — images in the brand's one style plus ready-to-paste captions. Use when the owner asks for a post, post images, a carousel, or "post qilib ber" / "post yasab ber" for an app made in Screenspell.
 ---
 
 # Social posts from a project
 
-The owner builds Screenspell in public. A post shows one app made in the product, in one fixed style (ink
+The owner builds Screenspell in public, **from his personal account** ("I'm building…"): people follow people,
+not logos. The brand account only reposts. Every caption is first person, his voice. A post shows one app made in the product, in one fixed style (ink
 `#1a1511`, lime `#c6f648`, Instrument Sans with Instrument Serif italic for the one emphasised word, the Screenspell
 lockup). Never invent a new look per post; the style lives in `scripts/social-posts.ts`.
 
@@ -56,25 +57,46 @@ It prints what it used (app, prompt, count, edited, which screens). Check it:
   No invented prompts, numbers or claims ("for free", "no edits") that the project does not support.
 - Then read every image: nothing cut off, the phones not clipped awkwardly, the text readable.
 
-Output (`docs/brand/posts/<app>/`): `x-1-hero.png`, `x-2-ios-android.png`, `x-3-light-dark.png` (16:9, for X and
+Add `--share` once the site is deployed: it turns on the project's public preview and prints one link per platform
+(`…/s/<token>?ref=x-<app>`, `linkedin-`, `threads-`, `ig-`) — the waitlist table then shows which post brought whom.
+The live preview is our edge over competitors' static screenshots: **every post ends by inviting people to tap
+through the real thing.**
+
+Output (`docs/brand/posts/<app>/`): `strip-light.png` and `strip-dark.png` (1.91:1, every screen in a row on the
+canvas with its name above — the main image for LinkedIn and X), `x-1-hero.png`, `x-2-ios-android.png`, `x-3-light-dark.png` (16:9, for X and
 Threads) and `ig-1.png` … `ig-5.png` (9:16, in that order; the key content sits in the middle 3:4, which Instagram's
 profile grid shows).
 
-## 4. Captions, in English, one block per platform
+## 4. Captions — pick the format from the scenario's `Format` (empty = showcase)
 
-Voice: a solo founder from Uzbekistan building in public — plain, specific, a little proud, never hype (no "🚀
-game changer", no attacks on other tools). Quote the real prompt. End with a question or a way to get in.
+Voice: a solo founder from Uzbekistan building in public — plain, specific, short lines, never hype (no "🚀 game
+changer", no attacks on other tools). Never "ready-to-build" or "production": it is the design and a clickable
+prototype.
 
-- **X** — a 3-post thread: post 1 with `x-1-hero.png` (the prompt, the count, "then a few edits" if edited, beta
-  timing, a question), reply 2 with `x-2-ios-android.png`, reply 3 with `x-3-light-dark.png`. A link, if any, goes
-  in the last reply, never the first post. Pin post 1 if it is the best so far.
-- **Threads** — one post with the three 16:9 images, conversational, ending in a question; one topic tag
-  (`#buildinpublic`, `#indiehackers` or `#uidesign`).
-- **Instagram** — the five 9:16 slides `ig-1` → `ig-5` (a carousel, or stories one by one), a short caption and 4–6 hashtags (`#appdesign #uidesign
-  #buildinpublic #mobileapp …`). `ig-1` is the cover.
+- **teardown** — a simple app that earns well, and my take on it. Hook that breaks a myth ("Most people think you
+  need a groundbreaking idea for a big app. You don't.") → the real app and its numbers **only from the row's
+  `Raqamlar`, with `~` and "(estimates)" when they are third-party** → why it works (one clear problem, one clear
+  audience, a clean flow, a way to pay) → the bridge (the edge today is how fast you can design, test and launch) →
+  "I described it in one sentence to Screenspell" → the strip image → "tap through it yourself". Never copy the
+  app's name, logo or look into our design, and never imply we are affiliated: "an app like X", "my take on X". A
+  number without a source in the row does not go in the post.
+- **experiment** — the idea of the day: "I had an idea today:" → three bullets of what it does → "normally this is
+  days of design" → "I typed one sentence into Screenspell, a few minutes later:" → the strip → one takeaway line
+  (seeing the idea beats imagining it) → "tap through it".
+- **showcase** — the first-post style: the prompt, the screen count, iOS/Android and light/dark, a question.
 
-Links: only once the site is deployed; each gets its own `?ref=` (`?ref=x-<app>`, `?ref=threads-<app>`,
-`?ref=ig-<app>`) so the admin's waitlist table shows which post worked.
+Per platform:
+- **LinkedIn** — the full text, the strip image (light usually; dark for midnight apps). LinkedIn holds back posts
+  with links, so the preview link goes in the **first comment**.
+- **X** — the same story cut to ~280 characters for post 1 with the strip; reply 2 `x-2-ios-android.png`, reply 3
+  `x-3-light-dark.png`; the preview link in the last reply, never post 1.
+- **Threads** — conversational, the strip plus one more image, a question at the end, one topic tag; a link in the
+  post is fine.
+- **Instagram** — the five 9:16 slides `ig-1` → `ig-5`, a short caption, 4–6 hashtags, "link in bio" (the bio link
+  carries `?ref=ig-bio`).
+
+Links work only once the site is deployed; until then write the captions without them and say where the link
+will go.
 
 ## 5. Report
 

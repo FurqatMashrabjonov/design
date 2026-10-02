@@ -11,6 +11,25 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (2)
+
+### Posts: teardown and experiment formats, the canvas strip, the live preview link
+
+- **Two formats from a competitor's best posts** (screenflow's founder on LinkedIn, studied 2026-10-02), in our own
+  words and from the owner's personal account: *teardown* (a simple app that earns well — real, sourced numbers only
+  — and my take on it, made in one sentence) and *experiment* (today's idea, designed in minutes). The `social-posts`
+  skill now picks the format from the scenario, writes for LinkedIn as well (link in the first comment), and ends
+  every post with the live preview — our edge over static screenshots.
+- **Canvas strip images**: `strip-light.png` / `strip-dark.png` (1.91:1) put up to six screens in a row on the
+  dotted canvas, each named above its frame, as the canvas shows them.
+- **`--share`** turns on the project's public preview and prints a link per platform with its own `?ref=`.
+- **Scenarios**: the Notion database gained `Format` and `Raqamlar` (numbers with their source URL), plus five
+  teardowns (Cal AI, Opal, Finch, Umax, Rock Identifier — each figure linked to its source, third-party estimates
+  marked as such) and three experiments.
+- Files: `scripts/social-posts.ts`, `.claude/skills/social-posts/SKILL.md`, `docs/brand/posts/ritualoop/*`.
+- Verified: `npx tsc --noEmit` clean; Ritualoop redrawn with `--share` and the strips checked by eye (a first layout
+  ran past the right edge — the bezel was not counted — fixed).
+
 ## 2026-10-02
 
 ### LND-02 — the landing speaks the category's language
