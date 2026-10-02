@@ -11,6 +11,18 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (9)
+
+### BIL-24 — running low is said before it stops you
+
+- Until now a short balance was news only when a generation was refused (402). `LowCredits` shows one line above the
+  dashboard's prompt and the canvas composer once the balance cannot pay for a whole app (15 credits): "7 credits left
+  — 3 screens, not a whole app" or "You're out of credits", with Upgrade (Free) or Buy credits (a plan) to /billing.
+  The sidebar card already turns amber and says "not enough for a new app".
+- Files: `src/credits.tsx`, `src/Dashboard.tsx`, `src/routes/p.$projectId.tsx`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; in the browser with my local balance lowered to 7 for the
+  check (the test row removed afterwards, balance back to 1 890).
+
 ## 2026-10-02 (8)
 
 ### BIL-23 — the upgrade dialog: monthly or yearly, and which plan you are on

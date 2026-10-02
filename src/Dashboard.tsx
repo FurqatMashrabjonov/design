@@ -6,7 +6,7 @@ import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
 import { BRAND } from './Landing'
 import { LoadingImage } from '@/components/LoadingImage'
-import { reportError } from './credits'
+import { LowCredits, reportError } from './credits'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { BrandMark } from '@/components/SiteChrome'
 import { UpgradePanel } from '@/components/UpgradePanel'
@@ -348,6 +348,7 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
                 submitLabel="Design it"
                 label="Describe your app"
                 hint="iPhone · up to 8 screens · light and dark"
+                top={<LowCredits />}
                 placeholder="Describe your app — e.g. a habit tracker with streaks, reminders and weekly stats"
                 attachments
                 onSubmit={async (prompt, images) => {

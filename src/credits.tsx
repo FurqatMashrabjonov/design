@@ -154,6 +154,24 @@ export function CreditsBadge() {
   )
 }
 
+/** BIL-24: a line above a composer once the balance cannot pay for a whole app — before a 402 says so. */
+export function LowCredits() {
+  const c = useCredits()
+  if (!c) return null
+  const p = CREDIT_PRICES['deepseek-flash']!
+  if (c.balance >= p.plan + p.draw) return null
+  const action = c.plan ? 'Buy credits' : 'Upgrade'
+  return (
+    <div className="od-rise mb-1.5 flex items-center gap-2 px-0.5 text-xs">
+      <span className={`size-1.5 shrink-0 rounded-full ${c.balance <= 0 ? 'bg-destructive' : 'bg-chart-3'}`} aria-hidden />
+      <span className="text-muted-foreground">
+        {c.balance <= 0 ? 'You’re out of credits.' : `${c.balance} credit${c.balance === 1 ? '' : 's'} left — ${screensFor(c.balance)} screen${screensFor(c.balance) === 1 ? '' : 's'}, not a whole app.`}
+      </span>
+      <a href={c.plan ? '/billing' : '/billing#plans'} className="ml-auto shrink-0 font-medium text-foreground underline-offset-2 hover:underline">{action}</a>
+    </div>
+  )
+}
+
 /** Mounted once (root): opens when a generation is refused for credits. */
 export function CreditsDialog() {
   const [why, setWhy] = useState<OutOfCredits | Limit | null>(null)

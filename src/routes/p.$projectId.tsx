@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { askUpgrade, reportError } from '../credits'
+import { askUpgrade, LowCredits, reportError } from '../credits'
 import { CircleX, Code2, FileDown, MousePointerClick, Palette, Plus, Smartphone, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, getScreenCode, saveScreenHeight, saveAppTheme, revertMessage, stepVersion, restoreScreen, rateScreen } from '../server/fns'
 import { generate } from '../generate'
@@ -612,8 +612,9 @@ function ProjectPage() {
         <div className="pointer-events-auto w-full max-w-[680px]">
           <PromptBox
             variant="dock"
-            top={
-              selectedScreen && (
+            top={<>
+              <LowCredits />
+              {selectedScreen && (
                 <div className="od-rise mb-1.5 flex min-w-0 items-center gap-1 px-0.5 text-xs">
                   <button
                     type="button"
@@ -637,8 +638,8 @@ function ProjectPage() {
                     <X className="size-3.5" />
                   </button>
                 </div>
-              )
-            }
+              )}
+            </>}
             placeholder={
               planning
                 ? 'Designing your screens…'
