@@ -98,7 +98,34 @@ Per platform:
 Links work only once the site is deployed; until then write the captions without them and say where the link
 will go.
 
-## 5. Report
+## 5. The order of delivery: X, then LinkedIn, then the video
+
+When the owner says "post tayyorla", deliver in this order, each finished before the next:
+
+1. **X** — the thread (images from step 3, captions from step 4).
+2. **LinkedIn** — the short "I'm building" post with `strip-light.png`, the link in the first comment.
+3. **Video** — a 9:16 reel for TikTok / Reels / Shorts, the app's real screens inside the studio's own iPhone
+   (`scripts/video/films/device.js`, the same geometry as `components/DeviceFrame.tsx`):
+   ```
+   node scripts/video/reel.mjs --share-url https://screenspell.app/s/<token> --prompt "<the prompt>" \
+     --out docs/brand/videos/reel-<app>.mp4 [--dark]   # --dark for a midnight app
+   ```
+   15.5 s, silent (music is added in the app). Check frames with ffmpeg before handing it over. Caption: one line on
+   what was typed, the screen count, "link in bio", 4 hashtags.
+
+Everything is **made from production** (screenspell.app): the owner generates the app there or the agent does it in
+the owner's signed-in Chrome — never on localhost — and the posts are drawn from its public preview (`--share-url`).
+
+## 6. Where it is kept
+
+- **Google Drive**, folder *Screenspell Content* (`1nH6Cxjkak03NvQVgwlNSM63ti1ewt8lz`): one Google Doc per app,
+  "<App> — posts", with the preview link, the prompt and every caption per platform. Create it with the Drive
+  connector at the end of each run.
+- **Notion**, *Post ssenariylari*: the row's `Holat`, `Loyiha` (the preview link) and a pointer to the Doc.
+- The images and videos are files in `docs/brand/posts/<app>/` and `docs/brand/videos/`; the Drive connector takes
+  file content inline, so media of several MB do not go through it — say where they are.
+
+## 7. Report
 
 Answer the owner in Uzbek: what was fixed (and how many edits), where the images are, the captions ready to paste,
 and when to post (Tashkent 18:00–21:00 reaches the US morning). Log the post set in `docs/CHANGELOG.md` only if code
