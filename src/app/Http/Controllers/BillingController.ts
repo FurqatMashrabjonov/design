@@ -49,6 +49,27 @@ export const BillingController = {
     }
   },
 
+  /** BIL-21: the billing page — the plan in force, what this month's grant has left, the balance, and the last
+   *  credit movements. Plan credits are spent first, so "left" is the last grant minus what was used since. */
+  async page(userId: string, admin = false) {
+    await CreditService.refresh(userId)
+    const [sub, balance, grant, history, limits] = await Promise.all([Subscription.activeFor(userId), Credit.balance(userId), Credit.lastPlanGrant(userId), Credit.history(userId, 20), CreditService.limitsFor(userId, admin)])
+    const product = productOf(sub?.productKey)
+    const planLeft = grant ? Math.max(0, grant.delta - grant.usedSince) : 0
+    return {
+      plan: limits.plan,
+      interval: product?.interval ?? null,
+      renews: sub?.currentPeriodEnd ?? null,
+      cancelling: sub?.cancelAtPeriodEnd ?? false,
+      balance,
+      month: grant ? { granted: grant.delta, left: planLeft } : null,
+      packCredits: Math.max(0, balance - planLeft),
+      canExport: limits.export,
+      projects: limits.projects,
+      history: history.map((h) => ({ id: h.id, at: h.createdAt, delta: h.delta, kind: h.kind, note: h.note })),
+    }
+  },
+
   /** BIL-25: "tell me when payments open" — the signed-in person joins the waitlist with the plan they wanted. */
   async notifyWhenOpen(user: { email: string }, key: ProductKey) {
     await Waitlist.join({ email: user.email.toLowerCase(), ref: 'payments', projectId: null, note: `wants ${key}` })

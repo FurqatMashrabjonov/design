@@ -11,6 +11,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (6)
+
+### BIL-21 — a billing page
+
+- **Why.** Account → Billing went straight to the provider's portal, and before a first purchase it only toasted "No
+  billing yet": nowhere to see the plan, the credits or how to upgrade.
+- **`/billing`** (signed-in): the plan in force (Free, Starter or Pro, monthly or yearly, when it renews or ends, what
+  it allows) with Upgrade or "Manage subscription & invoices" (the portal); credits — the balance, the screens and
+  apps it buys, this month's plan credits left with a bar, and the pack credits that never expire; the two plans with
+  a monthly/yearly switch and the current one marked; packs (subscribers only); the last 20 credit movements in words.
+  All from one controller call, `BillingController.page`.
+- Files: `src/routes/billing.tsx`, `src/app/Http/Controllers/BillingController.ts`, `src/server/fns.ts`,
+  `src/components/AccountMenu.tsx`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (plan, interval, balance split into plan and pack credits, renewal, newest movement first); `npx
+  tsc --noEmit` and `npm run check` clean; the page in the browser on my own dev server, light and dark, with the
+  account menu.
+
 ## 2026-10-02 (5)
 
 ### BIL-20 + BIL-25 — pricing is public again; a checkout that cannot open says so

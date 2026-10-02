@@ -1,6 +1,5 @@
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
 import { CreditCard, LifeBuoy, LogOut, Shield } from 'lucide-react'
-import { manageBilling } from '@/credits'
 import { authClient } from '@/lib/auth-client'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
@@ -35,7 +34,8 @@ export function AccountMenu() {
               <Shield /> Admin panel
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onSelect={() => manageBilling()}>
+          {/* BIL-21: the billing page (plan, credits, upgrade); the provider's portal is one button there. */}
+          <DropdownMenuItem onSelect={() => navigate({ to: '/billing' })}>
             <CreditCard /> Billing
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => navigate({ to: '/contact' })}>

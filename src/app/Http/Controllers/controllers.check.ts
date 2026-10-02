@@ -396,6 +396,12 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'pack granted')
   assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_9', product: { metadata: { od: 'pack-500' } }, customer: { external_id: 'payer' } } }), 'duplicate')
   assert.equal(await Credit.balance('payer'), 1700)
+  // BIL-21: the billing page splits the balance into this month's plan credits and the pack credits that never lapse.
+  {
+    const page = await BillingController.page('payer')
+    assert.deepEqual([page.plan, page.interval, page.balance, page.month, page.packCredits, page.canExport], ['starter', 'year', 1700, { granted: 1200, left: 1200 }, 500, true])
+    assert.ok(page.renews && page.history[0]?.kind === 'purchase', 'it shows when the plan renews and the newest movement first')
+  }
   assert.equal(await BillingController.webhook({ type: 'order.paid', data: { id: 'ord_x', product: { metadata: { od: 'something-else' } }, customer: { external_id: 'payer' } } }), 'ignored')
 
   // Spend 200 of the plan's 1 200, then a month passes: 1 000 unused lapse, the 500 pack stays, 1 200 arrive.
