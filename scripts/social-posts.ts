@@ -42,18 +42,29 @@ if (shareUrl) {
   const u = new URL(shareUrl)
   const token = u.pathname.split('/').filter(Boolean).pop()!
   shareBase = `${u.origin}/s/${token}?ref=`
-  // The preview mounts a frame per screen as it goes; the screen list (the pager between ‹ and ›) says how many there
-  // are, so the page is read again, with more time, until every frame is there.
-  let dom = ''
-  for (const budget of [10_000, 20_000, 30_000]) {
-    dom = await chrome(['--headless=new', '--disable-gpu', `--user-data-dir=${join(TMP, `prof-dom-${budget}`)}`, `--virtual-time-budget=${budget}`, '--dump-dom', `${u.origin}${u.pathname}`])
-    const titles = [...dom.matchAll(/title="([^"]*)"/g)].map((m) => m[1])
-    const listed = Math.max(0, titles.indexOf('Next screen') - titles.indexOf('Previous screen') - 1)
-    if (listed && [...dom.matchAll(/<iframe[^>]*api\/thumb/g)].length >= listed) break
+  // The preview mounts a frame per screen as you move through it, so the page is opened over DevTools and walked
+  // with "Next screen", collecting each frame; the pager's buttons give the names in plan order.
+  // @ts-expect-error a plain .mjs helper
+  const { launch } = await import('./video/cdp.mjs')
+  const cdp = await launch()
+  const view = await cdp.open(`${u.origin}${u.pathname}`, { width: 1440, height: 900 })
+  await new Promise((r) => setTimeout(r, 6000))
+  const seen = new Map<string, string>()
+  let names: string[] = []
+  for (let i = 0; i < 14; i++) {
+    const got = (await view.eval(`(() => { const t = [...document.querySelectorAll('[title]')].map((e) => e.getAttribute('title')); const a = t.indexOf('Previous screen'), b = t.indexOf('Next screen'); return { names: a >= 0 && b > a ? t.slice(a + 1, b) : [], frames: [...document.querySelectorAll('iframe')].map((f) => ({ src: f.getAttribute('src') ?? '', title: f.getAttribute('title') ?? '' })) } })()`)) as { names: string[]; frames: { src: string; title: string }[] }
+    if (got.names.length) names = got.names
+    for (const f of got.frames) { const fid = /api\/thumb\/([0-9a-f-]{36})/.exec(f.src)?.[1]; if (fid) seen.set(fid, f.title) }
+    if (names.length && seen.size >= names.length) break
+    await view.eval(`document.querySelector('[title="Next screen"]')?.click()`)
+    await new Promise((r) => setTimeout(r, 900))
   }
-  order = [...dom.matchAll(/<iframe[^>]*>/g)].map((m) => ({ id: /api\/thumb\/([0-9a-f-]{36})/.exec(m[0])?.[1] ?? '', name: (/title="([^"]*)"/.exec(m[0])?.[1] ?? '').replace(/&amp;/g, '&') })).filter((x) => x.id)
+  cdp.close()
+  const pairs = [...seen].map(([fid, title]) => ({ id: fid, name: title }))
+  order = names.length ? names.map((n) => pairs.find((p) => p.name === n)).filter((x): x is { id: string; name: string } => !!x) : pairs
+  for (const p of pairs) if (!order.includes(p)) order.push(p)
   if (order.length < 3) throw new Error(`The preview shows ${order.length} screens; it needs three`)
-  appName = /od-chrome absolute left-5 top-5[^>]*>([^<]+)</.exec(dom)?.[1]?.trim() ?? 'App'
+  appName = arg('app') ?? (await (await fetch(`${u.origin}${u.pathname}`)).text()).match(/<title>([^<—]+)/)?.[1]?.trim() ?? 'App'
   // A visitor sees no plan: the first screen is taken as the first-run one unless --no-intro says it is a tab.
   intro = process.argv.includes('--no-intro') ? undefined : order[0]!.id
   roots = order.filter((x) => x.id !== intro).slice(0, 4).map((x) => x.id)
@@ -71,7 +82,8 @@ if (shareUrl) {
   const port = (server.address() as { port: number }).port
   process.on('exit', () => server.close())
   shoot = async (id, tag, look) => {
-    const q = look === 'android' ? '&p=material' : look === 'dark' ? '&dark=1' : ''
+    // Light is asked for, not assumed: a midnight app is stored dark, so its "light" shot came out dark too.
+    const q = look === 'android' ? '&p=material&dark=0' : look === 'dark' ? '&dark=1' : '&dark=0'
     const html = join(TMP, `h-${id}${tag}.html`), file = join(TMP, `${id}${tag}.png`)
     fs.writeFileSync(html, `<!doctype html><body style="margin:0;overflow:hidden"><iframe src="${u.origin}/api/thumb/${id}?t=${token}&static${q}" style="width:390px;height:844px;border:0;display:block"></iframe></body>`)
     // Without site isolation off, headless Chrome's --screenshot leaves a cross-origin iframe blank.
@@ -119,7 +131,7 @@ if (shareUrl) {
   order = plan.screens.filter((s) => bySlug.has(s.id)).map((s) => ({ id: s.id, name: s.name }))
   const look = (await ShotService.lookOf(pid))!
   shoot = async (id, tag, l) => {
-    const png = await screenshotScreen(bySlug.get(id)!, l === 'android' ? { ...look, platform: 'material' } : l === 'dark' ? { ...look, dark: true } : look, id)
+    const png = await screenshotScreen(bySlug.get(id)!, l === 'android' ? { ...look, platform: 'material', dark: false } : l === 'dark' ? { ...look, dark: true } : { ...look, dark: false }, id)
     if (!png) throw new Error('No Chrome for screenshots')
     fs.writeFileSync(join(TMP, `${id}${tag}.png`), png)
   }
@@ -162,15 +174,17 @@ function png(name: string, w: number, h: number, inner: string, bg = `radial-gra
   execFileSync('sips', ['--cropToHeightWidth', String(h * 2), String(w * 2), file], { stdio: 'ignore' }) // sips crops around the centre
 }
 
+// "One sentence" only when it was one: a longer prompt is "One prompt".
+const ONE = /[.!?]\s+\S/.test(prompt.replace(/[.!?]\s*$/, '')) ? 'prompt' : 'sentence'
 const numberWord = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][count] ?? String(count)
 const N = numberWord[0].toUpperCase() + numberWord.slice(1)
 const quote = `“${esc(prompt.length > 150 ? prompt.slice(0, 147) + '…' : prompt)}”${edited ? ' Then a few edits in chat.' : ''}`
-png('x-1-hero', 1600, 900, head(`One sentence.<br><em>${N} screens.</em>`, quote) + row([phone(a, 240, 'margin-top:90px'), phone(b, 240, 'margin-top:20px'), phone(c, 240, 'margin-top:60px')], 790, 40))
+png('x-1-hero', 1600, 900, head(`One ${ONE}.<br><em>${N} screens.</em>`, quote) + row([phone(a, 240, 'margin-top:90px'), phone(b, 240, 'margin-top:20px'), phone(c, 240, 'margin-top:60px')], 790, 40))
 png('x-2-ios-android', 1600, 900, head('Same app.<br><em>Native on both.</em>', 'One design, drawn as iOS and as Android (Material You) — switch with one tap.') + row([labelled(home, 290, 'iOS'), labelled(`${home}-android`, 290, 'Android')], 820, 110, 50))
 png('x-3-light-dark', 1600, 900, head('Light <em>and</em> dark.<br>Both included.', 'Every screen comes in both. Pick a style and the colours follow everywhere.') + row([labelled(last, 290, 'Light'), labelled(`${last}-dark`, 290, 'Dark')], 820, 110, 50))
 // Instagram, 9:16 (1080×1920); the profile grid shows the middle 3:4, so titles start below y=250.
 const igTitle = (t: string) => `<div style="position:absolute;left:80px;top:260px;right:80px;font-size:68px;line-height:1.05;font-weight:600;letter-spacing:-.02em">${t}</div>`
-png('ig-1', 1080, 1920, `<div style="position:absolute;left:80px;top:260px;right:80px">${mark}<div style="margin-top:44px;font-size:96px;line-height:1.02;font-weight:600;letter-spacing:-.03em">One sentence.<br><em>${N} screens.</em></div><div style="margin-top:26px;font-size:30px;line-height:1.35;color:${MUTED}">${quote}</div></div>` + row([phone(home, 380, 'transform:rotate(-7deg)'), phone(third, 380, 'transform:rotate(6deg);margin-top:60px')], 110, 860, 50))
+png('ig-1', 1080, 1920, `<div style="position:absolute;left:80px;top:260px;right:80px">${mark}<div style="margin-top:44px;font-size:96px;line-height:1.02;font-weight:600;letter-spacing:-.03em">One ${ONE}.<br><em>${N} screens.</em></div><div style="margin-top:26px;font-size:30px;line-height:1.35;color:${MUTED}">${quote}</div></div>` + row([phone(home, 380, 'transform:rotate(-7deg)'), phone(third, 380, 'transform:rotate(6deg);margin-top:60px')], 110, 860, 50))
 png('ig-2', 1080, 1920, igTitle('The whole flow,<br><em>designed.</em>') + row(pick.slice(0, 3).map((f, i) => phone(f, 310, `margin-top:${i * 100}px`)), 45, 600, 15))
 png('ig-3', 1080, 1920, igTitle('iOS <em>and</em> Android.') + row([labelled(home, 460, 'iOS'), labelled(`${home}-android`, 460, 'Android')], 60, 520, 40))
 png('ig-4', 1080, 1920, igTitle('Light <em>and</em> dark.') + row([labelled(third, 460, 'Light'), labelled(`${third}-dark`, 460, 'Dark')], 60, 520, 40))
