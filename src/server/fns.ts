@@ -35,7 +35,9 @@ export const getCredits = createServerFn({ method: 'GET' }).handler(async () => 
   const user = await requireUser()
   await CreditService.refresh(user.id) // a new month of a plan lands the first time it is looked at
   const limits = await CreditService.limitsFor(user.id, user.admin)
-  return { balance: await Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export }
+  // BIL-22: this month's plan credits (granted, left) for the sidebar's bar; plan credits are spent first.
+  const grant = limits.plan === 'free' ? undefined : await Credit.lastPlanGrant(user.id)
+  return { balance: await Credit.balance(user.id), plan: limits.plan === 'free' ? null : limits.plan, canExport: limits.export, month: grant ? { granted: grant.delta, left: Math.max(0, grant.delta - grant.usedSince) } : null }
 })
 
 /** BIL-09: a hosted checkout for one product; the page goes to the returned URL. */

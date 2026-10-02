@@ -11,6 +11,21 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (7)
+
+### BIL-22 — the sidebar sells: tips, the plan, this month's credits, one action
+
+- **Why.** The sidebar's credits card was a number: no plan, nothing to click, no way to upgrade (Sleek's sidebar
+  carries tips and an Upgrade button).
+- **`UpgradePanel`** replaces it at the bottom of the dashboard's sidebar: three slides that rotate every 6 s and hold
+  under the pointer or focus (export to React and Figma — with "Unlock export" on Free —, native iOS and Android with
+  light and dark, a live share link), pager dots; then the plan and credits card, which opens `/billing`, with this
+  month's plan credits as a bar; then one action — a lime **Upgrade** on Free, **Buy credits** on Starter, none on Pro.
+  `getCredits` now returns the month's grant and what is left of it.
+- Files: `src/components/UpgradePanel.tsx`, `src/Dashboard.tsx`, `src/server/fns.ts`, `src/credits.tsx`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; the sidebar in the browser (Starter account) light and dark.
+  The Free state was read from the code, not seen: the only signed-in account here has a plan.
+
 ## 2026-10-02 (6)
 
 ### BIL-21 — a billing page

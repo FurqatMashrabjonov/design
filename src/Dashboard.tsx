@@ -6,10 +6,10 @@ import { AccountMenu } from '@/components/AccountMenu'
 import { PromptBox } from './PromptBox'
 import { BRAND } from './Landing'
 import { LoadingImage } from '@/components/LoadingImage'
-import { reportError, useCredits } from './credits'
-import { CREDIT_PRICES, screensFor } from './lib/credit-prices'
+import { reportError } from './credits'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { BrandMark } from '@/components/SiteChrome'
+import { UpgradePanel } from '@/components/UpgradePanel'
 import { frameSize } from './canvas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -75,21 +75,6 @@ function write(key: string, value: string) {
 }
 
 
-
-/** BIL-08: the credit balance, in credits and in the screens it buys, so running out is never a surprise. */
-function Credits({ initial }: { initial: number }) {
-  const balance = useCredits(initial)?.balance ?? initial
-  const low = balance < CREDIT_PRICES['deepseek-flash']!.plan + CREDIT_PRICES['deepseek-flash']!.draw
-  return (
-    <div className="rounded-md border bg-card p-3 text-xs shadow-1">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-muted-foreground"><span className={`size-1.5 rounded-full ${balance <= 0 ? 'bg-destructive' : low ? 'bg-chart-3' : 'bg-lime-500'}`} aria-hidden /> Credits</span>
-        <span className={`text-sm font-semibold tabular-nums ${balance <= 0 ? 'text-destructive' : ''}`}>{balance.toLocaleString('en')}</span>
-      </div>
-      <p className="mt-1 text-muted-foreground">≈ {screensFor(Math.max(0, balance))} screens{low ? ' · not enough for a new app' : ''}</p>
-    </div>
-  )
-}
 
 function ProjectMenu({ card, onRename, onDelete }: { card: Card; onRename: () => void; onDelete: () => void }) {
   return (
@@ -325,7 +310,7 @@ export function Dashboard({ projects, credits, user }: { projects: Card[]; credi
           </div>
         )}
         <div className="mt-auto space-y-3 border-t p-3">
-          <Credits initial={credits} />
+          <UpgradePanel initial={credits} />
           <div className="flex items-center gap-2.5 px-1">
             <AccountMenu />
             <div className="min-w-0 text-xs">
