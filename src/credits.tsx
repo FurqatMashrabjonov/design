@@ -178,6 +178,9 @@ export function CreditsDialog() {
   // A subscriber short of credits tops up with a pack (packs are for subscribers only); everything else is a plan.
   const offerPacks = out !== null && plan !== null && plan !== undefined
   const plans = PLANS.filter((x) => x.id !== plan)
+  // BIL-23: monthly or yearly, as on /pricing and /billing.
+  const [yearly, setYearly] = useState(false)
+  const save = Math.max(...PLANS.map((x) => Math.floor((1 - x.yearly / x.monthly) * 100)))
   return (
     <Dialog open={why !== null} onOpenChange={(o) => !o && setWhy(null)}>
       <DialogContent className="sm:max-w-lg">
@@ -200,25 +203,38 @@ export function CreditsDialog() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {plans.map((p) => (
-              <div key={p.id} className={`rounded-xl border p-4 ${p.id === 'pro' ? 'border-foreground' : ''}`}>
-                <p className="text-sm font-semibold">{p.name}</p>
-                <p className="mt-1 text-xl font-semibold tabular-nums">
-                  ${p.monthly}
-                  <span className="text-sm font-normal text-muted-foreground">/mo</span>
-                </p>
-                <p className="mt-2 text-sm">{p.credits.toLocaleString('en')} credits a month</p>
-                <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · {p.projects}</p>
-                <Button className="mt-3 w-full" variant={p.id === 'pro' ? 'default' : 'outline'} onClick={() => buy(`${p.id}-month` as ProductKey)}>
-                  Get {p.name}
-                </Button>
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">You’re on <span className="font-medium text-foreground">{plan ? PLANS.find((x) => x.id === plan)!.name : 'Free'}</span></p>
+              <div className="inline-flex rounded-md border border-border bg-card p-0.5 text-xs" role="group" aria-label="Billing period">
+                {[false, true].map((y) => (
+                  <button key={String(y)} type="button" aria-pressed={yearly === y} onClick={() => setYearly(y)} className={`h-7 rounded-sm px-2.5 transition-colors duration-(--duration-base) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${yearly === y ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
+                    {y ? `Yearly · save ${save}%` : 'Monthly'}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {plans.map((p) => (
+                <div key={p.id} className={`rounded-xl border p-4 ${p.id === 'pro' ? 'border-foreground' : ''}`}>
+                  <p className="text-sm font-semibold">{p.name}</p>
+                  <p className="mt-1 text-xl font-semibold tabular-nums">
+                    ${yearly ? p.yearly : p.monthly}
+                    <span className="text-sm font-normal text-muted-foreground">/mo</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{yearly ? `billed $${p.yearly * 12} a year` : 'billed monthly'}</p>
+                  <p className="mt-2 text-sm">{p.credits.toLocaleString('en')} credits a month</p>
+                  <p className="text-xs text-muted-foreground">{appsFor(p.credits)} whole apps · {p.projects} · export</p>
+                  <Button className="mt-3 w-full" variant={p.id === 'pro' ? 'default' : 'outline'} onClick={() => buy(`${p.id}-${yearly ? 'year' : 'month'}` as ProductKey)}>
+                    Get {p.name}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
-        <a href="/pricing" className="text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
-          Compare plans and credit packs
+        <a href="/billing" className="text-center text-xs text-muted-foreground underline-offset-2 hover:underline">
+          See your plan, credits and packs
         </a>
       </DialogContent>
     </Dialog>

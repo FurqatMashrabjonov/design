@@ -11,6 +11,18 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (8)
+
+### BIL-23 — the upgrade dialog: monthly or yearly, and which plan you are on
+
+- The dialog that opens when credits run out, a project limit is hit or export is on Free showed monthly prices only.
+  It now says which plan you are on, has the same Monthly / "Yearly · save 29%" switch as /pricing and /billing
+  (yearly shows the monthly equivalent and "billed $N a year", and buys the yearly product), lists export among what
+  a plan unlocks, and links to /billing instead of /pricing.
+- Files: `src/credits.tsx`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; the dialog opened in the browser, switched to yearly
+  ($17/mo, billed $204 a year).
+
 ## 2026-10-02 (7)
 
 ### BIL-22 — the sidebar sells: tips, the plan, this month's credits, one action
