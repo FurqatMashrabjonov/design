@@ -176,7 +176,7 @@ export function Landing() {
             access === 'waitlist'
               ? ['When can I try it?', 'We are letting people in a few at a time. Join the waitlist and tell us what you would prototype — it helps us decide who goes first.']
               : ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — enough for ${appsFor(SIGNUP_CREDITS)} prototypes — no card needed. Plans add monthly credits and more projects.`],
-            ['Who owns what I make?', 'You do. Your projects are private to your account until you share a link, and you can delete them, or your account, at any time.'],
+            ['Who owns what I make?', 'You do. Your projects are private to your account until you share a link. You can delete them at any time, and we delete your account when you ask.'],
           ].map(([q, a]) => (
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">

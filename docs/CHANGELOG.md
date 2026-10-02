@@ -11,6 +11,27 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (3)
+
+### EDT-30 — an added screen can be reached; Delete account off the menu
+
+- **The bug.** A screen added from chat joined the plan as a push from the first tab, but no screen opened it: the
+  owner's "More" sat alone on the canvas and the preview could never reach it. Now its parent is the screen the
+  request names ("add a leaderboard to Profile"; matched on screen names), else the first tab, and that parent is
+  edited once — "add one clear way to open it, change nothing else" — through `drawScreen` like any edit. The edit is
+  kept only if it really calls `useNav().push(<new id>)`; if it fails the new screen still stays. The add message
+  carries both screens, so "Undo this step" deletes the new one and restores the parent. Reply: "Added “Leaderboard”
+  — opened from “Profile”."
+- **Delete account** is off the account menu (the owner: one slip away from losing everything) and its server
+  function is gone, so no request can reach it; `AccountController.destroy` and its test stay for deletion on
+  request. `/privacy` and the landing FAQ now say an account is deleted when you ask by email, within 30 days.
+- Files: `src/app/Http/Controllers/GenerateController.ts`, `controllers.check.ts`, `src/components/AccountMenu.tsx`,
+  `src/server/fns.ts`, `src/routes/privacy.tsx`, `src/Landing.tsx`, `CLAUDE.md`.
+- Verified: a new test (the named parent opens the new screen, the first tab is untouched, undo restores both);
+  `npx tsc --noEmit` and `npm run check` clean; on the real model "add a leaderboard to Profile" on Ritualoop wired
+  Profile to the new screen (then undone — the two steps show in that project's chat); the account menu checked in
+  the browser.
+
 ## 2026-10-02 (2)
 
 ### Posts: teardown and experiment formats, the canvas strip, the live preview link

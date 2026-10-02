@@ -60,14 +60,14 @@ function Privacy() {
       <Section title="How long we keep it, and deleting it">
         <ul>
           <li>Your work stays until you delete it or your account.</li>
-          <li><b>Delete account</b> (in the account menu) removes your account, sessions, projects, screens, versions and chat at once.</li>
+          <li>To delete your account, write to us from its email address at <a href={`mailto:${SUPPORT_EMAIL}`} className="underline">{SUPPORT_EMAIL}</a>: we remove your account, sessions, projects, screens, versions and chat at once, within 30 days of the request.</li>
           <li>Payment and usage records are kept after that, without your work, because accounting and abuse prevention need them.</li>
           <li>You can export your designs at any time on a paid plan, and ask us for a copy of the data we hold about you.</li>
         </ul>
       </Section>
 
       <Section title="Your choices">
-        <p>You can see and change your work in the product, delete your account, unsubscribe from product news with the link in any such email, and write to us to access or correct your data. If you are in the EU or UK you also have the rights the GDPR gives you, including to complain to your data protection authority.</p>
+        <p>You can see and change your work in the product, ask us to delete your account, unsubscribe from product news with the link in any such email, and write to us to access or correct your data. If you are in the EU or UK you also have the rights the GDPR gives you, including to complain to your data protection authority.</p>
       </Section>
 
       <Section title="Children">

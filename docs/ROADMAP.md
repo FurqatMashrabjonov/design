@@ -236,6 +236,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Doira | Holat | Hajmi |
 |---|---|---|---|---|
+| EDT-30 | Qo'shilgan ekran ota ekranga ulanadi; Delete account menyudan olindi | Muharrir / Kanvas | MVP | Tayyor | Kichik |  | Yangi ekranni so'rovda nomlangan ekran (yoki birinchi tab) ochadi, undo ikkalasini qaytaradi; account menyusida Delete account yo'q, o'chirish email orqali |
 | EDT-20 | ScreenFrame xabarni faqat o'z iframe'idan qabul qiladi | MVP | Tayyor | Kichik |
 | EDT-21 | Kanvas ochilganda va generatsiyadan keyin avtomatik fit | MVP | Tayyor | Kichik |
 | EDT-16 | Kadr joylashuvi va "fit" har xil balandlikni hisobga oladi | MVP | Tayyor | Kichik |

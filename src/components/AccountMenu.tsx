@@ -1,17 +1,14 @@
-import { useState } from 'react'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { CreditCard, LifeBuoy, LogOut, Shield, Trash2 } from 'lucide-react'
+import { CreditCard, LifeBuoy, LogOut, Shield } from 'lucide-react'
 import { manageBilling } from '@/credits'
 import { authClient } from '@/lib/auth-client'
-import { deleteAccount } from '@/server/fns'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 
-// AUTH-08: who is signed in, sign out, and (AUTH-09) delete the account with everything in it.
+// AUTH-08: who is signed in, and sign out. AUTH-09's Delete account is off the menu since 2026-10-02 (one slip away
+// from losing everything); an account is deleted on request by email (/privacy), with AccountController.destroy.
 export function AccountMenu() {
   const { user } = useRouteContext({ strict: false }) as { user?: { name: string; email: string; image?: string | null; admin?: boolean } }
   const navigate = useNavigate()
-  const [confirm, setConfirm] = useState(false)
   if (!user) return null
   const initials = (user.name || user.email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('')
 
@@ -21,7 +18,6 @@ export function AccountMenu() {
   }
 
   return (
-    <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button type="button" className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold outline-none ring-offset-2 ring-offset-background transition-shadow duration-(--duration-base) hover:ring-2 hover:ring-border focus-visible:ring-2 focus-visible:ring-ring" aria-label="Account" title={user.email}>
@@ -48,32 +44,7 @@ export function AccountMenu() {
           <DropdownMenuItem onSelect={signOut}>
             <LogOut /> Sign out
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onSelect={() => setConfirm(true)}>
-            <Trash2 /> Delete account
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <AlertDialog open={confirm} onOpenChange={setConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-            <AlertDialogDescription>All your projects, screens and history are deleted with it. This cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={async () => {
-                await deleteAccount()
-                await authClient.signOut().catch(() => {})
-                navigate({ to: '/login' })
-              }}
-            >
-              Delete everything
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   )
 }

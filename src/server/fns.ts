@@ -8,7 +8,6 @@ import { ScreenController } from '@/app/Http/Controllers/ScreenController'
 import { FeedbackController } from '@/app/Http/Controllers/FeedbackController'
 import { ShareController, EMAIL, cleanRef } from '@/app/Http/Controllers/ShareController'
 import { EmailService, validUnsubscribe } from '@/app/Services/EmailService'
-import { AccountController } from '@/app/Http/Controllers/AccountController'
 import { CreditService } from '@/app/Services/CreditService'
 import { BillingController } from '@/app/Http/Controllers/BillingController'
 import { PRODUCTS } from '@/lib/credit-prices'
@@ -28,7 +27,6 @@ export const getSession = createServerFn({ method: 'GET' }).handler(async () => 
 /** ACC-01: public — whether the site is waitlist-only, so the pages show the waitlist instead of sign-in. */
 export const getAccess = createServerFn({ method: 'GET' }).handler(async () => ({ mode: await AccessService.mode() }))
 
-export const deleteAccount = createServerFn({ method: 'POST' }).handler(async () => AccountController.destroy((await requireUser()).id))
 
 // --- projects ---
 

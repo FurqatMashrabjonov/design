@@ -7,7 +7,7 @@ import { Message } from '@/app/Models/Message'
 import { editBrief, elementBrief, parseAppPlan, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { nextFramePosition } from '@/canvas'
 import { parseAppTheme } from '@/lib/app-theme'
-import { changeReply, formatTokens, friendlyError, type MessageKind } from '@/lib/agent-messages'
+import { changeReply, formatTokens, friendlyError, type MessageKind, type MessageScreen } from '@/lib/agent-messages'
 import { parseRefImages } from '@/lib/ref-images'
 import { ShotService } from '@/app/Services/ShotService'
 import type { RefImage } from '@/app/Services/LlmService'
@@ -60,8 +60,10 @@ export const GenerateController = {
       kind: s.screenType === 'root-tab' ? 'tab' : s.screenType === 'modal-flow' ? 'modal' : 'push',
       tab: s.activeTabId ?? undefined, parent: plan?.screens.find((p) => p.name === s.parentScreenName)?.id,
     })
-    // An added screen joins the plan as a pushed screen from the first tab, with a fresh id.
-    const added: PlannedScreen | null = target ? null : { id: `screen-${Math.random().toString(36).slice(2, 7)}`, name: 'New screen', kind: 'push', parent: plan?.screens.find((s) => s.kind === 'tab')?.id, spec: prompt }
+    // An added screen joins the plan as a pushed screen, with a fresh id. Its parent is the screen the request names
+    // ("add a leaderboard to Profile"), else the first tab — and that parent gets a way in (below), or nothing opens it.
+    const named = plan?.screens.find((s) => s.kind !== 'first-run' && new RegExp(`\\b${s.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(prompt))
+    const added: PlannedScreen | null = target ? null : { id: `screen-${Math.random().toString(36).slice(2, 7)}`, name: 'New screen', kind: 'push', parent: (named ?? plan?.screens.find((s) => s.kind === 'tab'))?.id, spec: prompt }
     const user = regenerateId && target
       ? plan ? screenBrief(plan, planned(target)) : `Write this screen: ${target.name}. ${target.spec || target.prompt}`
       : target
@@ -97,6 +99,7 @@ export const GenerateController = {
           const brief = element ? `${user}\n\nChange only this element and leave the rest of the file exactly as it is:\n\`\`\`jsx\n${element.source}\n\`\`\`` : user
           const jsx = await drawScreen(brief, tally, abort.signal, target && !regenerateId ? 'edit' : 'screen', { look, slug, report: (o) => (checked = o) }, images, first)
           let changed: { id: string; name: string; versionId?: string; created?: boolean }
+          let wired: MessageScreen | undefined
           if (target) {
             const versionId = target.html ? await ScreenVersion.captureFrom(target) : undefined
             await Screen.updateContent(target.id, { name: target.name, prompt: regenerateId ? target.prompt : prompt, html: jsx })
@@ -109,11 +112,25 @@ export const GenerateController = {
             await Screen.create({ id, projectId: project.id, name, slug: added!.id, prompt, html: jsx, x: pos.x, y: pos.y, screenType: 'detail-view', parentScreenName: plan?.screens.find((s) => s.id === added!.parent)?.name ?? null, spec: prompt })
             if (plan) await Project.savePlan(project.id, { ...plan, screens: [...plan.screens, { ...added!, name }] })
             changed = { id, name, created: true }
+            // A screen nothing opens cannot be reached in the preview (a new "More" sat alone on the canvas). The parent
+            // gets one entry point — an edit like any other, so the message's undo restores it with the new screen.
+            const parent = (await Screen.forProject(project.id)).find((s) => s.slug === added!.parent && s.html && !s.deletedAt)
+            if (parent) {
+              try {
+                const linked = await drawScreen(editBrief(plan, { name: parent.name, slug: parent.slug }, parent.html, `Add one clear way to open the new screen “${name}”: a ListItem link, a card or a row in the most fitting place, whose tap calls useNav().push('${added!.id}'). Change nothing else.`), tally, abort.signal, 'edit', { look, slug: parent.slug ?? '', report: () => {} })
+                if (linked.includes(`'${added!.id}'`) || linked.includes(`"${added!.id}"`)) {
+                  const versionId = await ScreenVersion.captureFrom(parent)
+                  await Screen.updateContent(parent.id, { name: parent.name, prompt: parent.prompt, html: linked })
+                  ShotService.warm(project.id, linked, parent.slug ?? parent.id)
+                  wired = { id: parent.id, name: parent.name, versionId }
+                }
+              } catch {} // the new screen stays; it can still be linked by asking
+            }
           }
           await Message.add({
             projectId: project.id, role: 'agent', kind,
-            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: element?.label, version: changed.created ? undefined : (await ScreenVersion.count(changed.id)) + 1 }),
-            meta: { screens: [changed], log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])], durationMs: Date.now() - startedAt },
+            text: changeReply({ kind: kind as 'add' | 'edit' | 'element' | 'regenerate', screen: changed.name, element: element?.label, version: changed.created ? undefined : (await ScreenVersion.count(changed.id)) + 1, slot: wired ? `— opened from “${wired.name}”` : undefined }),
+            meta: { screens: [changed, ...(wired ? [wired] : [])], log: [`${changed.name} — ${((Date.now() - startedAt) / 1000).toFixed(1)}s, ${jsx.length} chars${checkNote(checked)}`, ...(usage.promptTokens ? [formatTokens(usage)] : [])], durationMs: Date.now() - startedAt },
           })
         } catch (e) {
           const message = e instanceof Error ? e.message : String(e)

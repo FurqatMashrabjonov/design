@@ -1488,6 +1488,34 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.match((await Screen.find('el-s1'))!.html, /Whole/)
 }
 
+// --- An added screen gets a way in: the screen the request names (else the first tab) opens it, undone with it ---
+{
+  const { GenerateController } = await import('./GenerateController.ts')
+  const { HistoryController } = await import('./HistoryController.ts')
+  const plan = { appName: 'x', summary: '', accent: '#ff375f', style: 'clean', palette: {}, data: '', tabs: [{ id: 'home', label: 'Home', icon: 'House' }, { id: 'me', label: 'Profile', icon: 'User' }], screens: [{ id: 'home', name: 'Home', kind: 'tab', tab: 'home', spec: '' }, { id: 'profile', name: 'Profile', kind: 'tab', tab: 'me', spec: '' }] }
+  await Project.create({ id: 'add-1', name: 'Add', designSystem: 'konsta', device: 'mobile' })
+  await Project.savePlan('add-1', plan as never)
+  const profileSrc = page('Profile').replace(/```(jsx)?\n?/g, '')
+  await Screen.create({ id: 'add-home', projectId: 'add-1', name: 'Home', slug: 'home', prompt: 'p', html: page('Home').replace(/```(jsx)?\n?/g, ''), x: 0, y: 0 })
+  await Screen.create({ id: 'add-profile', projectId: 'add-1', name: 'Profile', slug: 'profile', prompt: 'p', html: profileSrc, x: 400, y: 0 })
+  sent = []
+  // The new screen first; then the parent's edit, which must call push with the new screen's id.
+  reply = (req) => {
+    const id = /useNav\(\)\.push\('([^']+)'\)/.exec(req.user)?.[1]
+    return sse(id ? page('Profile').replace('<Block className="p-4">Profile</Block>', `<Block onClick={() => useNav().push('${id}')}>Leaderboard</Block>`) : page('Leaderboard'))
+  }
+  await post(GenerateController, { projectId: 'add-1', prompt: 'add a leaderboard to Profile' })
+  const added = (await Screen.forProject('add-1')).find((s) => s.name === 'Leaderboard')!
+  const parent = (await Screen.find('add-profile'))!
+  assert.ok(added && parent.html.includes(`push('${added.slug}')`), 'the named screen now opens the new one')
+  assert.ok(!(await Screen.find('add-home'))!.html.includes('push('), 'the first tab is left alone when the request names another screen')
+  const msg = (await Message.forProject('add-1')).filter((m) => m.role === 'agent').at(-1)!
+  assert.match(msg.text, /Added “Leaderboard” — opened from “Profile”/)
+  await HistoryController.revertMessage({ projectId: 'add-1', messageId: msg.id })
+  assert.equal((await Screen.find('add-profile'))!.html, profileSrc, 'undo puts the parent back')
+  assert.ok(!(await Screen.forProject('add-1')).some((s) => s.name === 'Leaderboard'), 'and removes the new screen')
+}
+
 // --- KON-10: a picture's key follows the source and the look, so a changed screen or theme is never shown stale ---
 {
   const { ShotService } = await import('../../Services/ShotService.ts')
