@@ -11,6 +11,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (12)
+
+### PRC-04 — the pricing page sells the plans
+
+- `/pricing` rewritten: a hero ("A whole app for *less than a coffee*"), a Monthly/Yearly pill with the saving, three
+  cards (Free, Starter, Pro) with a tagline, credits as apps and screens and what each includes, "Most popular" on Pro
+  and "Early bird" on the paid plans (with a note that the price stays while subscribed); a calculator (apps a month
+  → the plan or pack that fits, $/mo and $/app); a compare table (scrolls inside its box on a phone); the packs
+  (Buy only when access is open); six FAQs taken from the refund policy; Polar as merchant of record. Every number
+  comes from `lib/credit-prices.ts`, so the page lists only what the code keeps.
+- Files: `src/routes/pricing.tsx`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; in the browser at desktop width light and dark, and at 390px
+  (no page-wide horizontal scroll).
+
 ## 2026-10-02 (11)
 
 ### PRC-03 — "Made with Screenspell" on Free links; paid links are clean
