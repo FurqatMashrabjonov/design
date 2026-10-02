@@ -75,3 +75,6 @@ const price = (model: string) => CREDIT_PRICES[model]!
 export const screensFor = (credits: number, model = 'deepseek-flash') => Math.floor(credits / price(model).screen)
 /** …or whole apps (a plan and its drawing, 15 credits). A plan is sold in apps, so the two never disagree. */
 export const appsFor = (credits: number, model = 'deepseek-flash') => Math.floor(credits / (price(model).plan + price(model).draw))
+
+/** BIL-25: what a checkout that cannot open says to the browser — one plain marker, never the provider's reply. */
+export const PAYMENTS_CLOSED = 'payments-closed'

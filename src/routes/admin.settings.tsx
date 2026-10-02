@@ -85,6 +85,11 @@ function ControlsPage() {
       <Keys keys={d.keys} onChange={() => router.invalidate()} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Panel title="Payments">
+          {/* BIL-25: the provider's own verdict — until it is ready, a checkout shows "payments open soon". */}
+          <p className="flex items-center gap-2 text-sm"><Badge tone={d.payments.ready ? 'good' : 'warn'}>{d.payments.ready ? 'Ready' : 'Not yet'}</Badge> Polar {d.payments.server}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{d.payments.reason}</p>
+        </Panel>
         <Panel title="System">
           <dl className="space-y-2 text-sm">
             {[

@@ -46,6 +46,11 @@ export const startCheckout = createServerFn({ method: 'POST' })
     return BillingController.checkout(user, data.key, publicOrigin(getRequest()))
   })
 
+/** BIL-25: the signed-in person asks to be told when payments open. */
+export const notifyWhenPaymentsOpen = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ key: oneOf(obj(d).key, PRODUCTS.map((p) => p.key)) }))
+  .handler(async ({ data }) => BillingController.notifyWhenOpen(await requireUser(), data.key))
+
 /** BIL-11: the provider's billing portal for the signed-in user. */
 export const openBillingPortal = createServerFn({ method: 'POST' }).handler(async () => BillingController.portal((await requireUser()).id, publicOrigin(getRequest())))
 

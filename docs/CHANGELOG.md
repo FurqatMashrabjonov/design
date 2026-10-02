@@ -11,6 +11,28 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (5)
+
+### BIL-20 + BIL-25 — pricing is public again; a checkout that cannot open says so
+
+- **BIL-20.** `/pricing` redirected everyone but admins home while the app was waitlist-only, and its header and
+  footer links were hidden. It is now open in both modes; in waitlist mode its buttons join the waitlist (already
+  coded), so people see the prices before they can buy.
+- **BIL-25.** The Polar organization is still under review (`checkout_payments: false`), so a checkout fails — and the
+  provider's error body reached the browser as a toast. Now `BillingController.checkout` logs it and throws one plain
+  marker (`PAYMENTS_CLOSED`); the browser opens a dialog, "Payments open in a few days", with "Email me when it
+  opens", which puts the signed-in person on the waitlist (ref `payments`, note `wants <product>`). Admin → Settings
+  has a Payments panel with Polar's own verdict (`PolarService.status`: checkout enabled, products set up, or why not —
+  a rejected token is named as such).
+- Files: `src/routes/pricing.tsx`, `src/components/SiteChrome.tsx`, `src/app/Http/Controllers/BillingController.ts`,
+  `src/app/Services/PolarService.ts`, `src/app/Services/AdminStatsService.ts`, `src/routes/admin.settings.tsx`,
+  `src/server/fns.ts`, `src/credits.tsx`, `src/routes/__root.tsx`, `src/lib/credit-prices.ts`, `controllers.check.ts`,
+  `CLAUDE.md`.
+- Verified: a test (a failed checkout gives only the marker; notify-me joins the waitlist with the product); `npx tsc
+  --noEmit` and `npm run check` clean; in the browser on a dev server of my own — `/pricing` in waitlist mode
+  (waitlist buttons, links back), a working checkout reaching Polar's sandbox page, a refused one (sandbox token
+  against production) opening the dialog and "Email me" confirming, and the admin Payments panel.
+
 ## 2026-10-02 (4)
 
 ### ONB-01 — onboarding no longer the same in every app; shorter preview links; posts from a public preview

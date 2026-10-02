@@ -62,6 +62,25 @@ export const PolarService = {
     return r.url
   },
 
+  /** BIL-25: whether the provider takes payments yet — its own verdict on the organization (an account under
+   *  review cannot). Never throws: a missing token or an unreachable API is a reason, not an error page. */
+  async status(): Promise<{ ready: boolean; reason: string; server: string }> {
+    const server = process.env.POLAR_SERVER === 'production' ? 'production' : 'sandbox'
+    try {
+      const r = await api<{ items: { status?: string; capabilities?: { checkout_payments?: boolean } }[] }>('/v1/organizations/?limit=1')
+      const org = r.items[0]
+      if (!org) return { ready: false, reason: 'no organization for this token', server }
+      const products = (await PolarService.productIds(true)).size
+      if (!org.capabilities?.checkout_payments) return { ready: false, reason: `account ${org.status ?? 'under review'} — checkout not enabled yet`, server }
+      if (products < PRODUCTS.length) return { ready: false, reason: `${products} of ${PRODUCTS.length} products set up`, server }
+      return { ready: true, reason: `${products} products, checkout enabled`, server }
+    } catch (e) {
+      const m = e instanceof Error ? e.message : ''
+      const reason = /Polar 401/.test(m) ? `token rejected — expired, revoked or made for ${server === 'production' ? 'sandbox' : 'production'}` : /Polar 403/.test(m) ? 'token lacks a scope (products, checkouts, organizations)' : m.slice(0, 120) || 'unreachable'
+      return { ready: false, reason, server }
+    }
+  },
+
   /** BIL-11: the provider's own billing portal (cards, invoices, cancel), for this user. */
   async portal(userId: string, returnUrl: string): Promise<string> {
     const r = await api<{ customer_portal_url: string }>('/v1/customer-sessions/', { method: 'POST', body: { external_customer_id: userId, return_url: returnUrl } })

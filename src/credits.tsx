@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { toast } from 'sonner'
-import { getCredits, openBillingPortal, startCheckout } from './server/fns'
-import { appsFor, CREDIT_PRICES, PACKS, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
+import { getCredits, notifyWhenPaymentsOpen, openBillingPortal, startCheckout } from './server/fns'
+import { appsFor, CREDIT_PRICES, PACKS, PAYMENTS_CLOSED, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 const OUT = 'od:credits-out'
 const CHANGED = 'od:credits-changed'
 const LIMIT = 'od:plan-limit'
+const SOON = 'od:payments-soon'
 
 /** BIL-14: what a plan did not allow — a project over its count, or an export on Free. */
 type Limit = { projects: number } | 'export'
@@ -89,8 +90,48 @@ export async function buy(key: ProductKey) {
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e)
     if (/sign in|unauthori/i.test(m)) window.location.href = '/login'
+    // BIL-25: the provider is not taking payments yet — a dialog that says so, not an error.
+    else if (m.includes(PAYMENTS_CLOSED)) window.dispatchEvent(new CustomEvent(SOON, { detail: key }))
     else toast.error(m)
   }
+}
+
+/** BIL-25: mounted once (root). Shown when a checkout cannot open yet; offers to email when it does. */
+export function PaymentsSoonDialog() {
+  const [key, setKey] = useState<ProductKey | null>(null)
+  const [asked, setAsked] = useState(false)
+  useEffect(() => {
+    const on = (e: Event) => (setAsked(false), setKey((e as CustomEvent<ProductKey>).detail))
+    window.addEventListener(SOON, on)
+    return () => window.removeEventListener(SOON, on)
+  }, [])
+  return (
+    <Dialog open={key !== null} onOpenChange={(o) => !o && setKey(null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Payments open in a few days</DialogTitle>
+          <DialogDescription>We’re finishing the checkout setup with our payment provider. Nothing was charged. Want an email the moment you can upgrade?</DialogDescription>
+        </DialogHeader>
+        {asked ? (
+          <p className="text-sm">Done — we’ll email you as soon as payments open.</p>
+        ) : (
+          <Button
+            className="w-full"
+            onClick={async () => {
+              try {
+                await notifyWhenPaymentsOpen({ data: { key: key! } })
+                setAsked(true)
+              } catch {
+                toast.error('Could not save that — try again in a moment.')
+              }
+            }}
+          >
+            Email me when it opens
+          </Button>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 /** BIL-11: the provider's billing portal — cards, invoices, cancelling. */

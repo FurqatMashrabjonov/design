@@ -6,7 +6,7 @@ import { getAccess } from '../server/fns'
 import type { AccessMode } from '@/app/Services/AccessService'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
-import { CreditsDialog } from '../credits'
+import { CreditsDialog, PaymentsSoonDialog } from '../credits'
 import css from '../styles.css?url'
 
 // ACC-01: waitlist-only or open, for every page. Asked once per page load in the browser (a switch in the panel
@@ -59,6 +59,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         {/* UI-21: top centre — the canvas keeps its corners for tools (bottom-right was the zoom cluster). */}
         <Toaster position="top-center" offset={16} />
         <CreditsDialog />
+        <PaymentsSoonDialog />
         <Scripts />
       </body>
     </html>

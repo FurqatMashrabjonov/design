@@ -373,6 +373,18 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(monthIndex(t('2026-01-15T10:00:00Z'), t('2027-01-15T09:59:59Z')), 11)
 
   await assert.rejects(BillingController.checkout({ id: 'payer', email: 'p@x.uz' }, 'pack-500', 'http://x'), /subscribers/, 'packs are for subscribers only')
+  // BIL-25: a checkout the provider cannot open (here: no token) reaches the browser as one plain marker, never the
+  // provider's reply; "tell me when it opens" joins the waitlist with the plan wanted.
+  {
+    const { PAYMENTS_CLOSED } = await import('../../../lib/credit-prices.ts')
+    const { sql } = await import('drizzle-orm')
+    const { all } = await import('../../../database/query.ts')
+    const err = await BillingController.checkout({ id: 'payer', email: 'p@x.uz' }, 'pro-month', 'http://x').then(() => null, (e: Error) => e)
+    assert.equal(err?.message, PAYMENTS_CLOSED, 'the browser sees only the marker')
+    await BillingController.notifyWhenOpen({ email: 'Waiting@X.uz' }, 'pro-month')
+    const [row] = await all<{ ref: string; note: string }>(sql`SELECT ref, note FROM waitlist WHERE email = 'waiting@x.uz'`)
+    assert.deepEqual(row, { ref: 'payments', note: 'wants pro-month' })
+  }
 
   const sub = (status: string, extra: Record<string, unknown> = {}) => ({
     type: 'subscription.updated',

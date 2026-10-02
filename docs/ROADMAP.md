@@ -361,6 +361,12 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
+| BIL-20 | Pricing hammaga ochiq (waitlist'da ham), header/footer linki | To'lov va kreditlar / Kredit interfeysi | MVP | Tayyor | Kichik |  | /pricing har kimga ochiladi; waitlist'da tugmalar Join the waitlist |
+| BIL-25 | To'lov hali ochilmagan holat: tushunarli dialog, admin'da Billing ready | To'lov va kreditlar / Kredit interfeysi | MVP | Tayyor | Kichik |  | Checkout xatosi toast emas, dialog; admin Polar holatini ko'radi |
+| BIL-21 | /billing sahifasi: plan, kreditlar, upgrade, paketlar, portal, ledger | To'lov va kreditlar / Kredit interfeysi | MVP | Rejada | O'rta |  | Account → Billing shu sahifaga; Free va obunachi uchun to'g'ri tugmalar |
+| BIL-22 | Sidebar: plan + kredit progress + lime Upgrade, promo karusel | To'lov va kreditlar / Kredit interfeysi | MVP | Rejada | O'rta |  | Free'da Upgrade, obunachida Buy credits, Pro'da yo'q; 3 slaydli karusel |
+| BIL-23 | Upgrade dialogi: oylik/yillik, joriy plan, nima ochiladi | To'lov va kreditlar / Kredit interfeysi | MVP | Rejada | Kichik |  | Yillik tanlov ishlaydi, joriy plan belgilangan |
+| BIL-24 | Kredit kam qolganda oldindan ogohlantirish | To'lov va kreditlar / Kredit interfeysi | MVP | Rejada | Kichik |  | <15 kreditda eslatma, 0 da dialog |
 | BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik |  | Provayder tanlangan, hisob ochilgan |
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |

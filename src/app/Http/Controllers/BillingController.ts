@@ -3,7 +3,8 @@ import { Subscription } from '@/app/Models/Subscription'
 import { CreditService } from '@/app/Services/CreditService'
 import { PolarService } from '@/app/Services/PolarService'
 import { BusinessService } from '@/app/Services/BusinessService'
-import { productOf, type ProductKey } from '@/lib/credit-prices'
+import { PAYMENTS_CLOSED, productOf, type ProductKey } from '@/lib/credit-prices'
+import { Waitlist } from '@/app/Models/Waitlist'
 import { SecretService } from '@/app/Services/SecretService'
 import { TelescopeService } from '@/app/Services/TelescopeService'
 import { verify } from '@/lib/standard-webhooks'
@@ -38,7 +39,20 @@ export const BillingController = {
     const product = productOf(key)
     if (!product) throw new Error('Unknown product')
     if (!product.plan && !await Subscription.activeFor(user.id)) throw new Error('Credit packs are for Starter and Pro subscribers')
-    return { url: await PolarService.checkout({ userId: user.id, email: user.email, key, successUrl: `${origin}/?checkout=success` }) }
+    // BIL-25: until the provider takes payments (an account under review, no token, a product missing) a checkout
+    // fails; the person is told plainly and may ask to hear when it opens. The provider's reply stays in the log.
+    try {
+      return { url: await PolarService.checkout({ userId: user.id, email: user.email, key, successUrl: `${origin}/?checkout=success` }) }
+    } catch (e) {
+      console.error('[billing] checkout failed:', e instanceof Error ? e.message : e)
+      throw new Error(PAYMENTS_CLOSED)
+    }
+  },
+
+  /** BIL-25: "tell me when payments open" — the signed-in person joins the waitlist with the plan they wanted. */
+  async notifyWhenOpen(user: { email: string }, key: ProductKey) {
+    await Waitlist.join({ email: user.email.toLowerCase(), ref: 'payments', projectId: null, note: `wants ${key}` })
+    return { ok: true }
   },
 
   async portal(userId: string, origin: string) {

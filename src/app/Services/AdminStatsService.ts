@@ -6,6 +6,7 @@ import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 import { adminEmails } from './AuthService'
 import { AccessService } from './AccessService'
+import { PolarService } from './PolarService'
 import { paging, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 
 // ADM-02…08: what the admin panel reads. Plain aggregate SQL over the tables the product already
@@ -111,7 +112,7 @@ export const AdminStatsService = {
 
   /** ADM-08: the switches in force, where each comes from, and the system at a glance. */
   async controls() {
-    const [counts, limits, settings, actions] = await Promise.all([
+    const [counts, limits, settings, actions, payments] = await Promise.all([
       one<{ dbBytes: number; images: number; users: number; projects: number; screens: number; calls: number }>(sql`
         SELECT pg_database_size(current_database()) AS "dbBytes", (SELECT count(*) FROM image_cache) AS images, (SELECT count(*) FROM "user") AS users,
           (SELECT count(*) FROM projects) AS projects, (SELECT count(*) FROM screens) AS screens, (SELECT count(*) FROM llm_calls) AS calls
@@ -122,12 +123,14 @@ export const AdminStatsService = {
         SELECT a.id, a.created_at AS "createdAt", a.action, a.target, a.detail, u.email AS admin
         FROM admin_actions a LEFT JOIN "user" u ON u.id = a.admin_id ORDER BY a.created_at DESC LIMIT 100
       `),
+      PolarService.status(),
     ])
     return {
       limits,
       settings,
       envPaused: process.env.GENERATION_PAUSED === '1',
       access: { mode: await AccessService.mode(), env: AccessService.envMode() },
+      payments,
       system: { ...counts!, provider: process.env.LLM_PROVIDER || 'deepseek', node: process.version, env: process.env.NODE_ENV || 'development' },
       actions,
     }
