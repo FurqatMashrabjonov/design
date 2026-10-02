@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { completeJSON, jsonOnly, streamCompletion, type LlmUsage, type RefImage } from './LlmService'
 import { REF_IMAGE_NOTE } from '@/lib/ref-images'
 import type { AppLook } from './ScreenDocument'
-import { parseAppTheme, parseStyleName, styleColors, type AppStyle, type AppTheme } from '@/lib/app-theme'
+import { parseAppTheme, parseStyleName, seededPick, styleColors, type AppStyle, type AppTheme } from '@/lib/app-theme'
 
 // KON-00: an app is planned once (screens, tabs, accent, the data every screen shares) and each screen is
 // one Konsta component written from the skill, the Konsta API reference, the kit reference and one finished
@@ -18,13 +18,39 @@ export function screenSystem(): string {
 }
 // One finished screen per kind of screen (konsta/examples): what the model copies is how it is built.
 const examples = new Map<string, string>()
-const example = (name: 'dashboard' | 'onboarding' | 'detail' | 'list') => examples.get(name) ?? (examples.set(name, read(`konsta/examples/${name}.jsx`)), examples.get(name)!)
+const example = (name: ExampleName) => examples.get(name) ?? (examples.set(name, read(`konsta/examples/${name}.jsx`)), examples.get(name)!)
 
 export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Settings', 'Bell', 'Calendar', 'ChartColumn', 'ListChecks', 'ShoppingBag', 'ShoppingCart', 'MessageCircle', 'Map', 'Compass', 'Wallet', 'CreditCard', 'BookOpen', 'Dumbbell', 'Utensils', 'Music', 'Play', 'Camera', 'Image', 'Star', 'Bookmark', 'Inbox', 'Layers', 'Grid2x2', 'Sparkles', 'Activity', 'Target', 'Plane', 'Ticket', 'Users', 'Briefcase', 'GraduationCap', 'Leaf', 'Droplets', 'Footprints']
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
-export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string }
+export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding }
+
+/**
+ * ONB-01: how the first-run screen is built. With one example every app opened on the same carousel (7 of 7 on the
+ * thm01b eval, whatever the style). Each layout has its own finished example (konsta/examples/onboarding-*.jsx);
+ * the code picks one per app from those that suit its style (seededPick), and the screen brief names it.
+ */
+export const ONBOARDINGS = {
+  slides: 'two or three slides inside the one screen: art composed from the kit that shows the app\'s own thing, a two-line title, one line, pager Dots, Continue.',
+  photo: 'one full-bleed Photo of the app\'s world under a dark gradient, the promise as a big title and one line over it, one button and a small log-in link. No slides, no dots.',
+  quiz: 'a short personal question flow (two or three questions in this one screen, a Meter for progress on top): each question is three or four large tappable option cards with an emoji Tile; Continue is enabled once one is chosen. Ask what this app really needs to know (a goal, a level, a time, a preference).',
+  value: 'the app\'s promise as a big title, then three benefit rows (a tinted icon, a headline, one line each), one primary button and a small terms line. One calm page — no slides.',
+  showcase: 'a collage of three tilted mini cards that preview the app\'s own screens (its hero figure, a chart, a streak or list row), built from the kit, then a bold two-line title and one button.',
+} as const
+export type Onboarding = keyof typeof ONBOARDINGS
+/** The layouts each style allows: three, so apps of one style still differ. */
+const ONBOARDING_BY_STYLE: Record<AppStyle, Onboarding[]> = {
+  clean: ['value', 'quiz', 'showcase'],
+  midnight: ['showcase', 'photo', 'quiz'],
+  vivid: ['slides', 'quiz', 'showcase'],
+  soft: ['photo', 'slides', 'value'],
+  editorial: ['photo', 'value', 'showcase'],
+}
+export const onboardingFor = (style: AppStyle, seed: string): Onboarding => seededPick(ONBOARDING_BY_STYLE[style], seed, 'onboarding')
+/** A stored plan's layout; plans from before ONB-01 (or a stray value) are the carousel. */
+const onboardingOf = (plan: AppPlan): Onboarding => (plan.onboarding && plan.onboarding in ONBOARDINGS ? plan.onboarding : 'slides')
+type ExampleName = 'dashboard' | 'detail' | 'list' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}`
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
 {"appName": string, "summary": "one sentence",
@@ -33,7 +59,7 @@ export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by 
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
  "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
  "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
-Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen (2–3 slides inside it) unless the brief says otherwise; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
+Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'screen'
 
@@ -82,7 +108,7 @@ export function parsePlan(json: string, fallbackName: string, seed?: string): Ap
   const keys = Object.keys(given).filter((k) => /^[a-z][a-zA-Z0-9]{0,19}$/.test(k)).slice(0, 6)
   const colors = seed ? styleColors(style, keys, seed) : null
   const palette = colors ? colors.palette : Object.fromEntries(keys.filter((k) => /^#[0-9a-f]{6}$/i.test(String(given[k]))).map((k) => [k, String(given[k]).toLowerCase()]))
-  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000) }
+  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }) }
 }
 
 export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string, images?: RefImage[]): Promise<AppPlan> {
@@ -103,15 +129,15 @@ const kindLine = (s: PlannedScreen) =>
 
 /**
  * THM-01: what each style asks of a screen. The host sets the surfaces, corners and fonts (runtime/kit/styles.js);
- * the card says how to compose on them — the part only the model can do. Onboarding is part of it, because five
- * styles with one onboarding layout were still five of the same app.
+ * the card says how to compose on them — the part only the model can do. Onboarding's tone is part of it; its layout
+ * is ONB-01's (ONBOARDINGS), because five styles with one onboarding layout were still five of the same app.
  */
 export const STYLE_CARDS: Record<AppStyle, string> = {
-  clean: `Clean — the grouped iOS look of a finance or productivity app: bg-page with bg-card rounded-card groups and List strong inset rows; generous white space; the accent only for actions and selection; palette colours as small marks (rings, dots, tinted tiles), never as big fills. Onboarding: a light page, one composed illustration of the app's own thing (a mini card of its main screen), a title and one line.`,
-  midnight: `Midnight — a dark, premium app (the host runs it in dark mode): near-black page, bg-card rounded-card panels on it, big bold white numbers (text-figure), and colour only where it matters — one ring, one bar, one streak in the accent or a palette colour, glowing on black; moody full-bleed photos with text over a dark gradient; no pastel, no light washes. Onboarding: black, one big glowing figure (a Ring, a number, a photo), a bold two-line title.`,
-  vivid: `Vivid — bold and playful, like a food or learning app: the page is a light wash of the accent; big Hero blocks in the accent and palette colours carry the content (today's goal, the streak, categories), chunky rounded shapes (rounded-card is 24px), large emoji or icons on tinted tiles, large rounded buttons, a cheerful voice. Onboarding: each slide a full-colour Hero block with a big emoji or composed art and a short punchy title.`,
-  soft: `Soft — calm and warm, like a meditation or wellness app: a cream page (bg-page), soft bg-card rounded-card panels without hard borders, the palette as gentle washes (tint) rather than strong fills, rounded type (the host sets it), lots of air, one gentle illustration or photo per screen, a quiet voice; no loud gradients, no dense tables. Onboarding: a calm photo or illustration filling the top half, a quiet title, one soft button.`,
-  editorial: `Editorial — photo-led and typographic, like a travel or lifestyle app: large display titles (the host sets a serif for text-large-title, text-title1/2 and text-figure), full-width photos with the title over a dark gradient, few boxes — sections separated by space and hairlines (border-line) rather than cards, captions in text-footnote, the accent used sparingly for actions. Onboarding: a full-bleed Photo with a big serif title over it and one button.`,
+  clean: `Clean — the grouped iOS look of a finance or productivity app: bg-page with bg-card rounded-card groups and List strong inset rows; generous white space; the accent only for actions and selection; palette colours as small marks (rings, dots, tinted tiles), never as big fills. Onboarding (its layout is given separately): light and quiet, with the app's own thing as the art.`,
+  midnight: `Midnight — a dark, premium app (the host runs it in dark mode): near-black page, bg-card rounded-card panels on it, big bold white numbers (text-figure), and colour only where it matters — one ring, one bar, one streak in the accent or a palette colour, glowing on black; moody full-bleed photos with text over a dark gradient; no pastel, no light washes. Onboarding (its layout is given separately): black, colour glowing on it, a bold title.`,
+  vivid: `Vivid — bold and playful, like a food or learning app: the page is a light wash of the accent; big Hero blocks in the accent and palette colours carry the content (today's goal, the streak, categories), chunky rounded shapes (rounded-card is 24px), large emoji or icons on tinted tiles, large rounded buttons, a cheerful voice. Onboarding (its layout is given separately): full colour, big emoji or composed art, short punchy titles.`,
+  soft: `Soft — calm and warm, like a meditation or wellness app: a cream page (bg-page), soft bg-card rounded-card panels without hard borders, the palette as gentle washes (tint) rather than strong fills, rounded type (the host sets it), lots of air, one gentle illustration or photo per screen, a quiet voice; no loud gradients, no dense tables. Onboarding (its layout is given separately): calm, airy, a quiet title, one soft button.`,
+  editorial: `Editorial — photo-led and typographic, like a travel or lifestyle app: large display titles (the host sets a serif for text-large-title, text-title1/2 and text-figure), full-width photos with the title over a dark gradient, few boxes — sections separated by space and hairlines (border-line) rather than cards, captions in text-footnote, the accent used sparingly for actions. Onboarding (its layout is given separately): photo-led, a big serif title, one button.`,
 }
 
 /** What every screen of the app is told about the app. */
@@ -128,8 +154,8 @@ ${plan.data}`
 }
 
 /** The example that shows how this kind of screen is built: the app's first tab is its dashboard. */
-export function exampleFor(plan: AppPlan, s: PlannedScreen) {
-  if (s.kind === 'first-run') return 'onboarding' as const
+export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
+  if (s.kind === 'first-run') { const o = onboardingOf(plan); return o === 'slides' ? 'onboarding' : `onboarding-${o}` }
   if (s.kind === 'tab') return s.tab === plan.tabs[0]?.id ? ('dashboard' as const) : ('list' as const)
   return 'detail' as const
 }
@@ -139,7 +165,7 @@ export function screenBrief(plan: AppPlan, s: PlannedScreen): string {
 
 # THIS SCREEN
 Screen id: ${s.id} — ${s.name} — ${kindLine(s)}
-${s.spec}
+${s.spec}${s.kind === 'first-run' ? `\nLayout: ${ONBOARDINGS[onboardingOf(plan)]} Build it this way, whatever the spec above implies.` : ''}
 
 # A finished screen from a different app, at the quality bar
 Copy how it is built — its composition, colour, emoji, motion and how it uses Konsta and the kit — never its words, data or palette.

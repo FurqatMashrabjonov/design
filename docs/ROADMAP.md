@@ -91,6 +91,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 
 | ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
 |---|---|---|---|---|---|---|---|
+| ONB-01 | Onboarding har xil: 5 arxetip (slides, photo, quiz, value, showcase), kod tanlaydi | Generatsiya / Variantlar | MVP | Tayyor | O'rta |  | 8 eval app'da ≥4 xil arxetip; build/crash yomonlashmaydi; hakam yutqazmaydi |
 | EVAL-01 | 25 ta doimiy brief to'plami (eval/briefs.json) | Generatsiya / Sifat | MVP | Tayyor | Kichik |  | Fayl repoda; 10+ ilova turi × turli dizayn tizimi; 5 tasi qisqa/noaniq, 3 tasi o'zbek/rus tilida; kutilgan arxetiplar yozilgan |
 | EVAL-02 | npm run eval: generatsiya → 390px iframe → kontakt-varaq | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-01 | Bir buyruq → eval/out/<label>/index.html; oldingi yugurish bilan yonma-yon (compare.html) |
 | EVAL-03 | Deterministik eval ko'rsatkichlari: lint, bir xillik, token/vaqt/narx | Generatsiya / Sifat | MVP | Tayyor | O'rta | EVAL-02 | metrics.json; regressiya oldingi yugurishga nisbatan ko'rinadi |

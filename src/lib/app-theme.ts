@@ -83,6 +83,9 @@ function darkened(hex: string): { color: string; steps: number } {
   return { color: c, steps: k }
 }
 export const readableOnWhite = (hex: string) => darkened(hex).color
+/** ONB-01: one of `options`, chosen by the seed (the project id) and a salt, so a choice is stable per app and spread
+ *  across apps — the model, given the choice, put every app in the same one. */
+export const seededPick = <T,>(options: readonly T[], seed: string, salt: string): T => options[hash(`${seed}:${salt}`) % options.length]!
 /** The accent and one colour per palette key for this app: from its style's set, starting where the seed says. */
 export function styleColors(style: AppStyle, keys: string[], seed: string): { accent: string; palette: Record<string, string> } {
   const set = PALETTE_BY_STYLE[style]

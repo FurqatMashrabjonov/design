@@ -19,7 +19,9 @@ export const ShareController = {
   async share(data: { id: string; on: boolean }) {
     const project = await Project.find(data.id)
     if (!project) throw notFound()
-    const token = data.on ? (project.shareToken ?? randomBytes(16).toString('base64url')) : null
+    // 8 random bytes (11 characters): 64 bits, as unguessable as an unlisted video link, and short enough to paste in a
+    // post. Links made with the old 16-byte tokens keep working — a token is only looked up, never parsed.
+    const token = data.on ? (project.shareToken ?? randomBytes(8).toString('base64url')) : null
     if (token !== project.shareToken) await Project.setShareToken(data.id, token)
     return { token }
   },

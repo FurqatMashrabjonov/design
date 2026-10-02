@@ -40,7 +40,7 @@ onLlmUsage((u) => {
 })
 
 type ScreenResult = { slug: string; name: string; kind: string; built: boolean; crashed?: boolean; error?: string; problems?: number; problemRules?: string[] } & Partial<ReturnType<typeof sourceMetrics>>
-type BriefResult = { id: string; brief: string; appName: string; seconds: number; planned: number; drawn: number; tokens: { in: number; out: number; calls: number }; screens: ScreenResult[] }
+type BriefResult = { id: string; brief: string; appName: string; onboarding?: string; seconds: number; planned: number; drawn: number; tokens: { in: number; out: number; calls: number }; screens: ScreenResult[] }
 
 // The pages point at /api/rt/v<build>/…; a tiny server answers that from runtime/dist and serves the pages.
 const pages = new Map<string, string>()
@@ -122,7 +122,7 @@ async function runBrief(b: { id: string; brief: string }): Promise<BriefResult> 
     await addPages(b.id, slug, s.html, plan)
   }
   writeFileSync(join(dir, 'plan.json'), JSON.stringify(plan, null, 2))
-  return { id: b.id, brief: b.brief, appName: project.name, seconds, planned: plan.screens.length, drawn: rows.filter((r) => r.html).length, tokens: tokens[b.id] ?? { in: 0, out: 0, calls: 0 }, screens }
+  return { id: b.id, brief: b.brief, appName: project.name, onboarding: plan.screens.some((s: { kind: string }) => s.kind === 'first-run') ? (plan.onboarding ?? 'slides') : undefined, seconds, planned: plan.screens.length, drawn: rows.filter((r) => r.html).length, tokens: tokens[b.id] ?? { in: 0, out: 0, calls: 0 }, screens }
 }
 
 function summary(results: BriefResult[]) {
@@ -143,6 +143,9 @@ function summary(results: BriefResult[]) {
     namedText: mean('namedText'),
     higByRule: ok.flatMap((s) => s.higRules ?? []).reduce<Record<string, number>>((m, r) => ((m[r] = (m[r] ?? 0) + 1), m), {}),
     firstRun: results.filter((r) => r.screens.some((s) => s.kind === 'first-run')).length,
+    // ONB-01: how many different first-run layouts the apps got, and which.
+    onboardingKinds: new Set(results.map((r) => r.onboarding).filter(Boolean)).size,
+    onboardingByKind: results.reduce<Record<string, number>>((m, r) => (r.onboarding ? ((m[r.onboarding] = (m[r.onboarding] ?? 0) + 1), m) : m), {}),
     problemsPerScreen: +(ok.reduce((a, s) => a + (s.problems ?? 0), 0) / Math.max(1, ok.length)).toFixed(2),
     cleanShare: +(ok.filter((s) => s.problems === 0).length / Math.max(1, ok.length)).toFixed(3),
   }

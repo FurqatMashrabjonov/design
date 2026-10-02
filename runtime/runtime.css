@@ -7,7 +7,9 @@
 @source './kit.jsx';
 @custom-variant dark (&:where(.dark, .dark *));
 html, body, #root { height: 100%; }
-body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; }
+/* The style's page colour under everything: a screen that washes its Page (bg-primary/5) showed whatever was behind
+   the frame — black in the eval, the device bezel in the preview. */
+body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; background: var(--app-page, #fff); }
 /* A Konsta row (<li>) placed outside a <List> must not grow a list bullet. */
 li { list-style: none; }
 

@@ -247,7 +247,9 @@ export function Photo({ q = '', alt, className = '', style, children }) {
   const p = usePhotos()[String(q).toLowerCase().trim().replace(/\s+/g, ' ').slice(0, 80)]
   const [loaded, setLoaded] = useState(STATIC)
   return (
-    <div data-od-photo={q} className={`relative overflow-hidden ${className}`} style={{ background: p?.c ?? 'rgba(120,120,128,.16)', ...style }}>
+    // `relative` only when the screen gives no position of its own: next to `absolute inset-0` it won (Tailwind puts
+    // relative after absolute), the photo lost its height and a full-bleed onboarding showed white text on white.
+    <div data-od-photo={q} className={`${/(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className) ? '' : 'relative '}overflow-hidden ${className}`} style={{ background: p?.c ?? 'rgba(120,120,128,.16)', ...style }}>
       {p && <img src={p.u} alt={alt ?? q} onLoad={() => setLoaded(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
       {children && <div className="relative h-full">{children}</div>}
     </div>

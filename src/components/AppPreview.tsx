@@ -121,7 +121,8 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
   }, [theme, device, phone]) // eslint-disable-line react-hooks/exhaustive-deps
   // What `pop` goes back to: the screens this session pushed from.
   const back = useRef<string[]>([])
-  const [shownId, setShownId] = useState(() => screens.find((s) => s.id === start)?.id ?? screens[0]?.id)
+  // `?s=` names the screen to open on: its slug (short links), or its id (links copied before).
+  const [shownId, setShownId] = useState(() => screens.find((s) => s.id === start || (s.slug && s.slug === start))?.id ?? screens[0]?.id)
   // The plan knows which screen opens from which (kind + parent), so the two panes are decided in code.
   const planned = useMemo(() => {
     try {
@@ -279,7 +280,10 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
 
   function copyLink() {
     const url = new URL(window.location.href)
-    if (shownId) url.searchParams.set('s', shownId)
+    // The first screen needs no ?s=; another is named by its slug, not its 36-character id.
+    const shown = screens.find((s) => s.id === shownId)
+    if (!shown || shown.id === screens[0]?.id) url.searchParams.delete('s')
+    else url.searchParams.set('s', shown.slug ?? shown.id)
     url.searchParams.delete('ref') // a re-shared link is not the post it first came from
     copyText(url.toString(), 'Preview link copied')
   }

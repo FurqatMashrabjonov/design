@@ -5,6 +5,8 @@
 //   node --env-file=.env --import ./scripts/alias-hook.mjs scripts/social-posts.ts --project <id>
 //        [--prompt "cleaned-up prompt"] [--count 8] [--edited yes|no] [--out docs/brand/posts/<name>]
 //   add --share to turn on the project's public preview link and print it with a ?ref= per platform
+//   … scripts/social-posts.ts --share-url https://screenspell.app/s/<token> --prompt "…" [--count 8] [--no-intro]
+//        # from a public preview (production): no database; shots through /api/thumb with the share token
 //   … scripts/social-posts.ts --brief "one sentence" [--email owner@…]   # plan a new app first (a real generation,
 //        on the default model, owned by the admin so it shows on their dashboard), then draw its posts
 //
@@ -15,69 +17,110 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 
-process.env.SHOT_SCALE = '2' // RenderAudit reads it when it loads
-process.env.SCREEN_SHOTS = '0'
-const { sql } = await import('drizzle-orm')
-const { all, one } = await import('@/database/query')
-const { ShotService } = await import('@/app/Services/ShotService')
-const { screenshotScreen } = await import('@/app/Services/RenderAudit')
-const { parseAppPlan } = await import('@/app/Services/JsxGenerator')
-const { Project } = await import('@/app/Models/Project')
-const { PlanController } = await import('@/app/Http/Controllers/PlanController')
-const { ShareController } = await import('@/app/Http/Controllers/ShareController')
-const { DOMAIN } = await import('@/lib/brand')
 
 const arg = (k: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : undefined }
-let projectId = arg('project')
-const brief = arg('brief')?.trim()
-if (brief) {
-  // The same path the eval takes: a project, then the planner and every screen through PlanController.
-  const email = (arg('email') ?? process.env.ADMIN_EMAILS?.split(',')[0] ?? '').trim().toLowerCase()
-  const owner = (await all<{ id: string }>(sql`SELECT id FROM "user" WHERE lower(email) = ${email}`))[0]
-  if (!owner) throw new Error(`No user with the email ${email || '(none)'} — pass --email`)
-  projectId = crypto.randomUUID()
-  await Project.create({ id: projectId, name: 'Untitled', designSystem: 'konsta', device: 'mobile', userId: owner.id })
-  await (await PlanController.stream(new Request('http://posts/api', { method: 'POST', body: JSON.stringify({ projectId, brief }) }))).text()
-  console.error(`planned ${projectId}`)
-}
-if (!projectId) throw new Error('--project <id> or --brief "…" is required')
 const REPO = process.cwd()
-const project = await one<{ name: string; plan: string | null }>(sql`SELECT name, plan FROM projects WHERE id = ${projectId}`)
-const plan = parseAppPlan(project.plan)
-if (!plan) throw new Error('This project has no plan')
-const screens = await all<{ slug: string; html: string }>(sql`SELECT slug, html FROM screens WHERE project_id = ${projectId} AND deleted_at IS NULL AND html <> ''`)
-const bySlug = new Map(screens.map((s) => [s.slug, s.html]))
-const firstAsk = await all<{ text: string }>(sql`SELECT text FROM messages WHERE project_id = ${projectId} AND role = 'user' ORDER BY created_at LIMIT 1`)
-const later = await one<{ n: number }>(sql`SELECT count(*)::int AS n FROM messages WHERE project_id = ${projectId} AND role = 'user' AND kind IN ('edit', 'element', 'regenerate')`)
-const prompt = (arg('prompt') ?? firstAsk[0]?.text ?? '').trim()
-const count = Number(arg('count') ?? plan.screens.filter((s) => bySlug.has(s.id)).length)
-const edited = arg('edited') ? arg('edited') === 'yes' : later.n > 0
-const slug = (project.name || 'app').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-const OUT = arg('out') ?? join('docs/brand/posts', slug)
 const TMP = fs.mkdtempSync(join(tmpdir(), 'od-posts-'))
+const CHROME_BIN = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+type Look = 'light' | 'android' | 'dark'
+// Headless Chrome with a virtual time budget sometimes stays open after it has written its output; past the time
+// limit what it wrote is kept (a dumped page on stdout, a screenshot on disk).
+const chrome = (args: string[]): string => {
+  try { return execFileSync(CHROME_BIN, args, { encoding: 'utf8', timeout: 45_000, maxBuffer: 20 << 20, stdio: ['ignore', 'pipe', 'ignore'] }) }
+  catch (e) { return String((e as { stdout?: string }).stdout ?? '') }
+}
+// What the rest of the script needs from an app, wherever its screens come from.
+let appName = '', prompt = '', count = 0, edited = false, projectId: string | undefined, shareBase: string | undefined
+let order: { id: string; name: string }[] = []
+let intro: string | undefined, roots: string[] = []
+let shoot: (id: string, tag: string, look: Look) => Promise<void>
+
+const shareUrl = arg('share-url')
+if (shareUrl) {
+  // A public preview (SHR-02), e.g. the production site: no database, only what any visitor can open. The page lists
+  // the screens in plan order (first-run first, then the tabs, then the rest); each is /api/thumb/<id>?t=<token>.
+  const u = new URL(shareUrl)
+  const token = u.pathname.split('/').filter(Boolean).pop()!
+  shareBase = `${u.origin}/s/${token}?ref=`
+  const dom = chrome(['--headless=new', '--disable-gpu', `--user-data-dir=${join(TMP, 'prof')}`, '--virtual-time-budget=8000', '--dump-dom', `${u.origin}${u.pathname}`])
+  order = [...dom.matchAll(/<iframe[^>]*>/g)].map((m) => ({ id: /api\/thumb\/([0-9a-f-]{36})/.exec(m[0])?.[1] ?? '', name: (/title="([^"]*)"/.exec(m[0])?.[1] ?? '').replace(/&amp;/g, '&') })).filter((x) => x.id)
+  if (order.length < 3) throw new Error(`The preview shows ${order.length} screens; it needs three`)
+  appName = /od-chrome absolute left-5 top-5[^>]*>([^<]+)</.exec(dom)?.[1]?.trim() ?? 'App'
+  // A visitor sees no plan: the first screen is taken as the first-run one unless --no-intro says it is a tab.
+  intro = process.argv.includes('--no-intro') ? undefined : order[0]!.id
+  roots = order.filter((x) => x.id !== intro).slice(0, 4).map((x) => x.id)
+  prompt = (arg('prompt') ?? '').trim()
+  if (!prompt) throw new Error('--prompt is required with --share-url (a visitor cannot see the chat)')
+  count = Number(arg('count') ?? order.length)
+  edited = arg('edited') === 'yes'
+  shoot = async (id, tag, look) => {
+    const q = look === 'android' ? '&p=material' : look === 'dark' ? '&dark=1' : ''
+    const html = join(TMP, `h-${id}${tag}.html`), file = join(TMP, `${id}${tag}.png`)
+    fs.writeFileSync(html, `<!doctype html><body style="margin:0;overflow:hidden"><iframe src="${u.origin}/api/thumb/${id}?t=${token}&static${q}" style="width:390px;height:844px;border:0;display:block"></iframe></body>`)
+    // Without site isolation off, headless Chrome's --screenshot leaves a cross-origin iframe blank.
+    chrome(['--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=2', '--disable-site-isolation-trials', '--disable-features=IsolateOrigins,site-per-process', `--user-data-dir=${join(TMP, `prof-${id}${tag}`)}`, '--window-size=390,844', '--virtual-time-budget=9000', `--screenshot=${file}`, `file://${html}`])
+    if (!fs.existsSync(file)) throw new Error(`No picture of ${id}${tag}`)
+  }
+} else {
+  process.env.SHOT_SCALE = '2' // RenderAudit reads it when it loads
+  process.env.SCREEN_SHOTS = '0'
+  const { sql } = await import('drizzle-orm')
+  const { all, one } = await import('@/database/query')
+  const { ShotService } = await import('@/app/Services/ShotService')
+  const { screenshotScreen } = await import('@/app/Services/RenderAudit')
+  const { parseAppPlan } = await import('@/app/Services/JsxGenerator')
+  const { Project } = await import('@/app/Models/Project')
+  const { PlanController } = await import('@/app/Http/Controllers/PlanController')
+  projectId = arg('project')
+  const brief = arg('brief')?.trim()
+  if (brief) {
+    // The same path the eval takes: a project, then the planner and every screen through PlanController.
+    const email = (arg('email') ?? process.env.ADMIN_EMAILS?.split(',')[0] ?? '').trim().toLowerCase()
+    const owner = (await all<{ id: string }>(sql`SELECT id FROM "user" WHERE lower(email) = ${email}`))[0]
+    if (!owner) throw new Error(`No user with the email ${email || '(none)'} — pass --email`)
+    projectId = crypto.randomUUID()
+    await Project.create({ id: projectId, name: 'Untitled', designSystem: 'konsta', device: 'mobile', userId: owner.id })
+    await (await PlanController.stream(new Request('http://posts/api', { method: 'POST', body: JSON.stringify({ projectId, brief }) }))).text()
+    console.error(`planned ${projectId}`)
+  }
+  if (!projectId) throw new Error('--project <id>, --brief "…" or --share-url <link> is required')
+  const pid = projectId
+  const project = await one<{ name: string; plan: string | null }>(sql`SELECT name, plan FROM projects WHERE id = ${pid}`)
+  const plan = parseAppPlan(project.plan)
+  if (!plan) throw new Error('This project has no plan')
+  const rows = await all<{ slug: string; html: string }>(sql`SELECT slug, html FROM screens WHERE project_id = ${pid} AND deleted_at IS NULL AND html <> ''`)
+  const bySlug = new Map(rows.map((r) => [r.slug, r.html]))
+  const firstAsk = await all<{ text: string }>(sql`SELECT text FROM messages WHERE project_id = ${pid} AND role = 'user' ORDER BY created_at LIMIT 1`)
+  const later = await one<{ n: number }>(sql`SELECT count(*)::int AS n FROM messages WHERE project_id = ${pid} AND role = 'user' AND kind IN ('edit', 'element', 'regenerate')`)
+  appName = plan.appName || project.name
+  prompt = (arg('prompt') ?? firstAsk[0]?.text ?? '').trim()
+  count = Number(arg('count') ?? plan.screens.filter((s) => bySlug.has(s.id)).length)
+  edited = arg('edited') ? arg('edited') === 'yes' : later.n > 0
+  // Which screens: the first-run screen, then each tab's root in tab order, then the rest.
+  roots = plan.tabs.map((t) => plan.screens.find((s) => s.kind === 'tab' && s.tab === t.id)?.id).filter((id): id is string => !!id && bySlug.has(id))
+  intro = plan.screens.find((s) => s.kind === 'first-run' && bySlug.has(s.id))?.id
+  order = plan.screens.filter((s) => bySlug.has(s.id)).map((s) => ({ id: s.id, name: s.name }))
+  const look = (await ShotService.lookOf(pid))!
+  shoot = async (id, tag, l) => {
+    const png = await screenshotScreen(bySlug.get(id)!, l === 'android' ? { ...look, platform: 'material' } : l === 'dark' ? { ...look, dark: true } : look, id)
+    if (!png) throw new Error('No Chrome for screenshots')
+    fs.writeFileSync(join(TMP, `${id}${tag}.png`), png)
+  }
+}
+const slug = (appName || 'app').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const OUT = arg('out') ?? join('docs/brand/posts', slug)
 fs.mkdirSync(OUT, { recursive: true })
 
-// Which screens: the first-run screen, then each tab's root in tab order.
-const roots = plan.tabs.map((t) => plan.screens.find((s) => s.kind === 'tab' && s.tab === t.id)?.id).filter((id): id is string => !!id && bySlug.has(id))
-const intro = plan.screens.find((s) => s.kind === 'first-run' && bySlug.has(s.id))?.id
 const pick = [...(intro ? [intro] : []), ...roots]
 if (pick.length < 3) throw new Error(`Need at least three drawn screens, found ${pick.length}`)
 const [a, b, c] = pick
 const home = roots[0] ?? b, last = roots[roots.length - 1] ?? c, third = roots[1] ?? c
-
-const look = (await ShotService.lookOf(projectId))!
-const shoot = async (id: string, tag: string, l: typeof look) => {
-  const png = await screenshotScreen(bySlug.get(id)!, l, id)
-  if (!png) throw new Error('No Chrome for screenshots')
-  fs.writeFileSync(join(TMP, `${id}${tag}.png`), png)
-}
-for (const id of new Set([a, b, c, home, last, third, ...pick.slice(0, 4)])) await shoot(id, '', look)
-await shoot(home, '-android', { ...look, platform: 'material' })
 // The canvas strip: every screen in a row, the way the canvas shows them (first-run, tabs, then the rest), at most six.
-const strip = [...pick, ...plan.screens.map((s) => s.id).filter((id) => bySlug.has(id) && !pick.includes(id))].slice(0, 6)
-const nameOf = (id: string) => plan.screens.find((s) => s.id === id)?.name ?? id
-for (const id of strip) if (!fs.existsSync(join(TMP, `${id}.png`))) await shoot(id, '', look)
-for (const id of new Set([last, third, ...strip])) await shoot(id, '-dark', { ...look, dark: true })
+const strip = [...pick, ...order.map((s) => s.id).filter((id) => !pick.includes(id))].slice(0, 6)
+const nameOf = (id: string) => order.find((s) => s.id === id)?.name ?? id
+for (const id of new Set([a, b, c, home, last, third, ...strip])) await shoot(id, '', 'light')
+await shoot(home, '-android', 'android')
+for (const id of new Set([last, third, ...strip])) await shoot(id, '-dark', 'dark')
 
 // The one style.
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -88,8 +131,10 @@ const mark = fs.readFileSync(join(REPO, 'docs/brand/lockup-on-dark.svg'), 'utf8'
 const css = `<style>@font-face{font-family:IS;src:url(file://${NM}/@fontsource-variable/instrument-sans/files/instrument-sans-latin-wght-normal.woff2)}@font-face{font-family:ISerif;font-style:italic;src:url(file://${NM}/@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2)}
 em{font-family:ISerif;font-style:italic;font-weight:400;letter-spacing:0;position:relative}em:after{content:'';position:absolute;left:0;right:0;bottom:.04em;height:.14em;background:${LIME};z-index:-1}
 .pill{display:inline-block;font:600 18px IS;color:${INK};background:${LIME};border-radius:999px;padding:6px 16px}</style>`
-// A screen's picture ends in an empty strip below ~765 css px (KON-10's framing); a first-run screen's button sits lower.
-const phone = (f: string, w: number, extra = '') => `<div style="width:${w}px;height:${Math.round(w * (f === intro ? 800 : 765) / 390)}px;border:${Math.round(w / 32)}px solid #2b2521;border-radius:${Math.round(w / 8.5)}px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.5);flex:none;${extra}"><img src="file://${TMP}/${f}.png" style="width:100%;display:block"></div>`
+// A local picture ends in an empty strip below ~765 css px (KON-10's framing; a first-run screen's button sits lower);
+// a public preview's picture is the whole phone.
+const shotHeight = (f: string) => (shareUrl ? 844 : f === intro ? 800 : 765)
+const phone = (f: string, w: number, extra = '') => `<div style="width:${w}px;height:${Math.round(w * shotHeight(f.replace(/-(android|dark)$/, '')) / 390)}px;border:${Math.round(w / 32)}px solid #2b2521;border-radius:${Math.round(w / 8.5)}px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.5);flex:none;${extra}"><img src="file://${TMP}/${f}.png" style="width:100%;display:block"></div>`
 const labelled = (f: string, w: number, label: string) => `<div style="display:flex;flex-direction:column;align-items:center;gap:18px">${phone(f, w)}<span class="pill">${label}</span></div>`
 const row = (items: string[], x: number, y: number, gap = 26) => `<div style="position:absolute;left:${x}px;top:${y}px;display:flex;gap:${gap}px;align-items:flex-start">${items.join('')}</div>`
 const head = (title: string, sub: string) => `<div style="position:absolute;left:90px;top:200px;max-width:600px">${mark}<div style="margin-top:36px;font-size:60px;line-height:1.06;font-weight:600;letter-spacing:-.02em">${title}</div><div style="margin-top:18px;font-size:22px;line-height:1.4;color:${MUTED}">${sub}</div></div>`
@@ -122,7 +167,7 @@ for (const dark of [false, true]) {
   const dots = dark ? 'rgba(243,241,236,.09)' : 'rgba(26,21,17,.13)'
   const label = (id: string) => `<div style="font:500 13px IS;color:${dark ? MUTED : '#6b665c'};margin:0 0 10px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${w}px">⠿ ${esc(nameOf(id))}</div>`
   const frames = strip.map((id) => `<div>${label(id)}${phone(dark ? `${id}-dark` : id, w, 'box-shadow:0 18px 40px rgba(0,0,0,.22)')}</div>`)
-  const top = Math.max(40, Math.round((H - (w * 800) / 390 - 30) / 2))
+  const top = Math.max(40, Math.round((H - (w * Math.max(...strip.map(shotHeight))) / 390 - 30) / 2))
   const lock = dark ? mark : mark.replace(/#f3f1ec/gi, INK)
   png(`strip-${dark ? 'dark' : 'light'}`, W, H, row(frames, Math.round((W - (n * outer + (n - 1) * gap)) / 2), top, gap) + `<div style="position:absolute;right:36px;bottom:26px;opacity:.9">${lock.replace('height:34px', 'height:22px')}</div>`,
     `radial-gradient(${dots} 1.2px, transparent 1.2px) 0 0/22px 22px, ${dark ? INK : PAPER}`, dark ? PAPER : INK)
@@ -130,12 +175,13 @@ for (const dark of [false, true]) {
 
 // The live preview: anyone with the link taps through the app (SHR-02). Each platform gets its own ref.
 let links: Record<string, string> | undefined
-if (process.argv.includes('--share')) {
-  const { token } = await ShareController.share({ id: projectId, on: true })
-  const base = `https://${DOMAIN}/s/${token}?ref=`
+if (shareBase || (process.argv.includes('--share') && projectId)) {
+  const { ShareController } = await import('@/app/Http/Controllers/ShareController')
+  const { DOMAIN } = await import('@/lib/brand')
+  const base = shareBase ?? `https://${DOMAIN}/s/${(await ShareController.share({ id: projectId!, on: true })).token}?ref=`
   links = Object.fromEntries(['x', 'threads', 'linkedin', 'ig'].map((p) => [p, `${base}${p}-${slug}`.slice(0, base.length + 32)]))
 }
 
 fs.rmSync(TMP, { recursive: true })
-console.log(JSON.stringify({ out: OUT, links, app: plan.appName, prompt, count, edited, screens: { hero: [a, b, c], iosAndroid: home, lightDark: [last, third], strip } }))
+console.log(JSON.stringify({ out: OUT, links, app: appName, prompt, count, edited, screens: { hero: [a, b, c], iosAndroid: home, lightDark: [last, third], strip } }))
 process.exit(0)

@@ -1,5 +1,7 @@
 // Run with the alias hook and a throwaway database (see package.json "check"). DeepSeek is a stub.
 import assert from 'node:assert'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 process.env.SCREEN_SHOTS = '0' // KON-10: no picture is warmed for every screen a test draws
 delete process.env.PEXELS_API_KEY // image slots must not reach the network from a test
@@ -1215,6 +1217,26 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.ok(new Set(evalIds.map((id) => styleColors('editorial', [], id).accent)).size >= 5, 'eight apps of one style get at least five accents (plain FNV gave eval-shop and eval-travel the same)')
   assert.notEqual(styleColors('vivid', ['a'], [...Array(200).keys()].map((i) => `s${i}`).find((id) => styleColors('vivid', ['a'], id).palette.a === '#ffc300')!).accent, readableOnWhite('#ffc300'), 'a yellow start is not darkened into mud; the next colour leads')
   assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('soft')), palette: { steps: '#123456' } }), 'x').palette.steps, '#123456', 'without a seed an old plan keeps its colours')
+  // ONB-01: the first-run layout is the code's too — by style and seed, stable per app, varied across apps, and the
+  // screen gets that layout's example and its one-line description.
+  {
+    const { exampleFor, screenBrief, ONBOARDINGS } = await import('../../Services/JsxGenerator.ts')
+    const { compileScreen } = await import('../../Services/ScreenCompiler.ts')
+    const withIntro = (style: string, id: string) => parsePlan(JSON.stringify({ ...JSON.parse(json(style)), screens: [{ id: 'welcome', name: 'Welcome', kind: 'first-run', spec: 'Say hello.' }, { id: 'home', name: 'Home', kind: 'tab', tab: 'home', spec: '' }] }), 'x', id)
+    assert.equal(withIntro('clean', 'eval-bank').onboarding, withIntro('clean', 'eval-bank').onboarding, 'one app, one layout every time')
+    const picks = new Set(evalIds.flatMap((id) => ['clean', 'midnight', 'vivid', 'soft', 'editorial'].map((st) => withIntro(st, id).onboarding)))
+    assert.equal(picks.size, 5, 'across apps and styles every layout is used')
+    assert.ok(new Set(evalIds.map((id) => withIntro('vivid', id).onboarding)).size >= 2, 'apps of one style do not all get the same layout')
+    const plan = { ...withIntro('editorial', 'eval-travel'), onboarding: 'quiz' as const }
+    assert.equal(exampleFor(plan, plan.screens[0]!), 'onboarding-quiz')
+    assert.ok(screenBrief(plan, plan.screens[0]!).includes(`Layout: ${ONBOARDINGS.quiz}`) && screenBrief(plan, plan.screens[0]!).includes('const QUESTIONS'), 'the brief names the layout and carries its example')
+    assert.equal(exampleFor({ ...plan, onboarding: undefined }, plan.screens[0]!), 'onboarding', 'a plan from before ONB-01 keeps the carousel')
+    assert.equal(parsePlan(json('soft'), 'x').onboarding, undefined, 'no seed, no choice')
+    for (const o of Object.keys(ONBOARDINGS)) {
+      const src = readFileSync(join(process.cwd(), 'konsta/examples', o === 'slides' ? 'onboarding.jsx' : `onboarding-${o}.jsx`), 'utf8')
+      assert.ok((await compileScreen(src)).ok, `the ${o} example builds`)
+    }
+  }
   const lum = (hex: string) => { const n = parseInt(hex.slice(1), 16); const f = (v: number) => (v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255) }
   const ratio = (a: string, b: string) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05)
   for (const style of APP_STYLES) {
@@ -1335,7 +1357,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   await Screen.create({ id: 'shr-s1', projectId: 'shr-1', name: 'Home', prompt: 'p', html: 'export default function S() { return null }', x: 0, y: 0 })
   await assert.rejects(ShareController.shared('nope', null), 'a token nobody has is not found')
   const { token } = await ShareController.share({ id: 'shr-1', on: true })
-  assert.ok(token && token.length >= 20, 'sharing makes an unguessable token')
+  assert.ok(token && /^[A-Za-z0-9_-]{11}$/.test(token), 'sharing makes a short unguessable token (8 random bytes)')
   assert.equal((await ShareController.share({ id: 'shr-1', on: true })).token, token, 'sharing again keeps the link')
   const view = await ShareController.shared(token!, 'reddit')
   assert.equal(view.screens.length, 1)

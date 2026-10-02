@@ -11,6 +11,40 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (4)
+
+### ONB-01 — onboarding no longer the same in every app; shorter preview links; posts from a public preview
+
+- **Why every onboarding looked alike.** Each first-run screen was shown one example (`konsta/examples/onboarding.jsx`)
+  and the planner asked for "2–3 slides" — on the thm01b eval 7 of 7 onboardings were that carousel (SLIDES, Dots,
+  Continue, 5 with a Glow), whatever the style.
+- **Five layouts, picked by code.** `slides` (the old one), `photo`, `quiz`, `value` and `showcase`, each with a finished
+  example (`konsta/examples/onboarding-*.jsx`, all build and pass the lint). `parsePlan` with the project id picks one
+  of the three the app's style allows (`seededPick`, salted, like the colours) and stores it as `plan.onboarding`; the
+  screen brief says `Layout: …` and carries that layout's example. The planner no longer prescribes slides; the
+  style cards keep only the onboarding's tone. Plans from before keep the carousel.
+- **Two kit bugs it surfaced.** `Photo` always added `relative`, which beat `absolute inset-0` in Tailwind's order —
+  the photo lost its height and a full-bleed onboarding showed white text on white; it now adds `relative` only when
+  the screen gives no position (as `Hero` already did). And the runtime body had no background, so a screen that
+  washes its Page (`bg-primary/5`) showed what was behind the frame (black in the eval, the bezel in the preview); the
+  body now takes the style's `--app-page`.
+- **Eval** `onb01` vs `thm01b` (GPT-6 Luna, re-shot after the kit fixes): `onboardingKinds` 4 (photo 3, showcase 3,
+  value 1, quiz 1) against one; crash 0 → 0; problems per screen 0.16 → 0.16; clean share 0.887 → 0.852 (a tilted
+  showcase collage counted as overlap, two low-contrast labels); build 1 → 0.984 (one lesson screen used a `Badge`
+  the kit does not have — not an onboarding). Judge: 3 wins, 2 losses, 3 ties.
+- **Shorter preview links.** A share token is 8 random bytes (11 characters, 64 bits) instead of 16, and a copied
+  link names the start screen by slug (`?s=insights`), or not at all for the first screen, instead of a 36-character
+  id. Old links keep working.
+- **Posts from a public preview.** `scripts/social-posts.ts --share-url <link> --prompt "…"` reads the screens a
+  visitor sees and shoots them through `/api/thumb?t=` (headless Chrome needs site isolation off to capture a
+  cross-origin frame) — no database, so production apps can be posted.
+- Files: `src/app/Services/JsxGenerator.ts`, `src/lib/app-theme.ts`, `konsta/examples/onboarding-{photo,quiz,value,showcase}.jsx`,
+  `runtime/kit/ui.jsx`, `runtime/runtime.css`, `eval/run.ts`, `src/app/Http/Controllers/ShareController.ts`,
+  `src/components/AppPreview.tsx`, `scripts/social-posts.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: tests (stable and varied picks, every layout used, the brief names its layout and example, old plans
+  keep the carousel, every example builds, an 11-character token); `npx tsc --noEmit` and `npm run check` clean;
+  the eval and judge above.
+
 ## 2026-10-02 (3)
 
 ### EDT-30 — an added screen can be reached; Delete account off the menu
