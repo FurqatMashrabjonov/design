@@ -1394,6 +1394,16 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.ok(!view.screens[0]!.html.includes('export'), 'a stranger never gets the source, only a version key')
   assert.ok(!('userId' in view.project) && view.project.id === '', 'no owner, no project id')
   assert.equal((await db.execute(sql`SELECT ref FROM share_views WHERE project_id = 'shr-1'`)).rows[0]?.ref, 'reddit', 'the view is counted by its post')
+  // PRC-03: an owner on Free shares a branded link; a paid plan's link is clean.
+  assert.equal(view.branded, true, 'no owner on a plan: branded')
+  {
+    const { user } = await import('../../../database/schema.ts')
+    const { Subscription } = await import('../../Models/Subscription.ts')
+    await db.insert(user).values({ id: 'shr-owner', name: 'O', email: 'o@x.uz', createdAt: new Date(), updatedAt: new Date() })
+    await Subscription.upsert({ id: 'sub_shr', userId: 'shr-owner', productKey: 'pro-month', status: 'active', startedAt: Math.floor(Date.now() / 1000), currentPeriodEnd: Math.floor(Date.now() / 1000) + 86400 * 30, cancelAtPeriodEnd: false })
+    await db.execute(sql`UPDATE projects SET user_id = 'shr-owner' WHERE id = 'shr-1'`)
+    assert.equal((await ShareController.shared(token!, null)).branded, false, 'a paying owner shares it clean')
+  }
   assert.equal((await ShareController.share({ id: 'shr-1', on: false })).token, null)
   await assert.rejects(ShareController.shared(token!, null), 'turning sharing off kills the old link')
   assert.equal(cleanRef('Reddit'), 'reddit')

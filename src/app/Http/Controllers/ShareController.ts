@@ -4,6 +4,7 @@ import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { Waitlist } from '@/app/Models/Waitlist'
 import { EmailService } from '@/app/Services/EmailService'
+import { CreditService } from '@/app/Services/CreditService'
 
 // SHR-02: a preview the owner made public, seen by anyone with its link (/s/<token>), view only. WLT-01: the
 // waitlist that link collects, and which post (`ref`) brought each view and sign-up. The caller is checked in
@@ -35,7 +36,10 @@ export const ShareController = {
       .filter((s) => s.html)
       .map((s) => ({ id: s.id, name: s.name, x: s.x, y: s.y, slug: s.slug, screenType: s.screenType, activeTabId: s.activeTabId, html: createHash('sha1').update(s.html).digest('base64url').slice(0, 12) }))
     await Waitlist.view(project.id, ref)
-    return { project: { id: '', name: project.name, plan: project.plan, theme: project.theme }, screens, token }
+    // PRC-03: a Free owner's link carries "Made with Screenspell" and the waitlist; a paid plan shares it clean. The
+    // plan decides, not the admin flag, so the team's own launch previews stay branded.
+    const branded = !project.userId || !(await CreditService.limitsFor(project.userId, false)).export
+    return { project: { id: '', name: project.name, plan: project.plan, theme: project.theme }, screens, token, branded }
   },
 
   /** A waitlist sign-up from a shared preview. True when the email is new. */

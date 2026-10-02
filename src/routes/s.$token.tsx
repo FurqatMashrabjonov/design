@@ -16,7 +16,7 @@ export const Route = createFileRoute('/s/$token')({
 })
 
 function SharedPreview() {
-  const { project, screens, token } = Route.useLoaderData()
+  const { project, screens, token, branded } = Route.useLoaderData()
   const search = Route.useSearch()
-  return <AppPreview project={project} screens={screens} start={search.s} share={{ token, ref: search.ref ?? null }} />
+  return <AppPreview project={project} screens={screens} start={search.s} share={{ token, ref: search.ref ?? null, branded }} />
 }

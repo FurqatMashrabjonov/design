@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, Link2, Pencil, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 import { copyText } from '@/lib/clipboard'
+import { BrandMark, BRAND } from '@/components/SiteChrome'
 import { GeneratingVeil, parseNav, postLook, screenForNav, screenSrc } from '@/ScreenFrame'
 import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
@@ -27,7 +28,7 @@ export type PreviewProject = { id: string; name: string; plan: string | null; th
 type Motion = 'push' | 'pop' | 'fade'
 const DEVICE_KEY = 'od:preview-device'
 
-export function AppPreview({ project, screens: rows, start, share }: { project: PreviewProject; screens: PreviewScreen[]; start?: string; share?: { token: string; ref: string | null } }) {
+export function AppPreview({ project, screens: rows, start, share }: { project: PreviewProject; screens: PreviewScreen[]; start?: string; share?: { token: string; ref: string | null; branded?: boolean } }) {
   const frames = useRef(new Map<string, HTMLIFrameElement>())
 
   // Canvas order is plan order: left to right.
@@ -308,7 +309,8 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
         {share && (
           <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{project.name}</span>
-            <WaitlistButton share={share} size="sm" />
+            {share.branded && <MadeWith compact />}
+            {share.branded && <WaitlistButton share={share} size="sm" />}
           </div>
         )}
         <div className="od-preview-stage flex-1" data-motion={motion}>
@@ -375,13 +377,13 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
         </Tip>}
       </div>
       {/* WLT-01: what the shared link is for. It stays while the rest of the chrome fades. */}
-      {share && (
+      {/* PRC-03: only on a Free owner's link — a paid plan shares the app with nothing of ours on it. */}
+      {share?.branded && (
         <div className="absolute bottom-5 right-5 z-10 flex items-center gap-3 rounded-xl bg-card p-3 pl-4 shadow-2 ring-1 ring-border">
-          <p className="text-sm">
-            <span className="font-medium">Made with AI in a minute.</span>
-            <br />
-            <span className="text-muted-foreground">Want one for your idea?</span>
-          </p>
+          <div className="text-sm">
+            <MadeWith />
+            <span className="mt-1 block text-muted-foreground">Designed from one prompt. Want one for your idea?</span>
+          </div>
           <WaitlistButton share={share} />
         </div>
       )}
@@ -472,5 +474,15 @@ function Arrow(props: { label: string; disabled: boolean; onClick: () => void; c
     <Button variant="outline" size="icon-lg" aria-label={props.label} title={props.label} disabled={props.disabled} onClick={props.onClick} className="od-chrome rounded-full bg-card shadow-1 disabled:opacity-30">
       {props.children}
     </Button>
+  )
+}
+
+/** PRC-03: the badge on a Free owner's shared link; it leads to the landing with its own ref. */
+function MadeWith({ compact = false }: { compact?: boolean }) {
+  return (
+    <a href="/?ref=badge" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 font-medium text-foreground hover:underline underline-offset-2">
+      <BrandMark className={compact ? 'size-5' : 'size-5'} />
+      {compact ? null : <span>Made with {BRAND}</span>}
+    </a>
   )
 }

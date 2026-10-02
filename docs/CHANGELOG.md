@@ -11,6 +11,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02 (11)
+
+### PRC-03 — "Made with Screenspell" on Free links; paid links are clean
+
+- Every shared preview carried the same waitlist card. Now `ShareController.shared` returns `branded` from the
+  owner's plan (not the admin flag, so the team's own launch previews stay branded): a Free owner's page shows "Made
+  with Screenspell" (the mark, linking to the landing with `?ref=badge`) beside the waitlist button, on desktop and in
+  the phone bar; a paid owner's link shows the app and nothing of ours.
+- The landing does not read `?ref=badge` yet; the badge's clicks show in Cloudflare's analytics until it does.
+- Files: `src/app/Http/Controllers/ShareController.ts`, `src/routes/s.$token.tsx`, `src/components/AppPreview.tsx`,
+  `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (no plan: branded; a Pro owner: clean); `npx tsc --noEmit` and `npm run check` clean; in the
+  browser both states of one link (the project's owner detached for the check, then restored).
+
 ## 2026-10-02 (10)
 
 ### PRC-02 — Free gets three exports to try
