@@ -11,6 +11,25 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-02
+
+### LND-02 — the landing speaks the category's language
+
+- **Why.** sleek.design and screenflow.dev (read 2026-10-02; Stitch's page has no readable text) sell "AI app
+  design": speed, no design skills, export to Figma and code. Ours said "clickable prototype" and spent a section on
+  what the product is not. The structure now follows theirs; every line is our own words.
+- **The page.** Hero "Your app idea, *designed* in a minute." with one line on what you get (every screen, iOS and
+  Android, light and dark, tap through, edit, export) and the button "Design my app"; examples headed by their real
+  count ("Nine apps. *One prompt* each.", from `EXAMPLES.length`); three steps (Describe · Generate · Refine &
+  export); a new four-card section (the whole flow, edit by pointing, native on iOS and Android, export to Figma and
+  code); seven FAQs (what it is, design skills, app types, export — paid plans, "is it a finished app?" answered
+  plainly, access or price, ownership); the closing call "Got an app idea? *See it* in a minute." The "Good for /
+  Not a finished app" section is gone; its honesty lives in the FAQ. No social proof until real users give it — no
+  invented numbers or quotes. The login page's tagline follows the hero.
+- Files: `src/Landing.tsx`, `src/routes/login.tsx`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; the signed-out page shot in headless Chrome at 1440 and
+  500 wide and read section by section.
+
 ## 2026-10-01 (6)
 
 ### Pricing closed while waitlist-only

@@ -424,6 +424,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | LCH-03 | Beta muammolarini tuzatish, keyin ommaviy e'lon | Ishga tushirish / Ommaviy | MVP | Rejada | O'rta | LCH-01 | Betadagi to'siqlar tuzatilgan; ommaviy e'lon qilingan |
 | BRD-01 | Logo: qiyshiq telefon + Unbounded S — sayt, favicon, email, og:image, ijtimoiy tarmoq fayllari | Ishga tushirish / Sayt | MVP | Tayyor | O'rta |  | BrandMark/Wordmark har joyda bitta; favicon.svg/.ico, apple-touch-icon, og.png ishlaydi; docs/brand da avatar va X banner |
 | BRD-02 | Ijtimoiy tarmoq postlari: bitta stilda rasm + caption (skill + skript) | Ishga tushirish / Sayt | MVP | Tayyor | Kichik | BRD-01 | scripts/social-posts.ts loyihadan X/Threads (16:9) va Instagram (4:5) rasmlarini chizadi; social-posts skill ekranlarni tekshirish, tuzatish va captionlarni beradi |
+| LND-02 | Landing matni: raqiblar tilida (AI app design), keraksiz bo'limlar olib tashlandi | Ishga tushirish / Sayt | MVP | Tayyor | Kichik | MKT-01 | Hero, misollar, 3 qadam, 4 imkoniyat, 7 FAQ, yakuniy CTA; 'Good for / Not a finished app' yo'q; soxta isbot yo'q |
 
 ## B7 · MVP dan keyin
 

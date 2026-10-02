@@ -73,7 +73,7 @@ function Login() {
         <div className="space-y-2 text-center">
           <BrandMark className="mx-auto mb-5 size-11" />
           <h1 className="text-2xl sm:text-3xl">Sign in to <Em>{BRAND}</Em></h1>
-          <p className="text-sm text-muted-foreground">Describe an app idea. Tap through the prototype.</p>
+          <p className="text-sm text-muted-foreground">Your app idea, designed in a minute.</p>
         </div>
         {(access === 'waitlist' || refused) && (
           <div className="rounded-lg border bg-card p-4 text-center text-sm shadow-1">

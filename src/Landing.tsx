@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Check, Plus, Sparkles, X } from 'lucide-react'
+import { Download, Layers, MousePointerClick, Plus, Smartphone, Sparkles } from 'lucide-react'
 import { PromptBox } from './PromptBox'
 import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
 import { WaitlistDialog } from '@/components/Waitlist'
@@ -9,13 +9,16 @@ import { SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
 import { EXAMPLES } from '@/content/examples'
 import { ExampleGallery } from '@/components/ExampleGallery'
 
-// MKT-01: the public page. What we make is a clickable prototype of a mobile app — the copy says that and no
-// more (2026-10-01): no "whole app", no production promise. The prompt typed here survives sign-in: it is kept
+// MKT-01/LND-02: the public page. Since 2026-10-02 it speaks the category's language (AI app design, as sleek.design
+// and screenflow.dev do): an idea becomes every screen, editable and exportable. It still never promises a built
+// app or production code — the FAQ says plainly that it is the design and a clickable prototype. The prompt typed here survives sign-in: it is kept
 // in sessionStorage and the dashboard starts the project with it (see PENDING_PROMPT in index.tsx).
 
 // ponytail: brand name is undecided (LND-01); change it in components/SiteChrome.tsx.
 export { BRAND }
 export const PENDING_PROMPT = 'od:pending-prompt'
+
+const countWord = (n: number) => ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'][n] ?? String(n)
 
 const TRY = ['Meditation app with daily sessions and streaks', 'Food delivery with restaurant menus and live order tracking', 'Language learning with lessons and a leaderboard', 'Plant care reminders with a photo journal']
 
@@ -40,9 +43,9 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
     <div className="w-full text-left">
       <PromptBox
         variant="hero"
-        submitLabel="Prototype it"
+        submitLabel="Design my app"
         label="Describe your app idea"
-        placeholder="Describe your app idea — e.g. a neobank with cards, transfers and spending insights"
+        placeholder="Describe your app — e.g. a neobank with cards, transfers and spending insights"
         fill={fill}
         onSubmit={async (prompt) => {
           if (access === 'waitlist') return setWaitlist(prompt.slice(0, 1000))
@@ -82,13 +85,13 @@ export function Landing() {
         <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 pb-16 text-center sm:pt-24 sm:pb-20">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · we let people in a few at a time' : `${SIGNUP_CREDITS} free credits · no card needed`}
+            <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · letting people in a few at a time' : `${SIGNUP_CREDITS} free credits · no card needed`}
           </span>
           <h1 className="text-4xl text-balance sm:text-6xl">
-            Describe an app idea. <br />Tap through the <Em>prototype</Em>.
+            Your app idea, <br /><Em>designed</Em> in a minute.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            One sentence becomes a clickable prototype of a mobile app — every screen planned together, native iOS look, real navigation. Test the idea before anyone writes code.
+            Describe it in one sentence. Get every screen — iOS and Android, light and dark — ready to tap through, edit and export.
           </p>
           <div className="mx-auto mt-8 max-w-2xl">
             <HeroPrompt big />
@@ -101,8 +104,8 @@ export function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-16 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
             <Eyebrow>Examples</Eyebrow>
-            <h2 className="text-2xl text-balance sm:text-4xl">Each one from a <Em>single</Em> prompt.</h2>
-            <p className="mt-3 text-muted-foreground">Screens exactly as {BRAND} drew them, not retouched. Open one to see every screen.</p>
+            <h2 className="text-2xl text-balance sm:text-4xl">{countWord(EXAMPLES.length)} apps. <Em>One prompt</Em> each.</h2>
+            <p className="mt-3 text-muted-foreground">Untouched, exactly as {BRAND} drew them. Open one to see every screen.</p>
           </div>
           <div className="mt-12">
             <ExampleGallery />
@@ -114,13 +117,13 @@ export function Landing() {
       <section id="how" className="mx-auto max-w-6xl px-4 py-16 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="text-2xl text-balance sm:text-4xl">Idea to prototype in <Em>a minute</Em>.</h2>
+          <h2 className="text-2xl text-balance sm:text-4xl">From idea to screens in <Em>three steps</Em>.</h2>
         </div>
         <div className="mt-10 grid gap-4 sm:mt-14 sm:gap-5 md:grid-cols-3">
           {[
-            ['01', 'Describe the idea', 'What the app is for and what people do in it — a sentence is enough.'],
-            ['02', 'Get the prototype', 'The screens, the tabs and the sample data are planned together, then every screen is drawn at once.'],
-            ['03', 'Tap, test, change', 'Click through it like a real app, ask the chat for changes, share a link to it.'],
+            ['01', 'Describe', 'Say what the app does and who it is for. One sentence is enough.'],
+            ['02', 'Generate', `${BRAND} plans the flow, then draws every screen with shared tabs and data.`],
+            ['03', 'Refine & export', 'Tap through it, change anything in chat, then take it to Figma or React.'],
           ].map(([n, t, d]) => (
             <div key={n} className="rounded-xl border border-border bg-card p-6 shadow-1 sm:p-7">
               <span className="font-mono text-sm text-muted-foreground">{n}</span>
@@ -131,25 +134,29 @@ export function Landing() {
         </div>
       </section>
 
-      {/* What a prototype is, and is not */}
-      <section className="mx-auto max-w-4xl px-4 pb-16 sm:pb-24">
-        <div className="grid gap-4 sm:gap-5 md:grid-cols-2">
-          <div className="rounded-xl border border-border bg-card p-7 shadow-1">
-            <p className="text-lg font-medium">Good for</p>
-            <ul className="mt-4 space-y-3 text-sm">
-              {['Seeing whether an idea holds up as an app', 'Showing it to users, a team or investors', 'Briefing a designer or a developer', 'Trying three directions before choosing one'].map((t) => (
-                <li key={t} className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0" aria-hidden /> {t}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-7 shadow-1">
-            <p className="text-lg font-medium">Not a finished app</p>
-            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-              {['No backend: nothing is saved, sent or paid for real', 'Not ready for the App Store', 'Sample data, not your data'].map((t) => (
-                <li key={t} className="flex gap-2"><X className="mt-0.5 size-4 shrink-0" aria-hidden /> {t}</li>
-              ))}
-            </ul>
-          </div>
+      {/* What it does */}
+      <section id="features" className="mx-auto max-w-6xl px-4 pb-16 sm:pb-24">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl text-balance sm:text-4xl">Everything you need for the <Em>first version</Em>.</h2>
+        </div>
+        <div className="mt-10 grid gap-4 sm:mt-14 sm:grid-cols-2 sm:gap-5">
+          {[
+            [Layers, 'The whole flow, not one screen', 'Onboarding, tabs, details and settings, designed to work together.'],
+            [MousePointerClick, 'Edit by pointing', 'Click a button or a card and say what to change. Only that part changes.'],
+            [Smartphone, 'Native on iOS and Android', 'One design, switched with a tap. Light and dark included.'],
+            [Download, 'Export to Figma and code', 'Paste editable layers into Figma, or download a React project.'],
+          ].map(([Icon, t, d]) => {
+            const I = Icon as typeof Layers
+            return (
+              <div key={t as string} className="flex gap-4 rounded-xl border border-border bg-card p-6 shadow-1 sm:p-7">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground"><I className="size-5" aria-hidden /></span>
+                <div>
+                  <p className="text-lg font-medium">{t as string}</p>
+                  <p className="mt-1 text-muted-foreground">{d as string}</p>
+                </div>
+              </div>
+            )
+          })}
         </div>
       </section>
 
@@ -161,10 +168,11 @@ export function Landing() {
         </div>
         <div className="mt-10 divide-y divide-border rounded-lg border border-border bg-card shadow-1">
           {[
-            ['What do I get from one prompt?', 'A clickable prototype: up to 8 screens that share one tab bar and one set of sample data, drawn with native iOS components, in light and dark. Every tab and link goes where it should.'],
-            ['Is it a real app?', 'No — a prototype. It looks and moves like the app, so you can judge the idea, but there is no server behind it. When you are ready to build, the screens export as React code a developer can start from.'],
-            ['Who is it for?', 'Founders testing an idea, product people who need something to show, designers who want a first draft past the blank page, developers who want screens to start from.'],
-            ['Can I change it?', 'Yes. Select a screen — or one button or card in it — and say what to change. Add screens, and undo any step.'],
+            ['What is ' + BRAND + '?', 'An AI tool that turns an app idea into a full set of mobile screens you can click through, edit and export.'],
+            ['Do I need design skills?', 'No. If you can describe the app, you can design it. Designers use it to skip the blank page.'],
+            ['What kinds of apps can it design?', 'Any mobile app: health, finance, food, learning, social, shopping and more.'],
+            ['Can I export my designs?', 'Yes, on paid plans: editable layers for Figma, a React project, or a single HTML file.'],
+            ['Is it a finished app?', 'No. It is the design and a clickable prototype, with sample data and no backend: a strong starting point for whoever builds it.'],
             access === 'waitlist'
               ? ['When can I try it?', 'We are letting people in a few at a time. Join the waitlist and tell us what you would prototype — it helps us decide who goes first.']
               : ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — enough for ${appsFor(SIGNUP_CREDITS)} prototypes — no card needed. Plans add monthly credits and more projects.`],
@@ -185,8 +193,8 @@ export function Landing() {
       <section className="px-4 pb-16 sm:pb-24">
         <div className="relative mx-auto max-w-6xl overflow-hidden rounded-xl bg-inverse [--ring:var(--inverse-foreground)] px-6 py-16 text-center text-inverse-foreground ring-1 ring-border sm:py-20">
           <div className="pointer-events-none absolute -top-32 left-1/2 size-[480px] -translate-x-1/2 rounded-full bg-primary opacity-25 blur-3xl" />
-          <h2 className="relative text-2xl sm:text-4xl">What would you like to prototype?</h2>
-          <p className="relative mt-3 text-inverse-foreground/65">{access === 'waitlist' ? 'Tell us the idea and we will save you a spot.' : 'Your first prototype is a minute away.'}</p>
+          <h2 className="relative text-2xl sm:text-4xl">Got an app idea? <Em>See it</Em> in a minute.</h2>
+          <p className="relative mt-3 text-inverse-foreground/65">{access === 'waitlist' ? 'Tell us the idea and we will save you a spot.' : 'Your first design is a minute away.'}</p>
           <div className="relative mx-auto mt-8 max-w-2xl">
             <HeroPrompt />
           </div>
