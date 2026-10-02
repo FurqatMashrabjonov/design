@@ -15,7 +15,8 @@
 import fs from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { execFileSync } from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
+import { createServer } from 'node:http'
 
 
 const arg = (k: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] : undefined }
@@ -25,10 +26,9 @@ const CHROME_BIN = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome
 type Look = 'light' | 'android' | 'dark'
 // Headless Chrome with a virtual time budget sometimes stays open after it has written its output; past the time
 // limit what it wrote is kept (a dumped page on stdout, a screenshot on disk).
-const chrome = (args: string[]): string => {
-  try { return execFileSync(CHROME_BIN, args, { encoding: 'utf8', timeout: 45_000, maxBuffer: 20 << 20, stdio: ['ignore', 'pipe', 'ignore'] }) }
-  catch (e) { return String((e as { stdout?: string }).stdout ?? '') }
-}
+// Asynchronous, so the harness server below can answer the Chrome it starts.
+const chrome = (args: string[]): Promise<string> =>
+  new Promise((ok) => execFile(CHROME_BIN, args, { encoding: 'utf8', timeout: 45_000, maxBuffer: 20 << 20 }, (_e, stdout) => ok(String(stdout ?? ''))))
 // What the rest of the script needs from an app, wherever its screens come from.
 let appName = '', prompt = '', count = 0, edited = false, projectId: string | undefined, shareBase: string | undefined
 let order: { id: string; name: string }[] = []
@@ -42,7 +42,15 @@ if (shareUrl) {
   const u = new URL(shareUrl)
   const token = u.pathname.split('/').filter(Boolean).pop()!
   shareBase = `${u.origin}/s/${token}?ref=`
-  const dom = chrome(['--headless=new', '--disable-gpu', `--user-data-dir=${join(TMP, 'prof')}`, '--virtual-time-budget=8000', '--dump-dom', `${u.origin}${u.pathname}`])
+  // The preview mounts a frame per screen as it goes; the screen list (the pager between ‹ and ›) says how many there
+  // are, so the page is read again, with more time, until every frame is there.
+  let dom = ''
+  for (const budget of [10_000, 20_000, 30_000]) {
+    dom = await chrome(['--headless=new', '--disable-gpu', `--user-data-dir=${join(TMP, `prof-dom-${budget}`)}`, `--virtual-time-budget=${budget}`, '--dump-dom', `${u.origin}${u.pathname}`])
+    const titles = [...dom.matchAll(/title="([^"]*)"/g)].map((m) => m[1])
+    const listed = Math.max(0, titles.indexOf('Next screen') - titles.indexOf('Previous screen') - 1)
+    if (listed && [...dom.matchAll(/<iframe[^>]*api\/thumb/g)].length >= listed) break
+  }
   order = [...dom.matchAll(/<iframe[^>]*>/g)].map((m) => ({ id: /api\/thumb\/([0-9a-f-]{36})/.exec(m[0])?.[1] ?? '', name: (/title="([^"]*)"/.exec(m[0])?.[1] ?? '').replace(/&amp;/g, '&') })).filter((x) => x.id)
   if (order.length < 3) throw new Error(`The preview shows ${order.length} screens; it needs three`)
   appName = /od-chrome absolute left-5 top-5[^>]*>([^<]+)</.exec(dom)?.[1]?.trim() ?? 'App'
@@ -53,12 +61,21 @@ if (shareUrl) {
   if (!prompt) throw new Error('--prompt is required with --share-url (a visitor cannot see the chat)')
   count = Number(arg('count') ?? order.length)
   edited = arg('edited') === 'yes'
+  // The harness is served over http: a file:// page leaves a cross-origin iframe blank.
+  const server = createServer((req, res) => {
+    const f = join(TMP, (req.url ?? '/').slice(1).split('?')[0]!)
+    if (!fs.existsSync(f) || !fs.statSync(f).isFile()) return res.writeHead(404).end() // the browser asks for a favicon
+    res.end(fs.readFileSync(f))
+  })
+  await new Promise<void>((ok) => server.listen(0, '127.0.0.1', ok))
+  const port = (server.address() as { port: number }).port
+  process.on('exit', () => server.close())
   shoot = async (id, tag, look) => {
     const q = look === 'android' ? '&p=material' : look === 'dark' ? '&dark=1' : ''
     const html = join(TMP, `h-${id}${tag}.html`), file = join(TMP, `${id}${tag}.png`)
     fs.writeFileSync(html, `<!doctype html><body style="margin:0;overflow:hidden"><iframe src="${u.origin}/api/thumb/${id}?t=${token}&static${q}" style="width:390px;height:844px;border:0;display:block"></iframe></body>`)
     // Without site isolation off, headless Chrome's --screenshot leaves a cross-origin iframe blank.
-    chrome(['--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=2', '--disable-site-isolation-trials', '--disable-features=IsolateOrigins,site-per-process', `--user-data-dir=${join(TMP, `prof-${id}${tag}`)}`, '--window-size=390,844', '--virtual-time-budget=9000', `--screenshot=${file}`, `file://${html}`])
+    await chrome(['--headless=new', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=2', '--disable-site-isolation-trials', '--disable-features=IsolateOrigins,site-per-process', `--user-data-dir=${join(TMP, `prof-${id}${tag}`)}`, '--window-size=390,844', '--virtual-time-budget=9000', `--screenshot=${file}`, `http://127.0.0.1:${port}/h-${id}${tag}.html`])
     if (!fs.existsSync(file)) throw new Error(`No picture of ${id}${tag}`)
   }
 } else {
