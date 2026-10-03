@@ -20,7 +20,7 @@ export function screenSystem(): string {
 const examples = new Map<string, string>()
 const example = (name: ExampleName) => examples.get(name) ?? (examples.set(name, read(`konsta/examples/${name}.jsx`)), examples.get(name)!)
 
-export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Settings', 'Bell', 'Calendar', 'ChartColumn', 'ListChecks', 'ShoppingBag', 'ShoppingCart', 'MessageCircle', 'Map', 'Compass', 'Wallet', 'CreditCard', 'BookOpen', 'Dumbbell', 'Utensils', 'Music', 'Play', 'Camera', 'Image', 'Star', 'Bookmark', 'Inbox', 'Layers', 'Grid2x2', 'Sparkles', 'Activity', 'Target', 'Plane', 'Ticket', 'Users', 'Briefcase', 'GraduationCap', 'Leaf', 'Droplets', 'Footprints']
+export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Settings', 'Bell', 'Calendar', 'ChartColumn', 'ListChecks', 'ShoppingBag', 'ShoppingCart', 'MessageCircle', 'Map', 'Compass', 'Wallet', 'CreditCard', 'BookOpen', 'Dumbbell', 'Utensils', 'Music', 'Play', 'Camera', 'Image', 'Star', 'Bookmark', 'Inbox', 'Layers', 'Grid2x2', 'Sparkles', 'Activity', 'Target', 'Plane', 'Ticket', 'Users', 'Briefcase', 'GraduationCap', 'Leaf', 'Droplets', 'Footprints', 'Moon', 'Sun', 'Wind', 'Timer', 'Clock', 'Headphones', 'Trophy', 'Newspaper', 'Mic', 'Video', 'Gift', 'Car', 'PawPrint', 'Baby', 'Flame', 'Brain']
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
@@ -61,6 +61,26 @@ export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by 
  "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
 Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
 
+// A tab icon the set does not have used to become House — a Sleep tab drew the same house as Today. The label
+// says what the tab is; failing that, the first fallback no other tab wears.
+const ICON_BY_LABEL: [RegExp, string][] = [
+  [/sleep|night|dream|rest/i, 'Moon'], [/breath|calm|relax/i, 'Wind'], [/focus|timer|pomodoro/i, 'Timer'], [/meditat|mind/i, 'Sparkles'],
+  [/home|today|feed/i, 'House'], [/explore|discover|browse/i, 'Compass'], [/search|find/i, 'Search'], [/saved|favou?rite|wishlist|like/i, 'Heart'],
+  [/stat|insight|progress|report|analytic/i, 'ChartColumn'], [/profile|account|^me$|you/i, 'CircleUser'], [/setting/i, 'Settings'],
+  [/learn|lesson|course|read|librar/i, 'BookOpen'], [/plan|calendar|schedule/i, 'Calendar'], [/cart|bag|shop|store/i, 'ShoppingBag'],
+  [/order|deliver/i, 'Inbox'], [/wallet|money|card|budget|spend/i, 'Wallet'], [/chat|message/i, 'MessageCircle'], [/map|trip|travel/i, 'Map'],
+  [/music|listen|podcast|player/i, 'Headphones'], [/workout|train|fitness|gym/i, 'Dumbbell'], [/league|rank|leader|award/i, 'Trophy'],
+  [/news/i, 'Newspaper'], [/task|todo|habit|check/i, 'ListChecks'], [/notif|alert/i, 'Bell'], [/photo|camera|scan/i, 'Camera'],
+]
+const FALLBACK_ICONS = ['Sparkles', 'Star', 'Layers', 'Grid2x2', 'Target', 'Bookmark']
+export function tabIcon(icon: unknown, label: string, used: Set<string>): string {
+  if (TAB_ICONS.includes(String(icon)) && !used.has(String(icon))) return String(icon)
+  const byLabel = ICON_BY_LABEL.find(([re, i]) => re.test(label) && !used.has(i))?.[1]
+  if (byLabel) return byLabel
+  if (TAB_ICONS.includes(String(icon))) return String(icon) // a repeat the label cannot improve on
+  return FALLBACK_ICONS.find((i) => !used.has(i)) ?? 'House'
+}
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'screen'
 
 /** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens —
@@ -68,7 +88,13 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
  *  because the eight slots went to onboarding and the tabs first). */
 export function parsePlan(json: string, fallbackName: string, seed?: string): AppPlan {
   const raw = JSON.parse(jsonOnly(json)) as Partial<AppPlan> & { screens?: Partial<PlannedScreen>[]; tabs?: Partial<AppLook['tabs'][number]>[] }
-  const tabs = (raw.tabs ?? []).slice(0, 5).map((t) => ({ id: slug(String(t.id ?? t.label ?? 'tab')), label: String(t.label ?? t.id ?? 'Tab').slice(0, 16), icon: TAB_ICONS.includes(String(t.icon)) ? String(t.icon) : 'House' }))
+  const usedIcons = new Set<string>()
+  const tabs = (raw.tabs ?? []).slice(0, 5).map((t) => {
+    const label = String(t.label ?? t.id ?? 'Tab').slice(0, 16)
+    const icon = tabIcon(t.icon, label, usedIcons)
+    usedIcons.add(icon)
+    return { id: slug(String(t.id ?? t.label ?? 'tab')), label, icon }
+  })
   const seen = new Set<string>()
   let screens: PlannedScreen[] = (raw.screens ?? []).map((s) => {
     let id = slug(String(s.id ?? s.name ?? 'screen'))
@@ -223,7 +249,14 @@ export function appLook(project: { theme: string | null; navigation: string | nu
   let tabs: AppLook['tabs'] = []
   try {
     const n = JSON.parse(project.navigation ?? 'null')
-    if (n && Array.isArray(n.tabs)) tabs = n.tabs.filter((t: { id?: unknown }) => typeof t?.id === 'string').map((t: { id: string; label?: string; icon?: string }) => ({ id: t.id, label: String(t.label ?? t.id), icon: TAB_ICONS.includes(String(t.icon)) ? String(t.icon) : 'House' }))
+    // The same icon rule as parsePlan, at read time, so an app planned before it (two houses) draws right too.
+    const used = new Set<string>()
+    if (n && Array.isArray(n.tabs)) tabs = n.tabs.filter((t: { id?: unknown }) => typeof t?.id === 'string').map((t: { id: string; label?: string; icon?: string }) => {
+      const label = String(t.label ?? t.id)
+      const icon = tabIcon(t.icon, label, used)
+      used.add(icon)
+      return { id: t.id, label, icon }
+    })
   } catch {}
   return { accent: theme.accent, dark: theme.dark, platform: theme.platform, style: theme.style, tabs }
 }

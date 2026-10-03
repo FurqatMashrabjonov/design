@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 import { Tabbar, TabbarLink, ToolbarPane } from 'konsta/react'
-import { House, Search, Heart, User, CircleUser, Settings, Bell, Calendar, ChartColumn, ListChecks, ShoppingBag, ShoppingCart, MessageCircle, Map, Compass, Wallet, CreditCard, BookOpen, Dumbbell, Utensils, Music, Play, Camera, Image, Star, Bookmark, Inbox, Layers, Grid2x2, Sparkles, Activity, Target, Plane, Ticket, Users, Briefcase, GraduationCap, Leaf, Droplets, Footprints } from 'lucide-react'
+import { House, Search, Heart, User, CircleUser, Settings, Bell, Calendar, ChartColumn, ListChecks, ShoppingBag, ShoppingCart, MessageCircle, Map, Compass, Wallet, CreditCard, BookOpen, Dumbbell, Utensils, Music, Play, Camera, Image, Star, Bookmark, Inbox, Layers, Grid2x2, Sparkles, Activity, Target, Plane, Ticket, Users, Briefcase, GraduationCap, Leaf, Droplets, Footprints, Moon, Sun, Wind, Timer, Clock, Headphones, Trophy, Newspaper, Mic, Video, Gift, Car, PawPrint, Baby, Flame, Brain } from 'lucide-react'
 
 // One screen is drawn per frame; the host (canvas, preview) owns the app's navigation. A tap asks the
 // host to move — push, pop or a tab — and the host shows that screen's frame. `tabs` come from the plan.
@@ -24,7 +24,7 @@ export function useNav() {
 }
 
 // The planner names each tab's icon from this set (TAB_ICONS); an unknown name falls back to House.
-const ICONS = { House, Search, Heart, User, CircleUser, Settings, Bell, Calendar, ChartColumn, ListChecks, ShoppingBag, ShoppingCart, MessageCircle, Map, Compass, Wallet, CreditCard, BookOpen, Dumbbell, Utensils, Music, Play, Camera, Image, Star, Bookmark, Inbox, Layers, Grid2x2, Sparkles, Activity, Target, Plane, Ticket, Users, Briefcase, GraduationCap, Leaf, Droplets, Footprints }
+const ICONS = { House, Search, Heart, User, CircleUser, Settings, Bell, Calendar, ChartColumn, ListChecks, ShoppingBag, ShoppingCart, MessageCircle, Map, Compass, Wallet, CreditCard, BookOpen, Dumbbell, Utensils, Music, Play, Camera, Image, Star, Bookmark, Inbox, Layers, Grid2x2, Sparkles, Activity, Target, Plane, Ticket, Users, Briefcase, GraduationCap, Leaf, Droplets, Footprints, Moon, Sun, Wind, Timer, Clock, Headphones, Trophy, Newspaper, Mic, Video, Gift, Car, PawPrint, Baby, Flame, Brain }
 export const TAB_ICONS = Object.keys(ICONS)
 const iconOf = (name) => ICONS[name] ?? House
 export function AppTabbar({ active }) {

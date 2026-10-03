@@ -11,6 +11,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-03
+
+### Tab icons: a Sleep tab is a moon, not a second house
+
+Found making the Stillora post (prod): the planner asked for a moon on the Sleep tab, the icon set had none, and every
+unknown icon became House — the tab bar showed two houses.
+- `TAB_ICONS` (JsxGenerator) and the kit's `ICONS` (`runtime/kit/nav.jsx`) gain Moon, Sun, Wind, Timer, Clock,
+  Headphones, Trophy, Newspaper, Mic, Video, Gift, Car, PawPrint, Baby, Flame, Brain.
+- `tabIcon(icon, label, used)`: an unknown or repeated icon comes from the tab's label (Sleep → Moon, Breathe → Wind,
+  Stats → ChartColumn…), else the first fallback no other tab wears. Used by `parsePlan` and by `appLook` at read time,
+  so an app stored with two houses draws right without rewriting it.
+- `controllers.check.ts`: label-based choice and no repeats; the planner's set equals the kit's; a stored two-house
+  app reads as House + Moon.
+
+Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
+
 ## 2026-10-02 (12)
 
 ### PRC-04 — the pricing page sells the plans
