@@ -6,7 +6,8 @@
 //        [--prompt "cleaned-up prompt"] [--count 8] [--edited yes|no] [--out docs/brand/posts/<name>]
 //   add --share to turn on the project's public preview link and print it with a ?ref= per platform
 //   … scripts/social-posts.ts --share-url https://screenspell.app/s/<token> --prompt "…" [--count 8] [--no-intro]
-//        # from a public preview (production): no database; shots through /api/thumb with the share token
+//        # from a public preview (production): no database; shots through /api/thumb with the share token;
+//        # also x-4-devices.png — the preview page itself on the iPhone and the Galaxy it draws
 //   … scripts/social-posts.ts --brief "one sentence" [--email owner@…]   # plan a new app first (a real generation,
 //        on the default model, owned by the admin so it shows on their dashboard), then draw its posts
 //
@@ -34,6 +35,7 @@ let appName = '', prompt = '', count = 0, edited = false, projectId: string | un
 let order: { id: string; name: string }[] = []
 let intro: string | undefined, roots: string[] = []
 let shoot: (id: string, tag: string, look: Look) => Promise<void>
+let devices: { file: string; label: string; ratio: number }[] = []
 
 const shareUrl = arg('share-url')
 if (shareUrl) {
@@ -59,17 +61,58 @@ if (shareUrl) {
     await view.eval(`document.querySelector('[title="Next screen"]')?.click()`)
     await new Promise((r) => setTimeout(r, 900))
   }
-  cdp.close()
   const pairs = [...seen].map(([fid, title]) => ({ id: fid, name: title }))
   order = names.length ? names.map((n) => pairs.find((p) => p.name === n)).filter((x): x is { id: string; name: string } => !!x) : pairs
   for (const p of pairs) if (!order.includes(p)) order.push(p)
-  if (order.length < 3) throw new Error(`The preview shows ${order.length} screens; it needs three`)
+  if (order.length < 3) { cdp.close(); throw new Error(`The preview shows ${order.length} screens; it needs three`) }
   appName = arg('app') ?? (await (await fetch(`${u.origin}${u.pathname}`)).text()).match(/<title>([^<—]+)/)?.[1]?.trim() ?? 'App'
   // A visitor sees no plan: the first screen is taken as the first-run one unless --no-intro says it is a tab.
   intro = process.argv.includes('--no-intro') ? undefined : order[0]!.id
   roots = order.filter((x) => x.id !== intro).slice(0, 4).map((x) => x.id)
   prompt = (arg('prompt') ?? '').trim()
-  if (!prompt) throw new Error('--prompt is required with --share-url (a visitor cannot see the chat)')
+  if (!prompt) { cdp.close(); throw new Error('--prompt is required with --share-url (a visitor cannot see the chat)') }
+  // The app on the devices the preview draws (PRV-01): the public page itself, opened once per device with the
+  // device it remembers set beforehand, walked to the screen, and the drawn phone alone pictured on a clear
+  // background — bezel, Dynamic Island or camera, status bar and home indicator exactly as a visitor sees them.
+  const onDevice = async (device: string, id: string, file: string) => {
+    const v = await cdp.open('', { width: 1100, height: 1250, scale: 2 })
+    await v.call('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('od:preview-device', '${device}') } catch {}` })
+    await v.call('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } })
+    await v.call('Page.navigate', { url: `${u.origin}${u.pathname}` })
+    await new Promise((r) => setTimeout(r, 6000))
+    for (let i = 0; i < 14; i++) {
+      if (await v.eval(`(document.querySelector('.od-preview-stage > iframe[data-state="shown"]')?.getAttribute('src') ?? '').includes('${id}')`)) break
+      await v.eval(`document.querySelector('[title="Next screen"]')?.click()`)
+      await new Promise((r) => setTimeout(r, 900))
+    }
+    await new Promise((r) => setTimeout(r, 3500)) // the screen's photos
+    const clip = (await v.eval(`(() => {
+      const phone = document.querySelector('.od-preview-stage')?.parentElement?.parentElement?.parentElement
+      if (!phone) return null
+      phone.firstElementChild.style.boxShadow = '0 0 0 1.5px #3b3936, inset 0 0 0 1px #2a2826'
+      for (let el = phone; el.parentElement; el = el.parentElement) {
+        el.parentElement.style.background = 'transparent'
+        for (const sib of el.parentElement.children) if (sib !== el) sib.style.visibility = 'hidden'
+      }
+      document.documentElement.style.background = 'transparent'
+      const r = phone.getBoundingClientRect()
+      return { x: r.x - 6, y: r.y - 4, width: r.width + 12, height: r.height + 8 }
+    })()`)) as { x: number; y: number; width: number; height: number } | null
+    if (!clip) throw new Error(`The preview drew no ${device}`)
+    await new Promise((r) => setTimeout(r, 400))
+    const shot = (await v.call('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 1 } })) as { data: string }
+    fs.writeFileSync(join(TMP, `${file}.png`), Buffer.from(shot.data, 'base64'))
+    return clip.height / clip.width
+  }
+  try {
+    devices = [
+      { file: 'dev-iphone', label: 'iPhone 18 Pro Max', ratio: await onDevice('iphone-18-pro-max', roots[0]!, 'dev-iphone') },
+      { file: 'dev-galaxy', label: 'Galaxy S26 Ultra', ratio: await onDevice('galaxy-s26-ultra', roots[roots.length - 1]!, 'dev-galaxy') },
+    ]
+  } catch (e) {
+    console.error(`no device picture: ${(e as Error).message}`)
+  }
+  cdp.close()
   count = Number(arg('count') ?? order.length)
   edited = arg('edited') === 'yes'
   // The harness is served over http: a file:// page leaves a cross-origin iframe blank.
@@ -182,6 +225,11 @@ const quote = `“${esc(prompt.length > 150 ? prompt.slice(0, 147) + '…' : pro
 png('x-1-hero', 1600, 900, head(`One ${ONE}.<br><em>${N} screens.</em>`, quote) + row([phone(a, 240, 'margin-top:90px'), phone(b, 240, 'margin-top:20px'), phone(c, 240, 'margin-top:60px')], 790, 40))
 png('x-2-ios-android', 1600, 900, head('Same app.<br><em>Native on both.</em>', 'One design, drawn as iOS and as Android (Material You) — switch with one tap.') + row([labelled(home, 290, 'iOS'), labelled(`${home}-android`, 290, 'Android')], 820, 110, 50))
 png('x-3-light-dark', 1600, 900, head('Light <em>and</em> dark.<br>Both included.', 'Every screen comes in both. Pick a style and the colours follow everywhere.') + row([labelled(last, 290, 'Light'), labelled(`${last}-dark`, 290, 'Dark')], 820, 110, 50))
+// The preview as a visitor opens it: the app on the phones the preview draws (a public preview only).
+if (devices.length) {
+  const dev = (d: (typeof devices)[number], w: number) => `<div style="display:flex;flex-direction:column;align-items:center;gap:18px"><img src="file://${TMP}/${d.file}.png" style="width:${w}px;height:${Math.round(w * d.ratio)}px;display:block;filter:drop-shadow(0 30px 40px rgba(0,0,0,.5))"><span class="pill">${d.label}</span></div>`
+  png('x-4-devices', 1600, 900, head('Open the link.<br><em>Tap through it.</em>', 'A clickable prototype in the browser, on an iPhone or a Galaxy — or full screen on your own phone.') + row(devices.map((d, i) => dev(d, i ? 315 : 335)), 815, 70, 50))
+}
 // Instagram, 9:16 (1080×1920); the profile grid shows the middle 3:4, so titles start below y=250.
 const igTitle = (t: string) => `<div style="position:absolute;left:80px;top:260px;right:80px;font-size:68px;line-height:1.05;font-weight:600;letter-spacing:-.02em">${t}</div>`
 png('ig-1', 1080, 1920, `<div style="position:absolute;left:80px;top:260px;right:80px">${mark}<div style="margin-top:44px;font-size:96px;line-height:1.02;font-weight:600;letter-spacing:-.03em">One ${ONE}.<br><em>${N} screens.</em></div><div style="margin-top:26px;font-size:30px;line-height:1.35;color:${MUTED}">${quote}</div></div>` + row([phone(home, 380, 'transform:rotate(-7deg)'), phone(third, 380, 'transform:rotate(6deg);margin-top:60px')], 110, 860, 50))

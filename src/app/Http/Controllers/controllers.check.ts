@@ -1674,6 +1674,11 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   await setMode(null)
   if (nodeEnv === undefined) delete process.env.NODE_ENV
   else process.env.NODE_ENV = nodeEnv
+  // ACC-07: a shared preview offers the waitlist only in waitlist mode; open, it sends people to the product.
+  const preview = readFileSync('src/components/AppPreview.tsx', 'utf8')
+  assert.equal(preview.match(/<WaitlistButton\b/g)?.length, 1, 'the preview has one waitlist button')
+  assert.ok(/if \(access === 'waitlist'\) return <WaitlistButton/.test(preview), 'and it is behind the access switch')
+  assert.ok(/href="\/\?ref=preview"/.test(preview), 'open: the offer is the product itself')
 }
 
 {

@@ -13,10 +13,11 @@ import { DEVICES, DEFAULT_DEVICE, deviceById, FOLD_PERSPECTIVE, foldLayout, spli
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { WaitlistButton } from '@/components/Waitlist'
+import { useAccess } from '@/routes/__root'
 
 // The clickable preview of an app (SHR-01): the owner's (/preview/$projectId) and, since SHR-02, anyone's with a
 // share link (/s/$token) — the same stage, where a shared one has no way back to the editor, frames its screens
-// with the token, and offers the waitlist (WLT-01). On a phone-sized window the app fills the screen without a
+// with the token, and offers what the access switch allows — the waitlist (WLT-01) or the product itself (ACC-07). On a phone-sized window the app fills the screen without a
 // drawn device (SHR-05): the viewer's own phone is the device.
 export type PreviewScreen = { id: string; name: string; html: string; x: number; y: number; slug: string | null; screenType: string | null; activeTabId: string | null }
 export type PreviewProject = { id: string; name: string; plan: string | null; theme: string | null }
@@ -302,7 +303,7 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
     )
   }
 
-  // SHR-05: on a phone the app is the page — no drawn device, no arrows; a shared one keeps a slim bar for the waitlist.
+  // SHR-05: on a phone the app is the page — no drawn device, no arrows; a shared one keeps a slim bar for its one offer.
   if (phone) {
     return (
       <div className={`flex h-dvh flex-col bg-canvas text-foreground ${theme.dark ? 'dark' : 'light'}`}>
@@ -310,7 +311,7 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
           <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-card px-4">
             <span className="min-w-0 flex-1 truncate text-sm font-medium">{project.name}</span>
             {share.branded && <MadeWith compact />}
-            {share.branded && <WaitlistButton share={share} size="sm" />}
+            {share.branded && <ShareCta share={share} size="sm" />}
           </div>
         )}
         <div className="od-preview-stage flex-1" data-motion={motion}>
@@ -384,7 +385,7 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
             <MadeWith />
             <span className="mt-1 block text-muted-foreground">Designed from one prompt. Want one for your idea?</span>
           </div>
-          <WaitlistButton share={share} />
+          <ShareCta share={share} />
         </div>
       )}
 
@@ -478,6 +479,20 @@ function Arrow(props: { label: string; disabled: boolean; onClick: () => void; c
 }
 
 /** PRC-03: the badge on a Free owner's shared link; it leads to the landing with its own ref. */
+/**
+ * ACC-07: what a shared preview offers follows the access switch — in waitlist mode the waitlist; once the app is
+ * open, the product itself (the landing, `?ref=preview`), because a list to wait on is a wall in front of an open door.
+ */
+function ShareCta({ share, size = 'default' }: { share: { token: string; ref: string | null }; size?: 'sm' | 'default' }) {
+  const access = useAccess()
+  if (access === 'waitlist') return <WaitlistButton share={share} size={size} />
+  return (
+    <a href="/?ref=preview" target="_blank" rel="noopener" className={buttonVariants({ size, className: 'rounded-full font-semibold' })}>
+      Try it free
+    </a>
+  )
+}
+
 function MadeWith({ compact = false }: { compact?: boolean }) {
   return (
     <a href="/?ref=badge" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 font-medium text-foreground hover:underline underline-offset-2">

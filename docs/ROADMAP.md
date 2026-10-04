@@ -26,6 +26,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ACC-03 | Landing/pricing/login waitlist rejimida: Join the waitlist; prompt yuborilsa brief bilan waitlist oynasi (ref `landing`) | Kirish | MVP | Tayyor | O'rta | ACC-01 | Brauzerda: landing'dan yozilish, brief saqlanadi |
 | ACC-05 | Admin: Settings'da Access kaliti (Waitlist only \| Open) | Kirish | MVP | Tayyor | Kichik | ACC-01 | Brauzerda kalit ikki tomonga ishlaydi, log yoziladi |
 | ACC-06 | Waitlist'dan bittalab Invite (beta): taklif qilingan email waitlist rejimida ham kiradi | Kirish | Keyin | Rejada | Kichik | ACC-02 |  |
+| ACC-07 | Ulashilgan preview'dagi taklif kirish rejimiga ergashadi: waitlist'da "Join the waitlist", open'da "Try it free" (landing, ref `preview`) | Kirish | MVP | Tayyor | Kichik | ACC-01 | Brauzerda ikkala rejim, keng va telefon kengligida; test: waitlist tugmasi faqat kalit ortida |
 
 ## KON · Konsta UI + JSX (2026-09-27 qarori — navbatda birinchi)
 

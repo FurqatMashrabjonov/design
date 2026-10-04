@@ -14,6 +14,35 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-04 (4)
+
+### ACC-07: a shared preview stops offering the waitlist once the app is open
+
+- `components/AppPreview.tsx`: `ShareCta` — the one offer on a Free owner's shared link reads the access switch
+  (`useAccess`): waitlist mode keeps "Join the waitlist" (WLT-01), open shows "Try it free" (the landing in a new tab,
+  `?ref=preview`). Both places use it: the card at the bottom right and the slim bar on a phone. A paid owner's link
+  still carries nothing of ours. No new flag — the switch is Admin → Settings → Access, as everywhere else.
+- `controllers.check.ts`: the preview has one waitlist button and it sits behind the switch.
+- `CLAUDE.md` (the access and share rules), `docs/ROADMAP.md` (ACC-07).
+- Verified: on the local server a shared project opened in headless Chrome at 1300 and 390 wide — open: "Try it
+  free", no waitlist button; `access.mode = waitlist`: the waitlist button, no "Try it free"; the setting and the
+  share were put back. `npm run check` and `npx tsc --noEmit` clean.
+
+## 2026-10-04 (3)
+
+### Posts: the app on the devices the preview draws, and links in the post itself (the social-posts skill)
+
+- `scripts/social-posts.ts`: with `--share-url` a fourth 16:9 image, `x-4-devices.png` ("Open the link. Tap through
+  it."): the public preview page is opened over DevTools once per device (`od:preview-device` set beforehand), walked
+  to a tab's screen, everything but the drawn phone hidden, and the phone alone pictured on a clear background — the
+  iPhone 18 Pro Max with its Dynamic Island and the Galaxy S26 Ultra, exactly as a visitor sees them. A failure there
+  is reported and the other images are still made. Chrome is closed on every early exit.
+- `.claude/skills/social-posts/SKILL.md`: the links go in the post itself (the owner's call: a link in a comment lost
+  the clicks), two of them — this app's preview and the product; the image order per platform with the new picture.
+- Verified: run on the production preview of Wayweave (8 screens, two chat edits) — `docs/brand/posts/wayweave/`,
+  every image looked at; `npx tsc --noEmit` clean. Seen on the way: on Android the Konsta `Searchbar` of "Find
+  somewhere" runs past the right edge of the phone (not fixed here; the Galaxy shows another screen).
+
 ## 2026-10-04 (2)
 
 ### AUTH-10: the email sign-in link is a switch, off in production for now — Google only

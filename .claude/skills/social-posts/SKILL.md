@@ -64,7 +64,9 @@ through the real thing.**
 
 Output (`docs/brand/posts/<app>/`): `strip-light.png` and `strip-dark.png` (1.91:1, every screen in a row on the
 canvas with its name above — the main image for LinkedIn and X), `x-1-hero.png`, `x-2-ios-android.png`, `x-3-light-dark.png` (16:9, for X and
-Threads) and `ig-1.png` … `ig-5.png` (9:16, in that order; the key content sits in the middle 3:4, which Instagram's
+Threads), `x-4-devices.png` (16:9, from a `--share-url` only: the public preview itself on the iPhone 18 Pro Max and
+the Galaxy S26 Ultra it draws — Dynamic Island, status bar, home indicator; look at it before posting, an Android
+screen can show a defect the iOS one does not) and `ig-1.png` … `ig-5.png` (9:16, in that order; the key content sits in the middle 3:4, which Instagram's
 profile grid shows).
 
 ## 4. Captions — pick the format from the scenario's `Format` (empty = showcase)
@@ -86,10 +88,13 @@ prototype.
 - **showcase** — the first-post style: the prompt, the screen count, iOS/Android and light/dark, a question.
 
 Per platform:
-- **LinkedIn** — the full text, the strip image (light usually; dark for midnight apps). LinkedIn holds back posts
-  with links, so the preview link goes in the **first comment**.
-- **X** — the same story cut to ~280 characters for post 1 with the strip; reply 2 `x-2-ios-android.png`, reply 3
-  `x-3-light-dark.png`; the preview link in the last reply, never post 1.
+**Links go in the post itself, never only in a comment or the last reply** (the owner's call, 2026-10-04: with the
+link in a comment the clicks fell away). Every post carries two: the preview of this app (`…/s/<token>?ref=<platform>-<app>`,
+"tap through it") and the product (`https://screenspell.app`, "try it — free beta, sign in with Google").
+- **LinkedIn** — the full text, both links in the body, images `x-1-hero`, `x-4-devices`, `x-2-ios-android`,
+  `x-3-light-dark` (or the strip alone; dark for midnight apps).
+- **X** — the same story cut to ~280 characters for post 1 with the preview link and `x-1-hero.png`; reply 2
+  `x-4-devices.png`, reply 3 `x-2-ios-android.png`, reply 4 `x-3-light-dark.png` with the product link.
 - **Threads** — conversational, the strip plus one more image, a question at the end, one topic tag; a link in the
   post is fine.
 - **Instagram** — the five 9:16 slides `ig-1` → `ig-5`, a short caption, 4–6 hashtags, "link in bio" (the bio link
@@ -103,7 +108,7 @@ will go.
 When the owner says "post tayyorla", deliver in this order, each finished before the next:
 
 1. **X** — the thread (images from step 3, captions from step 4).
-2. **LinkedIn** — the short "I'm building" post with `strip-light.png`, the link in the first comment.
+2. **LinkedIn** — the short "I'm building" post with its images, both links in the body.
 3. **Video** — a 9:16 reel for TikTok / Reels / Shorts, the app's real screens inside the studio's own iPhone
    (`scripts/video/films/device.js`, the same geometry as `components/DeviceFrame.tsx`):
    ```
