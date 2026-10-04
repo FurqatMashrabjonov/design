@@ -4,21 +4,25 @@ import { Outlet, createRootRoute, HeadContent, Scripts, useRouteContext, useRout
 import { useEffect, useState } from 'react'
 import { getAccess } from '../server/fns'
 import type { AccessMode } from '@/app/Services/AccessService'
+import type { PaymentsMode } from '@/app/Services/PaymentsService'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { CreditsDialog, PaymentsSoonDialog } from '../credits'
+import { FeedbackDialog } from '@/components/Feedback'
 import css from '../styles.css?url'
 
 // ACC-01: waitlist-only or open, for every page. Asked once per page load in the browser (a switch in the panel
 // shows on the next load); the server checks it again on every call that matters.
-let browserAccess: AccessMode | undefined
+export type SiteState = { access: AccessMode; payments: PaymentsMode; signupCredits: number }
+let browserState: SiteState | undefined
 
 export const Route = createRootRoute({
-  beforeLoad: async (): Promise<{ access: AccessMode }> => {
-    if (typeof window !== 'undefined' && browserAccess) return { access: browserAccess }
-    const { mode } = await getAccess()
-    if (typeof window !== 'undefined') browserAccess = mode
-    return { access: mode }
+  beforeLoad: async (): Promise<SiteState> => {
+    if (typeof window !== 'undefined' && browserState) return browserState
+    const r = await getAccess()
+    const state: SiteState = { access: r.mode, payments: r.payments, signupCredits: r.signupCredits }
+    if (typeof window !== 'undefined') browserState = state
+    return state
   },
   head: () => ({
     meta: [
@@ -60,6 +64,7 @@ function RootDocument({ children }: { children: ReactNode }) {
         <Toaster position="top-center" offset={16} />
         <CreditsDialog />
         <PaymentsSoonDialog />
+        <FeedbackDialog />
         <Scripts />
       </body>
     </html>
@@ -68,6 +73,9 @@ function RootDocument({ children }: { children: ReactNode }) {
 
 /** ACC-01: 'waitlist' while only admins may sign in; the pages show the waitlist instead of sign-in. */
 export const useAccess = (): AccessMode => useRouteContext({ from: '__root__' }).access
+/** PAY-01: false while nothing is sold — no prices, plans or Buy anywhere. PAY-02: the free start to quote. */
+export const usePayments = (): boolean => useRouteContext({ from: '__root__' }).payments === 'on'
+export const useSignupCredits = (): number => useRouteContext({ from: '__root__' }).signupCredits
 
 /** UI-31: a thin bar at the top while a page is on its way, shown only when it takes longer than a blink (150 ms),
  *  so a slow connection never feels like a click that did nothing. */

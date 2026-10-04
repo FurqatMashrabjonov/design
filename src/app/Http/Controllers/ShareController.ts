@@ -38,7 +38,7 @@ export const ShareController = {
     await Waitlist.view(project.id, ref)
     // PRC-03: a Free owner's link carries "Made with Screenspell" and the waitlist; a paid plan shares it clean. The
     // plan decides, not the admin flag, so the team's own launch previews stay branded.
-    const branded = !project.userId || !(await CreditService.limitsFor(project.userId, false)).export
+    const branded = !project.userId || (await CreditService.limitsFor(project.userId, false)).plan === 'free' // the plan, not what it may do: in the beta (PAY-04) Free may export too
     return { project: { id: '', name: project.name, plan: project.plan, theme: project.theme }, screens, token, branded }
   },
 

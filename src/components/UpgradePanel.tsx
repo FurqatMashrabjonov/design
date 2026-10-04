@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Download, Link2, Smartphone, Moon, Code2 } from 'lucide-react'
 import { FigmaMark } from '@/components/BrandMarks'
-import { useCredits } from '@/credits'
+import { askForCredits, useCredits } from '@/credits'
+import { usePayments } from '@/routes/__root'
+import { Button } from '@/components/ui/button'
 import { appsFor, CREDIT_PRICES, FREE_EXPORTS, PLANS, screensFor } from '@/lib/credit-prices'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -13,21 +15,21 @@ import { cn } from '@/lib/utils'
 
 type Slide = { title: string; text: string; icons: ReactNode[]; cta?: { label: string; to: string } }
 
-function slidesFor(plan: 'starter' | 'pro' | null): Slide[] {
+function slidesFor(plan: 'starter' | 'pro' | null, selling: boolean): Slide[] {
   return [
     {
       title: 'Export to React & Figma',
-      text: plan ? 'Download a React project, one HTML file, or paste editable layers into Figma.' : `Take your screens out as a React project, an HTML file or Figma layers — ${FREE_EXPORTS} tries on Free.`,
+      text: plan || !selling ? 'Download a React project, one HTML file, or paste editable layers into Figma.' : `Take your screens out as a React project, an HTML file or Figma layers — ${FREE_EXPORTS} tries on Free.`,
       icons: [<Code2 key="c" />, <FigmaMark key="f" />, <Download key="d" />],
-      cta: plan ? undefined : { label: 'Unlock export', to: '/billing' },
+      cta: plan || !selling ? undefined : { label: 'Unlock export', to: '/billing' },
     },
     { title: 'Native on iOS and Android', text: 'Every design switches between iOS and Material You with one tap — light and dark included.', icons: [<Smartphone key="s" />, <Moon key="m" />] },
     { title: 'Share a live link', text: 'Turn on a public link and anyone can tap through your app — no sign-up.', icons: [<Link2 key="l" />] },
   ]
 }
 
-function Slides({ plan }: { plan: 'starter' | 'pro' | null }) {
-  const slides = slidesFor(plan)
+function Slides({ plan, selling }: { plan: 'starter' | 'pro' | null; selling: boolean }) {
+  const slides = slidesFor(plan, selling)
   const [i, setI] = useState(0)
   const [hold, setHold] = useState(false)
   useEffect(() => {
@@ -69,25 +71,37 @@ export function UpgradePanel({ initial }: { initial: number }) {
   const low = balance < price.plan + price.draw
   const planName = plan ? PLANS.find((p) => p.id === plan)!.name : 'Free'
   const month = c?.month
+  const selling = usePayments()
+  const card = (
+    <>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className={`size-1.5 rounded-full ${balance <= 0 ? 'bg-destructive' : low ? 'bg-chart-3' : 'bg-lime-500'}`} aria-hidden />
+          {selling ? `${planName} · credits` : 'Free beta · credits'}
+        </span>
+        <span className={`text-sm font-semibold tabular-nums ${balance <= 0 ? 'text-destructive' : ''}`}>{balance.toLocaleString('en')}</span>
+      </div>
+      {month && (
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Plan credits left this month" aria-valuemin={0} aria-valuemax={month.granted} aria-valuenow={month.left}>
+          <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((month.left / Math.max(1, month.granted)) * 100)}%` }} />
+        </div>
+      )}
+      <p className="mt-1.5 text-muted-foreground">≈ {screensFor(Math.max(0, balance))} screens{low ? ' · not enough for a new app' : ` · ${appsFor(Math.max(0, balance))} apps`}</p>
+    </>
+  )
+  const box = 'block rounded-md border bg-card p-3 text-xs shadow-1'
   return (
     <div className="space-y-3">
-      <Slides plan={plan} />
-      <Link to="/billing" className="block rounded-md border bg-card p-3 text-xs shadow-1 transition-colors hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className={`size-1.5 rounded-full ${balance <= 0 ? 'bg-destructive' : low ? 'bg-chart-3' : 'bg-lime-500'}`} aria-hidden />
-            {planName} · credits
-          </span>
-          <span className={`text-sm font-semibold tabular-nums ${balance <= 0 ? 'text-destructive' : ''}`}>{balance.toLocaleString('en')}</span>
-        </div>
-        {month && (
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Plan credits left this month" aria-valuemin={0} aria-valuemax={month.granted} aria-valuenow={month.left}>
-            <div className="h-full rounded-full bg-primary" style={{ width: `${Math.round((month.left / Math.max(1, month.granted)) * 100)}%` }} />
-          </div>
-        )}
-        <p className="mt-1.5 text-muted-foreground">≈ {screensFor(Math.max(0, balance))} screens{low ? ' · not enough for a new app' : ` · ${appsFor(Math.max(0, balance))} apps`}</p>
-      </Link>
-      {plan === null ? (
+      <Slides plan={plan} selling={selling} />
+      {/* PAY-01: while nothing is sold the card is only the balance — no billing page behind it, no Upgrade. */}
+      {selling ? (
+        <Link to="/billing" className={cn(box, 'transition-colors hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}>{card}</Link>
+      ) : (
+        <div className={box}>{card}</div>
+      )}
+      {!selling ? (
+        low && <Button variant="outline" className="w-full" onClick={() => askForCredits(balance)}>Request more credits</Button>
+      ) : plan === null ? (
         <Link to="/billing" hash="plans" className={buttonVariants({ className: 'w-full font-semibold' })}>Upgrade</Link>
       ) : plan === 'starter' ? (
         <Link to="/billing" className={buttonVariants({ variant: 'outline', className: 'w-full' })}>Buy credits</Link>

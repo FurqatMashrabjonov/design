@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { askUpgrade, LowCredits, reportError } from '../credits'
+import { FirstAppFeedback } from '@/components/Feedback'
 import { CircleX, Code2, FileDown, MousePointerClick, Palette, Plus, Smartphone, X } from 'lucide-react'
 import { getSession, getProject, moveScreen, deleteProject, renameProject, renameScreen, deleteScreen, duplicateScreen, getScreenCode, saveScreenHeight, saveAppTheme, revertMessage, stepVersion, restoreScreen, rateScreen, claimFigmaExport } from '../server/fns'
 import { generate } from '../generate'
@@ -225,6 +226,7 @@ function ProjectPage() {
       setPlanErrors((p) => ({ ...p, [e.index]: e.message }))
     }
   }
+  const [appsDrawn, setAppsDrawn] = useState(0)
   function runPlan(brief: string, images?: string[]) {
     setPlanning(true)
     const ctl = new AbortController()
@@ -232,6 +234,7 @@ function ProjectPage() {
     setWorking(true)
     setWorkStarted(Date.now())
     generatePlan(project.id, { brief, images }, onPlanEvent, ctl.signal)
+      .then(() => setAppsDrawn((n) => n + 1)) // FDB-10: a finished app is when the first-app question may come
       .catch((err) => {
         if (!(err instanceof DOMException && err.name === 'AbortError')) reportError(err)
       })
@@ -576,6 +579,7 @@ function ProjectPage() {
         />
       </div>
 
+      <FirstAppFeedback projectId={project.id} drawn={appsDrawn} />
       <ChatDock open={chatOpen} onOpenChange={setChatOpen} count={messages.length} busy={running}>
         <ChatPanel
           messages={messages}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { getSession } from '../server/fns'
 import { Check, Minus, Plus, Sparkles } from 'lucide-react'
 import { BRAND, Em, Eyebrow, SitePage } from '@/components/SiteChrome'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -14,6 +15,12 @@ import { cn } from '@/lib/utils'
 // same table the server charges from — so this page cannot promise a price the product does not keep. Open to
 // everyone (BIL-20); while the app is waitlist-only every button joins the waitlist instead of buying.
 export const Route = createFileRoute('/pricing')({
+  // PAY-01: while nothing is sold there is no price list; only an admin still sees the page.
+  beforeLoad: async ({ context }) => {
+    if (context.payments === 'on') return
+    const { user } = await getSession()
+    if (!user?.admin) throw redirect({ to: '/' })
+  },
   head: () => ({
     meta: [
       { title: `Pricing — ${BRAND}` },

@@ -6,6 +6,7 @@ import { Credit } from '@/app/Models/Credit'
 import { Project } from '@/app/Models/Project'
 import { adminEmails } from './AuthService'
 import { AccessService } from './AccessService'
+import { PaymentsService } from './PaymentsService'
 import { PolarService } from './PolarService'
 import { paging, type CallsQuery, type UsersQuery } from '@/admin/table-query'
 
@@ -130,6 +131,7 @@ export const AdminStatsService = {
       settings,
       envPaused: process.env.GENERATION_PAUSED === '1',
       access: { mode: await AccessService.mode(), env: AccessService.envMode() },
+      selling: { mode: await PaymentsService.mode(), env: PaymentsService.envMode(), signupCredits: await PaymentsService.signupCredits() },
       payments,
       system: { ...counts!, provider: process.env.LLM_PROVIDER || 'deepseek', node: process.version, env: process.env.NODE_ENV || 'development' },
       actions,

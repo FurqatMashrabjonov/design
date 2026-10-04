@@ -1664,4 +1664,79 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   else process.env.NODE_ENV = nodeEnv
 }
 
+{
+  // PAY-01…04 + FDB-10: the free beta — nothing sold, plan limits open, the free start set by the admin, a request
+  // for more credits, and feedback.
+  const { PaymentsService, PAYMENTS_OFF } = await import('../../Services/PaymentsService.ts')
+  const { CreditService } = await import('../../Services/CreditService.ts')
+  const { BillingController } = await import('./BillingController.ts')
+  const { ProjectController } = await import('./ProjectController.ts')
+  const { AdminController } = await import('./AdminController.ts')
+  const { BetaService } = await import('../../Services/BetaService.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  const { Setting } = await import('../../Models/Setting.ts')
+  const { db } = await import('../../../database/connection.ts')
+  const { user } = await import('../../../database/schema.ts')
+  const set = async (k: string, v: string | null) => (await Setting.set(k, v), PaymentsService.clear())
+  const nodeEnv = process.env.NODE_ENV
+  process.env.NODE_ENV = 'production'
+  await set('payments.mode', null)
+  assert.equal(await PaymentsService.mode(), 'off', 'production sells nothing until an admin turns payments on')
+  process.env.NODE_ENV = 'development'
+  PaymentsService.clear()
+  assert.equal(await PaymentsService.mode(), 'on', 'development keeps the billing code in play')
+  await db.insert(user).values([{ id: 'beta-u', name: 'Beta', email: 'beta@x.uz', createdAt: new Date(), updatedAt: new Date() }, { id: 'beta-adm', name: 'Adm', email: 'beta-adm@x.uz', createdAt: new Date(), updatedAt: new Date() }])
+
+  assert.deepEqual(await CreditService.limitsFor('beta-u'), { plan: 'free', projects: 1, export: false }, 'payments on: Free is limited')
+  await ProjectController.store({ userId: 'beta-u' })
+  await assert.rejects(ProjectController.store({ userId: 'beta-u' }), /plan-limit:projects:1/, 'payments on: a second project is refused on Free')
+
+  await set('payments.mode', 'off')
+  assert.deepEqual(await CreditService.limitsFor('beta-u'), { plan: 'free', projects: null, export: true }, 'payments off: no plan limits, the plan is still Free')
+  await ProjectController.store({ userId: 'beta-u' })
+  assert.equal(await CreditService.exportsLeft('beta-u'), null, 'payments off: export is not counted down')
+  await assert.rejects(BillingController.checkout({ id: 'beta-u', email: 'beta@x.uz' }, 'starter-month', 'https://x'), new RegExp(PAYMENTS_OFF), 'payments off: no checkout opens')
+  await assert.rejects(BillingController.portal('beta-u', 'https://x'), new RegExp(PAYMENTS_OFF))
+  process.env.PAYMENTS_MODE = 'on'
+  assert.equal(await PaymentsService.mode(), 'on', 'PAYMENTS_MODE in the environment wins over the panel')
+  delete process.env.PAYMENTS_MODE
+
+  // PAY-02: the free start is the admin's number; an invalid value is refused by the panel.
+  await AdminController.setSetting('beta-adm', { key: 'credits.signup', value: '100' })
+  assert.equal(await PaymentsService.signupCredits(), 100)
+  assert.equal(await CreditService.signupGrant('beta-u'), true)
+  assert.equal(await Credit.balance('beta-u'), 100, 'a new account starts with what the admin set')
+  await assert.rejects(AdminController.setSetting('beta-adm', { key: 'credits.signup', value: '5000' }), /Invalid/)
+  await AdminController.setSetting('beta-adm', { key: 'credits.signup', value: null })
+  assert.equal(await PaymentsService.signupCredits(), 60, 'cleared: the default')
+
+  // PAY-03: one open request per person; a grant lands once, in the ledger.
+  await BetaService.requestCredits('beta-u', 'a recipe app')
+  await BetaService.requestCredits('beta-u', 'a recipe app, now with meal plans')
+  const reqs = (await BetaService.requests()).filter((r) => r.userId === 'beta-u')
+  assert.deepEqual(reqs.map((r) => [r.status, r.note, r.email, r.balance]), [['open', 'a recipe app, now with meal plans', 'beta@x.uz', 100]], 'asking again replaces the note of the open request')
+  await AdminController.answerCreditRequest('beta-adm', { id: reqs[0]!.id, amount: 45 })
+  assert.equal(await Credit.balance('beta-u'), 145, 'a granted request is a ledger row')
+  await assert.rejects(AdminController.answerCreditRequest('beta-adm', { id: reqs[0]!.id, amount: 45 }), /already answered/, 'a request is answered once')
+  assert.equal(await Credit.balance('beta-u'), 145)
+  await BetaService.requestCredits('beta-u', null)
+  const again = (await BetaService.requests()).find((r) => r.userId === 'beta-u' && r.status === 'open')!
+  await AdminController.answerCreditRequest('beta-adm', { id: again.id, amount: null })
+  assert.equal(await Credit.balance('beta-u'), 145, 'a dismissal grants nothing')
+  assert.equal(await BetaService.openRequests(), 0)
+
+  // FDB-10: the first-app question is asked once — an answer or a close ends it; closed prompts are not listed.
+  assert.equal(await BetaService.firstAppDue('beta-u'), true)
+  await BetaService.feedback('beta-u', { source: 'first-app', rating: null, text: null, projectId: null })
+  assert.equal(await BetaService.firstAppDue('beta-u'), false, 'a closed prompt is not asked again')
+  await BetaService.feedback('beta-u', { source: 'button', rating: 4, text: 'Loved the tab bar', projectId: null })
+  assert.deepEqual((await BetaService.feedbackList()).filter((f) => f.userId === 'beta-u').map((f) => [f.source, f.rating, f.text, f.email]), [['button', 4, 'Loved the tab bar', 'beta@x.uz']])
+  assert.deepEqual(await BetaService.feedbackSummary(), { n: 1, avg: 4 })
+
+  await set('payments.mode', null)
+  if (nodeEnv === undefined) delete process.env.NODE_ENV
+  else process.env.NODE_ENV = nodeEnv
+  PaymentsService.clear()
+}
+
 console.log('ok')

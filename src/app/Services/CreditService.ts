@@ -4,9 +4,10 @@ import { creditLedger } from '@/database/schema'
 import { Credit, type Executor } from '@/app/Models/Credit'
 import { modelFor, type Site } from './LlmService.ts'
 import { UsageService } from './UsageService.ts'
-import { CREDIT_PRICES, FREE_EXPORTS, PLAN_LIMITS, SIGNUP_CREDITS, productOf, type ActionKind, type ExportKind, type Limits, type PlanId } from '@/lib/credit-prices'
+import { CREDIT_PRICES, FREE_EXPORTS, PLAN_LIMITS, productOf, type ActionKind, type ExportKind, type Limits, type PlanId } from '@/lib/credit-prices'
 import { all } from '@/database/query'
 import { monthIndex, Subscription } from '@/app/Models/Subscription'
+import { PaymentsService } from './PaymentsService.ts'
 
 // BIL-05/06/07: charging credits for actions. The prices themselves live in lib/credit-prices.ts,
 // shared with the browser. An app is `plan` + `draw`: the plan is charged when it is made, the
@@ -60,10 +61,11 @@ export const CreditService = {
     })
   },
 
-  /** BIL-14: the plan in force and what it allows. An admin is not limited. */
+  /** BIL-14: the plan in force and what it allows. An admin is not limited — and while nothing is sold (PAY-04)
+   *  nobody is: a limit a person cannot pay to lift is only a wall, so the free credits are the one limit. */
   async limitsFor(userId: string, admin = false): Promise<{ plan: PlanId } & Limits> {
     const plan: PlanId = productOf((await Subscription.activeFor(userId))?.productKey)?.plan ?? 'free'
-    return { plan, ...(admin ? { projects: null, export: true } : PLAN_LIMITS[plan]) }
+    return { plan, ...(admin || !(await PaymentsService.on()) ? { projects: null, export: true } : PLAN_LIMITS[plan]) }
   },
 
   /** PRC-02: how many of Free's tries are left (null: unlimited — a plan or an admin). */
@@ -90,9 +92,12 @@ export const CreditService = {
     })
   },
 
-  /** BIL-07: the free start. Keyed by the user, so it is granted once however often it is called. */
+  /** BIL-07: the free start (PAY-02: the admin's number). Keyed by the user, so it is granted once however often
+   *  it is called. */
   async signupGrant(userId: string): Promise<boolean> {
-    return await Credit.add({ userId, delta: SIGNUP_CREDITS, kind: 'signup', ref: `signup:${userId}` })
+    const delta = await PaymentsService.signupCredits()
+    if (delta <= 0) return false
+    return await Credit.add({ userId, delta, kind: 'signup', ref: `signup:${userId}` })
   },
 
   /**

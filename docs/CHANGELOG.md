@@ -12,6 +12,41 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-04
+
+### PAY-01…04 + FDB-10: a free beta — nothing sold, credits to start, ask for more, and feedback
+
+The payment provider cannot take money yet (no bank account), so the app opens as a free beta.
+- **PAY-01** `app/Services/PaymentsService.ts` (new): `payments.mode` on|off (panel setting, `PAYMENTS_MODE` env wins,
+  production defaults to off, development to on). Off: `BillingController.checkout`/`portal` refuse; `/pricing` and
+  `/billing` redirect non-admins; the header/footer Pricing link, the sidebar's Upgrade and "Unlock export", the
+  account menu's Billing, `LowCredits`' Upgrade and the plans in the out-of-credits dialog are gone
+  (`usePayments()` in `routes/__root.tsx`, state from `getAccess`). Admin → Settings → Selling flips it.
+- **PAY-04** `CreditService.limitsFor`: with payments off, projects and export are unlimited for everyone (the plan
+  stays `free`); `ShareController` brands a shared link by the plan, not by what it may do.
+- **PAY-02** setting `credits.signup` (0–1000, default 60): `CreditService.signupGrant` grants it; the landing quotes
+  it (`useSignupCredits`).
+- **PAY-03** migration `0012_beta` (`credit_requests`, `app_feedback`); `app/Services/BetaService.ts` (new);
+  `requestMoreCredits` fn; the 402 dialog becomes `RequestCredits` while nothing is sold ("What are you building?"),
+  also opened from the sidebar and the low-credits line (`askForCredits`). Admin → Beta (`routes/admin.beta.tsx`,
+  `adminBeta`, `adminAnswerCreditRequest`): grant (a ledger row with ref `credit-request:<id>`) or dismiss, logged.
+- **FDB-10** `components/Feedback.tsx` (new): `FirstAppFeedback` card on the canvas 6 s after a planned run ends
+  (asked once), `FeedbackDialog` in the root opened from the account menu's "Send feedback"; `sendFeedback`,
+  `feedbackDue` fns; listed on Admin → Beta with the average rating. Closes LCH-02.
+- `routes/privacy.tsx`: feedback and credit requests named under "What we collect".
+- `controllers.check.ts`: defaults per environment, env override, limits on/off, a second project and export while
+  off, checkout and portal refused, the admin's signup number (and an invalid one refused), one open request, a grant
+  once, a dismissal, the first-app question asked once, the feedback list and average.
+
+Verified: `npm run check`, `npx tsc --noEmit` clean. Dev server on :3100, headless Chrome. Payments off — guest: no
+Pricing link, "Free beta · 60 credits", /pricing → /; a new non-admin: "Free beta · credits 60", no Upgrade, /billing →
+/, menu = Send feedback / Help / Sign out, feedback dialog saved (4/5 + text). Drained to 0: "Request more" line and
+button; a prompt → 402 → request dialog with no price in it → row saved. Admin: Beta shows the request and the
+feedback, Grant +60 → balance 60, logged; Settings → Selling off/on/off moved /pricing 307/200 for a guest; an admin
+still opens /pricing. A real generation (claude-cli) as the test user: a second project allowed, the first-app card
+came ~6 s after 8 screens were drawn, 5/5 + text saved with the project. Test user and rows removed after.
+
 ## 2026-10-03
 
 ### Tab icons: a Sleep tab is a moon, not a second house

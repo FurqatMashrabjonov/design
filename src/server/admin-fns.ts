@@ -56,6 +56,20 @@ export const adminSetUserLimit = createServerFn({ method: 'POST' })
   })
   .handler(async ({ data }) => AdminController.setUserLimit((await requireAdmin()).id, data))
 
+/** PAY-03 / FDB-10: credit requests and feedback. */
+export const adminBeta = createServerFn({ method: 'GET' }).handler(async () => (await requireAdmin(), AdminController.beta()))
+
+export const adminAnswerCreditRequest = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const amount = o.amount === null ? null : num(o.amount)
+    if (amount !== null && (!Number.isInteger(amount) || amount <= 0 || amount > 10_000)) throw new Error('Invalid number')
+    const id = num(o.id)
+    if (!Number.isInteger(id) || id <= 0) throw new Error('Invalid id')
+    return { id, amount }
+  })
+  .handler(async ({ data }) => AdminController.answerCreditRequest((await requireAdmin()).id, data))
+
 export const adminGrantCredits = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     const o = obj(d)

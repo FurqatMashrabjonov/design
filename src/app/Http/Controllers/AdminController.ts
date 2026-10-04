@@ -18,6 +18,8 @@ import { EmailService, unsubscribeUrl, type CampaignInput } from '@/app/Services
 import { renderEmail, type EmailContent, type SystemEmail } from '@/lib/emails'
 
 import { AccessService, ACCESS_MODES } from '@/app/Services/AccessService'
+import { PaymentsService, PAYMENTS_MODES, SIGNUP_CREDITS_MAX } from '@/app/Services/PaymentsService'
+import { BetaService } from '@/app/Services/BetaService'
 // ADM-01…08. Reads go to AdminStatsService; every write is logged in admin_actions with who did
 // it. The caller (server/admin-fns.ts) has already checked that `adminId` is an admin.
 
@@ -28,6 +30,9 @@ export const ADMIN_SETTINGS = {
   'generation.paused': (v: string) => v === '1',
   // ACC-01: waitlist-only or open to everyone.
   'access.mode': (v: string) => (ACCESS_MODES as readonly string[]).includes(v),
+  // PAY-01/02: whether anything is sold, and what a new account starts with.
+  'payments.mode': (v: string) => (PAYMENTS_MODES as readonly string[]).includes(v),
+  'credits.signup': (v: string) => /^\d{1,4}$/.test(v) && Number(v) <= SIGNUP_CREDITS_MAX,
   'limits.callsPerDay': (v: string) => /^\d{1,6}$/.test(v),
   'limits.dailyBudgetUsd': (v: string) => /^\d{1,5}(\.\d{1,2})?$/.test(v),
   // LLM-07: the model each call site runs on, and the one a failed call is retried on ('' = none).
@@ -109,6 +114,17 @@ export const AdminController = {
     await Credit.add({ userId: d.userId, delta: d.amount, kind: 'admin', note: d.note || undefined })
     await AdminAction.log(adminId, 'grant-credits', target.email, `${d.amount > 0 ? '+' : ''}${d.amount}${d.note ? ` · ${d.note}` : ''}`)
   },
+  /** PAY-03 / FDB-10: the beta page — credit requests and what people said. */
+  async beta() {
+    const [requests, feedback, summary] = await Promise.all([BetaService.requests(), BetaService.feedbackList(), BetaService.feedbackSummary()])
+    return { requests, feedback, summary, signupCredits: await PaymentsService.signupCredits() }
+  },
+  /** PAY-03: an admin answers a request for more credits — a grant (a ledger row) or a dismissal, logged. */
+  async answerCreditRequest(adminId: string, d: { id: number; amount: number | null }) {
+    const r = await BetaService.answer(adminId, d.id, d.amount)
+    if (!r) throw new Error('That request was already answered')
+    await AdminAction.log(adminId, d.amount ? 'grant-credits' : 'dismiss-credit-request', r.email ?? r.userId, d.amount ? `+${d.amount} · credit request #${d.id}` : `credit request #${d.id}`)
+  },
   /** OBS-12: a stored, verified webhook run through the handler again. Ledger refs make it grant nothing twice. */
   async replayWebhook(adminId: string, id: number) {
     const w = await TelescopeService.webhook(id)
@@ -123,6 +139,7 @@ export const AdminController = {
     await Setting.set(d.key, d.value)
     if (d.key.startsWith('llm.')) clearLlmSettings() // this server reads the new model at once
     if (d.key === 'access.mode') AccessService.clear()
+    if (d.key === 'payments.mode' || d.key === 'credits.signup') PaymentsService.clear()
     await AdminAction.log(adminId, 'set-setting', d.key, d.value ?? 'default')
   },
 

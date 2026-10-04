@@ -26,6 +26,7 @@ function Privacy() {
           <li><b>Usage:</b> each AI call made for you (which model, tokens, cost, time) — this is how credits and limits work.</li>
           <li><b>Requests and errors:</b> the page or action, status and time, with a shortened, one-way hash of your IP address — never the full address, request bodies or cookies. Kept for 7 days.</li>
           <li><b>Payments:</b> Polar processes payments. We receive the order (product, amount, date), never your card.</li>
+          <li><b>Feedback and requests:</b> a rating and anything you write when you send feedback or ask for more credits, with the project it was about.</li>
           <li><b>Waitlist:</b> if you join it from a shared preview: your email, anything you wrote, and which link you came from.</li>
           <li><b>Emails we send you:</b> a record of each (address, subject, whether it was delivered).</li>
         </ul>

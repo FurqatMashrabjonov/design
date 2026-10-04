@@ -4,6 +4,16 @@
 
 Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: `Tayyor` · `Jarayonda` · `Rejada` · `Bloklangan`. Qatorlar qurish tartibida.
 
+## PAY · Bepul beta — to'lovlar o'chirilgan (2026-10-04)
+
+| ID | Vazifa | Modul / Submodul | Doira | Holat | Hajmi | Bog'liq | Tayyor mezoni |
+|---|---|---|---|---|---|---|---|
+| PAY-01 | To'lov kaliti: admin panelda Payments On \| Off. Off'da pricing, billing, upgrade va sotib olish hech kimga ko'rinmaydi, checkout serverda rad etiladi | To'lov va kreditlar | MVP | Tayyor | O'rta |  | Off'da /pricing va /billing yopiq, sotuv tugmalari yo'q, checkout rad; On'da avvalgidek |
+| PAY-02 | Boshlang'ich kreditlar admin paneldan sozlanadi (standart 60) | To'lov va kreditlar | MVP | Tayyor | Kichik |  | Yangi akkaunt admin belgilagan kreditni oladi |
+| PAY-03 | Kredit tugaganda "Ko'proq so'rash"; admin panelda so'rovlar va Grant | To'lov va kreditlar | MVP | Tayyor | O'rta | PAY-01 | 402 → so'rov dialogi; Admin → Beta'da Grant ledger'ga yozadi |
+| PAY-04 | Beta paytida Free cheklovlari yumshaydi: loyiha soni va export ochiq | To'lov va kreditlar | MVP | Tayyor | Kichik | PAY-01 | Off'da 2-loyiha va export o'tadi; On'da PLAN_LIMITS |
+| FDB-10 | Beta feedback: birinchi ilovadan keyin so'rov, Send feedback tugmasi, admin'da javoblar | Ishga tushirish / Beta | MVP | Tayyor | O'rta |  | So'rov bir marta chiqadi; javoblar Admin → Beta'da |
+
 ## ACC · Kirish rejimi — waitlist (2026-10-01, promo tugaguncha)
 
 > Notion API 2026-10-01 da xato berdi ("Cross-cell memcached"); bu qatorlar Notion'ga ko'chirilishi kerak.
@@ -432,7 +442,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | QA-02 | Yuklama sinovi: 10 ta parallel generatsiya | Sinov / Yuklama | MVP | Rejada | Kichik | LIM-02 | Kredit ikki marta yechilmaydi, server qulamaydi, xarajat kutilgancha |
 | LCH-01 | 20–50 ta tanlangan foydalanuvchi bilan yopiq beta | Ishga tushirish / Beta | MVP | Rejada | Kichik | QA-01 | Shaxsiy takliflar yuborilgan |
 | WLT-01 | Waitlist: ulashilgan preview'dan email + izoh, qaysi post olib kelgani (ref), admin'da hisob | Ishga tushirish / Beta | MVP | Tayyor | Kichik | SHR-02 | Share sahifasida forma; bir email bir marta; ko'rish va yozilish ref bo'yicha dashboard'da |
-| LCH-02 | Fikr bildirish kanali | Ishga tushirish / Beta | MVP | Rejada | Kichik |  | Ilova ichida forma yoki Telegram guruhga havola |
+| LCH-02 | Fikr bildirish kanali | Ishga tushirish / Beta | MVP | Tayyor | Kichik |  | Ilova ichida forma yoki Telegram guruhga havola |
 | LCH-03 | Beta muammolarini tuzatish, keyin ommaviy e'lon | Ishga tushirish / Ommaviy | MVP | Rejada | O'rta | LCH-01 | Betadagi to'siqlar tuzatilgan; ommaviy e'lon qilingan |
 | BRD-01 | Logo: qiyshiq telefon + Unbounded S — sayt, favicon, email, og:image, ijtimoiy tarmoq fayllari | Ishga tushirish / Sayt | MVP | Tayyor | O'rta |  | BrandMark/Wordmark har joyda bitta; favicon.svg/.ico, apple-touch-icon, og.png ishlaydi; docs/brand da avatar va X banner |
 | BRD-02 | Ijtimoiy tarmoq postlari: bitta stilda rasm + caption (skill + skript) | Ishga tushirish / Sayt | MVP | Tayyor | Kichik | BRD-01 | scripts/social-posts.ts loyihadan X/Threads (16:9) va Instagram (4:5) rasmlarini chizadi; social-posts skill ekranlarni tekshirish, tuzatish va captionlarni beradi |

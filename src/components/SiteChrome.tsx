@@ -4,7 +4,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
 import { WaitlistButton } from '@/components/Waitlist'
-import { useAccess } from '@/routes/__root'
+import { useAccess, usePayments } from '@/routes/__root'
 
 // UI-15: the public pages share the landing's header and footer. Before, only the landing had a
 // site header; pricing, playbook and the system pages had a bare "← Design" link and login had no
@@ -69,13 +69,14 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
   const examples = onLanding ? '#examples' : '/#examples'
   const access = useAccess()
+  const selling = usePayments() // PAY-01: no price list while nothing is sold
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <BrandLink />
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground sm:flex">
           <a href={examples} className={link}>Examples</a>
-          <Link to="/pricing" className={link} activeProps={{ className: 'text-foreground' }}>Pricing</Link>
+          {selling && <Link to="/pricing" className={link} activeProps={{ className: 'text-foreground' }}>Pricing</Link>}
         </nav>
         <div className="flex items-center gap-1">
           <ThemeToggle />
@@ -96,13 +97,14 @@ export function SiteHeader({ onLanding = false }: { onLanding?: boolean }) {
 
 export function SiteFooter({ onLanding = false }: { onLanding?: boolean }) {
   const home = onLanding ? '' : '/'
+  const selling = usePayments()
   return (
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row">
         <span>© {new Date().getFullYear()} {BRAND}</span>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <a href={`${home}#examples`} className={link}>Examples</a>
-          <Link to="/pricing" className={link}>Pricing</Link>
+          {selling && <Link to="/pricing" className={link}>Pricing</Link>}
           <a href={`${home}#faq`} className={link}>FAQ</a>
           <Link to="/contact" className={link}>Contact</Link>
           <Link to="/terms" className={link}>Terms</Link>

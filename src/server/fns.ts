@@ -15,6 +15,8 @@ import { Credit } from '@/app/Models/Credit'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { publicOrigin } from './guard'
 import { AccessService } from '@/app/Services/AccessService'
+import { PaymentsService } from '@/app/Services/PaymentsService'
+import { BetaService, FEEDBACK_SOURCES } from '@/app/Services/BetaService'
 import { getRequest } from '@tanstack/react-start/server'
 import { signInMethods } from '@/app/Services/AuthService'
 import { str, num, obj, oneOf, idOf } from './validate'
@@ -25,7 +27,12 @@ import { str, num, obj, oneOf, idOf } from './validate'
 export const getSession = createServerFn({ method: 'GET' }).handler(async () => ({ user: await userFrom(getRequest()), methods: signInMethods }))
 
 /** ACC-01: public — whether the site is waitlist-only, so the pages show the waitlist instead of sign-in. */
-export const getAccess = createServerFn({ method: 'GET' }).handler(async () => ({ mode: await AccessService.mode() }))
+export const getAccess = createServerFn({ method: 'GET' }).handler(async () => ({
+  mode: await AccessService.mode(),
+  // PAY-01/02: whether anything is sold (the pages hide prices and Buy when not) and the free start they may quote.
+  payments: await PaymentsService.mode(),
+  signupCredits: await PaymentsService.signupCredits(),
+}))
 
 
 // --- projects ---
@@ -66,6 +73,27 @@ export const getBilling = createServerFn({ method: 'GET' }).handler(async () => 
 export const notifyWhenPaymentsOpen = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ key: oneOf(obj(d).key, PRODUCTS.map((p) => p.key)) }))
   .handler(async ({ data }) => BillingController.notifyWhenOpen(await requireUser(), data.key))
+
+/** PAY-03: out of free credits while nothing is sold — the signed-in person asks for more, in their own words. */
+export const requestMoreCredits = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ note: str(obj(d).note ?? '', 1000).trim() || null }))
+  .handler(async ({ data }) => BetaService.requestCredits((await requireUser()).id, data.note))
+
+/** FDB-10: whether the first-app question is still owed to the signed-in person. */
+export const feedbackDue = createServerFn({ method: 'GET' }).handler(async () => ({ due: await BetaService.firstAppDue((await requireUser()).id) }))
+
+/** FDB-10: a rating (1–5) and a few words, or neither (the prompt was closed). A project named must be the caller's. */
+export const sendFeedback = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    const o = obj(d)
+    const rating = o.rating === undefined || o.rating === null ? null : num(o.rating)
+    if (rating !== null && (!Number.isInteger(rating) || rating < 1 || rating > 5)) throw new Error('Invalid rating')
+    return { source: oneOf(o.source, FEEDBACK_SOURCES), rating, text: str(o.text ?? '', 2000).trim() || null, projectId: o.projectId === undefined || o.projectId === null ? null : idOf(o.projectId) }
+  })
+  .handler(async ({ data }) => {
+    const user = data.projectId ? (await requireProject(data.projectId)).user : await requireUser()
+    return BetaService.feedback(user.id, data)
+  })
 
 /** BIL-11: the provider's billing portal for the signed-in user. */
 export const openBillingPortal = createServerFn({ method: 'POST' }).handler(async () => BillingController.portal((await requireUser()).id, publicOrigin(getRequest())))

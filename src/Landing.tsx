@@ -4,8 +4,8 @@ import { Download, Layers, MousePointerClick, Plus, Smartphone, Sparkles } from 
 import { PromptBox } from './PromptBox'
 import { BRAND, Em, Eyebrow, SiteFooter, SiteHeader } from '@/components/SiteChrome'
 import { WaitlistDialog } from '@/components/Waitlist'
-import { useAccess } from '@/routes/__root'
-import { SIGNUP_CREDITS, appsFor } from '@/lib/credit-prices'
+import { useAccess, usePayments, useSignupCredits } from '@/routes/__root'
+import { appsFor } from '@/lib/credit-prices'
 import { EXAMPLES } from '@/content/examples'
 import { ExampleGallery } from '@/components/ExampleGallery'
 
@@ -76,6 +76,8 @@ function HeroPrompt({ big = false }: { big?: boolean }) {
 
 export function Landing() {
   const access = useAccess()
+  const selling = usePayments()
+  const signupCredits = useSignupCredits() // PAY-02: the admin's number, not a constant
   return (
     <div className="min-h-screen overflow-x-clip bg-background text-foreground">
       <SiteHeader onLanding />
@@ -85,7 +87,7 @@ export function Landing() {
         <div className="pointer-events-none absolute inset-0 -z-0 [background-image:radial-gradient(var(--canvas-dot)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
         <div className="relative mx-auto max-w-3xl px-4 pt-16 pb-16 text-center sm:pt-24 sm:pb-20">
           <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
-            <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · letting people in a few at a time' : `${SIGNUP_CREDITS} free credits · no card needed`}
+            <Sparkles className="size-3.5" /> {access === 'waitlist' ? 'Early access · letting people in a few at a time' : selling ? `${signupCredits} free credits · no card needed` : `Free beta · ${signupCredits} credits to start, no card`}
           </span>
           <h1 className="text-4xl text-balance sm:text-6xl">
             Your app idea, <br /><Em>designed</Em> in a minute.
@@ -175,7 +177,9 @@ export function Landing() {
             ['Is it a finished app?', 'No. It is the design and a clickable prototype, with sample data and no backend: a strong starting point for whoever builds it.'],
             access === 'waitlist'
               ? ['When can I try it?', 'We are letting people in a few at a time. Join the waitlist and tell us what you would prototype — it helps us decide who goes first.']
-              : ['Is it free?', `You start with ${SIGNUP_CREDITS} free credits — enough for ${appsFor(SIGNUP_CREDITS)} prototypes — no card needed. Plans add monthly credits and more projects.`],
+              : ['Is it free?', selling
+                  ? `You start with ${signupCredits} free credits — enough for ${appsFor(signupCredits)} prototypes — no card needed. Plans add monthly credits and more projects.`
+                  : `Yes — it is a free beta. You start with ${signupCredits} credits, enough for ${appsFor(signupCredits)} prototypes, with no card. If you run out, ask for more from inside the app.`],
             ['Who owns what I make?', 'You do. Your projects are private to your account until you share a link. You can delete them at any time, and we delete your account when you ask.'],
           ].map(([q, a]) => (
             <details key={q} className="group px-5 py-4 [&_summary::-webkit-details-marker]:hidden">

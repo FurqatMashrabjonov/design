@@ -14,9 +14,10 @@ import { buy, manageBilling } from '../credits'
 // provider's portal for cards and invoices, and the last credit movements. Account → Billing opens it.
 
 export const Route = createFileRoute('/billing')({
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async ({ location, context }) => {
     const { user } = await getSession()
     if (!user) throw redirect({ to: '/login', search: { next: location.href } })
+    if (context.payments !== 'on' && !user.admin) throw redirect({ to: '/' }) // PAY-01: nothing is sold yet
     return { user } // the account menu reads it from the route context
   },
   loader: () => getBilling(),

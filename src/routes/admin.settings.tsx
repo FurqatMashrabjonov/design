@@ -13,7 +13,7 @@ export const Route = createFileRoute('/admin/settings')({
   component: ControlsPage,
 })
 
-type Key = 'generation.paused' | 'limits.callsPerDay' | 'limits.dailyBudgetUsd' | 'access.mode'
+type Key = 'generation.paused' | 'limits.callsPerDay' | 'limits.dailyBudgetUsd' | 'access.mode' | 'payments.mode' | 'credits.signup'
 
 function ControlsPage() {
   const d = Route.useLoaderData()
@@ -21,6 +21,7 @@ function ControlsPage() {
   const saved = (k: Key) => d.settings.find((s) => s.key === k)?.value ?? null
   const [calls, setCalls] = useState(saved('limits.callsPerDay') ?? '')
   const [budget, setBudget] = useState(saved('limits.dailyBudgetUsd') ?? '')
+  const [signup, setSignup] = useState(saved('credits.signup') ?? '')
 
   async function set(key: Key, value: string | null, label: string) {
     try {
@@ -52,6 +53,27 @@ function ControlsPage() {
               {d.access.mode === 'waitlist' ? 'Open to everyone' : 'Back to waitlist only'}
             </Button>
           )}
+        </Panel>
+        {/* PAY-01/02: whether anything is sold, and the free start. Off is the beta: no prices anywhere, no plan limits. */}
+        <Panel title="Selling">
+          <p className="text-sm">{d.selling.mode === 'on' ? <Badge tone="good">Payments on</Badge> : <Badge tone="warn">Payments off · free beta</Badge>}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {d.selling.env
+              ? `Set by PAYMENTS_MODE=${d.selling.env} in the server environment — change it there.`
+              : d.selling.mode === 'on'
+                ? 'Pricing, billing and upgrade are shown; Free is limited to 1 project and 3 exports.'
+                : 'No pricing, billing or upgrade anywhere; checkout is refused. Projects and export are unlimited — the free credits are the only limit, and people out of credits ask for more (Beta page).'}
+          </p>
+          {!d.selling.env && (
+            <Button className="mt-3 w-full" variant="outline" onClick={() => set('payments.mode', d.selling.mode === 'on' ? 'off' : 'on', d.selling.mode === 'on' ? 'Payments off — free beta' : 'Payments on')}>
+              {d.selling.mode === 'on' ? 'Turn payments off' : 'Turn payments on'}
+            </Button>
+          )}
+          <p className="mt-4 text-xs text-muted-foreground">Free credits for a new account: <span className="font-medium text-foreground tabular-nums">{d.selling.signupCredits}</span> ({saved('credits.signup') ? 'set here' : 'default'}). An app is 15.</p>
+          <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); set('credits.signup', signup.trim() || null, signup.trim() ? `New accounts start with ${signup.trim()} credits` : 'Signup credits back to default') }}>
+            <Input inputMode="numeric" value={signup} onChange={(e) => setSignup(e.target.value)} placeholder="default" aria-label="Free credits for a new account" className="h-9" />
+            <Button type="submit" variant="outline">Save</Button>
+          </form>
         </Panel>
         <Panel title="Generation">
           <p className="text-sm">{paused ? <Badge tone="bad">Paused</Badge> : <Badge tone="good">Running</Badge>}</p>

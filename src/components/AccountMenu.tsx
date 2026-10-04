@@ -1,5 +1,7 @@
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { CreditCard, LifeBuoy, LogOut, Shield } from 'lucide-react'
+import { CreditCard, LifeBuoy, LogOut, MessageSquare, Shield } from 'lucide-react'
+import { usePayments } from '@/routes/__root'
+import { openFeedback } from '@/components/Feedback'
 import { authClient } from '@/lib/auth-client'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
@@ -8,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 export function AccountMenu() {
   const { user } = useRouteContext({ strict: false }) as { user?: { name: string; email: string; image?: string | null; admin?: boolean } }
   const navigate = useNavigate()
+  const selling = usePayments() // PAY-01: no billing page while nothing is sold
   if (!user) return null
   const initials = (user.name || user.email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join('')
 
@@ -35,8 +38,14 @@ export function AccountMenu() {
             </DropdownMenuItem>
           )}
           {/* BIL-21: the billing page (plan, credits, upgrade); the provider's portal is one button there. */}
-          <DropdownMenuItem onSelect={() => navigate({ to: '/billing' })}>
-            <CreditCard /> Billing
+          {selling && (
+            <DropdownMenuItem onSelect={() => navigate({ to: '/billing' })}>
+              <CreditCard /> Billing
+            </DropdownMenuItem>
+          )}
+          {/* FDB-10: say what you think, any time. */}
+          <DropdownMenuItem onSelect={() => openFeedback()}>
+            <MessageSquare /> Send feedback
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => navigate({ to: '/contact' })}>
             <LifeBuoy /> Help & support

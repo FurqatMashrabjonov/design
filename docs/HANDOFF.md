@@ -3,6 +3,21 @@
 > Yozilgan: 2026-09-21, yangilangan 2026-10-02. Eng yangi ish: **`konsta`** branch. **Boshlash: §00000 — billing tayyor, PRC-05 qaror kutmoqda.**
 > (Eskisi: `canvas-planner` branch — HTML davri.) Bu fayl — qayerda to'xtaganimiz, nima ochiq, qanday davom etish. Rejaning o'zi Notion'da ("Vazifalar" bazasi); bu yerda faqat holat. **Ertaga boshlash: §00 — Konsta UI + JSX (KON-01 sinovi).**
 
+## 000000. ENG SO'NGGI (2026-10-04): bepul beta — to'lovlar o'chirilgan, feedback — branch `konsta`
+
+- **PAY-01…04:** Admin → Settings → **Selling**: Payments on/off (prod'da standart **off**). Off'da pricing/billing/
+  upgrade hech kimga ko'rinmaydi, checkout rad etiladi, loyiha soni va export cheklanmaydi; yagona chegara — kreditlar.
+  Yangi akkaunt `credits.signup` (standart 60 = 4 ilova) oladi. Kredit tugasa "Request more credits" → Admin → **Beta**
+  sahifasida Grant/Dismiss. Migratsiya **0012_beta**.
+- **FDB-10:** birinchi ilovadan keyin canvas'da feedback kartasi (bir marta), account menyusida "Send feedback";
+  javoblar Admin → Beta'da.
+- **Ishga tushirish:** deploy'dan keyin Admin → Settings → Access → **Open to everyone**. Bank hisobi ochilgach
+  Selling → Payments on (Polar qadamlar pastdagi §00000'da).
+- **Ochiq:** Grant bosilganda foydalanuvchiga email ketmaydi; ACC-06 (bittalab invite) `Keyin`da; LCH-02 Notion'da
+  yopilmagan (FDB-10 uni qoplaydi); jarayon videosini egasi o'zi yozadi (SaffronHop: screenspell.app/s/BgVUuMtQnxQ).
+- Commit qilinmagan lokal fayllar (shu laptopda): `docs/brand/posts/stillora/`, `eval/photo-cache.json`,
+  `docs/brand/videos/saffronhop-process-*.mp4` (yaroqsiz qoralama).
+
 ## 00000. ENG SO'NGGI (2026-10-02): billing va pricing — branch `konsta`
 
 **Tayyor (hammasi push qilingan, oxirgi commit `feat(pricing): PRC-04`):**

@@ -8,6 +8,7 @@ import { Waitlist } from '@/app/Models/Waitlist'
 import { SecretService } from '@/app/Services/SecretService'
 import { TelescopeService } from '@/app/Services/TelescopeService'
 import { verify } from '@/lib/standard-webhooks'
+import { PaymentsService, PAYMENTS_OFF } from '@/app/Services/PaymentsService'
 
 // BIL-09/10/11. Checkout and the portal are the provider's pages; what they cause arrives as webhooks,
 // already verified by the route. Every grant carries a ref from the provider's own ids, so an event
@@ -38,6 +39,8 @@ export const BillingController = {
   async checkout(user: { id: string; email: string }, key: ProductKey, origin: string) {
     const product = productOf(key)
     if (!product) throw new Error('Unknown product')
+    // PAY-01: while nothing is sold no checkout opens, whatever page or script asks.
+    if (!(await PaymentsService.on())) throw new Error(PAYMENTS_OFF)
     if (!product.plan && !await Subscription.activeFor(user.id)) throw new Error('Credit packs are for Starter and Pro subscribers')
     // BIL-25: until the provider takes payments (an account under review, no token, a product missing) a checkout
     // fails; the person is told plainly and may ask to hear when it opens. The provider's reply stays in the log.
@@ -78,6 +81,7 @@ export const BillingController = {
   },
 
   async portal(userId: string, origin: string) {
+    if (!(await PaymentsService.on())) throw new Error(PAYMENTS_OFF)
     return { url: await PolarService.portal(userId, `${origin}/`) }
   },
 

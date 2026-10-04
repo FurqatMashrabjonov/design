@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { createFileRoute, Link, notFound, Outlet, useRouterState } from '@tanstack/react-router'
-import { Activity, ArrowLeft, ArrowUpRight, Bug, ChevronDown, Coins, Cpu, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users, Webhook, Mail } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, Bug, ChevronDown, Coins, Cpu, Gauge, Globe, PanelLeftClose, PanelLeftOpen, ScrollText, SlidersHorizontal, Users, Webhook, Mail, MessageSquare } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { adminCheck } from '../server/admin-fns'
 import { CommandPalette, CommandTrigger } from '../admin/CommandPalette'
@@ -31,6 +31,7 @@ const GROUPS = [
       { to: '/admin', label: 'Dashboard', icon: Gauge, exact: true },
       { to: '/admin/users', label: 'Users', icon: Users },
       { to: '/admin/credits', label: 'Credits & revenue', icon: Coins },
+      { to: '/admin/beta', label: 'Beta', icon: MessageSquare },
       { to: '/admin/email', label: 'Email', icon: Mail },
     ],
   },

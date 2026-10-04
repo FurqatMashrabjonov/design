@@ -10,12 +10,13 @@ import m0008 from './migrations/0008_share_and_waitlist.ts'
 import m0009 from './migrations/0009_email.ts'
 import m0010 from './migrations/0010_screen_shots.ts'
 import m0011 from './migrations/0011_export_uses.ts'
+import m0012 from './migrations/0012_beta.ts'
 
 // INF-10: numbered migrations, each run at most once ever and tracked in _migrations, each in its own
 // transaction — a migration that fails leaves the database as it was. A new one is a new file here.
 export type Migration = { name: string; up: string }
 
-const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011]
+const migrations: Migration[] = [m0001, m0002, m0003, m0004, m0005, m0006, m0007, m0008, m0009, m0010, m0011, m0012]
 
 export async function migrate(pool: Pool) {
   await pool.query('CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, run_at BIGINT NOT NULL DEFAULT extract(epoch from now())::bigint)')

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Coins } from 'lucide-react'
 import { toast } from 'sonner'
-import { getCredits, notifyWhenPaymentsOpen, openBillingPortal, startCheckout } from './server/fns'
+import { getCredits, notifyWhenPaymentsOpen, openBillingPortal, requestMoreCredits, startCheckout } from './server/fns'
+import { usePayments } from './routes/__root'
+import { Textarea } from '@/components/ui/textarea'
 import { appsFor, CREDIT_PRICES, FREE_EXPORTS, PACKS, PAYMENTS_CLOSED, PLAN_LIMIT_ERROR, PLANS, screensFor, type ProductKey } from './lib/credit-prices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -154,9 +156,17 @@ export function CreditsBadge() {
   )
 }
 
-/** BIL-24: a line above a composer once the balance cannot pay for a whole app — before a 402 says so. */
+/** PAY-03: opens the dialog a refused generation opens, from a link — to ask for more credits before a 402. */
+export const askForCredits = (balance: number) => {
+  const p = CREDIT_PRICES['deepseek-flash']!
+  window.dispatchEvent(new CustomEvent(OUT, { detail: new OutOfCredits(p.plan + p.draw, balance) }))
+}
+
+/** BIL-24: a line above a composer once the balance cannot pay for a whole app — before a 402 says so. While
+ *  nothing is sold (PAY-01) its action asks for more credits instead of selling a plan. */
 export function LowCredits() {
   const c = useCredits()
+  const selling = usePayments()
   if (!c) return null
   const p = CREDIT_PRICES['deepseek-flash']!
   if (c.balance >= p.plan + p.draw) return null
@@ -167,15 +177,63 @@ export function LowCredits() {
       <span className="text-muted-foreground">
         {c.balance <= 0 ? 'You’re out of credits.' : `${c.balance} credit${c.balance === 1 ? '' : 's'} left — ${screensFor(c.balance)} screen${screensFor(c.balance) === 1 ? '' : 's'}, not a whole app.`}
       </span>
-      <a href={c.plan ? '/billing' : '/billing#plans'} className="ml-auto shrink-0 font-medium text-foreground underline-offset-2 hover:underline">{action}</a>
+      {selling ? (
+        <a href={c.plan ? '/billing' : '/billing#plans'} className="ml-auto shrink-0 font-medium text-foreground underline-offset-2 hover:underline">{action}</a>
+      ) : (
+        <button type="button" onClick={() => askForCredits(c.balance)} className="ml-auto shrink-0 font-medium text-foreground underline-offset-2 hover:underline">Request more</button>
+      )}
     </div>
+  )
+}
+
+/** PAY-03: while nothing is sold, out of credits is not a dead end and not a price list — the person says what they
+ *  are building and asks for more; an admin answers from the panel. */
+function RequestCredits({ out, onClose }: { out: OutOfCredits; onClose: () => void }) {
+  const [note, setNote] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle')
+  async function send(e: React.FormEvent) {
+    e.preventDefault()
+    setState('sending')
+    try {
+      await requestMoreCredits({ data: { note } })
+      setState('sent')
+    } catch {
+      setState('idle')
+      toast.error('Could not send that — try again in a moment.')
+    }
+  }
+  if (state === 'sent')
+    return (
+      <>
+        <DialogHeader>
+          <DialogTitle>Request sent</DialogTitle>
+          <DialogDescription>We read every one. Your credits will show up in your balance once we add them — usually within a day.</DialogDescription>
+        </DialogHeader>
+        <Button variant="outline" onClick={onClose}>Close</Button>
+      </>
+    )
+  return (
+    <form onSubmit={send} className="grid gap-4">
+      <DialogHeader>
+        <DialogTitle>{out.balance > 0 ? 'Not enough credits for that' : 'You’ve used your free credits'}</DialogTitle>
+        <DialogDescription>
+          {out.message} Nothing was charged. Screenspell is free during the beta — tell us what you’re building and we’ll top you up.
+        </DialogDescription>
+      </DialogHeader>
+      <label className="grid gap-1.5 text-sm font-medium">
+        <span>What are you building? <span className="font-normal text-muted-foreground">(optional)</span></span>
+        <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} rows={3} placeholder="A sentence about your app, or what you’d do with more credits" />
+      </label>
+      <Button type="submit" disabled={state === 'sending'}>{state === 'sending' ? 'Sending…' : 'Request more credits'}</Button>
+    </form>
   )
 }
 
 /** Mounted once (root): opens when a generation is refused for credits. */
 export function CreditsDialog() {
   const [why, setWhy] = useState<OutOfCredits | Limit | null>(null)
-  const plan = useCredits(undefined, why !== null)?.plan
+  const selling = usePayments()
+  const plan = useCredits(undefined, why !== null && selling)?.plan
   useEffect(() => {
     const on = (e: Event) => setWhy((e as CustomEvent<OutOfCredits | Limit>).detail)
     window.addEventListener(OUT, on)
@@ -199,6 +257,15 @@ export function CreditsDialog() {
   // BIL-23: monthly or yearly, as on /pricing and /billing.
   const [yearly, setYearly] = useState(false)
   const save = Math.max(...PLANS.map((x) => Math.floor((1 - x.yearly / x.monthly) * 100)))
+  // PAY-03: nothing is sold — out of credits asks for more instead of offering a plan.
+  if (!selling && out)
+    return (
+      <Dialog open onOpenChange={(o) => !o && setWhy(null)}>
+        <DialogContent className="sm:max-w-md">
+          <RequestCredits key={`${out.needed}:${out.balance}`} out={out} onClose={() => setWhy(null)} />
+        </DialogContent>
+      </Dialog>
+    )
   return (
     <Dialog open={why !== null} onOpenChange={(o) => !o && setWhy(null)}>
       <DialogContent className="sm:max-w-lg">
