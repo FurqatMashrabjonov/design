@@ -11,7 +11,7 @@ import { WaitlistButton } from '@/components/Waitlist'
 import { WAITLIST_ONLY } from '@/lib/access'
 import { useAccess } from './__root'
 
-// AUTH-05: one page, two ways in — Google, or a link sent to your email. No passwords.
+// AUTH-05: one page, two ways in — Google, or a link sent to your email (AUTH-10: when it is switched on). No passwords.
 export const Route = createFileRoute('/login')({
   // `error` is set by Better Auth when it refuses a sign-in (ACC-02: waitlist-only) and sends the person back here.
   validateSearch: (s: Record<string, unknown>): { next?: string; error?: string } => ({
@@ -93,25 +93,27 @@ function Login() {
         ) : (
           <div className="space-y-4">
             {methods.google && (
-              <Button variant="outline" size="lg" className="w-full bg-card" onClick={google} disabled={busy !== null}>
+              <Button variant={methods.magicLink ? 'outline' : 'default'} size="lg" className={methods.magicLink ? 'w-full bg-card' : 'w-full font-semibold'} onClick={google} disabled={busy !== null}>
                 {busy === 'google' ? <Loader2 className="size-4 animate-spin" /> : <GoogleMark />}
                 Continue with Google
               </Button>
             )}
-            {methods.google && (
+            {/* AUTH-10: the email link is a switch (off in production for now); with it off, Google is the one way in. */}
+            {methods.google && methods.magicLink && (
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="h-px flex-1 bg-border" />
                 or
                 <span className="h-px flex-1 bg-border" />
               </div>
             )}
-            <form onSubmit={emailLink} className="space-y-2">
+            {methods.magicLink && <form onSubmit={emailLink} className="space-y-2">
               <Input type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 bg-card" aria-label="Email" />
               <Button type="submit" size="lg" className="w-full font-semibold" disabled={busy !== null}>
                 {busy === 'email' && <Loader2 className="size-4 animate-spin" />}
                 Email me a sign-in link
               </Button>
-            </form>
+            </form>}
+            {!methods.google && !methods.magicLink && <p className="text-center text-sm text-muted-foreground">Sign-in is not available right now.</p>}
             {error && <p className="text-center text-sm text-destructive">{error}</p>}
           </div>
         )}

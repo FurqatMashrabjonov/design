@@ -13,6 +13,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+
+## 2026-10-04 (2)
+
+### AUTH-10: the email sign-in link is a switch, off in production for now — Google only
+
+- `app/Services/AuthService.ts`: `magicLinkOn()` — `MAGIC_LINK=1|0` in the environment, else on in development (the
+  link is only logged there, and the tools sign in with it) and off in production; `sendMagicLink` refuses when off
+  (no link is made, even for an admin); `signInMethods()` reports it.
+- `routes/login.tsx`: with it off the email form and the "or" are gone and Google is the filled primary button.
+- `controllers.check.ts`: on in development, off in production, `MAGIC_LINK=1` on again, refused on the server when off.
+
+Verified: `npm run check`, `npx tsc --noEmit` clean. Dev server with `MAGIC_LINK=0`, headless Chrome: /login shows
+only "Continue with Google"; the magic-link endpoint answers "Sign in with Google". Default dev: both ways shown.
+
 ## 2026-10-04
 
 ### PAY-01…04 + FDB-10: a free beta — nothing sold, credits to start, ask for more, and feedback

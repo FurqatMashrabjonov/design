@@ -63,6 +63,8 @@ export const auth = betterAuth({
       expiresIn: 15 * 60,
       // EML-01: sent through Resend; with no key, development logs it and production refuses (EmailService).
       sendMagicLink: async ({ email, url }) => {
+        // AUTH-10: switched off — refused here too, not only hidden on the login page.
+        if (!magicLinkOn()) throw new APIError('FORBIDDEN', { message: 'Sign in with Google' })
         // ACC-02: no link is mailed that would only be refused when it is opened.
         if (!(await AccessService.allows(isAdmin({ email })))) throw new APIError('FORBIDDEN', { message: WAITLIST_ONLY })
         if (process.env.NODE_ENV !== 'production') devMail.lastLink = { email, url }
@@ -83,4 +85,10 @@ export function isAdmin(u: { email: string; role?: string | null }): boolean {
 }
 export const adminEmails = () => (process.env.ADMIN_EMAILS ?? '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
 
-export const signInMethods = { google: Boolean(google), magicLink: true }
+/**
+ * AUTH-10: the email sign-in link is off in production for now (the owner's call, 2026-10-04: Google only while the
+ * beta opens) and on in development, where the link is only printed to the log and the tools sign in with it.
+ * `MAGIC_LINK=1` turns it back on (also the way in if Google sign-in ever breaks), `MAGIC_LINK=0` off anywhere.
+ */
+export const magicLinkOn = () => (process.env.MAGIC_LINK === '1' ? true : process.env.MAGIC_LINK === '0' ? false : process.env.NODE_ENV !== 'production')
+export const signInMethods = () => ({ google: Boolean(google), magicLink: magicLinkOn() })

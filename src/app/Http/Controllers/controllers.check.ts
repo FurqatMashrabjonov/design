@@ -1653,6 +1653,18 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   await assert.rejects(ctx.internalAdapter.createSession((await ctx.internalAdapter.findUserByEmail('early@acc.test'))!.user.id), /invite-only/, 'no session is made for an old account')
   const owner = await signIn('owner@acc.test')
   assert.equal((await userFrom(owner))?.admin, true, 'an admin signs in while waitlist-only')
+  // AUTH-10: the email link is a switch — off in production unless MAGIC_LINK=1; when off the server refuses too.
+  const { magicLinkOn, signInMethods } = await import('../../Services/AuthService.ts')
+  assert.equal(magicLinkOn(), true, 'development keeps the email link (it is only logged)')
+  process.env.NODE_ENV = 'production'
+  assert.equal(signInMethods().magicLink, false, 'production: Google only')
+  process.env.MAGIC_LINK = '1'
+  assert.equal(magicLinkOn(), true, 'MAGIC_LINK=1 turns it back on')
+  delete process.env.MAGIC_LINK
+  process.env.NODE_ENV = 'development'
+  process.env.MAGIC_LINK = '0'
+  await assert.rejects(auth.api.signInMagicLink({ body: { email: 'owner@acc.test', callbackURL: '/' }, headers: new Headers() }), /Sign in with Google/, 'switched off: no link is made, even for an admin')
+  delete process.env.MAGIC_LINK
 
   process.env.ACCESS_MODE = 'open'
   assert.equal((await userFrom(early))?.email, 'early@acc.test', 'ACCESS_MODE in the environment wins over the panel')

@@ -24,7 +24,7 @@ import { str, num, obj, oneOf, idOf } from './validate'
 // --- account ---
 
 /** The signed-in user (or null) and how one can sign in — for the login page and the account menu. */
-export const getSession = createServerFn({ method: 'GET' }).handler(async () => ({ user: await userFrom(getRequest()), methods: signInMethods }))
+export const getSession = createServerFn({ method: 'GET' }).handler(async () => ({ user: await userFrom(getRequest()), methods: signInMethods() }))
 
 /** ACC-01: public — whether the site is waitlist-only, so the pages show the waitlist instead of sign-in. */
 export const getAccess = createServerFn({ method: 'GET' }).handler(async () => ({

@@ -13,6 +13,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | PAY-03 | Kredit tugaganda "Ko'proq so'rash"; admin panelda so'rovlar va Grant | To'lov va kreditlar | MVP | Tayyor | O'rta | PAY-01 | 402 → so'rov dialogi; Admin → Beta'da Grant ledger'ga yozadi |
 | PAY-04 | Beta paytida Free cheklovlari yumshaydi: loyiha soni va export ochiq | To'lov va kreditlar | MVP | Tayyor | Kichik | PAY-01 | Off'da 2-loyiha va export o'tadi; On'da PLAN_LIMITS |
 | FDB-10 | Beta feedback: birinchi ilovadan keyin so'rov, Send feedback tugmasi, admin'da javoblar | Ishga tushirish / Beta | MVP | Tayyor | O'rta |  | So'rov bir marta chiqadi; javoblar Admin → Beta'da |
+| AUTH-10 | Email orqali kirish havolasi kalit bilan: production'da hozircha o'chiq, faqat Google; `MAGIC_LINK=1` yoqadi | Kirish va hisoblar | MVP | Tayyor | Kichik |  | Login'da faqat Google; server ham havola yubormaydi |
 
 ## ACC · Kirish rejimi — waitlist (2026-10-01, promo tugaguncha)
 
