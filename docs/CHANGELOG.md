@@ -106,6 +106,24 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (9)
+
+### PAL-03 — Editorial on warm paper; the eval finally shows each app in its own style
+
+- Editorial's surfaces: page `#faf7f1`, cards `#fffdf9`, second card `#f3efe7`, line `#e6e0d5`; in dark a warm
+  near-black (`#0e0d0b` / `#181613`) instead of pure black — the 2026 "elevated neutrals" in research, and the
+  magazine look the style is named after. Soft was already warm sand; Clean stays iOS grey on purpose.
+- **An eval bug found on the way:** `eval/run.ts` built each page's look from the plan's accent and tabs only, so
+  every app was shot on Clean's surfaces and fonts, and a Midnight app in light mode — the five styles (THM-01) were
+  never what the judge saw. The look now carries `style`, and Midnight starts dark, as in the studio. Runs before this
+  are not comparable on surfaces and fonts.
+- Measured without a model call: pal03's three Editorial apps re-shot on the old white (pal03w) and on the new paper
+  (pal04): judge **3 won, 0 lost** (the other five apps unchanged, tied) — "the warm cream lets the white cards stand
+  out as separate groups; on white the cards disappear and the screens look flat". Rubric 3.13 → 3.21.
+- Files: `runtime/kit/styles.js`, `eval/run.ts`, `CLAUDE.md`.
+- Verified: the shots' background pixels (255,255,255 → 250,247,241); `npx tsc --noEmit` and `npm run check` clean
+  (every style's page and cards keep ≥ 7:1 with the label colour, light and dark).
+
 ## 2026-10-05 (8)
 
 ### PAL-02 — an app's colours are a family of four at most, not a rainbow

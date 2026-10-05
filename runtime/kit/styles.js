@@ -14,7 +14,8 @@ const TOKENS = {
   midnight: { radius: 18, light: { page: '#f4f4f5', card: '#ffffff', card2: '#f7f7f8', line: '#e4e4e7' }, dark: { page: '#0a0a0b', card: '#161618', card2: '#1f1f22', line: '#2a2a2e' } },
   vivid: { radius: 24, tinted: true, body: ROUNDED, display: ROUNDED, light: { card: '#ffffff', card2: '#fbfbfb', line: '#ececec' }, dark: { page: '#111111', card: '#1d1d1f', card2: '#262628', line: '#303033' } },
   soft: { radius: 22, body: ROUNDED, display: ROUNDED, light: { page: '#f7f2ea', card: '#fffcf7', card2: '#f1ebe2', line: '#e8dfd3' }, dark: { page: '#181512', card: '#23201c', card2: '#2b2723', line: '#3a342e' } },
-  editorial: { radius: 10, display: SERIF, light: { page: '#ffffff', card: '#ffffff', card2: '#f6f6f6', line: '#e7e7e7' }, dark: { page: '#000000', card: '#0f0f0f', card2: '#171717', line: '#262626' } },
+  // PAL-03: Editorial on warm paper, not white and pure black (the 2026 "elevated neutrals"; a magazine is printed on cream).
+  editorial: { radius: 10, display: SERIF, light: { page: '#faf7f1', card: '#fffdf9', card2: '#f3efe7', line: '#e6e0d5' }, dark: { page: '#0e0d0b', card: '#181613', card2: '#201e1a', line: '#2f2c27' } },
 }
 
 export const parseStyle = (s) => (STYLES.includes(s) ? s : 'clean')
