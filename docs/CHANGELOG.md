@@ -106,6 +106,27 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (4)
+
+### LNT-01 — the generated code is never rewritten by our code; the lint tells the model instead
+
+- The owner's rule: correct the model before and while it writes, never edit its output afterwards. `lintJsx` takes
+  `{ apply: false }`: the source is returned as written, and every one-right-answer fix (extra chevron, white text on
+  a wash or a Hero, px-4 on a Block, bg-white, a BlockTitle with nothing under it, text under 11px, a full-width icon
+  button) becomes a finding with the exact fix in words (`AS_FINDING`). `drawScreen` logs them and sends them, with the
+  render check's findings, into the one repair rewrite (KON-13), which is kept only if fewer problems are left. The
+  eval's `hig` counts them on the stored source.
+- The kit takes what a model writes: `MonthCalendar` and `WeekStrip` accept a Date, 'YYYY-MM-DD' or a timestamp for
+  every date prop and in `marks` (`asDate`). In lnt01 a screen passed strings to the calendar and crashed.
+- Eval (GPT-6 Luna, 8 briefs) against blk03: judge **4 won, 2 tied, 2 lost** (the noise run was 3–1–4); rubric 3.11 →
+  3.08; output tokens per screen 1 624 → 2 274 (+40%, more repairs run); seconds per app 50.5 → 56.3; screens with a
+  problem left 3% → 11% (the BlockTitle gap, fixed for free before, is now fixed only when the repair is kept); one
+  crash, from the calendar, fixed in the kit since.
+- Files: `src/lib/jsx-lint.ts`, `src/app/Http/Controllers/PlanController.ts`, `runtime/kit/blocks.jsx`,
+  `eval/metrics.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (with `apply: false` the source is unchanged and each fix is a finding with an instruction);
+  `npx tsc --noEmit` and `npm run check` clean; the crashed screen renders with the fixed kit.
+
 ## 2026-10-05 (3)
 
 ### KIT-21 — the kit's blocks are offered one screen at a time, by the screen's name

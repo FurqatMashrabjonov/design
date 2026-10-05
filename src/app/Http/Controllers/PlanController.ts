@@ -23,11 +23,12 @@ import type { RefImage } from '@/app/Services/LlmService'
 // The run is not tied to the response: if the page goes away the events stop, the drawing does not; only
 // Stop (PlanRuns.stop) ends it. `onFinish` is called when the run is really over.
 
-/** HIG-10: the lint's one-right-answer fixes applied, its findings logged (Telescope keeps them). */
+/** HIG-10: the lint's findings logged (Telescope keeps them). The source is kept as the model wrote it (OVL-01, the
+ *  owner's rule): what the lint used to fix is a finding now, and the one repair below asks the model to fix it. */
 function linted(jsx: string): string {
-  const r = lintJsx(jsx)
-  if (r.fixed.length || r.findings.length) console.warn(`[jsx-lint] fixed ${r.fixed.length}: ${r.fixed.join('; ') || '—'} · found ${r.findings.length}: ${r.findings.map((f) => f.rule).join(', ') || '—'}`)
-  return r.source
+  const r = lintJsx(jsx, { apply: false })
+  if (r.findings.length) console.warn(`[jsx-lint] found ${r.findings.length}: ${r.findings.map((f) => f.rule).join(', ')}`)
+  return jsx
 }
 
 /** What the render audit found on a screen and what was left after its one repair (KON-13). */
@@ -53,7 +54,7 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
   if (audit && repairOn() && !signal.aborted) {
     const check = async (src: string) => {
       const render = (await auditScreen(src, audit.look, audit.slug, signal)) ?? []
-      const lint = lintJsx(src).findings
+      const lint = lintJsx(src, { apply: false }).findings
       return { render, lint, count: render.length + lint.length }
     }
     const found = await check(jsx)

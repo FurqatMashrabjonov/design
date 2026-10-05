@@ -12,6 +12,14 @@ const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 
 const startOfWeek = (d) => addDays(d, -((d.getDay() + 6) % 7)) // Monday first
 const sameDay = (a, b) => !!a && !!b && ymd(a) === ymd(b)
 const dayOnly = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
+// A screen may pass a Date, 'YYYY-MM-DD' or a timestamp (one passed strings and the calendar crashed); every
+// date prop goes through this, and a value that is not a date is no date.
+const asDate = (v) => {
+  if (v instanceof Date) return isNaN(v) ? null : v
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) { const [y, m, d] = v.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d) }
+  if (typeof v === 'number' || typeof v === 'string') { const d = new Date(v); return isNaN(d) ? null : d }
+  return null
+}
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const monthLabel = (d) => d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -32,10 +40,12 @@ function Disc({ on }) {
 
 // ── WeekStrip ────────────────────────────────────────────────────────────────
 // value: Date · onChange(Date) · today: Date · marks: 'YYYY-MM-DD'[] (days with something on them)
-export function WeekStrip({ value, onChange, today = new Date(), marks = [] }) {
+export function WeekStrip({ value: rawValue, onChange, today: rawToday, marks = [] }) {
+  const today = asDate(rawToday) ?? new Date()
+  const value = asDate(rawValue) ?? today
   const [start, setStart] = useState(() => startOfWeek(value))
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
-  const marked = new Set(marks)
+  const marked = new Set((marks ?? []).map((m) => { const d = asDate(m); return d ? ymd(d) : m }))
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -66,13 +76,17 @@ export function WeekStrip({ value, onChange, today = new Date(), marks = [] }) {
 // mode 'single': value Date · onChange(Date)
 // mode 'range':  value { start: Date|null, end: Date|null } · onChange({ start, end })
 // month: any Date in the first month shown · min: days before it are disabled · today · marks: 'YYYY-MM-DD'[]
-export function MonthCalendar({ mode = 'single', value, onChange, month = new Date(), min, today = new Date(), marks = [] }) {
+export function MonthCalendar({ mode = 'single', value: rawValue, onChange, month: rawMonth, min: rawMin, today: rawToday, marks = [] }) {
+  const today = asDate(rawToday) ?? new Date()
+  const value = mode === 'range' ? { start: asDate(rawValue?.start), end: asDate(rawValue?.end) } : asDate(rawValue)
+  const min = asDate(rawMin)
+  const month = asDate(rawMonth) ?? (mode === 'range' ? value.start : value) ?? today
   const [shown, setShown] = useState(() => new Date(month.getFullYear(), month.getMonth(), 1))
   const first = startOfWeek(shown)
   const last = new Date(shown.getFullYear(), shown.getMonth() + 1, 0)
   const weeks = Math.ceil(((last - first) / 864e5 + 1) / 7)
   const cells = Array.from({ length: weeks * 7 }, (_, i) => addDays(first, i))
-  const marked = new Set(marks)
+  const marked = new Set((marks ?? []).map((m) => { const d = asDate(m); return d ? ymd(d) : m }))
   const floor = min && dayOnly(min)
   const start = mode === 'range' ? value?.start : value
   const end = mode === 'range' ? value?.end : null

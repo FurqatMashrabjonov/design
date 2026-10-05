@@ -130,6 +130,10 @@ export default function Screen() {
   // An icon-only Button would take the full row (Konsta's default) and push a centred title under the arrows.
   const arrows = lintJsx(`export default function Screen() { return <div className="flex"><Button clear rounded><ChevronLeft className="w-5" /></Button><div>Sep</div><Button inline><X /></Button><Button>Save</Button><Button className="w-full"><Plus /></Button></div> }`).source
   assert.ok(arrows.includes('<Button inline clear rounded><ChevronLeft') && arrows.includes('<Button inline><X') && arrows.includes('<Button>Save') && arrows.includes('<Button className="w-full"><Plus'), arrows)
+  // The owner's rule (2026-10-05): with apply: false the source is never changed; each fix becomes a finding.
+  const kept = lintJsx(`export default function Screen() { return <Page><Block className="px-4"><div className="bg-white">x</div></Block></Page> }`, { apply: false })
+  assert.ok(kept.source.includes('className="px-4"') && kept.source.includes('bg-white') && kept.fixed.length === 0, 'the source is left as written')
+  assert.ok(['block-double-gutter', 'white-box'].every((r) => kept.findings.some((f) => f.rule === r && f.message.length > 20)), 'what used to be fixed is reported, with an instruction')
   const again = lintJsx(src)
   assert.equal(again.source, src, 'the lint is idempotent: fixing a fixed screen changes nothing')
   // HIG-12: named text styles compile to Apple's sizes; Hero picks its text colour; text-white on a Hero is dropped.

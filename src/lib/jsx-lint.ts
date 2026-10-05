@@ -50,7 +50,20 @@ function textOf(n: Node | undefined, src: string): string {
   return n ? src.slice(n.start, n.end) : ''
 }
 
-export function lintJsx(source: string): LintResult {
+/** OVL-01 (the owner's rule, 2026-10-05): the generated code is not rewritten by us. With `apply: false` the
+ *  one-right-answer fixes are not made; each becomes a finding the model is asked to fix in its one repair. */
+const AS_FINDING: Record<string, string> = {
+  'list-link-chevron': 'A ListItem with `link` already draws its chevron: remove the extra chevron icon from its `after`.',
+  'white-on-tint': 'White text on a tint() wash is unreadable: use the label colour (no text-white).',
+  'white-on-hero': 'Remove text-white inside a Hero: it sets its own text colour.',
+  'block-double-gutter': 'Remove px-4 from the Block: a Block pads itself.',
+  'white-box': 'Use bg-card instead of bg-white: the style sets the card colour, in light and dark.',
+  'title-over-content': 'A BlockTitle with no Block or List right under it pulls the next box over its text: give it className="!mb-2", or put a Block or List under it.',
+  'tiny-text': 'Text is smaller than 11px: use text-caption2 or a larger text style.',
+  'icon-button-inline': 'An icon-only Button is full width in Konsta: add `inline` to it.',
+}
+
+export function lintJsx(source: string, opts: { apply?: boolean } = {}): LintResult {
   let ast: { program: Node }
   try {
     ast = parse(source, { sourceType: 'module', plugins: ['jsx'] }) as unknown as { program: Node }
@@ -183,6 +196,10 @@ export function lintJsx(source: string): LintResult {
 
   // An edit inside another (a class on a chevron that is removed whole) gives way to the outer one; then the
   // edits apply back to front so earlier offsets stay valid.
+  if (opts.apply === false) {
+    const rules = [...new Set(fixed.map((f) => f.split(':')[0]!))]
+    return { source, fixed: [], findings: [...findings, ...rules.map((rule) => ({ rule, message: AS_FINDING[rule] ?? rule }))] }
+  }
   const kept = edits.filter((x, i) => !edits.some((y, j) => j !== i && y[0] <= x[0] && y[1] >= x[1] && (y[0] < x[0] || y[1] > x[1])))
   let out = source
   for (const [s, e, r] of kept.sort((a, b) => b[0] - a[0])) out = out.slice(0, s) + r + out.slice(e)
