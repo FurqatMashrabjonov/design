@@ -13,6 +13,8 @@ export function sourceMetrics(src: string) {
     colors: new Set((src.match(/#[0-9a-f]{6}\b/gi) ?? []).map((c) => c.toLowerCase())).size,
     gradients: (src.match(/gradient\(/g) ?? []).length,
     nav: (src.match(/nav\.(push|pop|reset)\(/g) ?? []).length,
+    // OVL-01: Konsta's overlays and floating actions in use (a sheet, action sheet, dialog, popover, toast, drawer, FAB).
+    overlays: (src.match(/<(Sheet|Actions|Dialog|Popover|Popup|Toast|Notification|Panel|Fab)\b/g) ?? []).length,
     motion: (src.match(/\bvs-(rise|float|bounce|wave|pop)\b/g) ?? []).length,
     hardWhite: (src.match(/\bbg-white\b(?![^"'`]*dark:)/g) ?? []).length,
     // HIG-10: what the lint still finds on the stored (already fixed) source — the decisions it could not make.

@@ -383,6 +383,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | PRC-03 | Bepul foydalanuvchi share linkida 'Made with Screenspell' belgisi | To'lov va kreditlar / Ulashish | MVP | Tayyor | Kichik |  | Free egasining /s/ sahifasida belgi, pullikda yo'q |
 | PRC-04 | Pricing sahifasini qayta dizayn | To'lov va kreditlar / Kredit interfeysi | MVP | Tayyor | O'rta |  | Most popular, Early bird, kalkulyator, taqqoslash, FAQ |
 | PRC-05 | Pro'da premium model, eval bilan tasdiqlab | To'lov va kreditlar / LLM xarajati | MVP | Rejada | O'rta |  | Eval'da yutadi; Pro'da shu model; kredit narxi tannarxni qoplaydi |
+| OVL-01 | Konsta'ning to'liq to'plami: overlay naqshlari, sheet modal, drawer, toast (faqat prompt) | Generatsiya / Konsta | MVP | Tayyor | O'rta |  | Eval'da onb01'dan yomon emas; overlay'lar ishlatiladi; Notion'ga qo'shiladi (uzilgan edi) |
 | BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik |  | Provayder tanlangan, hisob ochilgan |
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |

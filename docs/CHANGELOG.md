@@ -106,6 +106,42 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05
+
+### OVL-01 — Konsta's whole kit in the prompt: overlays, a sheet for modals, a drawer, toasts
+
+- Measured first: of 182 eval screens, 0 used a drawer (`Panel`), `Toast`, `Popover` or `Fab`, and 6 a `Sheet` —
+  the skill named them, but no example used them, and the model copies the example.
+- Prompt only; the generated code is not rewritten (the owner's rule, 2026-10-05: correct the model before it
+  writes, never after).
+  - `konsta/PATTERNS.md` (new, in the system prompt, ~7k characters): one working pattern per Konsta part — toast
+    feedback, bottom sheet, action sheet, dialog, drawer, popover, popup, notification, FAB (icon only, with room
+    under the page), search and segments, chips, controls in rows, forms, chat — and "every primary action
+    answers".
+  - Examples: the dashboard opens a drawer from the avatar and toasts a checked habit; the list has a search bar,
+    a FAB and an action sheet per row; the detail confirms a delete with a dialog; a new `sheet.jsx` is the example
+    for modal screens.
+  - A modal screen is drawn as an open page sheet over the dimmed page (`exampleFor` → `sheet`, `kindLine`), so a
+    sheet shows on the canvas, the preview and in pictures; the planner is told to use modal for quick tasks (add,
+    log, filter, pick, check out, share, an award).
+  - The eval counts `overlays` per screen.
+- Eval (GPT-6 Luna, 8 briefs) against onb01:
+  | | onb01 | ovl01 | ovl02 | ovl03 |
+  |---|---|---|---|---|
+  | Judge, pairwise | — | 1 won, 2 tied, 5 lost | 4–2–2 | **4 won, 3 tied, 1 lost** |
+  | Rubric overall | 3.16 | 3.04 | 3.24 | 3.20 |
+  | Coherence | 3.38 | 3.86 | 3.75 | 3.75 |
+  | Modal screens | 1 | 1 | 8 | — |
+  | Seconds per app | 46 | 58 | 62 | 50 |
+  ovl01 lost on FABs drawn with capital text over the content; ovl02 added the page sheet and the planner line;
+  ovl03 the icon-only FAB. Polish is a little lower (3.15 → 3.00) and is the next thing to watch.
+- Files: `konsta/PATTERNS.md`, `konsta/examples/{sheet,dashboard,list,detail}.jsx`, `konsta/USAGE.md`,
+  `skills/mobile-screen-jsx/SKILL.md`, `src/app/Services/JsxGenerator.ts`, `eval/metrics.ts`, `eval/run.ts`,
+  `CLAUDE.md`.
+- Verified: every example compiled and rendered in headless Chrome with each overlay forced open (sheet, drawer,
+  toast, action sheet, dialog), iOS and Material; `npx tsc --noEmit` and `npm run check` clean; three eval runs and
+  judges as above.
+
 ## 2026-10-02 (12)
 
 ### PRC-04 — the pricing page sells the plans

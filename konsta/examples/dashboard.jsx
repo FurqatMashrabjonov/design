@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Page, Navbar, Block, BlockTitle, List, ListItem, Card, Link, Checkbox, Badge } from 'konsta/react'
-import { Bell, Footprints, Droplets, Plus, ChevronRight, Flame } from 'lucide-react'
+import { Page, Navbar, Block, BlockTitle, List, ListItem, Card, Link, Checkbox, Badge, Panel, Toast, Button } from 'konsta/react'
+import { Bell, Footprints, Droplets, Plus, ChevronRight, Flame, User, Settings, Crown } from 'lucide-react'
 import { useNav, AppTabbar, Rings, CountUp, Avatar, Tile, Confetti, Hero, tint } from '@od/kit'
 
 const C = { steps: '#ff9f0a', water: '#0a84ff', habits: '#30d158', mind: '#bf5af2', pink: '#ff375f' }
@@ -17,15 +17,19 @@ export default function Screen() {
   const nav = useNav()
   const [done, setDone] = useState(HABITS.filter((h) => h.done).map((h) => h.id))
   const [party, setParty] = useState(false)
+  const [menu, setMenu] = useState(false)
+  const [toast, setToast] = useState(null)
   const toggle = (id) => {
     const next = done.includes(id) ? done.filter((x) => x !== id) : [...done, id]
     setDone(next)
+    const h = HABITS.find((x) => x.id === id)
+    if (next.includes(id)) { setToast(`${h.name} done · ${h.streak + 1}-day streak`); setTimeout(() => setToast(null), 2200) }
     if (next.length === HABITS.length) { setParty(true); setTimeout(() => setParty(false), 1800) }
   }
   return (
     <Page className="pb-32">
       <Navbar large transparent title="Today" subtitle="Saturday, 27 September"
-        left={<Link iconOnly onClick={() => nav.push('profile')}><Avatar name="Aziza Karimova" color={C.steps} size={32} /></Link>}
+        left={<Link iconOnly onClick={() => setMenu(true)}><Avatar name="Aziza Karimova" color={C.steps} size={32} /></Link>}
         right={<Link iconOnly onClick={() => nav.push('inbox')} className="relative"><Bell className="w-6 h-6" /><Badge className="absolute -top-1 -right-1" colors={{ bg: 'bg-red-500' }}>4</Badge></Link>} />
 
       <Block className="!mt-1 !mb-2 text-subhead opacity-70">Good morning, Aziza. You are {Math.round((done.length / HABITS.length) * 100)}% through today.</Block>
@@ -82,6 +86,22 @@ export default function Screen() {
         </button>
       </Card>
       <Confetti run={party} />
+      <Toast position="center" opened={!!toast} className="bottom-24" button={<Button rounded clear small inline onClick={() => setToast(null)}>Undo</Button>}>
+        <div className="shrink">{toast}</div>
+      </Toast>
+      <Panel side="left" floating opened={menu} onBackdropClick={() => setMenu(false)}>
+        <Page>
+          <Block className="flex items-center gap-3 !mt-6">
+            <Avatar name="Aziza Karimova" color={C.steps} size={52} />
+            <div><div className="text-headline">Aziza Karimova</div><div className="text-footnote opacity-60">Premium · 41-day streak</div></div>
+          </Block>
+          <List strong inset>
+            <ListItem link title="Profile" media={<Tile tinted color={C.water} size={32}><User className="w-4 h-4" /></Tile>} linkProps={{ onClick: () => nav.push('profile') }} />
+            <ListItem link title="Vita Premium" media={<Tile tinted color={C.mind} size={32}><Crown className="w-4 h-4" /></Tile>} linkProps={{ onClick: () => nav.push('premium') }} />
+            <ListItem link title="Settings" media={<Tile tinted color={C.habits} size={32}><Settings className="w-4 h-4" /></Tile>} linkProps={{ onClick: () => nav.push('settings') }} />
+          </List>
+        </Page>
+      </Panel>
       <AppTabbar active="today" />
     </Page>
   )

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Page, Navbar, NavbarBackLink, Block, BlockTitle, List, ListItem, Link, Button, Toggle, Segmented, SegmentedButton, Actions, ActionsGroup, ActionsButton, ActionsLabel } from 'konsta/react'
+import { Page, Navbar, NavbarBackLink, Block, BlockTitle, List, ListItem, Link, Button, Toggle, Segmented, SegmentedButton, Actions, ActionsGroup, ActionsButton, ActionsLabel, Dialog, DialogButton } from 'konsta/react'
 import { Target, Bell, Repeat, Pencil } from 'lucide-react'
 import { useNav, Ring, Heatmap, Bars, Tile } from '@od/kit'
 
@@ -15,6 +15,7 @@ export default function Screen() {
   const [remind, setRemind] = useState(true)
   const [range, setRange] = useState('Week')
   const [menu, setMenu] = useState(false)
+  const [ask, setAsk] = useState(false)
   return (
     <Page className="pb-10">
       <Navbar title={HABIT.name} left={<NavbarBackLink showText={false} onClick={nav.pop} />} right={<Link onClick={() => setMenu(true)}>Edit</Link>} />
@@ -63,10 +64,12 @@ export default function Screen() {
         <ActionsGroup>
           <ActionsLabel>{HABIT.name}</ActionsLabel>
           <ActionsButton onClick={() => { setMenu(false); nav.push('edit-habit') }}><span className="flex items-center gap-2 justify-center"><Pencil className="w-4 h-4" /> Edit habit</span></ActionsButton>
-          <ActionsButton onClick={() => setMenu(false)} className="!text-red-500">Delete habit</ActionsButton>
+          <ActionsButton onClick={() => { setMenu(false); setAsk(true) }} className="!text-red-500">Delete habit</ActionsButton>
         </ActionsGroup>
         <ActionsGroup><ActionsButton bold onClick={() => setMenu(false)}>Cancel</ActionsButton></ActionsGroup>
       </Actions>
+      <Dialog opened={ask} onBackdropClick={() => setAsk(false)} title="Delete Morning run?" content={`Your ${HABIT.streak}-day streak and its history go with it.`}
+        buttons={<><DialogButton strong onClick={() => setAsk(false)}>Cancel</DialogButton><DialogButton className="!text-red-500" onClick={() => { setAsk(false); nav.pop() }}>Delete</DialogButton></>} />
     </Page>
   )
 }

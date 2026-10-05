@@ -36,7 +36,7 @@ Each card: the rule, the right JSX, the wrong one. The lint fixes some of these 
 
 **Overlays start closed.**
 ✓ `<Sheet opened={open} onBackdropClick={() => setOpen(false)}>` with `useState(false)`
-✗ `<Sheet opened>` at first render
+✗ `<Sheet opened>` at first render — except on a modal screen, where the open Sheet is the screen
 
 **Create on a list is a Fab or a navbar button, not a big button in the flow.**
 ✓ `<Fab className="fixed right-4 bottom-24" icon={<Plus />} onClick={…} />` on a tab screen

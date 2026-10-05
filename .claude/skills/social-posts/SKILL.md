@@ -91,7 +91,7 @@ Per platform:
 **Links go in the post itself, never only in a comment or the last reply** (the owner's call, 2026-10-04: with the
 link in a comment the clicks fell away). Every post carries two: the preview of this app (`…/s/<token>?ref=<platform>-<app>`,
 "tap through it") and the product (`https://screenspell.app`, "try it — free beta, sign in with Google").
-- **LinkedIn** — the full text, both links in the body, images `x-1-hero`, `x-4-devices`, `x-2-ios-android`,
+- **LinkedIn** — the full text, **no link in the body** (measured 2026-10-05: posts without a link reached ~6 400 views, with one ~200; the link goes in the first comment and the post ends "Link in the comments — try it"), images `x-1-hero`, `x-4-devices`, `x-2-ios-android`,
   `x-3-light-dark` (or the strip alone; dark for midnight apps).
 - **X** — the same story cut to ~280 characters for post 1 with the preview link and `x-1-hero.png`; reply 2
   `x-4-devices.png`, reply 3 `x-2-ios-android.png`, reply 4 `x-3-light-dark.png` with the product link.
@@ -108,7 +108,7 @@ will go.
 When the owner says "post tayyorla", deliver in this order, each finished before the next:
 
 1. **X** — the thread (images from step 3, captions from step 4).
-2. **LinkedIn** — the short "I'm building" post with its images, both links in the body.
+2. **LinkedIn** — the short "I'm building" post with its images or the process video, no link in the body — the link is the first comment.
 3. **Video** — a 9:16 reel for TikTok / Reels / Shorts, the app's real screens inside the studio's own iPhone
    (`scripts/video/films/device.js`, the same geometry as `components/DeviceFrame.tsx`):
    ```

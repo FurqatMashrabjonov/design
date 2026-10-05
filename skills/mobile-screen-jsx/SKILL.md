@@ -84,7 +84,7 @@ The compiler rejects a file that breaks these:
 - **Rows with character**: `media` a `Tile` (solid + white icon for settings, tinted + emoji for content) or a small `Ring`; `after` a coloured value, a streak, a `Toggle`, a `Checkbox` or a `Meter`.
 - **Charts**: `Bars`, `Area`, `Heatmap`, `Meter`, in a `Block strong inset` or `Card` with their figure and a delta.
 - **Grids**: product tiles, `Medal`s (locked ones grey), category tiles.
-- **Overlays**: `Sheet`, `Actions`, `Dialog`, `Toast`, `Popover` — closed at first render, opened from state.
+- **Overlays** (PATTERNS below): `Sheet`, `Actions`, `Dialog`, `Popover`, `Popup`, a drawer (`Panel` from the avatar), `Notification` — closed at first render, opened from state. Every primary action answers with a `Toast`, a checked state or `Confetti`.
 - **Forms**: `List strong inset` of `ListInput` with icons and labels, `Stepper`, `Range`, `Radio`, one submit button.
 - Also: `Fab` (create on a list), `Chip`, `Badge`, `Progressbar`, `Card` with header/footer, `Table`, `Messages`/`Messagebar`.
 
