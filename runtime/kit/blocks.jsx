@@ -20,6 +20,8 @@ const asDate = (v) => {
   if (typeof v === 'number' || typeof v === 'string') { const d = new Date(v); return isNaN(d) ? null : d }
   return null
 }
+// A number may arrive as a number, '4.92' or '1,284' (a screen passed a string and Rating crashed on toFixed).
+const asNum = (v, d = 0) => { const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/[^\d.-]/g, '')); return Number.isFinite(n) ? n : d }
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const monthLabel = (d) => d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
@@ -452,7 +454,9 @@ export function SwipeRow({ children, left = [], right = [], open = true, onOpenC
   )
 }
 
-export function Rating({ value, count, onChange, size = 18 }) {
+export function Rating({ value: rawValue, count: rawCount, onChange, size = 18 }) {
+  const value = Math.max(0, Math.min(5, asNum(rawValue)))
+  const count = rawCount == null ? null : asNum(rawCount)
   const refs = useRef([])
   const input = !!onChange
   const stars = Array.from({ length: 5 }, (_, i) => {
@@ -494,9 +498,12 @@ export function Rating({ value, count, onChange, size = 18 }) {
 }
 
 /** The App Store summary: the average large, then one bar per star count. `dist` is five counts, 5★ first. */
-export function RatingSummary({ value, dist }) {
+export function RatingSummary({ value: rawValue, dist: rawDist }) {
+  const value = Math.max(0, Math.min(5, asNum(rawValue)))
+  // Five counts, 5★ first — or an object keyed by star ({ 5: 912, 4: 241, … }).
+  const dist = (Array.isArray(rawDist) ? rawDist : rawDist && typeof rawDist === 'object' ? [5, 4, 3, 2, 1].map((k) => rawDist[k]) : []).map((n) => asNum(n)).concat([0, 0, 0, 0, 0]).slice(0, 5)
   const total = dist.reduce((a, b) => a + b, 0)
-  const max = Math.max(...dist)
+  const max = Math.max(1, ...dist)
   return (
     <div className="flex items-center gap-5">
       <div className="text-center shrink-0 w-24">
@@ -516,8 +523,9 @@ export function RatingSummary({ value, dist }) {
   )
 }
 
-export function AvatarStack({ people, max = 4, size = 36, ring = 'var(--color-card)' }) {
-  const shown = people.slice(0, max)
+export function AvatarStack({ people: rawPeople, max = 4, size = 36, ring = 'var(--color-card)' }) {
+  const people = (Array.isArray(rawPeople) ? rawPeople : []).map((p) => (typeof p === 'string' ? { name: p } : p ?? { name: '?' }))
+  const shown = people.slice(0, asNum(max, 4))
   const extra = people.length - shown.length
   const edge = { boxShadow: `0 0 0 2.5px ${ring}`, marginLeft: -size * 0.22 }
   return (
@@ -536,7 +544,8 @@ export function AvatarStack({ people, max = 4, size = 36, ring = 'var(--color-ca
   )
 }
 
-export function Stories({ items, me, onOpen, onAdd }) {
+export function Stories({ items: rawItems, me, onOpen, onAdd }) {
+  const items = (Array.isArray(rawItems) ? rawItems : []).map((s, i) => (typeof s === 'string' ? { id: s, name: s } : { id: s?.id ?? String(i), name: s?.name ?? '', ...s }))
   const [seen, setSeen] = useState(() => new Set(items.filter((s) => s.seen).map((s) => s.id)))
   const SIZE = 68
   const circle = (ring, inner) => (

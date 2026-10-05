@@ -106,6 +106,18 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (10)
+
+### KIT-22 — the kit's blocks take numbers and lists the way a model writes them
+
+- Found in production: a generated "Review your stay" screen crashed ("e.toFixed is not a function") — the model
+  passed the rating as "4.92". `Rating` and `RatingSummary` now read numbers through `asNum` ('4.92', '1,284',
+  a number), and `RatingSummary.dist` may also be an object keyed by star; `AvatarStack` and `Stories` take plain
+  names as well as objects. The generated code is not touched (the owner's rule); the kit meets it.
+- Files: `runtime/kit/blocks.jsx`.
+- Verified: a screen passing strings and objects to Rating, RatingSummary, AvatarStack, Stories and MonthCalendar
+  builds, passes the render check and draws each correctly; `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-05 (9)
 
 ### PAL-03 — Editorial on warm paper; the eval finally shows each app in its own style
