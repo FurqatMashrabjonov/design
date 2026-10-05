@@ -106,6 +106,21 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (8)
+
+### PAL-02 — an app's colours are a family of four at most, not a rainbow
+
+- The planner names 2–4 palette keys (it was 3–6; `parsePlan` keeps four). `styleColors` gives them a family: the
+  seed's colour, the two hues nearest it in OKLCH, and the one across the wheel; the accent is picked in that order.
+  Before, keys took consecutive colours of the style's set, whose hues alternate on purpose — six things in six
+  hues.
+- Eval pal03 against pal02 (GPT-6 Luna, 8 briefs): judge **4 won, 1 tied, 3 lost**; coherence 3.38 → **3.88** (the
+  judge named "one pink palette", "a calm teal palette", "one consistent warm palette"); rubric 3.26 → 3.13 (pal02's
+  3.26 was the high one of two runs of the same code, 3.03 and 3.26); colours per screen 4.05 → 3.48; problems per
+  screen 0.21 → 0.11, clean screens 85% → 91%.
+- Files: `src/lib/app-theme.ts`, `src/app/Services/JsxGenerator.ts`, `CLAUDE.md`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; families printed for three seeds per style.
+
 ## 2026-10-05 (7)
 
 ### PAL-01 — the five styles' colours redrawn in OKLCH; the accent darkens without greying

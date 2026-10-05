@@ -109,10 +109,16 @@ export const seededPick = <T,>(options: readonly T[], seed: string, salt: string
 export function styleColors(style: AppStyle, keys: string[], seed: string): { accent: string; palette: Record<string, string> } {
   const set = PALETTE_BY_STYLE[style]
   const start = hash(seed) % set.length
-  const palette = Object.fromEntries(keys.map((k, i) => [k, set[(start + i) % set.length]!]))
+  // PAL-02: a family, not a rainbow — the seed's colour, then the two hues nearest it, then the one across the wheel.
+  const hue = (c: string) => oklch(c)[2]
+  const gap = (a: number, b: number) => { const d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d }
+  const h0 = hue(set[start]!)
+  const rest = set.filter((_, i) => i !== start).sort((a, b) => gap(hue(a), h0) - gap(hue(b), h0))
+  const family = [set[start]!, rest[0]!, rest[1]!, rest[rest.length - 1]!]
+  const palette = Object.fromEntries(keys.map((k, i) => [k, family[i % family.length]!]))
   // A bright yellow darkened to white-text contrast turns muddy: the accent is the first of the app's colours
   // that gets there in a few steps, in the palette's order.
-  const order = [...set.slice(start), ...set.slice(0, start)]
+  const order = [...family, ...set.filter((c) => !family.includes(c))]
   const tries = order.map(darkened)
   const pick = tries.find((d) => d.steps <= 3) ?? tries.reduce((a, b) => (b.steps < a.steps ? b : a)) // else the one that darkens least
   return { accent: pick.color, palette }
