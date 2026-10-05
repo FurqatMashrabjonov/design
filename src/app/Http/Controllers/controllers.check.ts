@@ -130,6 +130,15 @@ export default function Screen() {
   // An icon-only Button would take the full row (Konsta's default) and push a centred title under the arrows.
   const arrows = lintJsx(`export default function Screen() { return <div className="flex"><Button clear rounded><ChevronLeft className="w-5" /></Button><div>Sep</div><Button inline><X /></Button><Button>Save</Button><Button className="w-full"><Plus /></Button></div> }`).source
   assert.ok(arrows.includes('<Button inline clear rounded><ChevronLeft') && arrows.includes('<Button inline><X') && arrows.includes('<Button>Save') && arrows.includes('<Button className="w-full"><Plus'), arrows)
+  // FCT-01: XP or a streak that APP DATA does not have is a finding; a value it has, or the gap between two, is not.
+  {
+    const { factFindings, appDataOf } = await import('../../../lib/fact-check.ts')
+    const data = 'Maya: Level 4, 640 XP, 5-day streak. Weekly goal: 160 of 200 XP.'
+    assert.equal(factFindings(`<div>640 XP · 5-day streak · 40 XP to go</div>`, data).length, 0)
+    const bad = factFindings(`const t = "Maya · 170 XP"; <span>7 day streak</span>`, data)
+    assert.deepEqual(bad.map((f) => f.rule), ['fact-mismatch', 'fact-mismatch'], JSON.stringify(bad))
+    assert.equal(appDataOf('x\n# APP DATA — the only source\nMaya 640 XP\n# THIS SCREEN\ny')?.trim(), 'Maya 640 XP')
+  }
   // The owner's rule (2026-10-05): with apply: false the source is never changed; each fix becomes a finding.
   const kept = lintJsx(`export default function Screen() { return <Page><Block className="px-4"><div className="bg-white">x</div></Block></Page> }`, { apply: false })
   assert.ok(kept.source.includes('className="px-4"') && kept.source.includes('bg-white') && kept.fixed.length === 0, 'the source is left as written')

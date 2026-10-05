@@ -106,6 +106,23 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (5)
+
+### FCT-01 — a screen's XP or streak that APP DATA does not have goes into the repair
+
+- `lib/fact-check.ts` (`factFindings`, `appDataOf`): reads what a reader sees (string literals and JSX text), finds
+  "N XP" and "N-day streak" (and "N of M XP"), and reports any value APP DATA does not have nor make as a sum or gap
+  of two of its values. `drawScreen` adds these to the lint's findings for the one repair; nothing in the source is
+  changed.
+- Only XP and streak: tried on 8 stored runs, distances, steps and points mostly flagged honest numbers (a club's
+  weekly kilometres, other people's runs); XP and streak flagged 7 screens, each a real contradiction the judge had
+  named (620 and 170 XP where APP DATA says 1,240; a 7-day streak where it says 6).
+- Eval fct01 against lnt01: judge 2–2–4 (the noise run was 3–1–4); no screen in either run showed a mismatch, so on
+  8 briefs this is a safety net that did not fire — it costs nothing unless it does.
+- Files: `src/lib/fact-check.ts`, `src/app/Http/Controllers/PlanController.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (a value APP DATA has, or the gap of two, is fine; another is a finding; APP DATA is read from the
+  brief); the stored-runs replay above; `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-05 (4)
 
 ### LNT-01 — the generated code is never rewritten by our code; the lint tells the model instead
