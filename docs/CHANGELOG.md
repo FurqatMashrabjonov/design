@@ -106,6 +106,24 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (7)
+
+### PAL-01 — the five styles' colours redrawn in OKLCH; the accent darkens without greying
+
+- Measured first: a style's eight colours spanned 0.10–0.38 in OKLCH lightness (Vivid's yellow far brighter than its
+  violet, Editorial's first colour black), so one colour shouted and another sank. Each set is now one lightness
+  and chroma per style (Clean L .61 C .18, Midnight L .78 C .17, Vivid L .67 C .22, Soft L .68 C .085, Editorial
+  L .48 C .12; yellows and limes +0.08 lightness, or they turn olive), the same hue order as before; Editorial's
+  black became a terracotta.
+- The accent: darkened in OKLCH with its chroma kept (RGB darkening greyed it — Midnight came out dusty mustard and
+  rose), at most 3 steps, else the colour that needs the fewest.
+- Eval (GPT-6 Luna, 8 briefs) against fct01, twice: pal01 judge 1–2–5, rubric 3.03; pal02 5–2–1, rubric 3.26 (polish
+  2.89 → 3.15). Together pairwise is even (6–4–6) and the rubric is up 0.15 on average; the problems the render
+  check found are layout ones (clipped text, overlaps) with one low-contrast line.
+- Files: `src/lib/app-theme.ts`, `controllers.check.ts` (the yellow test follows the new yellow), `CLAUDE.md`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean (every accent still reads as a button with white text);
+  the swatches old against new, and the accents 40 seeds give per style.
+
 ## 2026-10-05 (6)
 
 ### PHT-01 — near photo queries stop sharing one photo

@@ -48,13 +48,16 @@ export const ACCENTS = ['#007aff', '#5e5ce6', '#af52de', '#ff2d55', '#ff3b30', '
  * project id picks where the app's palette starts, so the same brief twice is two different apps. The accent is
  * the palette's first colour, darkened until a button with white text reads (≥3.5:1): buttons and the things the
  * app tracks are one family — an accent picked on its own clashed with the palette (a blue button on an orange app).
+ * PAL-01: each set is drawn in OKLCH at one lightness and chroma per style (yellows and limes a step lighter, or they
+ * turn olive), so no colour shouts over the others; before, a set spanned up to 0.38 in lightness and Editorial's
+ * first colour was black.
  */
 const PALETTE_BY_STYLE: Record<AppStyle, string[]> = {
-  clean: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#ec4899', '#84cc16'],
-  midnight: ['#a3e635', '#22d3ee', '#f97316', '#facc15', '#f472b6', '#34d399', '#818cf8', '#fb7185'],
-  vivid: ['#ff6b35', '#ffc300', '#00c49a', '#7b61ff', '#ff3d7f', '#00a8e8', '#58cc02', '#ff9f1c'],
-  soft: ['#d0845a', '#6f9e80', '#9b7bb8', '#5f8fc0', '#c99a3e', '#c07580', '#5f9e94', '#8a7bb0'],
-  editorial: ['#111111', '#b91c1c', '#1d4ed8', '#a16207', '#047857', '#6b21a8', '#be185d', '#0e7490'],
+  clean: ['#3c7fed', '#129b6b', '#d38914', '#8a68e3', '#da4b48', '#1093aa', '#d04a8a', '#72b01b'],
+  midnight: ['#95cc48', '#0acde9', '#fd9b67', '#dbb319', '#fe8dc5', '#19d798', '#a5b1fd', '#ff93a0'],
+  vivid: ['#fa570e', '#d8a614', '#11ae89', '#8d80fe', '#fb4580', '#0da1de', '#49b007', '#f3950b'],
+  soft: ['#c48969', '#6ba882', '#a78ac1', '#6f9ccb', '#cdac72', '#c7828b', '#55aa9d', '#9e8dc7'],
+  editorial: ['#934319', '#963e35', '#3a5aa1', '#a3640f', '#0f6e51', '#6d4a94', '#933c56', '#0f6880'],
 }
 /** FNV-1a with a murmur finaliser: plain FNV's low bits barely move for ids like eval-shop / eval-travel. */
 function hash(s: string): number {
@@ -71,15 +74,31 @@ const luminance = (hex: string) => {
   const f = (v: number) => ((v /= 255) <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
   return 0.2126 * f((n >> 16) & 255) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255)
 }
-/** The colour, darkened in small steps until white text on it reaches 3.5:1 (and how many steps it took). */
+// OKLCH (Björn Ottosson's Oklab, polar): lightness moves without dragging the chroma down with it.
+const toLin = (v: number) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+const toSrgb = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)
+function oklch(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16)
+  const [r, g, b] = [toLin((n >> 16) & 255), toLin((n >> 8) & 255), toLin(n & 255)]
+  const [l, m, s] = [0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b, 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b, 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b].map(Math.cbrt) as [number, number, number]
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+  return [L, Math.hypot(A, B), Math.atan2(B, A)]
+}
+function fromOklch(L: number, C: number, H: number): string {
+  for (let c = C; ; c -= 0.005) {
+    const a = Math.max(0, c) * Math.cos(H), b = Math.max(0, c) * Math.sin(H)
+    const [l, m, s] = [L + 0.3963377774 * a + 0.2158037573 * b, L - 0.1055613458 * a - 0.0638541728 * b, L - 0.0894841775 * a - 1.291485548 * b].map((x) => x ** 3) as [number, number, number]
+    const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s].map(toSrgb)
+    if (c <= 0 || rgb.every((v) => v >= -1e-4 && v <= 1 + 1e-4)) return `#${rgb.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0')).join('')}`
+  }
+}
+/** The colour, darkened in small OKLCH steps (its chroma kept) until white text on it reaches 3.5:1, and how many
+ *  steps it took. Darkening in RGB greyed it: a neon on Midnight came out as dusty mustard. */
 function darkened(hex: string): { color: string; steps: number } {
+  const [L, C, H] = oklch(hex)
   let c = hex
   let k = 0
-  for (; k < 30 && 1.05 / (luminance(c) + 0.05) < 3.5; k++) {
-    const n = parseInt(c.slice(1), 16)
-    const d = (v: number) => Math.round(v * 0.94).toString(16).padStart(2, '0')
-    c = `#${d((n >> 16) & 255)}${d((n >> 8) & 255)}${d(n & 255)}`
-  }
+  for (; k < 30 && 1.05 / (luminance(c) + 0.05) < 3.5; k++) c = fromOklch(L - 0.025 * (k + 1), C, H)
   return { color: c, steps: k }
 }
 export const readableOnWhite = (hex: string) => darkened(hex).color
@@ -94,6 +113,7 @@ export function styleColors(style: AppStyle, keys: string[], seed: string): { ac
   // A bright yellow darkened to white-text contrast turns muddy: the accent is the first of the app's colours
   // that gets there in a few steps, in the palette's order.
   const order = [...set.slice(start), ...set.slice(0, start)]
-  const pick = order.map(darkened).find((d) => d.steps <= 4) ?? darkened(order[0]!)
+  const tries = order.map(darkened)
+  const pick = tries.find((d) => d.steps <= 3) ?? tries.reduce((a, b) => (b.steps < a.steps ? b : a)) // else the one that darkens least
   return { accent: pick.color, palette }
 }

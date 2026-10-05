@@ -1283,7 +1283,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(parsePlan(json('neon-goth'), 'x', 'p').style, 'clean', 'an unknown style falls back')
   const evalIds = ['habits', 'food', 'bank', 'travel', 'learn', 'meditate', 'shop', 'social'].map((b) => `eval-${b}`)
   assert.ok(new Set(evalIds.map((id) => styleColors('editorial', [], id).accent)).size >= 5, 'eight apps of one style get at least five accents (plain FNV gave eval-shop and eval-travel the same)')
-  assert.notEqual(styleColors('vivid', ['a'], [...Array(200).keys()].map((i) => `s${i}`).find((id) => styleColors('vivid', ['a'], id).palette.a === '#ffc300')!).accent, readableOnWhite('#ffc300'), 'a yellow start is not darkened into mud; the next colour leads')
+  assert.notEqual(styleColors('vivid', ['a'], [...Array(200).keys()].map((i) => `s${i}`).find((id) => styleColors('vivid', ['a'], id).palette.a === '#d8a614')!).accent, readableOnWhite('#d8a614'), 'a yellow start is not darkened into mud; the next colour leads')
   assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('soft')), palette: { steps: '#123456' } }), 'x').palette.steps, '#123456', 'without a seed an old plan keeps its colours')
   // ONB-01: the first-run layout is the code's too — by style and seed, stable per app, varied across apps, and the
   // screen gets that layout's example and its one-line description.
