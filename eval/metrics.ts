@@ -15,6 +15,8 @@ export function sourceMetrics(src: string) {
     nav: (src.match(/nav\.(push|pop|reset)\(/g) ?? []).length,
     // OVL-01: Konsta's overlays and floating actions in use (a sheet, action sheet, dialog, popover, toast, drawer, FAB).
     overlays: (src.match(/<(Sheet|Actions|Dialog|Popover|Popup|Toast|Notification|Panel|Fab)\b/g) ?? []).length,
+    // KIT-20: the kit's ready-made blocks in use.
+    blocks: (src.match(/<(WeekStrip|MonthCalendar|StepTimeline|Carousel|PhotoCard|EmptyState|Skeleton\w+|PullToRefresh|Accordion|SwipeRow|Rating|RatingSummary|AvatarStack|Stories|CodeInput)\b/g) ?? []).length,
     motion: (src.match(/\bvs-(rise|float|bounce|wave|pop)\b/g) ?? []).length,
     hardWhite: (src.match(/\bbg-white\b(?![^"'`]*dark:)/g) ?? []).length,
     // HIG-10: what the lint still finds on the stored (already fixed) source — the decisions it could not make.

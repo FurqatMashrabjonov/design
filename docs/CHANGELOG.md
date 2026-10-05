@@ -106,6 +106,27 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (2)
+
+### KIT-20 — thirteen blocks top apps share, in the kit (not yet in the prompt)
+
+- Hand-written in a gallery (three parallel agents, then reviewed in a real browser: tabs, a swipe, and approved by
+  the owner): `WeekStrip`, `MonthCalendar` (single and range), `StepTimeline`, `Carousel` + `PhotoCard`,
+  `EmptyState`, `SkeletonRow`/`SkeletonCard`/`SkeletonBlock`, `PullToRefresh`, `Accordion`, `SwipeRow`,
+  `Rating`/`RatingSummary`, `AvatarStack`, `Stories`, `CodeInput`. `Timeline` and `Bone` were renamed: lucide has
+  icons of those names, and the compiler imports a missing name from wherever it exists.
+- `runtime/kit/blocks.jsx`, exported from `@od/kit`; the runtime stylesheet scans it (`@source`) — without that the
+  blocks rendered unstyled; the export copies it (`src/kit/blocks.jsx`).
+- The prompt does not name them yet. Listing them in KIT.md and putting a WeekStrip and an EmptyState in the examples
+  lost the judge twice against ovl03 (kit01 2–1–5, kit02 2–0–6; rubric 3.12 and 3.24 against 3.20), while the
+  blocks were used on only 3–4 of 61 screens — so that prompt change was reverted. Next: each block joins the prompt
+  alone, for the screen kind that needs it, and is measured.
+- The eval counts `blocks`. `scripts/kit-gallery.ts` shoots a gallery file and bundles galleries into one clickable
+  HTML (through the CODE-02 export).
+- Verified: every block built and passed the render check in its gallery, iOS light/dark and Material; the same
+  screens rebuilt against `@od/kit` render the same; `npx tsc --noEmit` and `npm run check` (which builds an export)
+  clean.
+
 ## 2026-10-05
 
 ### OVL-01 — Konsta's whole kit in the prompt: overlays, a sheet for modals, a drawer, toasts

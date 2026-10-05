@@ -4,6 +4,7 @@
 @import './type-scale.css';
 @source './kit/ui.jsx';
 @source './kit/nav.jsx';
+@source './kit/blocks.jsx';
 @source './kit.jsx';
 @custom-variant dark (&:where(.dark, .dark *));
 html, body, #root { height: 100%; }
