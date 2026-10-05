@@ -106,6 +106,28 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (3)
+
+### KIT-21 — the kit's blocks are offered one screen at a time, by the screen's name
+
+- `BLOCK_HINTS` / `blocksFor` (`JsxGenerator`): a screen whose name says it does what a block does gets that block —
+  two at most — in its own brief, with its signature and where to put it. The system prompt does not change, so a
+  screen without a match costs nothing more. Test in `controllers.check.ts` (a profile that mentions notifications
+  and reviews gets nothing; Dates gets the calendar; Today gets the week strip only as a tab).
+- How it got here (GPT-6 Luna unless noted, 8 briefs, against ovl03):
+  | | Judge | Rubric | Problems / screen | Clean screens |
+  |---|---|---|---|---|
+  | ovl03b — same prompt again (the noise) | 3–1–4 | 3.21 | 0.32 | 81% |
+  | kit01/kit02 — blocks listed for every screen | 2–1–5, 2–0–6 | 3.12, 3.24 | 0.18, 0.13 | — |
+  | cs-blk01 — matched on the spec (Claude Sonnet 5.5, vs its own base) | 1–1–6 | — | 0.16 | 86% |
+  | blk02 — matched on the name | 2–2–4 | 3.18 | 0.11 | 90% |
+  | **blk03 — + "inside a Block strong inset"** | **3–1–4** | 3.11 | **0.06** | **97%** |
+  Matched on the spec, a week strip landed on 12 screens (profiles, a leaderboard); on the name, the blocks sat on 7
+  screens, each where it belongs. The judge's pairwise matches the noise run; the rubric is 0.1 lower; screens with
+  a problem fell from 12–19% to 3%.
+- Files: `src/app/Services/JsxGenerator.ts`, `src/app/Http/Controllers/controllers.check.ts`, `CLAUDE.md`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; the runs above.
+
 ## 2026-10-05 (2)
 
 ### KIT-20 — thirteen blocks top apps share, in the kit (not yet in the prompt)

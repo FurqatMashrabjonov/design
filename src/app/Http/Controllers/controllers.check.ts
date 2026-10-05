@@ -67,6 +67,19 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
   assert.deepEqual(p.palette, { water: '#0a84ff', sleep: '#5e5ce6' }, 'the palette is pasted as code: identifiers and hex colours only')
   assert.ok(appContext(p).includes('const C = {"water":"#0a84ff","sleep":"#5e5ce6"}'), 'every screen gets the same palette line')
   assert.deepEqual(p.screens.map((s) => exampleFor(p, s)), ['dashboard', 'detail', 'detail'], 'the first tab is built like a dashboard, pushed screens like a detail')
+  // KIT-21: a screen gets the kit blocks its own job asks for, two at most, and the brief says how to call them.
+  {
+    const { blocksFor, screenBrief: brief } = await import('../../Services/JsxGenerator.ts')
+    const names = (name: string, spec: string, kind: 'tab' | 'push' | 'modal' = 'push') => blocksFor({ name, spec, kind }).map((b) => b.block)
+    assert.deepEqual(names('Dates & guests', 'Pick check-in and check-out dates', 'modal'), ['MonthCalendar'])
+    assert.deepEqual(names('Order status', 'Tracking: the courier is on the way'), ['StepTimeline'])
+    assert.deepEqual(names('Today', 'Your habits for today', 'tab'), ['WeekStrip'])
+    assert.deepEqual(names('Today', 'Your habits for today', 'push'), [], 'a week strip is for tab screens only')
+    assert.deepEqual(names('Profile', 'Name, avatar, notifications, weekly reviews and settings', 'tab'), [], 'a word in the spec is not the screen\'s job')
+    assert.deepEqual(names('Checkout', 'Pick a delivery date and pay'), [], 'only a screen named for dates gets the calendar')
+    const b = brief(p, { ...p.screens[1]!, name: 'Reviews', spec: 'All guest reviews with ratings' })
+    assert.ok(b.includes('RatingSummary(') && b.includes("ready-made blocks"), 'the brief names the block and how to call it')
+  }
 }
 {
   const { compileScreen } = await import('../../Services/ScreenCompiler.ts')

@@ -186,12 +186,43 @@ export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
   return s.kind === 'modal' ? ('sheet' as const) : ('detail' as const)
 }
 
+/**
+ * KIT-21: the kit's blocks (KIT-20) are offered by the code, one screen at a time — listed for every screen, the model
+ * used them on 3–4 of 61 and the judge preferred the run without them; matched on a screen's spec, they landed on 1 in
+ * 1.1 screens (a week strip on a profile and a leaderboard) and lost again. A screen whose name says it does what a
+ * block does gets that block (two at most) in its own brief, with how to call it; nothing else changes.
+ */
+export const BLOCK_HINTS: { block: string; name: RegExp; spec?: RegExp; kinds?: Kind[]; use: string }[] = [
+  { block: 'MonthCalendar', name: /\b(dates?|calendar|book(ing)?|reserv|appointment|when)\b/i, kinds: ['push', 'modal'], use: "`MonthCalendar({ mode: 'single' | 'range', value, onChange, month?: Date, min?: Date, today?, marks?: ['YYYY-MM-DD'] })` — the month grid to pick a day or a stay; range `value` is `{ start, end }`. Put it inside a `<Block strong inset>` (on a sheet, a `<Block>`)." },
+  { block: 'WeekStrip', name: /^(today|home|my day|schedule|plan)\b/i, spec: /\b(habits?|workouts?|classes|routine|meals|sessions|doses|medication)\b/i, kinds: ['tab'], use: "`WeekStrip({ value: Date, onChange, today?, marks?: ['YYYY-MM-DD'] })` — one 7-day strip under the title to switch days; dots on days with activity. Put it inside a `<Block strong inset>` (it has no padding of its own), once." },
+  { block: 'StepTimeline', name: /\b(track(ing)?|order status|on (its|the) way|delivery|itinerary)\b/i, use: "`StepTimeline({ steps: [{ title, time, detail?, status: 'done' | 'current' | 'upcoming' }] })` — the steps of an order, a delivery or a trip, inside a `<Block strong inset>`." },
+  { block: 'Rating', name: /\b(reviews?|ratings?)\b/i, use: "`RatingSummary({ value, dist: [5★, 4★, 3★, 2★, 1★ counts] })` for the score and its bars, and `Rating({ value, count? })` for stars on each review." },
+  { block: 'Rating', name: /\b(detail|stay|restaurant|product|place|hotel)\b/i, spec: /\breviews\b/i, kinds: ['push'], use: "`Rating({ value, count })` for the score under the title (\"4.8 · 312 reviews\")." },
+  { block: 'Carousel', name: /^(explore|discover|home|shop|browse)\b/i, spec: /\b(featured|trending|popular|recommended|drops?|picks)\b/i, kinds: ['tab'], use: "`Carousel({ items, renderItem: (item, i) => <PhotoCard q={item.photo} color={C.x} title={item.name} meta={item.where} badge={item.tag} /> })` — one row of snap cards for the featured items, the next peeking, page dots." },
+  { block: 'SwipeRow', name: /\b(inbox|messages|notifications|tasks|to-?dos?|reminders)\b/i, kinds: ['tab', 'push'], use: "`SwipeRow({ children, right: [{ label: 'Archive', icon: Archive, color: '#ff9f0a', onClick }, { label: 'Delete', icon: Trash2, color: '#ff3b30', onClick }] })` — each row of the list, inside a `List strong inset`, swipes to its actions." },
+  { block: 'Stories', name: /^(feed|home|friends)\b/i, spec: /\b(stories|friends|following)\b/i, kinds: ['tab'], use: "`Stories({ items: [{ id, name, color, seen? }], me?: { name, color } })` — story rings across the top of the feed." },
+  { block: 'AvatarStack', name: /\b(club|group|event|challenge|squad|meetup)\b/i, use: "`AvatarStack({ people: [{ name, color }], max = 4, size = 36 })` beside a line like \"Maya, Sam and 12 others are going\"." },
+  { block: 'CodeInput', name: /\b(verify|verification|code|otp)\b/i, use: '`CodeInput({ length: 6, value, onChange, error? })` — the one-time code, with "Resend code" under it.' },
+  { block: 'Accordion', name: /\b(faq|help|support)\b/i, use: '`Accordion({ items: [{ title, body }], single: true, defaultOpen: [0] })` — questions that open to their answer.' },
+]
+
+/** The kit blocks a screen's own job asks for — matched on its name (the spec mentions too much), two at most. */
+export function blocksFor(s: Pick<PlannedScreen, 'name' | 'spec' | 'kind'>): typeof BLOCK_HINTS {
+  const hits = BLOCK_HINTS.filter((b) => (!b.kinds || b.kinds.includes(s.kind)) && b.name.test(s.name) && (!b.spec || b.spec.test(s.spec)))
+  return hits.filter((b, i) => hits.findIndex((x) => x.block === b.block) === i).slice(0, 2)
+}
+
+const blockLines = (s: PlannedScreen) => {
+  const hints = blocksFor(s)
+  return hints.length ? `\nBuild these parts with the kit's ready-made blocks (import from '@od/kit'; do not write your own): ${hints.map((h) => h.use).join(' ')}` : ''
+}
+
 export function screenBrief(plan: AppPlan, s: PlannedScreen): string {
   return `${appContext(plan)}
 
 # THIS SCREEN
 Screen id: ${s.id} — ${s.name} — ${kindLine(s)}
-${s.spec}${s.kind === 'first-run' ? `\nLayout: ${ONBOARDINGS[onboardingOf(plan)]} Build it this way, whatever the spec above implies.` : ''}
+${s.spec}${s.kind === 'first-run' ? `\nLayout: ${ONBOARDINGS[onboardingOf(plan)]} Build it this way, whatever the spec above implies.` : ''}${blockLines(s)}
 
 # A finished screen from a different app, at the quality bar
 Copy how it is built — its composition, colour, emoji, motion and how it uses Konsta and the kit — never its words, data or palette.
