@@ -106,6 +106,21 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-05 (6)
+
+### PHT-01 — near photo queries stop sharing one photo
+
+- In the eval's photo cache, 263 of 1 012 queries shared their photo with another query: Pexels' top result served
+  "runner portrait", "smiling runner portrait" and five more, so two people in one app wore one face and one
+  restaurant photo stood for every restaurant (the judge named both). `search` now asks for five results and the
+  query's own hash (`pickIndex`, FNV-1a on the normalised query) picks one: the same query keeps its photo, near
+  ones spread out. Six near runner queries went from 1 photo to 4 (checked against the live API).
+- Existing cache rows keep their photo; new lookups use the pick. The eval keeps its own cache, so this is not
+  measured on it.
+- Files: `src/app/Services/PhotoService.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: a test (stable per query, spread across near ones, one result is the only choice); the live check above;
+  `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-05 (5)
 
 ### FCT-01 — a screen's XP or streak that APP DATA does not have goes into the repair

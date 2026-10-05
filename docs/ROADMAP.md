@@ -388,6 +388,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-21 | Bloklar ekran nomiga qarab briefga beriladi | Generatsiya / Kit | MVP | Tayyor | Kichik |  | Judge shovqin darajasida; muammoli ekranlar 3% |
 | LNT-01 | Lint model kodini o'zgartirmaydi, modelga aytadi | Generatsiya / Lint | MVP | Tayyor | Kichik |  | Judge 4–2–2; output token +40% |
 | FCT-01 | XP/streak nomuvofiqligi repair'ga beriladi | Generatsiya / Izchillik | MVP | Tayyor | Kichik |  | Saqlangan runlarda 7 ta haqiqiy xatoni topdi |
+| PHT-01 | O'xshash rasm qidiruvlari bitta rasmni bo'lishmaydi | Generatsiya / Rasmlar | MVP | Tayyor | Kichik |  | 6 qidiruv: 1 → 4 xil rasm |
 | BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik |  | Provayder tanlangan, hisob ochilgan |
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |

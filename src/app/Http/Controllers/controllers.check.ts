@@ -151,7 +151,10 @@ export default function Screen() {
   const { onColor } = await import('../../../../runtime/kit/on-color.js')
   assert.deepEqual(['#0a84ff', '#ffd60a', '#30d158', '#1c1c1e', '#fff', 'var(--color-primary)'].map(onColor), ['#ffffff', '#1c1c1e', '#1c1c1e', '#ffffff', '#1c1c1e', '#ffffff'], 'white on dark and saturated blue, ink on yellow, mint and white; an unmeasurable colour keeps white')
   assert.ok(!/text-white/.test(lintJsx('import { Hero } from \'@od/kit\'\nexport default function Screen() { return <Hero color="#ffd60a" className="text-white p-5">x</Hero> }').source), 'text-white on a Hero is dropped')
-  const { photoQueries, cachedPhotos } = await import('../../Services/PhotoService.ts')
+  const { photoQueries, cachedPhotos, pickIndex } = await import('../../Services/PhotoService.ts')
+  // PHT-01: a query picks one of the five best results by its own hash — stable for a query, varied across near ones.
+  assert.equal(pickIndex('Runner Portrait ', 5), pickIndex('runner portrait', 5), 'the same query (as normalised) picks the same photo')
+  assert.ok(new Set(['runner portrait', 'smiling runner portrait', 'young runner portrait', 'runner portrait outdoors', 'portrait of a runner'].map((q) => pickIndex(q, 5))).size > 1 && pickIndex('x', 1) === 0 && pickIndex('x', 0) === 0, 'near queries spread over the results; one result is the only choice')
   const withPhotos = "const DISHES = [{ name: 'Salad', photo: 'Grilled  Chicken Salad' }, { name: 'x', photo: 'https://evil.example/a.jpg' }]\nexport default function Screen() { return <Page><Photo q=\"beach villa\" /><Photo q={DISHES[0].photo} /></Page> }"
   assert.deepEqual(photoQueries(withPhotos).sort(), ['beach villa', 'grilled chicken salad'], 'photo queries come from <Photo q> literals and photo data keys, normalised; URLs are never queries')
   const { ImageCache } = await import('../../Models/ImageCache.ts')

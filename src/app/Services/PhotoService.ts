@@ -46,16 +46,25 @@ export function photoQueries(source: string): string[] {
   return [...out].slice(0, MAX_PER_SCREEN)
 }
 
-// Same query, same photo: the first result is the most relevant one and the cache keeps it stable.
+// Same query, same photo (the cache keeps it stable) — but not the same photo for every query near it: the top result
+// served "runner portrait", "smiling runner portrait" and five more alike, so two runners in one app wore one face
+// (263 of 1 012 eval queries shared a photo). PHT-01: the query's own hash picks one of the PICK most relevant.
+const PICK = 5
+export const pickIndex = (query: string, n: number) => {
+  let h = 2166136261
+  for (const ch of photoKey(query)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  return n > 0 ? (h >>> 0) % Math.min(n, PICK) : 0
+}
 async function search(query: string, signal?: AbortSignal): Promise<Photo | null | undefined> {
   const key = await SecretService.get('PEXELS_API_KEY')
   if (!key) return undefined
-  const res = await fetch(`${SEARCH}?query=${encodeURIComponent(query)}&per_page=1`, {
+  const res = await fetch(`${SEARCH}?query=${encodeURIComponent(query)}&per_page=${PICK}`, {
     headers: { Authorization: key },
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000),
   })
   if (!res.ok) return undefined // rate limit or outage: not cached, a later save tries again
-  const photo = ((await res.json()) as { photos?: { src?: { original?: string }; avg_color?: string }[] }).photos?.[0]
+  const photos = ((await res.json()) as { photos?: { src?: { original?: string }; avg_color?: string }[] }).photos ?? []
+  const photo = photos[pickIndex(query, photos.length)]
   const original = photo?.src?.original
   if (!original || !original.startsWith(PHOTO_HOST)) return null
   // 800px covers a 390px frame at 2x; the CDN resizes on the fly.
