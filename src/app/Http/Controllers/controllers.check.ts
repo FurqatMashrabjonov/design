@@ -89,6 +89,8 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
     const names = (name: string, spec: string, kind: 'tab' | 'push' | 'modal' = 'push') => blocksFor({ name, spec, kind }).map((b) => b.block)
     assert.deepEqual(names('Dates & guests', 'Pick check-in and check-out dates', 'modal'), ['MonthCalendar'])
     assert.deepEqual(names('Order status', 'Tracking: the courier is on the way'), ['StepTimeline'])
+    assert.deepEqual(names('Order tracking', 'The courier on a map'), ['RouteMap', 'StepTimeline'])
+    assert.deepEqual(names('Run detail', 'Route, splits and pace'), ['RouteMap'])
     assert.deepEqual(names('Today', 'Your habits for today', 'tab'), ['WeekStrip'])
     assert.deepEqual(names('Today', 'Your habits for today', 'push'), [], 'a week strip is for tab screens only')
     assert.deepEqual(names('Profile', 'Name, avatar, notifications, weekly reviews and settings', 'tab'), [], 'a word in the spec is not the screen\'s job')

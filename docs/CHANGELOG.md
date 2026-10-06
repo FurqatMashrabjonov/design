@@ -106,6 +106,24 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06 (5)
+
+### KIT-23 — RouteMap: a drawn map wherever a screen shows one
+
+- The judge's most repeated complaint on tracking and run screens was the map: "empty grey boxes", "a stock finger-
+  on-map photo", "no maps anywhere". `RouteMap` (`runtime/kit/blocks.jsx`) draws one in SVG from a `seed`: streets, a
+  park, water, a smoothed route (`line`, or a `loop` closed without a seam), its start and end pin, where the courier
+  or runner is now (`progress`, a pulsing dot), labelled pins kept inside the map, and `children` at its bottom (a
+  glass card with the distance or ETA). Light and dark from the style's surfaces.
+- Offered by name (KIT-21's table): Map, Tracking, Route, On the way, Delivery, Run, Ride, Walk, Directions, Nearby.
+- Eval map01 against prm02: judge 2–2–4, rubric 3.29 → 3.14; clean screens 86% → 92%; the map drew on 3 screens (food
+  tracking, a run feed, a run detail) and the judge named it on the food app's win ("a real map for live tracking").
+  prm02's 3.29 looks like the high end of its noise (the same code measured ~3.2 since), so the pairwise is read as
+  noise and the change is kept for the defect it removes.
+- Files: `runtime/kit/blocks.jsx`, `src/app/Services/JsxGenerator.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: tests (a tracking screen gets RouteMap and StepTimeline; a run detail gets RouteMap); the map rendered in
+  iOS light and dark (labels kept inside, the loop smooth); `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-06 (4)
 
 ### PRM-05 — a BentoGrid in the kit; offering it to dashboards measured worse twice, so the prompt does not name it
