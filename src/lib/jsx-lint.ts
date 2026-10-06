@@ -180,6 +180,8 @@ export function lintJsx(source: string, opts: { apply?: boolean } = {}): LintRes
       }
       if (name === 'Button' && attr(node, 'large')) largeButtons++
       if (name === 'AppTabbar') tabbar = true
+      // A raw <img> has no picture behind it: APP DATA carries photo queries, not URLs, so it drew a broken image with its alt text.
+      if (name === 'img') report('raw-img', 'An <img> shows nothing here (there are no image URLs): draw every picture with the kit\'s <Photo q="what it shows" className="…" /> (q={item.photo} for APP DATA), and people with <Avatar photo="portrait …" />.', textOf(node.openingElement, source))
       if (/\bfixed\b/.test(classText(node)) && /\bbottom-0\b/.test(classText(node))) fixedBottom = node
       if (CONTROLS.has(name)) {
         const t = textOf(node, source)

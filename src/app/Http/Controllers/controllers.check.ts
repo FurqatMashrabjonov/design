@@ -157,6 +157,8 @@ export default function Screen() {
     assert.deepEqual(bad.map((f) => f.rule), ['fact-mismatch', 'fact-mismatch'], JSON.stringify(bad))
     assert.equal(appDataOf('x\n# APP DATA — the only source\nMaya 640 XP\n# THIS SCREEN\ny')?.trim(), 'Maya 640 XP')
   }
+  // A raw <img> is reported: there are no image URLs, so it draws a broken picture.
+  assert.ok(lintJsx('export default function S() { return <div><img src={x.image} alt="run" /></div> }').findings.some((f) => f.rule === 'raw-img'))
   // The owner's rule (2026-10-05): with apply: false the source is never changed; each fix becomes a finding.
   const kept = lintJsx(`export default function Screen() { return <Page><Block className="px-4"><div className="bg-white">x</div></Block></Page> }`, { apply: false })
   assert.ok(kept.source.includes('className="px-4"') && kept.source.includes('bg-white') && kept.fixed.length === 0, 'the source is left as written')

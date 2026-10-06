@@ -106,6 +106,16 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06 (6)
+
+### LNT-02 — a raw <img> is reported to the model
+
+- In map01 a feed card drew `<img src={run.image}>` where `run.image` was a photo query, not a URL: a broken picture
+  with its alt text. The lint reports `raw-img` with the fix in words (draw it with `<Photo q>`, people with
+  `<Avatar photo>`); it goes into the one repair like every finding. The source is not changed.
+- Files: `src/lib/jsx-lint.ts`, `controllers.check.ts`.
+- Verified: a test; `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-06 (5)
 
 ### KIT-23 — RouteMap: a drawn map wherever a screen shows one
