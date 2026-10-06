@@ -137,7 +137,7 @@ function summary(results: BriefResult[]) {
     buildRate: +(ok.length / Math.max(1, all.length)).toFixed(3),
     secondsPerApp: +(results.reduce((a, r) => a + r.seconds, 0) / Math.max(1, results.length)).toFixed(1),
     outTokensPerScreen: Math.round(results.reduce((a, r) => a + r.tokens.out, 0) / Math.max(1, all.length)),
-    konsta: mean('konsta'), photos: mean('photos'), kitFigures: mean('kitFigures'), emoji: mean('emoji'), colors: mean('colors'), gradients: mean('gradients'), nav: mean('nav'), motion: mean('motion'), overlays: mean('overlays'), blocks: mean('blocks'), hardWhite: mean('hardWhite'), chars: mean('chars'),
+    konsta: mean('konsta'), photos: mean('photos'), kitFigures: mean('kitFigures'), emoji: mean('emoji'), colors: mean('colors'), gradients: mean('gradients'), nav: mean('nav'), motion: mean('motion'), overlays: mean('overlays'), sections: mean('sections'), blocks: mean('blocks'), hardWhite: mean('hardWhite'), chars: mean('chars'),
     crashRate: +(ok.filter((s) => s.crashed).length / Math.max(1, ok.length)).toFixed(3),
     // HIG-10: lint findings left after its fixes — per screen, and which rules.
     hig: mean('hig'),

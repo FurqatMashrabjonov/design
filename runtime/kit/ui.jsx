@@ -100,11 +100,12 @@ export function Avatar({ name = '', color, size = 44, photo }) {
   color = cssColor(color)
   const p = usePhotos()[String(photo ?? '').toLowerCase().trim().replace(/\s+/g, ' ').slice(0, 80)]
   const [loaded, setLoaded] = useState(STATIC)
+  const [failed, setFailed] = useState(false)
   const initials = String(name).split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('')
   return (
     <div data-od-photo={photo || undefined} className="relative overflow-hidden rounded-full flex items-center justify-center text-white font-semibold shrink-0" style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #ff375f))` }}>
       {initials}
-      {p && <img src={p.u} alt={name} onLoad={() => setLoaded(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
+      {p && !failed && <img src={p.u} alt="" onLoad={() => setLoaded(true)} onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
     </div>
   )
 }
@@ -251,11 +252,12 @@ export function Medal({ emoji, color = '#ffb800', size = 64, locked = false }) {
 export function Photo({ q = '', alt, className = '', style, children }) {
   const p = usePhotos()[String(q).toLowerCase().trim().replace(/\s+/g, ' ').slice(0, 80)]
   const [loaded, setLoaded] = useState(STATIC)
+  const [failed, setFailed] = useState(false)
   return (
     // `relative` only when the screen gives no position of its own: next to `absolute inset-0` it won (Tailwind puts
     // relative after absolute), the photo lost its height and a full-bleed onboarding showed white text on white.
     <div data-od-photo={q} className={`${/(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className) ? '' : 'relative '}overflow-hidden ${className}`} style={{ background: p?.c ?? 'rgba(120,120,128,.16)', ...style }}>
-      {p && <img src={p.u} alt={alt ?? q} onLoad={() => setLoaded(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
+      {p && !failed && <img src={p.u} alt={alt ?? q} onLoad={() => setLoaded(true)} onError={() => setFailed(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
       {children && <div className="relative h-full">{children}</div>}
     </div>
   )

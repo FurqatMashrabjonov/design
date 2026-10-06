@@ -106,6 +106,21 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06 (2)
+
+### PRM-03 — tried and reverted: telling tab screens to run longer made them worse; a broken photo no longer shows its alt text
+
+- Tried: every tab brief asked for 4–6 sections, at least 1.3 phones, ending on a closing section (a tip, achievements,
+  a Premium card), and pushed screens for three sections. prm03 against prm02: judge 2–2–4, rubric 3.29 → 3.22,
+  fidelity 3.78 → 3.59, seconds per app +28%, output tokens +19%, clean screens 86% → 81% — the model filled
+  length with content the brief did not ask for. Reverted; the eval keeps the new `sections` count (titled groups
+  per screen) for the next attempt.
+- Kept, from the judge's notes on that run: a portrait or photo whose image fails to load showed its alt text in
+  static shots. `Avatar` and `Photo` now drop a failed image (`onError`) and keep their initials or tint; the
+  portrait's alt is empty (the name is beside it).
+- Files: `runtime/kit/ui.jsx`, `eval/metrics.ts`, `eval/run.ts`.
+- Verified: `npx tsc --noEmit` and `npm run check` clean; the runs above.
+
 ## 2026-10-06
 
 ### PRM-01 + PRM-02 — people are portraits; the flow ends on sign-in and carries a paywall
