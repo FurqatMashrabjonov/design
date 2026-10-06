@@ -32,9 +32,9 @@ export function photoQueries(source: string): string[] {
     if (!n || typeof n !== 'object') return
     if (Array.isArray(n)) return n.forEach(walk)
     const node = n as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-    // PRM-01: <Avatar photo="portrait …"> is a photo too.
-    if (node.type === 'JSXOpeningElement' && (node.name?.name === 'Photo' || node.name?.name === 'Avatar')) {
-      const prop = node.name.name === 'Photo' ? 'q' : 'photo'
+    // `<Photo q>`, and a `photo` prop on any part that draws one (Avatar, BentoCard…).
+    if (node.type === 'JSXOpeningElement') {
+      const prop = node.name?.name === 'Photo' ? 'q' : 'photo'
       for (const a of node.attributes ?? []) {
         if (a.type !== 'JSXAttribute' || a.name?.name !== prop) continue
         if (a.value?.type === 'StringLiteral') add(a.value.value)

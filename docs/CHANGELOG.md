@@ -106,6 +106,24 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06 (4)
+
+### PRM-05 — a BentoGrid in the kit; offering it to dashboards measured worse twice, so the prompt does not name it
+
+- `BentoGrid` / `BentoCard` (`runtime/kit/blocks.jsx`): cards of different sizes for the top of a dashboard — a
+  `photo` card with its text on dark glass (light glass under white text failed in light mode), a `fill` card in a
+  colour (text colour from `onColor`), a surface card with icon, value and `progress`; `tall`, `wide`, `children`.
+  `photoQueries` now reads a `photo` prop on any part, so a BentoCard's photo is looked up like an Avatar's.
+- Offered in the dashboard's brief (as KIT-21 does for blocks): bnt01 drew it in 8 of 8 apps but judged 1–3–4 against
+  prm02 (rubric 3.29 → 3.29; "fills Explore with confusing bento stats", "unreadable glass card"); narrowed to
+  dashboards named Today/Home/Overview with dark glass, bnt02 drew it in 4 of 8 and judged 1–2–5 (rubric 3.19; "shows
+  steps twice" — the grid repeated what the rest of the screen said). The brief line is reverted; the parts stay in
+  the kit, like KIT-20's blocks.
+- What three tries (PRM-03 longer screens, PRM-04 a bento example, PRM-05 a bento part) say together: the judge rewards
+  covering the brief and one consistent story across screens over layout flourishes; the next work goes there.
+- Files: `runtime/kit/blocks.jsx`, `src/app/Services/PhotoService.ts`, `controllers.check.ts`, `CLAUDE.md`.
+- Verified: the grid rendered in iOS light and dark; `npx tsc --noEmit` and `npm run check` clean; the runs above.
+
 ## 2026-10-06 (3)
 
 ### PRM-04 — tried and reverted: a bento dashboard example did not reach the apps

@@ -3,9 +3,9 @@
 // stack, story rings and a code input. Hand-written and reviewed in a gallery (gallery/*.jsx) before they joined the
 // kit; plain React + Tailwind on the style's tokens, so the export can copy this file as it is.
 import { useEffect, useRef, useState } from 'react'
-import { Button, List, ListItem, Preloader } from 'konsta/react'
+import { Button, Glass, List, ListItem, Preloader } from 'konsta/react'
 import { ArrowDown, ChevronLeft, ChevronRight, Check, MapPin, Star, Plus } from 'lucide-react'
-import { Dots, Photo, Avatar, Meter, tint, gradient } from './ui.jsx'
+import { Dots, Photo, Avatar, Meter, tint, gradient, onColor, cssColor } from './ui.jsx'
 
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
@@ -673,5 +673,54 @@ export function SignInButtons({ onApple, onGoogle, onEmail, email = 'Continue wi
       <button type="button" onClick={onGoogle} className={`${btn} bg-white text-black border border-black/10 dark:border-white/10`}><GoogleMark />Continue with Google</button>
       {onEmail && <button type="button" onClick={onEmail} className="w-full h-10 text-subhead font-medium text-primary">{email}</button>}
     </div>
+  )
+}
+
+// ── BentoGrid ───────────────────────────────────────────────────────────────────────────────────────────────
+// PRM-05: the top of a dashboard as a bento grid — cards of different sizes, so the eye has an order and nothing is a
+// plain row. A card is a photo with a glass panel (`photo`), a filled colour (`fill`), or a surface with a coloured
+// figure; `tall` spans two rows, `wide` two columns. An example dashboard drawn this way was copied on 1 screen in 63;
+// a part with props is copied every time. The glass is dark: light glass under white text failed in light mode.
+export function BentoGrid({ children, className = '' }) {
+  return <div className={`grid grid-cols-2 gap-3 px-4 ${className}`}>{children}</div>
+}
+
+export function BentoCard({ tall, wide, photo, fill, color, icon, title, value, detail, progress, badge, onClick, children, delay = 0 }) {
+  const c = color ? cssColor(color) : 'var(--color-primary)'
+  const Tag = onClick ? 'button' : 'div'
+  const size = `${tall ? 'row-span-2 min-h-[264px]' : 'min-h-[124px]'} ${wide ? 'col-span-2' : ''}`
+  const base = `${size} relative overflow-hidden rounded-[26px] text-left vs-rise ${onClick ? 'active:scale-[.98] motion-safe:transition-transform' : ''}`
+  const style = { animationDelay: `${delay}ms` }
+  const text = (light) => (
+    <>
+      {title && <div className={`text-footnote ${light ? 'opacity-85' : 'opacity-60'}`}>{title}</div>}
+      {value != null && <div className="text-title2 leading-tight tabular-nums" style={light || fill ? undefined : { color: c }}>{value}</div>}
+      {detail && <div className={`text-caption1 ${light ? 'opacity-85' : 'opacity-60'} mt-0.5`}>{detail}</div>}
+    </>
+  )
+  if (photo) {
+    return (
+      <Tag onClick={onClick} className={base} style={style}>
+        <Photo q={photo} className="absolute inset-0" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/15" />
+        {badge && <span className="absolute top-3 left-3 text-caption1 font-semibold px-2.5 py-1 rounded-full bg-black/30 text-white backdrop-blur-md">{badge}</span>}
+        <Glass className="!absolute left-2.5 right-2.5 bottom-2.5 !rounded-[20px] p-3 text-white !bg-black/35 backdrop-blur-xl">{children ?? text(true)}</Glass>
+      </Tag>
+    )
+  }
+  if (fill) {
+    const fg = onColor(color ?? '#5e5ce6')
+    return (
+      <Tag onClick={onClick} className={`${base} p-3.5 flex flex-col justify-between`} style={{ ...style, background: gradient(color ?? '#5e5ce6'), color: fg }}>
+        <div className="flex items-center justify-between [&>svg]:w-5 [&>svg]:h-5">{icon}{badge && <span className="text-caption1 font-semibold opacity-90">{badge}</span>}</div>
+        <div>{children ?? text(false)}</div>
+      </Tag>
+    )
+  }
+  return (
+    <Tag onClick={onClick} className={`${base} p-3.5 bg-card flex flex-col justify-between`} style={style}>
+      <div className="flex items-center justify-between [&>svg]:w-5 [&>svg]:h-5" style={{ color: c }}>{icon}{badge && <span className="text-caption1 opacity-60" style={{ color: 'inherit' }}>{badge}</span>}</div>
+      <div>{children ?? text(false)}{progress != null && <div className="mt-2"><Meter value={Math.max(0, Math.min(1, asNum(progress)))} color={c} height={6} /></div>}</div>
+    </Tag>
   )
 }

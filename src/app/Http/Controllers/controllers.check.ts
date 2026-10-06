@@ -67,6 +67,11 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
   assert.deepEqual(p.palette, { water: '#0a84ff', sleep: '#5e5ce6' }, 'the palette is pasted as code: identifiers and hex colours only')
   assert.ok(appContext(p).includes('const C = {"water":"#0a84ff","sleep":"#5e5ce6"}'), 'every screen gets the same palette line')
   assert.deepEqual(p.screens.map((s) => exampleFor(p, s)), ['dashboard', 'detail', 'detail'], 'the first tab is built like a dashboard, pushed screens like a detail')
+  // PRM-05: a photo prop on any part (a BentoCard) is a photo query.
+  {
+    const { photoQueries: pq } = await import('../../Services/PhotoService.ts')
+    assert.deepEqual(pq('<BentoCard tall photo="woman running at sunrise" />'), ['woman running at sunrise'])
+  }
   // PRM-02: a paywall modal is built from the paywall example and survives the eight-screen cut.
   {
     const { exampleFor: ex, parsePlan: pp } = await import('../../Services/JsxGenerator.ts')
