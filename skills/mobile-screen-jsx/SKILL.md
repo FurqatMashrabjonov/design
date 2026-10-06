@@ -74,7 +74,7 @@ The compiler rejects a file that breaks these:
 ## Emoji and photos
 
 - Emoji are content: an item's or category's icon on a `Tile tinted`, an award on a `Medal`, a mood, a flag, the centre of a ring, an empty-state picture (`text-5xl`). One per item; never in buttons, navbars or body text.
-- Anything a real app shows as a picture is a real photo: dishes, products, places, workouts, articles, posts, a viewfinder, a banner. `<Photo q="grilled chicken salad" className="w-full h-40 rounded-3xl" />` — `q` is 2–4 plain English words; with APP DATA's `photo`, use `q={item.photo}`. A row thumbnail `w-14 h-14 rounded-2xl` as `media`. Text over a photo sits in its children on `bg-gradient-to-t from-black/70`. People keep `Avatar` initials, except in a social feed or profile (`<Photo q="portrait smiling woman" className="w-10 h-10 rounded-full" />`).
+- Anything a real app shows as a picture is a real photo: dishes, products, places, workouts, articles, posts, a viewfinder, a banner. `<Photo q="grilled chicken salad" className="w-full h-40 rounded-3xl" />` — `q` is 2–4 plain English words; with APP DATA's `photo`, use `q={item.photo}`. A row thumbnail `w-14 h-14 rounded-2xl` as `media`. Text over a photo sits in its children on `bg-gradient-to-t from-black/70`. People are photos too: `<Avatar name="Maya Chen" photo="portrait smiling young woman" size={40} />` (with APP DATA's `photo`, `photo={person.photo}`) — initials alone read as a placeholder.
 
 ## Building blocks (combine; do not repeat one)
 

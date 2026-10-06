@@ -11,14 +11,14 @@ import { SecretService } from './SecretService'
 const SEARCH = 'https://api.pexels.com/v1/search'
 const PHOTO_HOST = 'https://images.pexels.com/'
 const MAX_PER_SCREEN = 16 // more than this is a gallery the API budget (200/hour) should not pay for
-const PHOTO_KEYS = new Set(['photo', 'image', 'img', 'cover', 'picture', 'thumbnail', 'thumb'])
+const PHOTO_KEYS = new Set(['photo', 'image', 'img', 'cover', 'picture', 'thumbnail', 'thumb', 'avatar', 'portrait'])
 
 export type Photo = { u: string; c?: string }
 
 /** The one spelling a query is looked up and matched under — the kit's Photo normalises the same way. */
 export const photoKey = (q: string) => q.toLowerCase().trim().replace(/\s+/g, ' ').slice(0, 80)
 
-/** Every photo a screen asks for: `<Photo q="…">` literals and string values of photo-like data keys. */
+/** Every photo a screen asks for: `<Photo q="…">` and `<Avatar photo="…">` literals and string values of photo-like data keys. */
 export function photoQueries(source: string): string[] {
   let ast: ReturnType<typeof parse>
   try {
@@ -32,9 +32,11 @@ export function photoQueries(source: string): string[] {
     if (!n || typeof n !== 'object') return
     if (Array.isArray(n)) return n.forEach(walk)
     const node = n as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
-    if (node.type === 'JSXOpeningElement' && node.name?.name === 'Photo') {
+    // PRM-01: <Avatar photo="portrait …"> is a photo too.
+    if (node.type === 'JSXOpeningElement' && (node.name?.name === 'Photo' || node.name?.name === 'Avatar')) {
+      const prop = node.name.name === 'Photo' ? 'q' : 'photo'
       for (const a of node.attributes ?? []) {
-        if (a.type !== 'JSXAttribute' || a.name?.name !== 'q') continue
+        if (a.type !== 'JSXAttribute' || a.name?.name !== prop) continue
         if (a.value?.type === 'StringLiteral') add(a.value.value)
         else if (a.value?.expression?.type === 'StringLiteral') add(a.value.expression.value)
         else if (a.value?.expression?.type === 'TemplateLiteral' && a.value.expression.expressions.length === 0) add(a.value.expression.quasis[0]?.value?.cooked)

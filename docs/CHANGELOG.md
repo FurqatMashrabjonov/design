@@ -106,6 +106,36 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06
+
+### PRM-01 + PRM-02 — people are portraits; the flow ends on sign-in and carries a paywall
+
+- Research first (Mobbin's most searched screens: login, onboarding, dashboard, settings, pricing/paywall, empty
+  state, checkout): in 311 eval screens there was no sign-in and no paywall, and the judge's most repeated complaint
+  was "generic placeholder avatars" — the skill itself said "people keep Avatar initials".
+- PRM-01: `Avatar({ name, color, size, photo })` shows the portrait `photo` names (Pexels, like Photo's `q`) over
+  its initials, which stay until it loads; `photoQueries` reads `<Avatar photo>` and `avatar`/`portrait` data keys;
+  `AvatarStack` and `Stories` pass a person's `photo` on. The skill, KIT.md and the planner's APP DATA now give every
+  person a `photo: "portrait …"`; the dashboard example's avatar has one.
+- PRM-02: the kit's `SignInButtons` (Apple in black and Google with their real marks, an email link); the first-run
+  brief says the screen ends on it, and the planner adds no separate sign-up screen. A consumer app gets one modal
+  `paywall`, kept through the eight-screen cut, built from the new `konsta/examples/paywall.jsx` (a page sheet: art,
+  four benefits, yearly against monthly with the saving, a free-trial button, restore and terms).
+- Eval (GPT-6 Luna, 8 briefs; the baseline re-shot in each app's style):
+  | | Judge | Rubric | Polish | Clean screens |
+  |---|---|---|---|---|
+  | prm01 (portraits) against pal03s | 3–1–4 | 3.13 → 3.19 | 3.05 → 3.14 | 90% → 94% |
+  | prm02 (+ sign-in, paywall) against prm01 | **4–1–3** | 3.19 → **3.29** | 3.14 → 3.25 | 94% → 86% |
+  24 screens drew portraits and the judge stopped naming placeholder avatars; prm02 drew a paywall in 6 of 8 apps and
+  sign-in buttons in 8 of 8. Clean screens fell in prm02 (more, denser screens) — the next thing to watch.
+- Files: `runtime/kit/ui.jsx`, `runtime/kit/blocks.jsx`, `src/app/Services/PhotoService.ts`,
+  `src/app/Services/JsxGenerator.ts`, `skills/mobile-screen-jsx/SKILL.md`, `konsta/KIT.md`,
+  `konsta/examples/{paywall,dashboard}.jsx`, `controllers.check.ts`, `scripts/kit-gallery.ts` (its HTML now carries
+  real photos), `CLAUDE.md`.
+- Verified: tests (portrait queries; a paywall modal uses the paywall example and survives the cut); the paywall and
+  sign-in rendered in iOS light and dark; a live HTML gallery of portraits, sign-in and paywall checked in Chrome;
+  `npx tsc --noEmit` and `npm run check` clean.
+
 ## 2026-10-05 (10)
 
 ### KIT-22 — the kit's blocks take numbers and lists the way a model writes them

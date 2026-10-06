@@ -392,6 +392,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | PAL-01 | Uslub palitralari OKLCH'da, aksent kulranglashmaydi | Generatsiya / Rang | MVP | Tayyor | Kichik |  | Baho o'rtacha +0.15, pairwise teng |
 | PAL-02 | Ilova ranglari 4 tagacha, oila bo'lib | Generatsiya / Rang | MVP | Tayyor | Kichik |  | Coherence 3.38 → 3.88 |
 | PAL-03 | Editorial iliq qog'oz fonida; eval uslubni ko'rsatadi | Generatsiya / Rang | MVP | Tayyor | Kichik |  | Judge 3–0; eval xatosi tuzatildi |
+| PRM-01 | Odamlar haqiqiy portret bilan | Generatsiya / Premium | MVP | Tayyor | Kichik |  | Placeholder avatar shikoyati yo'qoldi |
+| PRM-02 | Flow: sign-in tugmalari va paywall | Generatsiya / Premium | MVP | Tayyor | O'rta |  | Baho 3.19 → 3.29; paywall 6/8 |
 | BIL-01 | To'lov provayderini tanlash: Lemon Squeezy yoki Polar | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik |  | Provayder tanlangan, hisob ochilgan |
 | ADM-09 | Admin panelni minimal qilish: 4 bo'lim, pul bosqichiga tayyor | Monitoring / Analitika | MVP | Tayyor | Kichik | ADM-01..08 | Overview / Users / Generations / Settings |
 | BIL-02 | Narxlar: tariflar, kredit hajmi, bepul kredit | To'lov va kreditlar / Qarorlar | MVP | Tayyor | Kichik | OBS-01 | Raqamlar shu yerda, haqiqiy xarajat ma'lumotiga asoslangan |

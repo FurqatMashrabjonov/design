@@ -6,6 +6,7 @@ import { basename } from 'node:path'
 import { compileScreen } from '@/app/Services/ScreenCompiler'
 import { auditScreen, screenshotScreen } from '@/app/Services/RenderAudit'
 import { exportHtml } from '@/app/Services/ExportService'
+import { resolvePhotos } from '@/app/Services/PhotoService'
 const [cmd, out, ...files] = process.argv.slice(2)
 const ICONS = ['Calendar', 'Layers', 'Users', 'Keyboard', 'Star', 'Grid2x2']
 const slugOf = (f: string) => basename(f, '.jsx')
@@ -24,6 +25,7 @@ if (cmd === 'shot') {
     if (png) { writeFileSync(`${dir}/${slugOf(file)}-${tag}.png`, png); console.log(`${dir}/${slugOf(file)}-${tag}.png`) }
   }
 } else if (cmd === 'html') {
+  for (const f of files) await resolvePhotos(readFileSync(f, 'utf8')).catch(() => {}) // the HTML carries real photos
   const rows = files.map((f, i) => ({ id: `g${i}`, slug: slugOf(f), name: tabs[i]!.label, html: readFileSync(f, 'utf8'), x: i * 450, y: 0, screenType: 'tab', activeTabId: slugOf(f) }))
   const html = await exportHtml({ name: 'Kit gallery', theme: JSON.stringify({ accent: '#5e5ce6', dark: false, platform: 'ios', style: 'clean' }), navigation: JSON.stringify({ tabs }), plan: null }, rows)
   writeFileSync(out!, html); console.log('wrote', out, html.length, 'bytes')

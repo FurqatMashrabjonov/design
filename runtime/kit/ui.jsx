@@ -94,12 +94,17 @@ export function Area({ values, color, height = 110 }) {
   )
 }
 
-export function Avatar({ name, color, size = 44 }) {
+/** A person: their portrait when `photo` names one ("portrait smiling young woman", looked up like Photo's `q`),
+ *  initials on a gradient until it loads or when there is none (PRM-01: initials everywhere read as placeholders). */
+export function Avatar({ name = '', color, size = 44, photo }) {
   color = cssColor(color)
-  const initials = name.split(' ').map((p) => p[0]).slice(0, 2).join('')
+  const p = usePhotos()[String(photo ?? '').toLowerCase().trim().replace(/\s+/g, ' ').slice(0, 80)]
+  const [loaded, setLoaded] = useState(STATIC)
+  const initials = String(name).split(' ').map((w) => w[0]).filter(Boolean).slice(0, 2).join('')
   return (
-    <div className="rounded-full flex items-center justify-center text-white font-semibold shrink-0" style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #ff375f))` }}>
+    <div data-od-photo={photo || undefined} className="relative overflow-hidden rounded-full flex items-center justify-center text-white font-semibold shrink-0" style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, ${color}, color-mix(in oklab, ${color} 55%, #ff375f))` }}>
       {initials}
+      {p && <img src={p.u} alt={name} onLoad={() => setLoaded(true)} className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500" style={{ opacity: loaded ? 1 : 0 }} />}
     </div>
   )
 }

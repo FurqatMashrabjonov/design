@@ -50,7 +50,7 @@ const ONBOARDING_BY_STYLE: Record<AppStyle, Onboarding[]> = {
 export const onboardingFor = (style: AppStyle, seed: string): Onboarding => seededPick(ONBOARDING_BY_STYLE[style], seed, 'onboarding')
 /** A stored plan's layout; plans from before ONB-01 (or a stray value) are the carousel. */
 const onboardingOf = (plan: AppPlan): Onboarding => (plan.onboarding && plan.onboarding in ONBOARDINGS ? plan.onboarding : 'slides')
-type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}`
+type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}`
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
 {"appName": string, "summary": "one sentence",
@@ -58,8 +58,8 @@ export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by 
  "palette": ["camelCaseName", …] — 2–4 names, one per main thing the app tracks or sorts by (top apps use two to four colours, not a rainbow), named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); the host colours them,
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
  "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
- "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows" — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
-Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; add a sign-up first-run screen only if the brief mentions accounts. appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Use "modal" for the app's quick tasks — add or log something, filter, pick, check out, share, an award or a receipt (it shows as a sheet over its parent); "push" for places you go deeper. Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
+ "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows", and for every person (the user, friends, hosts, couriers, coaches, reviewers) photo: "portrait" plus who they look like ("portrait smiling young woman", "portrait bearded man outdoors") — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
+Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; it ends on signing in (the host draws the buttons), so add no separate sign-up screen. A consumer app also has one "modal" screen with id "paywall" — its premium plan, opened from the profile or from a feature it unlocks — named after the app ("Pacewell Premium"). appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Use "modal" for the app's quick tasks — add or log something, filter, pick, check out, share, an award or a receipt (it shows as a sheet over its parent); "push" for places you go deeper. Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
 
 // A tab icon the set does not have used to become House — a Sleep tab drew the same house as Today. The label
 // says what the tab is; failing that, the first fallback no other tab wears.
@@ -119,7 +119,9 @@ export function parsePlan(json: string, fallbackName: string, seed?: string): Ap
   // screen, never below three tabs and never the first-run screen.
   const MAX = 8
   const drop = (s: PlannedScreen) => (screens = screens.filter((x) => x !== s))
-  for (const s of [...screens].reverse()) if (screens.length > MAX && (s.kind === 'push' || s.kind === 'modal') && !s.asked && !screens.some((x) => x.parent === s.id)) drop(s)
+  // PRM-02: the paywall is kept like a screen the brief asked for — it is half of what a top app's flow shows.
+  const keep = (s: PlannedScreen) => s.asked || /^(paywall|premium|upgrade)/.test(s.id)
+  for (const s of [...screens].reverse()) if (screens.length > MAX && (s.kind === 'push' || s.kind === 'modal') && !keep(s) && !screens.some((x) => x.parent === s.id)) drop(s)
   for (const s of [...screens].reverse()) if (screens.length > MAX && s.kind === 'tab' && !s.asked && screens.filter((x) => x.kind === 'tab').length > 3 && !screens.some((x) => x.parent === s.id)) drop(s)
   screens = screens.slice(0, MAX)
   const kept = new Set(screens.map((s) => s.tab).filter(Boolean))
@@ -151,7 +153,7 @@ export async function planApp(brief: string, fallbackName: string, onUsage: (u: 
 }
 
 const kindLine = (s: PlannedScreen) =>
-  s.kind === 'tab' ? `tab screen — AppTabbar active="${s.tab}"` : s.kind === 'first-run' ? 'first-run screen — no navbar, no tab bar' : s.kind === 'modal' ? `modal — drawn as an open page Sheet (className "h-[calc(100%-3rem)]") over the dimmed page; closing it is nav.pop() (back to ${s.parent}); no tab bar` : `${s.kind} — back goes to ${s.parent}; no tab bar`
+  s.kind === 'tab' ? `tab screen — AppTabbar active="${s.tab}"` : s.kind === 'first-run' ? 'first-run screen — no navbar, no tab bar; its last step ends on <SignInButtons onApple onGoogle onEmail /> from the kit (each goes on into the app with nav.reset to the first tab), not on a lone Continue' : s.kind === 'modal' ? `modal — drawn as an open page Sheet (className "h-[calc(100%-3rem)]") over the dimmed page; closing it is nav.pop() (back to ${s.parent}); no tab bar` : `${s.kind} — back goes to ${s.parent}; no tab bar`
 
 /**
  * THM-01: what each style asks of a screen. The host sets the surfaces, corners and fonts (runtime/kit/styles.js);
@@ -183,7 +185,8 @@ ${plan.data}`
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
   if (s.kind === 'first-run') { const o = onboardingOf(plan); return o === 'slides' ? 'onboarding' : `onboarding-${o}` }
   if (s.kind === 'tab') return s.tab === plan.tabs[0]?.id ? ('dashboard' as const) : ('list' as const)
-  return s.kind === 'modal' ? ('sheet' as const) : ('detail' as const)
+  if (s.kind === 'modal') return /^(paywall|premium|upgrade)/.test(s.id) || /premium|subscription|paywall/i.test(s.name) ? ('paywall' as const) : ('sheet' as const)
+  return 'detail' as const
 }
 
 /**

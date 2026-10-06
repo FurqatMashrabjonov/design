@@ -29,7 +29,7 @@ export default function Screen() {
   return (
     <Page className="pb-32">
       <Navbar large transparent title="Today" subtitle="Saturday, 27 September"
-        left={<Link iconOnly onClick={() => setMenu(true)}><Avatar name="Aziza Karimova" color={C.steps} size={32} /></Link>}
+        left={<Link iconOnly onClick={() => setMenu(true)}><Avatar name="Aziza Karimova" photo="portrait smiling young woman" color={C.steps} size={32} /></Link>}
         right={<Link iconOnly onClick={() => nav.push('inbox')} className="relative"><Bell className="w-6 h-6" /><Badge className="absolute -top-1 -right-1" colors={{ bg: 'bg-red-500' }}>4</Badge></Link>} />
 
       <Block className="!mt-1 !mb-2 text-subhead opacity-70">Good morning, Aziza. You are {Math.round((done.length / HABITS.length) * 100)}% through today.</Block>
@@ -92,7 +92,7 @@ export default function Screen() {
       <Panel side="left" floating opened={menu} onBackdropClick={() => setMenu(false)}>
         <Page>
           <Block className="flex items-center gap-3 !mt-6">
-            <Avatar name="Aziza Karimova" color={C.steps} size={52} />
+            <Avatar name="Aziza Karimova" photo="portrait smiling young woman" color={C.steps} size={52} />
             <div><div className="text-headline">Aziza Karimova</div><div className="text-footnote opacity-60">Premium · 41-day streak</div></div>
           </Block>
           <List strong inset>

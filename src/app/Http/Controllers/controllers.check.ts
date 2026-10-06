@@ -67,6 +67,17 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
   assert.deepEqual(p.palette, { water: '#0a84ff', sleep: '#5e5ce6' }, 'the palette is pasted as code: identifiers and hex colours only')
   assert.ok(appContext(p).includes('const C = {"water":"#0a84ff","sleep":"#5e5ce6"}'), 'every screen gets the same palette line')
   assert.deepEqual(p.screens.map((s) => exampleFor(p, s)), ['dashboard', 'detail', 'detail'], 'the first tab is built like a dashboard, pushed screens like a detail')
+  // PRM-02: a paywall modal is built from the paywall example and survives the eight-screen cut.
+  {
+    const { exampleFor: ex, parsePlan: pp } = await import('../../Services/JsxGenerator.ts')
+    assert.equal(ex(p, { id: 'paywall', name: 'Pacewell Premium', kind: 'modal', parent: 'home', spec: '' }), 'paywall')
+    assert.equal(ex(p, { id: 'add-run', name: 'Log a run', kind: 'modal', parent: 'home', spec: '' }), 'sheet')
+    const many = pp(JSON.stringify({ appName: 'X', tabs: [{ id: 'home', label: 'Home', icon: 'House' }, { id: 'me', label: 'Me', icon: 'User' }, { id: 'stats', label: 'Stats', icon: 'ChartColumn' }], screens: [
+      { id: 'home', name: 'Home', kind: 'tab', tab: 'home', spec: '' }, { id: 'me', name: 'Me', kind: 'tab', tab: 'me', spec: '' }, { id: 'stats', name: 'Stats', kind: 'tab', tab: 'stats', spec: '' },
+      ...[1, 2, 3, 4, 5, 6].map((i) => ({ id: `d${i}`, name: `D${i}`, kind: 'push', parent: 'home', spec: '' })),
+      { id: 'paywall', name: 'X Premium', kind: 'modal', parent: 'me', spec: '' }] }), 'x', 'seed')
+    assert.ok(many.screens.length === 8 && many.screens.some((s) => s.id === 'paywall'), many.screens.map((s) => s.id).join(','))
+  }
   // KIT-21: a screen gets the kit blocks its own job asks for, two at most, and the brief says how to call them.
   {
     const { blocksFor, screenBrief: brief } = await import('../../Services/JsxGenerator.ts')
@@ -152,6 +163,8 @@ export default function Screen() {
   assert.deepEqual(['#0a84ff', '#ffd60a', '#30d158', '#1c1c1e', '#fff', 'var(--color-primary)'].map(onColor), ['#ffffff', '#1c1c1e', '#1c1c1e', '#ffffff', '#1c1c1e', '#ffffff'], 'white on dark and saturated blue, ink on yellow, mint and white; an unmeasurable colour keeps white')
   assert.ok(!/text-white/.test(lintJsx('import { Hero } from \'@od/kit\'\nexport default function Screen() { return <Hero color="#ffd60a" className="text-white p-5">x</Hero> }').source), 'text-white on a Hero is dropped')
   const { photoQueries, cachedPhotos, pickIndex } = await import('../../Services/PhotoService.ts')
+  // PRM-01: a person's portrait is a photo query, from <Avatar photo> and from an `avatar` data key.
+  assert.deepEqual(photoQueries(`const P = [{ name: 'Leo', avatar: 'portrait bearded man' }]; export default function S() { return <Avatar name="Maya" photo="Portrait smiling woman" /> }`).sort(), ['portrait bearded man', 'portrait smiling woman'])
   // PHT-01: a query picks one of the five best results by its own hash — stable for a query, varied across near ones.
   assert.equal(pickIndex('Runner Portrait ', 5), pickIndex('runner portrait', 5), 'the same query (as normalised) picks the same photo')
   assert.ok(new Set(['runner portrait', 'smiling runner portrait', 'young runner portrait', 'runner portrait outdoors', 'portrait of a runner'].map((q) => pickIndex(q, 5))).size > 1 && pickIndex('x', 1) === 0 && pickIndex('x', 0) === 0, 'near queries spread over the results; one result is the only choice')

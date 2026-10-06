@@ -532,7 +532,7 @@ export function AvatarStack({ people: rawPeople, max = 4, size = 36, ring = 'var
     <div className="flex items-center shrink-0" aria-label={`${people.length} people`}>
       {shown.map((p, i) => (
         <span key={p.name} className="block shrink-0 rounded-full" style={i ? edge : { boxShadow: edge.boxShadow, marginLeft: 0 }}>
-          <Avatar name={p.name} color={p.color} size={size} />
+          <Avatar name={p.name} color={p.color} photo={p.photo} size={size} />
         </span>
       ))}
       {extra > 0 && (
@@ -558,7 +558,7 @@ export function Stories({ items: rawItems, me, onOpen, onAdd }) {
       {me && (
         <button type="button" onClick={onAdd} aria-label="Add to your story" className="flex flex-col items-center gap-1.5 w-[68px] shrink-0 snap-start">
           <span className="relative block" style={{ width: SIZE, height: SIZE }}>
-            {circle('transparent', <Avatar name={me.name} color={me.color} size={SIZE - 10} />)}
+            {circle('transparent', <Avatar name={me.name} color={me.color} photo={me.photo} size={SIZE - 10} />)}
             <span className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center" style={{ boxShadow: '0 0 0 2.5px var(--color-page)' }}>
               <Plus className="w-4 h-4" strokeWidth={3} />
             </span>
@@ -581,7 +581,7 @@ export function Stories({ items: rawItems, me, onOpen, onAdd }) {
             className="flex flex-col items-center gap-1.5 w-[68px] shrink-0 snap-start"
           >
             <span className="block">
-              {circle(isSeen ? MUTED : `linear-gradient(45deg, ${s.color}, var(--color-primary))`, <Avatar name={s.name} color={s.color} size={SIZE - 10} />)}
+              {circle(isSeen ? MUTED : `linear-gradient(45deg, ${s.color}, var(--color-primary))`, <Avatar name={s.name} color={s.color} photo={s.photo} size={SIZE - 10} />)}
             </span>
             <span className={`text-caption1 w-full truncate text-center ${isSeen ? 'opacity-50' : ''}`}>{s.name.split(' ')[0]}</span>
           </button>
@@ -655,3 +655,23 @@ export function CodeInput({ length = 6, value, onChange, error }) {
   )
 }
 
+
+// ── SignInButtons ───────────────────────────────────────────────────────────────────────────────────────────
+// PRM-02: the sign-in a first-run screen ends on — Apple (black, as Apple's guidelines draw it), Google (white with
+// its four-colour G), and an optional email link. The marks are drawn here so a screen never improvises a logo.
+const AppleMark = () => (
+  <svg viewBox="0 0 17 20" width="16" height="19" aria-hidden fill="currentColor"><path d="M14.1 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1zM11.6 3c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z" /></svg>
+)
+const GoogleMark = () => (
+  <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden><path fill="#4285F4" d="M17.6 9.2c0-.6-.1-1.2-.2-1.7H9v3.3h4.8c-.2 1.1-.8 2-1.8 2.6v2.2h2.9c1.7-1.6 2.7-3.9 2.7-6.4z" /><path fill="#34A853" d="M9 18c2.4 0 4.5-.8 6-2.2l-2.9-2.2c-.8.5-1.8.9-3.1.9-2.4 0-4.4-1.6-5.1-3.7H.9v2.3C2.4 15.9 5.5 18 9 18z" /><path fill="#FBBC05" d="M3.9 10.8c-.2-.5-.3-1.1-.3-1.8s.1-1.2.3-1.8V4.9H.9C.3 6.1 0 7.5 0 9s.3 2.9.9 4.1l3-2.3z" /><path fill="#EA4335" d="M9 3.6c1.3 0 2.5.5 3.5 1.4l2.6-2.6C13.5.9 11.4 0 9 0 5.5 0 2.4 2.1.9 4.9l3 2.3C4.6 5.2 6.6 3.6 9 3.6z" /></svg>
+)
+export function SignInButtons({ onApple, onGoogle, onEmail, email = 'Continue with email' }) {
+  const btn = 'w-full h-12 rounded-2xl flex items-center justify-center gap-2.5 text-callout font-semibold motion-safe:transition-transform active:scale-[.98]'
+  return (
+    <div className="space-y-2.5 w-full">
+      <button type="button" onClick={onApple} className={`${btn} bg-black text-white dark:bg-white dark:text-black`}><AppleMark />Continue with Apple</button>
+      <button type="button" onClick={onGoogle} className={`${btn} bg-white text-black border border-black/10 dark:border-white/10`}><GoogleMark />Continue with Google</button>
+      {onEmail && <button type="button" onClick={onEmail} className="w-full h-10 text-subhead font-medium text-primary">{email}</button>}
+    </div>
+  )
+}

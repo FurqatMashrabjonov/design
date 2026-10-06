@@ -20,12 +20,15 @@ Surfaces and marks
 - `Photo({ q, className, alt?, children })` — a real photo of what `q` describes (2–4 English words), filled by the host; size and corners from `className`; `children` sit on top (add a dark gradient under white text).
 - `Tile({ color, size = 30, tinted = false, children })` — rounded square: solid with a white lucide icon (settings rows), or `tinted` with an emoji or a coloured icon (content rows).
 - `Medal({ emoji, color = '#ffb800', size = 64, locked = false })` — a round glossy award badge; locked ones are grey.
-- `Avatar({ name, color, size = 44 })` — initials on a gradient circle.
+- `Avatar({ name, color, size = 44, photo })` — a person: their portrait when `photo` names one ("portrait smiling young woman", like Photo's `q`), initials on a gradient until it loads. Give every person a `photo`.
 - `Glow({ color, size = 260, opacity = 0.5 })` — a blurred halo behind art; place it inside a `relative` box.
 - `Dots({ count, active })` — onboarding pager dots.
 - `Confetti({ run })` — a burst when something is completed.
 
 - `Hero({ color, to?, as?, className, children })` — a hero or promo card on a gradient of `color` (→ `to`). It sets its own text colour (white, or ink on yellow, mint, orange), so give its text no colour class; `as="button"` with `onClick` when it opens something. Default corners `rounded-[24px]` and `p-4`; `className` may change them.
+
+Sign in
+- `SignInButtons({ onApple, onGoogle, onEmail? })` — "Continue with Apple" (black) and "Continue with Google" with their real marks, and an email link: how a first-run screen ends. Never draw a logo yourself.
 
 Helpers (functions returning CSS strings)
 - `tint(color, pct = 16)` — a soft wash: `style={{ background: tint(C.mind) }}`. Text on it stays the label colour, never white.
