@@ -106,6 +106,18 @@ unknown icon became House — the tab bar showed two houses.
 
 Verified: `npx tsc --noEmit`, `npm run check` clean; runtime rebuilt.
 
+## 2026-10-06 (3)
+
+### PRM-04 — tried and reverted: a bento dashboard example did not reach the apps
+
+- Tried: the dashboard example rebuilt as a bento grid (a tall photo card with a Konsta `Glass` panel, two small
+  figures, a wide rings summary). It rendered well in iOS light and dark. Measured twice against prm02 (GPT-6 Luna, 8
+  briefs): prm04 2–0–6, rubric 3.17; prm04b 3–3–2, rubric 3.27 — and in both runs only 1 of ~63 screens drew a bento
+  grid, so the example barely moved the apps and the difference is mostly noise. Reverted: an example the model
+  does not copy is not worth the risk. Next: offer the bento top to the dashboard screen in its own brief (as KIT-21
+  does for blocks), and measure that.
+- Files: none kept (`konsta/examples/dashboard.jsx` back as it was).
+
 ## 2026-10-06 (2)
 
 ### PRM-03 — tried and reverted: telling tab screens to run longer made them worse; a broken photo no longer shows its alt text
