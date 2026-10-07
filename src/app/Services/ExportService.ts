@@ -42,6 +42,7 @@ function styles(accent: string): string {
   return `@import 'tailwindcss';
 @import 'konsta/react/theme.css';
 @import './type-scale.css';
+@import '@fontsource-variable/inter/wght.css';
 @source './';
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -152,7 +153,7 @@ export async function exportReact(project: ProjectIn, rows: ScreenIn[], opts: { 
           version: '0.1.0',
           type: 'module',
           scripts: { dev: 'vite', build: 'vite build', preview: 'vite preview' },
-          dependencies: { react: version('react'), 'react-dom': version('react-dom'), konsta: version('konsta'), 'lucide-react': version('lucide-react'), '@phosphor-icons/react': version('@phosphor-icons/react') },
+          dependencies: { react: version('react'), 'react-dom': version('react-dom'), konsta: version('konsta'), 'lucide-react': version('lucide-react'), '@phosphor-icons/react': version('@phosphor-icons/react'), '@fontsource-variable/inter': version('@fontsource-variable/inter') },
           devDependencies: { vite: version('vite'), '@vitejs/plugin-react': version('@vitejs/plugin-react'), tailwindcss: version('tailwindcss'), '@tailwindcss/vite': version('@tailwindcss/vite') },
         },
         null,

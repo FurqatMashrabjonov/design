@@ -2,6 +2,10 @@
    number), so a screen names a style instead of inventing a size. Read by runtime.css (emits the tokens) and by
    ScreenCompiler (per-screen utilities). A weight class on the same element still wins (fewer properties sort later). */
 @theme static {
+  /* FNT-01: SF where the device has it (Apple), Inter (shipped beside runtime.css) everywhere else; Material keeps
+     Roboto, Android's own face, first. */
+  --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-material: Roboto, "Inter Variable", system-ui, Noto, Helvetica, Arial, sans-serif;
   --text-large-title: 34px; --text-large-title--line-height: 41px; --text-large-title--font-weight: 700; --text-large-title--letter-spacing: 0.01em;
   --text-title1: 28px; --text-title1--line-height: 34px; --text-title1--font-weight: 700;
   --text-title2: 22px; --text-title2--line-height: 28px; --text-title2--font-weight: 700;

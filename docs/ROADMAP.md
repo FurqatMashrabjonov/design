@@ -508,7 +508,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-26 | Premium bloklar 2b: AchievementUnlock, MoodPicker, StoryViewer, WheelPicker, PriceMap | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-25 | Nom bo'yicha hint; kichik eval'da ekran chiqmadi |
 | EMJ-01 | Emoji: Fluent 3D hamma qurilmada, asosiy lahzalarda animatsiya | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
 | ICN-01 | Ikonkalar Phosphor: faol tab fill, Tile ichida duotone; eksportda ham | Generatsiya / Kit | MVP | Tayyor | Kichik |  | icn01 reshoot: metrikalar o'zgarmadi |
-| FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Rejada | Kichik |  |  |
+| FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Tayyor | Kichik |  |  |
 | GLS-01 | Liquid Glass: shaffof tab bar va navbar | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
 | MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
 | ILL-01 | Illyustratsiyalar (Open Peeps / Humaaans, CC0): bo'sh holat va onboarding | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |

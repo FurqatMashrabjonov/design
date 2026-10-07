@@ -5,7 +5,7 @@
 // `react`, `react/jsx-runtime` and `react-dom/client` are CommonJS, and `export *` from CommonJS gives an entry with no
 // static exports (import maps need them) — so those three entry files are (re)written here with every name spelled out.
 import { createRequire } from 'node:module'
-import { readFileSync, writeFileSync, cpSync, mkdirSync, rmSync, readdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, appendFileSync, cpSync, mkdirSync, rmSync, readdirSync } from 'node:fs'
 import { phosphorFor } from './phosphor-map.js'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -70,6 +70,11 @@ export default defineConfig({
       // EMJ-01: the Fluent emoji images sit beside the modules (/api/rt/v…/emoji/<key>.webp).
       closeBundle() {
         cpSync('runtime/emoji', 'runtime/dist/emoji', { recursive: true })
+        // FNT-01: Inter (OFL), the text face wherever SF is not there (type-scale.css puts it in the stacks). Files
+        // beside the stylesheet, not inlined (lib mode inlines every asset): Apple devices never download it.
+        const inter = 'node_modules/@fontsource-variable/inter'
+        cpSync(`${inter}/files`, 'runtime/dist/fonts', { recursive: true, filter: (f) => !/\.woff2?$/.test(f) || /wght-normal\.woff2$/.test(f) })
+        appendFileSync('runtime/dist/runtime.css', readFileSync(`${inter}/wght.css`, 'utf8').replaceAll('./files/', 'fonts/'))
       },
     },
   ],

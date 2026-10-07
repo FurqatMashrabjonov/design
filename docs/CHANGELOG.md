@@ -14,6 +14,22 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (16)
+
+### FNT-01: SF on Apple devices, Inter everywhere else
+
+- `runtime/type-scale.css`: Konsta's stacks are redefined — iOS `-apple-system, BlinkMacSystemFont, "SF Pro Text",
+  "Inter Variable", …`, Material `Roboto, "Inter Variable", …` — so an iPhone or a Mac keeps SF, Android keeps Roboto,
+  and Windows/Linux (and an iOS-look app opened there) get Inter instead of Segoe UI or Arial.
+- `runtime/vite.config.js`: Inter (OFL, `@fontsource-variable/inter`, one variable file per script, 220 KB in all)
+  is copied to `runtime/dist/fonts/` and its `@font-face` rules appended to `runtime.css` — not inlined (lib mode
+  inlines every asset), so a device that has SF never downloads it; `unicode-range` loads only the scripts a page uses.
+  `/api/rt` serves `woff2`.
+- Export: `src/styles.css` imports `@fontsource-variable/inter/wght.css`, `package.json` lists it (the one-file
+  HTML export inlines it).
+- Verified: headless Chrome loads "Inter Variable" from the built runtime (`document.fonts.check` true); a Material
+  render on macOS (no Roboto) draws in Inter. `npm run check` (with the export Vite build), `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (15)
 
 ### ICN-01: icons are Phosphor (fill and duotone weights); the model still writes lucide
