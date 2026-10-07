@@ -125,7 +125,7 @@ For local testing only, `LLM_PROVIDER=claude-cli` routes generation through the 
 
 ## Git
 
-- Commit and push only when the user asks.
+- Commit and push only when the user asks. The default branch is `main` (switched from `canvas-planner` on 2026-10-07); production deploys from `main`.
 - Pushing over HTTPS needs the GitHub CLI credential helper:
   `git -c credential.helper='!gh auth git-credential' push origin <branch>`
 - Never commit `.env` or `data.db*` (both are ignored). `data.db` is the pre-Postgres SQLite file, kept as a backup; `scripts/sqlite-to-pg.ts` copies one into an empty Postgres.
