@@ -504,7 +504,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FUN-02 | Har control ishlaydi: navigatsiya parametrlari, sheet/dialog ekran ichida, qatordagi control qatorni ochmaydi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 |  |
 | FUN-03 | To'liq ilova: 12 ekrangacha, so'ralgan son aniq hurmat qilinadi | Generatsiya / Funksional ilova | MVP | Tayyor | Kichik | FUN-01 |  |
 | KIT-24 | Premium bloklar 1-to'lqin: Donut, BankCard, AmountPad, CollapsingHeader, MediaPlayer, MiniPlayer, MenuSections, Podium | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-21 | kit24 4–2–2, rubrika 3.00 → 3.10 |
-| KIT-25 | Premium bloklar 2a: PlanCompare, SizePicker, SwatchPicker, Ticket, QRCode, LiveETA, BreathTimer, FeedPost | Generatsiya / Kit | MVP | Jarayonda | O'rta | KIT-24 | Kit tayyor; egasining ko'rigi, keyin hint + kichik eval |
+| KIT-25 | Premium bloklar 2a: PlanCompare, SizePicker, SwatchPicker, Ticket, QRCode, LiveETA, BreathTimer, FeedPost | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-24 | k25 3–1–0; Size/Swatch o'lchandi, qolganlari nom bo'yicha |
 | KIT-26 | Premium bloklar 2b: AchievementUnlock, MoodPicker, StoryViewer, WheelPicker, PriceMap | Generatsiya / Kit | Keyin | Rejada | O'rta | KIT-25 |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 | fun04b: 24/24 ekranda hamma tugma ishlaydi |
 | EVL-01 | Eval arzon: standart 4 ilova × 6 ekran, --full kerak bo'lsa | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |

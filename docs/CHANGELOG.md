@@ -14,6 +14,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (11)
+
+### KIT-25: wave 2a offered by screen name
+
+- `JsxGenerator.BLOCK_HINTS`: PlanCompare (Paywall, Premium, Upgrade, Membership…), SizePicker + SwatchPicker (a pushed
+  Product, Item, Sneakers…), Ticket (Ticket, Boarding pass, Booking confirmed, You're going — not an order), LiveETA
+  (Tracking, On its way, Arriving — placed before StepTimeline, so a tracking screen gets the map and the live card),
+  BreathTimer (Breathe, Breathing), FeedPost (a Feed/Home/Community tab whose spec has posts, friends or runs).
+- Verified: small eval k25 vs k25base (food, meditate, shop, travel × 6 screens, the commit before as the baseline):
+  pairwise 3–1–0. Honest reading: only SizePicker and SwatchPicker were drawn (the six-screen plans had no tracking,
+  paywall or ticket screen), and the judge named them ("real colour swatches, a clear size grid with a strong selected
+  state" against "only one colour, a faint size selection"); the other wins came from differences the parts did not
+  touch. Every control worked on 24/24 screens in both runs. `controllers.check.ts` holds the names. About $0.10.
+
 ## 2026-10-07 (10)
 
 ### KIT-25 (wave 2a): seven parts in the kit, not yet in the prompt
