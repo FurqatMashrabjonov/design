@@ -14,6 +14,29 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (12)
+
+### KIT-26 (wave 2b) in the kit; the Medal is an iOS squircle; the render check ignores what is scrolled out of its box
+
+- `runtime/kit/blocks.jsx`: `AchievementUnlock` (the page dims, the medal turns in, confetti, the title, Share and
+  Done; drawn only while `opened`), `MoodPicker` (five faces, the chosen one grows and is named; 1–5 or a label),
+  `StoryViewer` (full screen, segments that fill on their own, tap right for the next and left for the previous,
+  closes after the last), `WheelPicker` (the iOS wheel: columns that scroll and snap under a band, a tap picks a row)
+  and `PriceMap` (a drawn map with prices on the pins; a tap chooses one and the chosen place's card sits at the
+  bottom). `runtime.css`: `vs-unlock`, `vs-medal`, `vs-story`, `vs-fade-in`.
+- **`Medal`** (`runtime/kit/ui.jsx`, the owner's call: "the round glossy one is AI slop"): the emoji on a squircle
+  tinted with its colour and a fine ring of it — no gradient, gloss or glow; locked stays grey. Every screen that
+  already uses a Medal (awards, paywalls, onboarding art) takes the new look.
+- **Render check** (`lib/render-audit.ts` `unclipped`): an element whose centre is outside an ancestor that clips (a
+  wheel's far rows, a carousel's next card, a chip scrolled out of its row) is not on screen and is not measured. On
+  the stored rel01 screens: problems a screen 0.22 → 0.14, clean 81% → 88%, the removed findings all inside scrolled
+  rows.
+- `gallery/awards.jsx`, `mood.jsx`, `stories.jsx`, `reminder.jsx`, `stays.jsx`.
+- Verified in Chrome on the exported gallery: Done closed the award and the button opened it again with confetti; a
+  story opened from its ring, its segment filled and a right tap went Aziza → Sam; the wheel scrolled to 12, PM was
+  tapped and the button read "Save · 12:30 PM"; a €129 pin chose Luz Loft. `npm run check` and `npx tsc --noEmit`
+  clean.
+
 ## 2026-10-07 (11)
 
 ### KIT-25: wave 2a offered by screen name

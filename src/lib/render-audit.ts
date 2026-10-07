@@ -35,9 +35,21 @@ function add(rule, el, detail) {
   if (seen[key] || out.length >= 12) return;
   seen[key] = 1; out.push({ rule: rule, where: w, detail: String(detail).slice(0, 160) });
 }
+// Scrolled out of its own box (a wheel's far rows, a carousel's next cards) is not on screen: its centre must be inside
+// every ancestor that clips.
+function unclipped(el, r) {
+  var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (var e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+    var s = getComputedStyle(e);
+    if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
+    var b = e.getBoundingClientRect();
+    if (cx < b.left || cx > b.right || cy < b.top || cy > b.bottom) return false;
+  }
+  return true;
+}
 function visible(el) {
   var r = el.getBoundingClientRect(), cs = getComputedStyle(el);
-  return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.05;
+  return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.05 && unclipped(el, r);
 }
 function ownText(el) { for (var i = 0; i < el.childNodes.length; i++) { var n = el.childNodes[i]; if (n.nodeType === 3 && n.textContent.trim()) return true; } return false; }
 function pinned(el) { for (var e = el; e && e.nodeType === 1; e = e.parentElement) { var p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return true; } return false; }

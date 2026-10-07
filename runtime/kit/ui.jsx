@@ -236,11 +236,12 @@ export function Dots({ count, active = 0 }) {
   )
 }
 
-/** A round award badge: an emoji on a glossy gradient disc; `locked` greys it out. */
+/** An award badge in the iOS way: an emoji on a squircle tinted with its colour and a fine ring of it — no gloss, no
+ *  glow (the owner's call: the glossy gold disc read as AI slop). `locked` greys it out. */
 export function Medal({ emoji, color = '#ffb800', size = 64, locked = false }) {
   color = cssColor(color)
   return (
-    <span className="flex items-center justify-center rounded-full shrink-0" style={{ width: size, height: size, fontSize: size * 0.46, background: locked ? 'rgba(120,120,128,.16)' : `radial-gradient(circle at 30% 25%, color-mix(in oklab, ${color} 55%, #fff), ${color} 60%, color-mix(in oklab, ${color} 75%, #000))`, boxShadow: locked ? 'none' : `0 6px 16px ${tint(color, 40)}`, filter: locked ? 'grayscale(1)' : 'none', opacity: locked ? 0.55 : 1 }}>
+    <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.46, background: locked ? 'rgba(120,120,128,.12)' : tint(color, 16), boxShadow: `inset 0 0 0 1.5px ${locked ? 'rgba(120,120,128,.18)' : tint(color, 38)}`, filter: locked ? 'grayscale(1)' : 'none', opacity: locked ? 0.5 : 1 }}>
       {emoji}
     </span>
   )

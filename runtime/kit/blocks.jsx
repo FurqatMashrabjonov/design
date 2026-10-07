@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, Glass, List, ListItem, Preloader } from 'konsta/react'
 import { ArrowDown, ChevronLeft, ChevronRight, Check, MapPin, Star, Plus, Play, Pause, SkipBack, SkipForward, Delete, Crown, Nfc, X, Plane, Phone, MessageCircle, Heart, Share, Bike } from 'lucide-react'
-import { Dots, Photo, Avatar, Meter, tint, gradient, onColor, cssColor, STATIC } from './ui.jsx'
+import { Dots, Photo, Avatar, Meter, Medal, Confetti, tint, gradient, onColor, cssColor, STATIC } from './ui.jsx'
 
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
@@ -1367,6 +1367,166 @@ export function FeedPost({ author, time, photo, text, likes = 0, comments = 0, l
         <button type="button" onClick={onComment ?? (() => {})} className="flex items-center gap-1.5 active:scale-90"><MessageCircle className="w-6 h-6" /><span className="text-subhead tabular-nums">{asNum(comments).toLocaleString('en-US')}</span></button>
         <button type="button" onClick={onShare ?? (() => {})} aria-label="Share" className="ml-auto active:scale-90"><Share className="w-6 h-6" /></button>
       </div>
+    </div>
+  )
+}
+
+// KIT-26 (wave 2b): an award's moment, a mood check-in, a story opened full screen, the iOS wheel, and a map of prices.
+
+/** The moment an award is won: the page dims, the medal spins in, confetti, the title and one line, Share and Done.
+ *  `opened` shows it (state on the screen); `onClose` hides it. Mount it once; it draws nothing while closed. */
+export function AchievementUnlock({ opened = false, emoji = '🏆', title = '', detail, color = '#f5b301', onClose, onShare }) {
+  if (!opened) return null
+  const c = cssColor(color)
+  return (
+    <div data-od-kit="AchievementUnlock" className="fixed inset-0 z-[90] flex items-center justify-center px-8" role="dialog" aria-label={title}>
+      <div className="absolute inset-0 bg-black/55 vs-fade-in" onClick={onClose} />
+      <Confetti run={!STATIC} />
+      <div className="relative w-full max-w-xs rounded-[28px] bg-card px-6 pt-8 pb-5 text-center shadow-2xl" style={{ animation: STATIC ? 'none' : 'vs-unlock 520ms cubic-bezier(.2,.9,.3,1.3) both' }}>
+        <div className="flex justify-center" style={{ animation: STATIC ? 'none' : 'vs-medal 900ms cubic-bezier(.2,.8,.2,1) both' }}><Medal emoji={emoji} color={c} size={96} /></div>
+        <div className="text-footnote font-semibold uppercase tracking-wide mt-5" style={{ color: c }}>Achievement unlocked</div>
+        <div className="text-title2 font-bold mt-1">{title}</div>
+        {detail && <div className="text-subhead opacity-65 mt-1.5">{detail}</div>}
+        <div className="flex gap-2 mt-6">
+          {onShare && <button type="button" onClick={onShare} className="flex-1 h-12 rounded-full text-headline active:scale-95" style={{ background: tint(c, 16), color: c }}>Share</button>}
+          <button type="button" onClick={onClose} className="flex-1 h-12 rounded-full text-headline active:scale-95" style={{ background: 'var(--color-primary)', color: '#fff' }}>Done</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const MOODS = [['😫', 'Awful'], ['😕', 'Low'], ['😐', 'Okay'], ['🙂', 'Good'], ['😄', 'Great']]
+/** "How are you feeling?" — five faces, the chosen one grows and is named. `value` is 1–5 (or the label). */
+export function MoodPicker({ value, onChange, moods = MOODS, color }) {
+  const c = color ? cssColor(color) : 'var(--color-primary)'
+  const list = (Array.isArray(moods) ? moods : MOODS).map((m) => (Array.isArray(m) ? m : [m?.emoji ?? '🙂', m?.label ?? '']))
+  const idx = (v) => (typeof v === 'number' ? v - 1 : list.findIndex((m) => m[1] === v))
+  const [own, setOwn] = useState(-1)
+  const cur = value !== undefined ? idx(value) : own
+  const pick = (i) => (onChange ? onChange(i + 1, list[i][1]) : setOwn(i))
+  return (
+    <div data-od-kit="MoodPicker" className="px-4">
+      <div className="flex justify-between">
+        {list.map(([e, l], i) => {
+          const on = i === cur
+          return (
+            <button key={l} type="button" aria-label={l} aria-pressed={on} onClick={() => pick(i)} className="flex flex-col items-center gap-1.5 w-14 motion-safe:transition-transform active:scale-90">
+              <span className="w-14 h-14 rounded-full flex items-center justify-center motion-safe:transition-all motion-safe:duration-300" style={{ fontSize: on ? 34 : 28, background: on ? tint(c, 22) : 'rgba(120,120,128,.12)', boxShadow: on ? `0 0 0 2px ${c}` : 'none', transform: on ? 'scale(1.1)' : 'none', filter: cur >= 0 && !on ? 'grayscale(.6)' : 'none', opacity: cur >= 0 && !on ? 0.6 : 1 }}>{e}</span>
+              <span className="text-caption1" style={{ fontWeight: on ? 700 : 400, color: on ? c : undefined, opacity: on ? 1 : 0.6 }}>{l}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** A story opened full screen: progress segments that fill on their own, the author on top, tap the right half for the
+ *  next and the left for the previous; closes after the last. `stories: [{ photo, author: { name, photo }, time, text }]`.
+ *  Shown when `opened`; `onClose` hides it. */
+export function StoryViewer({ opened = false, stories = [], start = 0, onClose, seconds = 5 }) {
+  const list = Array.isArray(stories) ? stories : []
+  const [k, setK] = useState(start)
+  const [t0, setT0] = useState(0)
+  useEffect(() => { if (opened) { setK(start); setT0((x) => x + 1) } }, [opened])
+  useEffect(() => {
+    if (!opened || STATIC) return
+    const t = setTimeout(() => (k + 1 < list.length ? setK(k + 1) : onClose?.()), seconds * 1000)
+    return () => clearTimeout(t)
+  }, [opened, k, t0])
+  if (!opened || !list.length) return null
+  const s = list[Math.min(k, list.length - 1)] ?? {}
+  const a = s.author && typeof s.author === 'object' ? s.author : { name: String(s.author ?? '') }
+  const go = (d) => { const n = k + d; if (n < 0) return; n >= list.length ? onClose?.() : setK(n) }
+  return (
+    <div data-od-kit="StoryViewer" className="fixed inset-0 z-[90] bg-black text-white">
+      <Photo key={k} q={s.photo ?? ''} className="absolute inset-0 w-full h-full" />
+      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/60 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/70 to-transparent" />
+      <div className="absolute inset-x-3 flex gap-1" style={{ top: 'calc(var(--k-safe-area-top, 0px) + 10px)' }}>
+        {list.map((_, i) => (
+          <span key={i} className="flex-1 h-[3px] rounded-full bg-white/35 overflow-hidden">
+            <span key={`${k}-${t0}`} className="block h-full bg-white" style={{ width: i < k ? '100%' : i > k ? '0%' : STATIC ? '40%' : undefined, animation: i === k && !STATIC ? `vs-story ${seconds}s linear forwards` : 'none' }} />
+          </span>
+        ))}
+      </div>
+      <div className="absolute inset-x-3 flex items-center gap-2.5" style={{ top: 'calc(var(--k-safe-area-top, 0px) + 24px)' }}>
+        <Avatar name={a.name} photo={a.photo} size={34} />
+        <span className="text-subhead font-semibold">{a.name}</span>
+        {s.time && <span className="text-subhead opacity-70">{s.time}</span>}
+        <button type="button" aria-label="Close" onClick={onClose} className="ml-auto w-10 h-10 flex items-center justify-center"><X className="w-6 h-6" /></button>
+      </div>
+      <button type="button" aria-label="Previous" onClick={() => go(-1)} className="absolute left-0 top-24 bottom-24 w-1/3" />
+      <button type="button" aria-label="Next" onClick={() => go(1)} className="absolute right-0 top-24 bottom-24 w-2/3" />
+      {s.text && <div className="absolute inset-x-5 bottom-10 text-title3 font-semibold leading-snug pointer-events-none">{s.text}</div>}
+    </div>
+  )
+}
+
+const ROW = 40
+function WheelColumn({ values, value, onChange, width }) {
+  const ref = useRef(null)
+  const i = Math.max(0, values.indexOf(String(value)))
+  useEffect(() => { const el = ref.current; if (el && Math.round(el.scrollTop / ROW) !== i) el.scrollTop = i * ROW }, [i])
+  const settle = useRef(null)
+  const onScroll = () => {
+    clearTimeout(settle.current)
+    settle.current = setTimeout(() => { const n = Math.min(values.length - 1, Math.max(0, Math.round(ref.current.scrollTop / ROW))); if (values[n] !== String(value)) onChange(values[n]) }, 90)
+  }
+  return (
+    <div ref={ref} onScroll={onScroll} className="relative overflow-y-auto snap-y snap-mandatory [scrollbar-width:none]" style={{ height: ROW * 5, width, maskImage: 'linear-gradient(transparent, #000 30%, #000 70%, transparent)', WebkitMaskImage: 'linear-gradient(transparent, #000 30%, #000 70%, transparent)' }}>
+      <div style={{ height: ROW * 2 }} />
+      {values.map((v, n) => (
+        <button key={v} type="button" onClick={() => { ref.current.scrollTo({ top: n * ROW, behavior: 'smooth' }); onChange(v) }} className="snap-center w-full flex items-center justify-center text-title2 tabular-nums" style={{ height: ROW, fontWeight: n === i ? 600 : 400, opacity: n === i ? 1 : 0.45 }}>{v}</button>
+      ))}
+      <div style={{ height: ROW * 2 }} />
+    </div>
+  )
+}
+/** The iOS wheel: one or more columns that scroll and snap, the chosen row in a band across the middle (a reminder's
+ *  time, a duration, an amount). `columns: [['1', … '12'], ['00', '15', '30', '45'], ['AM', 'PM']]`, `value` one per
+ *  column; `onChange(values)`. */
+export function WheelPicker({ columns = [], value, onChange }) {
+  const cols = (Array.isArray(columns) ? columns : []).map((c) => (Array.isArray(c) ? c : Array.isArray(c?.values) ? c.values : []).map(String))
+  const [own, setOwn] = useState(() => cols.map((c) => c[0]))
+  const cur = Array.isArray(value) ? value.map(String) : own
+  const set = (ci, v) => { const next = cols.map((c, j) => (j === ci ? v : cur[j] ?? c[0])); onChange ? onChange(next) : setOwn(next) }
+  return (
+    <div data-od-kit="WheelPicker" className="relative mx-4 rounded-card bg-card flex justify-center gap-2 px-3">
+      <div className="absolute inset-x-3 rounded-xl pointer-events-none" style={{ top: ROW * 2, height: ROW, background: 'rgba(120,120,128,.14)' }} />
+      {cols.map((c, ci) => <WheelColumn key={ci} values={c} value={cur[ci] ?? c[0]} onChange={(v) => set(ci, v)} width={cols.length > 2 ? 72 : 96} />)}
+    </div>
+  )
+}
+
+/** A map of places with their prices on the pins (stays, rentals, restaurants): tap a pin to choose it — it grows and
+ *  turns dark — and the chosen place's card can sit at the bottom (`children`). `pins: [{ id, price, label? }]`. */
+export function PriceMap({ pins = [], value, onSelect, height = 320, seed = 'prices', currency = '', children }) {
+  const W = 360, H = 320, r = seeded(seed)
+  const list = (Array.isArray(pins) ? pins : []).slice(0, 9).map((p, i) => ({ id: String(p?.id ?? i), price: p?.price ?? '', x: 12 + r() * 76, y: 12 + r() * 64 }))
+  const streets = []
+  for (let i = 0; i < 7; i++) { const y = 14 + i * 46 + r() * 14; streets.push(`M -10 ${y} L ${W + 10} ${y + (r() - 0.5) * 50}`) }
+  for (let i = 0; i < 5; i++) { const x = 20 + i * 78 + r() * 20; streets.push(`M ${x} -10 L ${x + (r() - 0.5) * 60} ${H + 10}`) }
+  const [own, setOwn] = useState(list[0]?.id)
+  const cur = value !== undefined ? String(value) : own
+  return (
+    <div data-od-kit="PriceMap" className="relative overflow-hidden rounded-[22px]" style={{ height }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full" aria-hidden="true">
+        <rect width={W} height={H} style={{ fill: 'var(--app-card-2, #eef0f3)' }} />
+        <path d={`M -10 ${H * 0.7} C ${W * 0.3} ${H * 0.62}, ${W * 0.5} ${H * 0.9}, ${W + 10} ${H * 0.8} L ${W + 10} ${H + 10} L -10 ${H + 10} Z`} fill="rgba(10,132,255,.16)" />
+        <rect x={W * 0.58} y={H * 0.12} width={W * 0.24} height={H * 0.2} rx="14" fill="rgba(52,199,89,.18)" />
+        {streets.map((d, i) => <path key={i} d={d} style={{ stroke: 'var(--app-card, #ffffff)' }} strokeWidth={i % 3 === 0 ? 9 : 5} fill="none" strokeLinecap="round" />)}
+      </svg>
+      {list.map((p) => {
+        const on = p.id === cur
+        return (
+          <button key={p.id} type="button" onClick={() => (onSelect ? onSelect(p.id) : setOwn(p.id))} aria-pressed={on}
+            className="absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full text-footnote font-bold shadow-md motion-safe:transition-transform"
+            style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 3 : 2, transform: `translate(-50%, -50%) scale(${on ? 1.15 : 1})`, background: on ? 'var(--color-primary)' : 'var(--app-card, #fff)', color: on ? '#fff' : 'inherit' }}>{typeof p.price === 'number' ? `${currency}${p.price.toLocaleString('en-US')}` : p.price}</button>
+        )
+      })}
+      {children && <div className="absolute inset-x-0 bottom-0 p-3 z-[4]">{children}</div>}
     </div>
   )
 }

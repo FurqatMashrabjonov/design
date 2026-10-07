@@ -19,7 +19,7 @@ Figures (they animate themselves)
 Surfaces and marks
 - `Photo({ q, className, alt?, children })` — a real photo of what `q` describes (2–4 English words), filled by the host; size and corners from `className`; `children` sit on top (add a dark gradient under white text).
 - `Tile({ color, size = 30, tinted = false, children })` — rounded square: solid with a white lucide icon (settings rows), or `tinted` with an emoji or a coloured icon (content rows).
-- `Medal({ emoji, color = '#ffb800', size = 64, locked = false })` — a round glossy award badge; locked ones are grey.
+- `Medal({ emoji, color = '#ffb800', size = 64, locked = false })` — an award badge: the emoji on a squircle tinted with its colour; locked ones are grey.
 - `Avatar({ name, color, size = 44, photo })` — a person: their portrait when `photo` names one ("portrait smiling young woman", like Photo's `q`), initials on a gradient until it loads. Give every person a `photo`.
 - `Glow({ color, size = 260, opacity = 0.5 })` — a blurred halo behind art; place it inside a `relative` box.
 - `Dots({ count, active })` — onboarding pager dots.
