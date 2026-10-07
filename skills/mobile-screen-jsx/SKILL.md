@@ -52,9 +52,15 @@ The compiler rejects a file that breaks these:
 - A search sits in the navbar's `subnavbar` or the first block under the title, never on the title's row.
 - A bottom action bar (`fixed bottom-0`) belongs on pushed screens; the page then gets `pb-40`. On a tab screen, the action goes in the flow.
 - A screen is phone-tall. A focused screen (a quiz, a recorder, a detail) still shows what it has: progress, the previous answers, tips, related items — the lower half is never empty.
-- Navigation: `nav.push('<screen id>')`, `nav.pop()`, `nav.reset('<tab id>')`; ids are in the brief. Every row, card or button that plainly opens something calls one.
-- State is local `useState` (toggles, segments, a checked item, an open sheet, a slide index) and looks finished at first render — initial state from the data.
-- Data comes from APP DATA: names, numbers, dates, formatted for people (`7,843`, `1.5 L`, `41 days`). A stats row always shows its value.
+- Navigation: `nav.push('<screen id>')`, `nav.pop()`, `nav.reset('<tab id>')`; ids are in the brief. A row opens its own item: `nav.push('habit', { id: h.id })`, and that screen reads `useNav().current.params.id`, falling back to the first item when there is none.
+
+## It works — a real app, not a picture
+
+- With an APP STORE in the brief, the app is `useStore()`: lists, names and numbers come from its state and derived values, and every change goes through its actions. Nothing is a hard-coded copy of the store.
+- Every control does something: a row opens its detail, + opens this screen's add `Sheet` whose Save calls the add action and closes it, Delete asks in a `Dialog` and then calls the delete action (and pops on a detail), a `Toggle`/`Checkbox` is bound to the store, a filter, chip or segment changes what the list shows, a search filters it as you type. No button without an `onClick`.
+- Add, edit, log, filter and share happen on this screen as overlays (`Sheet`, `Actions`, `Dialog`), not on other screens. A form keeps its fields in `useState`, starts filled with sensible values, and its Save is disabled until it is valid.
+- After an action the screen shows it at once: the row checks, the number moves, a `Toast` says what happened. A list the person can empty shows an `EmptyState` with the action that fills it.
+- `useState` holds only what this screen alone knows (an open sheet, a form, a slide index); it looks finished at first render. Numbers are formatted for people (`7,843`, `1.5 L`, `41 days`).
 
 ## Type and space
 

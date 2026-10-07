@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { hash } from '@/lib/hash'
 import type { AppTheme } from '@/lib/app-theme'
 import { parseTree, type ODTree } from '@/lib/figma-serialize'
+import { installStateBus } from '@/lib/app-state-bus'
 
 // KON-00: a screen is a Konsta component compiled on the server; the frame only points at the page it
 // runs in (/api/thumb/$id, sandboxed, CSP sandbox). `r` is the source's hash, so a new version is a new
@@ -24,7 +25,7 @@ export function serializeScreen(screenId: string): Promise<ODTree> {
 export const postLook = (w: Window | null | undefined, t: AppTheme, insets?: { top: number; bottom: number }) =>
   w?.postMessage({ type: 'od:look', accent: t.accent, dark: t.dark, platform: t.platform, style: t.style, insets: insets ?? null }, '*')
 
-export type NavMessage = { action: 'push' | 'pop' | 'reset'; id?: string }
+export type NavMessage = { action: 'push' | 'pop' | 'reset'; id?: string; params?: Record<string, string | number | boolean | null> }
 
 /** A frame's reported content height, clamped: never shorter than the phone, never absurdly long. */
 export function parseHeight(d: unknown, min: number): number | null {
@@ -37,7 +38,21 @@ export function parseNav(d: unknown): NavMessage | null {
   const m = d as { type?: unknown; action?: unknown; id?: unknown } | null
   if (!m || m.type !== 'od:nav' || (m.action !== 'push' && m.action !== 'pop' && m.action !== 'reset')) return null
   if (m.action === 'pop') return { action: 'pop' }
-  return typeof m.id === 'string' && /^[a-z0-9-]{1,60}$/i.test(m.id) ? { action: m.action, id: m.id } : null
+  if (typeof m.id !== 'string' || !/^[a-z0-9-]{1,60}$/i.test(m.id)) return null
+  const params = parseParams((m as { params?: unknown }).params)
+  return params ? { action: m.action, id: m.id, params } : { action: m.action, id: m.id }
+}
+
+/** FUN-02: what a push carries to the screen it opens (`nav.push('habit', { id })`) — a few plain values, else none. */
+export function parseParams(p: unknown): NavMessage['params'] | undefined {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return undefined
+  const out: NonNullable<NavMessage['params']> = {}
+  for (const [k, v] of Object.entries(p).slice(0, 12)) {
+    if (!/^[a-zA-Z_][\w]{0,30}$/.test(k)) continue
+    if (v === null || typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v))) out[k] = v
+    else if (typeof v === 'string') out[k] = v.slice(0, 200)
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 /** Which screen a nav message leads to: a slug, or a tab id (its root screen). */
@@ -78,6 +93,7 @@ export function ScreenFrame(props: {
 }) {
   const f = frameSize(props.device)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  useEffect(installStateBus, []) // FUN-01: the app's frames share one store
   const active = Boolean(props.selected) && props.solo !== false
   const latest = useRef(props)
   latest.current = props

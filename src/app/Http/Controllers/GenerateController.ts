@@ -87,7 +87,7 @@ export const GenerateController = {
           // KON-13: a screen added, edited or redrawn from chat is measured and repaired like a planned one.
           let checked: AuditOutcome | undefined
           const theme = parseAppTheme(project.theme)
-          const look = { accent: theme.accent, dark: theme.dark, platform: 'ios' as const, style: theme.style, tabs: plan?.tabs ?? [] }
+          const look = { accent: theme.accent, dark: theme.dark, platform: 'ios' as const, style: theme.style, tabs: plan?.tabs ?? [], ...(plan?.store ? { store: plan.store } : {}) }
           const slug = target?.slug ?? added?.id ?? ''
           // An element: the model writes that element alone, and it is spliced in. If the result does not build, the
           // whole-file edit (told which element) is the fallback, through drawScreen's own retry.

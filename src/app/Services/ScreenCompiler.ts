@@ -225,3 +225,38 @@ export function compileCached(source: string): Promise<Compiled> {
   }
   return hit
 }
+
+/** FUN-01: the app's store module (the model's `store.js`): plain JavaScript with no imports at all, the same banned
+ *  identifiers as a screen, and the exports the kit reads — `initial` and `actions` (an object of functions), `derived`
+ *  optional. Never executed on the server. */
+export function compileStore(source: string): { ok: true; js: string } | { ok: false; errors: string[] } {
+  let ast: ReturnType<typeof parse>
+  try {
+    ast = parse(source, { sourceType: 'module', tokens: true })
+  } catch (e) {
+    return { ok: false, errors: [`The store's code does not parse: ${(e as Error).message}`] }
+  }
+  const errors: string[] = []
+  const exported = new Set<string>()
+  for (const node of ast.program.body) {
+    if (node.type === 'ImportDeclaration') errors.push('the store imports nothing')
+    if (node.type === 'ExportDefaultDeclaration' || node.type === 'ExportAllDeclaration') errors.push('the store has only named exports: initial, actions, derived')
+    if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'VariableDeclaration') for (const d of node.declaration.declarations) if (d.id.type === 'Identifier') exported.add(d.id.name)
+    if (node.type === 'ExportNamedDeclaration' && node.declaration?.type === 'FunctionDeclaration' && node.declaration.id) exported.add(node.declaration.id.name)
+  }
+  for (const name of ['initial', 'actions']) if (!exported.has(name)) errors.push(`export const ${name} is missing`)
+  const tok = (ast.tokens ?? []) as { type: { label: string } | string; value?: string }[]
+  const label = (i: number) => { const t = tok[i]?.type; return typeof t === 'string' ? t : t?.label }
+  for (let i = 0; i < tok.length; i++) {
+    const v = tok[i].value
+    const l = label(i)
+    if (l === 'name' && v && (BANNED.has(v) || v === 'setTimeout' || v === 'setInterval')) errors.push(`'${v}' is not allowed in the store`)
+    else if (l === 'name' && v && BANNED_MEMBER.has(v) && label(i - 1) === '.' && GLOBALS.has(String(tok[i - 2]?.value))) errors.push(`'${tok[i - 2].value}.${v}' is not allowed`)
+    else if (l === 'name' && v && GLOBALS.has(v)) errors.push(`'${v}' is not allowed in the store`)
+    else if (l === 'import' && label(i + 1) === '(') errors.push('dynamic import() is not allowed')
+  }
+  if (errors.length) return { ok: false, errors: [...new Set(errors)] }
+  const out = transformSync('store.js', source, { lang: 'js', sourceType: 'module' })
+  if (out.errors?.length) return { ok: false, errors: out.errors.map((e) => `transform: ${e.message}`) }
+  return { ok: true, js: out.code }
+}

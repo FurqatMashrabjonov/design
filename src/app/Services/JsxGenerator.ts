@@ -24,7 +24,7 @@ export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Set
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
-export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding }
+export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding; store?: string }
 
 /**
  * ONB-01: how the first-run screen is built. With one example every app opened on the same carousel (7 of 7 on the
@@ -57,9 +57,9 @@ export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by 
  "style": the look of top apps like this one — "clean" (finance, productivity, booking, utilities, news), "midnight" (dark and premium: fitness, training, sleep, investing, nightlife), "vivid" (bold and playful: food delivery, learning, habits, kids, games, social fun), "soft" (calm and warm: meditation, wellness, journaling, reading, parenting, mental health) or "editorial" (photo-led and typographic: travel, fashion, recipes, lifestyle, events); pick what the brief's audience would expect, and if the brief names a look (dark, minimal, playful, cozy, luxury) follow it,
  "palette": ["camelCaseName", …] — 2–4 names, one per main thing the app tracks or sorts by (top apps use two to four colours, not a rainbow), named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); the host colours them,
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
- "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and which screens its rows and buttons open (by id)"}],
+ "screens": [{"id": "kebab-id", "name": "Screen title", "kind": "tab"|"push"|"modal"|"first-run", "asked": true if the brief names this screen or its job, "tab": "tab id (kind tab only)", "parent": "screen id it opens from (push/modal)", "spec": "2–4 sentences: what the screen shows top to bottom — its hero (a ring, a big figure, a gradient card, a chart), its sections, its one primary action — and what every control does: the screen it opens (by id), the sheet, action sheet or dialog it opens on this screen, or what it changes in the app's data (add, edit, delete, check off, log, join, save a setting)"}],
  "data": "every piece of content the screens share, as compact lines: people, items with their numbers, dates, prices, and for each item its emoji and palette colour name, and for anything shown as a picture (dishes, products, places, rooms, courses, posts) photo: "2–4 English words the photo shows", and for every person (the user, friends, hosts, couriers, coaches, reviewers) photo: "portrait" plus who they look like ("portrait smiling young woman", "portrait bearded man outdoors") — real-sounding, rich enough to fill the screens. Every fact has one value for the whole app, written once here: the person (name, level, XP, rank, streak, balance), and the state each flow shares — the cart's items and quantities, the stay being booked with its dates and guests, the order being tracked, today's lesson — so cart, checkout and confirmation show the same items and the same total, and home, profile and leaderboard the same XP and rank"}
-Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 6–8 screens in all: every screen the brief asks for (marked asked) first, then the ones that make the app whole. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; it ends on signing in (the host draws the buttons), so add no separate sign-up screen. A consumer app also has one "modal" screen with id "paywall" — its premium plan, opened from the profile or from a feature it unlocks — named after the app ("Pacewell Premium"). appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Use "modal" for the app's quick tasks — add or log something, filter, pick, check out, share, an award or a receipt (it shows as a sheet over its parent); "push" for places you go deeper. Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
+Rules: 3–5 tabs, exactly one screen of kind "tab" per tab (its id may equal the tab id). 8–12 screens in all — a complete app a person could use from first launch to settings, nothing cut: every screen the brief asks for (marked asked) first, then the ones that make it whole (a detail for what each list shows, history or stats, notifications, settings with real options). If the brief says how many screens, plan exactly that many. Dates are around today (given below): this week, yesterday, next Friday — never a past year. A consumer app (health, habits, food, social, learning, shopping, travel, finance for people) opens with one "first-run" onboarding screen unless the brief says otherwise — its spec says what it promises and what it asks or shows; its layout is chosen later; it ends on signing in (the host draws the buttons), so add no separate sign-up screen. A consumer app also has one "modal" screen with id "paywall" — its premium plan, opened from the profile or from a feature it unlocks — named after the app ("Pacewell Premium"). appName is an original, ownable name — never an existing product or brand (not Strava, Duolingo, Revolut…). Quick tasks — add, log, edit, filter, pick, share, confirm a delete — are not screens: each is a sheet, action sheet or dialog inside the screen it starts from, named in that screen's spec. "modal" is only for a full-screen flow over the app (the paywall, a camera, checkout); "push" for places you go deeper. Every push/modal screen names a parent that exists. Ids are unique kebab-case. Keep the brief's language for copy if it is not English.`
 
 // A tab icon the set does not have used to become House — a Sleep tab drew the same house as Today. The label
 // says what the tab is; failing that, the first fallback no other tab wears.
@@ -81,12 +81,21 @@ export function tabIcon(icon: unknown, label: string, used: Set<string>): string
   return FALLBACK_ICONS.find((i) => !used.has(i)) ?? 'House'
 }
 
+/** FUN-03: a complete app is up to twelve screens (it was eight, which cut the details, settings and history a real
+ *  app has); a brief that says how many it wants ("an app with 4 screens") gets exactly that many. */
+export const MAX_SCREENS = 12
+export function askedCount(brief: string): number | undefined {
+  const m = /\b(\d{1,2})\s*(?:-\s*)?(?:screens?|pages?|ekran|sahifa)/i.exec(brief)
+  const n = m ? Number(m[1]) : NaN
+  return n >= 1 && n <= MAX_SCREENS ? n : undefined
+}
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'screen'
 
 /** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens —
  *  and when there are more, what the brief asked for stays (HIG-17: a checkout or a tracking screen used to be cut
  *  because the eight slots went to onboarding and the tabs first). */
-export function parsePlan(json: string, fallbackName: string, seed?: string): AppPlan {
+export function parsePlan(json: string, fallbackName: string, seed?: string, max = MAX_SCREENS): AppPlan {
   const raw = JSON.parse(jsonOnly(json)) as Partial<AppPlan> & { screens?: Partial<PlannedScreen>[]; tabs?: Partial<AppLook['tabs'][number]>[] }
   const usedIcons = new Set<string>()
   const tabs = (raw.tabs ?? []).slice(0, 5).map((t) => {
@@ -117,12 +126,12 @@ export function parsePlan(json: string, fallbackName: string, seed?: string): Ap
   screens = [...screens.filter((s) => s.kind === 'first-run'), ...tabbed.map((t) => byTab.get(t.id)!), ...screens.filter((s) => s.kind === 'push' || s.kind === 'modal')]
   // Over eight: drop what the brief did not ask for — pushed screens first (last planned first), then a tab and its
   // screen, never below three tabs and never the first-run screen.
-  const MAX = 8
+  const MAX = Math.max(1, Math.min(MAX_SCREENS, max))
   const drop = (s: PlannedScreen) => (screens = screens.filter((x) => x !== s))
   // PRM-02: the paywall is kept like a screen the brief asked for — it is half of what a top app's flow shows.
   const keep = (s: PlannedScreen) => s.asked || /^(paywall|premium|upgrade)/.test(s.id)
   for (const s of [...screens].reverse()) if (screens.length > MAX && (s.kind === 'push' || s.kind === 'modal') && !keep(s) && !screens.some((x) => x.parent === s.id)) drop(s)
-  for (const s of [...screens].reverse()) if (screens.length > MAX && s.kind === 'tab' && !s.asked && screens.filter((x) => x.kind === 'tab').length > 3 && !screens.some((x) => x.parent === s.id)) drop(s)
+  for (const s of [...screens].reverse()) if (screens.length > MAX && s.kind === 'tab' && !s.asked && screens.filter((x) => x.kind === 'tab').length > Math.min(3, MAX) && !screens.some((x) => x.parent === s.id)) drop(s)
   screens = screens.slice(0, MAX)
   const kept = new Set(screens.map((s) => s.tab).filter(Boolean))
   const liveTabs = tabbed.filter((t) => kept.has(t.id))
@@ -141,7 +150,8 @@ export function parsePlan(json: string, fallbackName: string, seed?: string): Ap
 
 export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string, images?: RefImage[]): Promise<AppPlan> {
   const today = new Date().toISOString().slice(0, 10)
-  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}${images?.length ? '\nReference image attached: choose the style that matches its look, and let its screens shape which screens this app has.' : ''}`, 4000, onUsage, images, signal, 'plan'), fallbackName, seed)
+  const count = askedCount(brief)
+  const once = async () => parsePlan(await completeJSON(PLANNER, `Brief: ${brief}\nToday: ${today}${count ? `\nScreens: exactly ${count}.` : ''}${images?.length ? '\nReference image attached: choose the style that matches its look, and let its screens shape which screens this app has.' : ''}`, 8000, onUsage, images, signal, 'plan'), fallbackName, seed, count)
   // A plan that does not parse draws nothing at all (1 of 16 DeepSeek plans on 2026-09-29, not reproducible), and
   // a plan is cheap, so it gets one more try.
   try {
@@ -177,8 +187,56 @@ Tab ids for AppTabbar: ${plan.tabs.map((t) => t.id).join(', ') || '(none)'}. The
 The app's palette — paste this line at the top of the file unchanged and colour each thing with its entry:
 const C = ${JSON.stringify(plan.palette ?? {})}
 
-# APP DATA — the only source for names, numbers and dates
-${plan.data}`
+${plan.store ? storeSection(plan.store) : `# APP DATA — the only source for names, numbers and dates\n${plan.data}`}`
+}
+
+/** FUN-01: every screen gets the app's store and how to use it — it replaces APP DATA, because data pasted into each
+ *  screen is data each screen keeps to itself. */
+const storeSection = (store: string) => `# APP STORE — the app's data and every change a person can make, shared by all its screens
+\`\`\`js
+${store.trim()}
+\`\`\`
+Read the app with \`const { …state, …derived, …actions } = useStore()\` (from '@od/kit'): one object with the state's keys, the derived values and the actions. A derived written \`(state) => …\` is a value (\`completedToday\`); one written \`(state, id) => …\` is called with the item (\`streakOf(h.id)\`). Never copy the store's data into the screen — every list, name, number and date comes from it, so all the screens agree. Every control that changes the app calls an action (\`toggleHabit(h.id)\`, \`addHabit({ … })\`) — this screen and every other one update by themselves. useState is only for what this screen alone holds: which sheet or dialog is open, a form's fields before Save, a segmented control. If the screen needs a value the store does not have, compute it from the store's state.`
+
+/**
+ * FUN-01: the app's data layer, written once after the plan and before any screen: one plain module every screen
+ * reads and changes through useStore(). Checked by compileStore (no imports, no browser APIs), one retry with its errors.
+ */
+export const STORE_SYSTEM = `You write the data layer of a phone app: one plain JavaScript module, store.js. Every screen of the app reads and changes the app through it, so what one screen changes every other screen shows. The screens are written after you, from the plan, and can only use what you export.
+
+Export exactly these three (no imports, no default export):
+export const initial = { … } — everything the app knows when it first opens, as plain data (strings, numbers, booleans, arrays, objects; dates as 'YYYY-MM-DD' strings, times as 'HH:MM'). Take every person, item, number and date from the plan's data, and keep its emoji, its palette colour name (the key of the app's palette, as a string) and its photo query in a \`photo\` field. Every item has a stable string id. Include the history a screen draws from (the last weeks of logs, past orders, messages), the signed-in person and their settings, and flags for flows (onboarded, premium).
+export const actions = { name(state, ...args) { … } } — every change a person can make anywhere in the app, read from each screen's spec: add, edit, delete, toggle, check off, log, rate, join, follow, save a setting, finish onboarding, sign in, subscribe, reset. Each changes \`state\` in place (it is a copy) and may return a value. New ids: \`Date.now().toString(36)\`.
+export const derived = { name: (state) => value } — every value shown on a screen that comes from the data rather than being stored: today's items, progress, streaks, totals, counts, averages, the week's chart, a leaderboard's order. Compute them so they move when the data changes (a streak counts the days in the logs; today's progress counts today's check-ins). A value for one item takes it as a second argument — \`streakOf: (state, id) => …\` — and a screen calls it \`streakOf(h.id)\`; every other derived is a plain value (\`completedToday\`, not \`completedToday()\`).
+
+Today is given below; "today" in the data is that date. Names are camelCase; no name is both a state key and a derived or action name. Pure functions only: no fetch, storage, timers or window. Write it compact and complete (aim for 120–260 lines). Reply with the module in one \`\`\`js block.`
+
+export async function writeStore(plan: AppPlan, onUsage: (u: LlmUsage) => void, signal?: AbortSignal): Promise<string> {
+  const { compileStore } = await import('./ScreenCompiler')
+  const today = new Date().toISOString().slice(0, 10)
+  const brief = `App: ${plan.appName} — ${plan.summary}
+Today: ${today}
+Palette keys: ${Object.keys(plan.palette ?? {}).join(', ') || '(none)'}
+Screens (id — name — kind: spec):
+${plan.screens.map((s) => `- ${s.id} — ${s.name} — ${s.kind}: ${s.spec}`).join('\n')}
+
+# THE PLAN'S DATA
+${plan.data}
+
+Write store.js now.`
+  const write = async (user: string) => {
+    let out = ''
+    for await (const d of streamCompletion(STORE_SYSTEM, user, signal, onUsage, undefined, 'plan')) out += d
+    return ((out.match(/```(?:js|javascript)?\s*\n([\s\S]*?)```/) ?? [null, out])[1] ?? '').trim() + '\n'
+  }
+  let src = await write(brief)
+  let built = compileStore(src)
+  if (!built.ok) {
+    src = await write(`${brief}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`js\n${src}\`\`\`\nThe checker said: ${built.errors.join('; ')}\nWrite the whole module again with those fixed.`)
+    built = compileStore(src)
+    if (!built.ok) throw new Error(`The app's store did not build: ${built.errors.join('; ').slice(0, 300)}`)
+  }
+  return src
 }
 
 /** The example that shows how this kind of screen is built: the app's first tab is its dashboard. */
@@ -279,7 +337,7 @@ export async function writeScreen(user: string, onUsage: (u: LlmUsage) => void, 
 
 /** The app's look for a frame: accent, light/dark and platform from the project's theme (a frame URL may
  *  override them — themeFromQuery), tabs from its navigation. */
-export function appLook(project: { theme: string | null; navigation: string | null }, override?: Partial<AppTheme>): AppLook {
+export function appLook(project: { theme: string | null; navigation: string | null; plan?: string | null }, override?: Partial<AppTheme>): AppLook {
   const theme = { ...parseAppTheme(project.theme), ...override }
   let tabs: AppLook['tabs'] = []
   try {
@@ -293,7 +351,8 @@ export function appLook(project: { theme: string | null; navigation: string | nu
       return { id: t.id, label, icon }
     })
   } catch {}
-  return { accent: theme.accent, dark: theme.dark, platform: theme.platform, style: theme.style, tabs }
+  const store = parseAppPlan(project.plan ?? null)?.store
+  return { accent: theme.accent, dark: theme.dark, platform: theme.platform, style: theme.style, tabs, ...(store ? { store } : {}) }
 }
 
 export const parseAppPlan = (json: string | null): AppPlan | null => {

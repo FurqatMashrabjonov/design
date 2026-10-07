@@ -5,6 +5,8 @@ import { createRoot } from 'react-dom/client'
 import { App } from 'konsta/react'
 import { AppContext } from './kit/nav.jsx'
 import { applyStyle } from './kit/styles.js'
+import { setupStore } from './kit/store.js'
+import * as store from './store.js'
 import app from './app.json'
 import photos from './photos.json'
 import { screens } from './screens/index.js'
@@ -59,6 +61,9 @@ function Navigator() {
     </div>
   )
 }
+
+// FUN-01: one store for every screen, kept between visits.
+setupStore(store, { id: app.name, persist: true })
 
 const { dark, platform, style, accent } = app.theme
 document.documentElement.classList.toggle('dark', dark)

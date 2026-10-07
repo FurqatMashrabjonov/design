@@ -86,6 +86,7 @@ export async function exportReact(project: ProjectIn, rows: ScreenIn[]): Promise
 
   const photos: Record<string, Photo> = {}
   for (const s of drawn) Object.assign(photos, await cachedPhotos(s.html).catch(() => ({})))
+  if (plan?.store) Object.assign(photos, await cachedPhotos(plan.store).catch(() => ({})))
   let tabs: { id: string; label: string; icon: string }[] = []
   try {
     tabs = JSON.parse(project.navigation ?? 'null')?.tabs ?? []
@@ -153,6 +154,7 @@ npm run dev
 Open the address it prints; the app is laid out for a phone — use your browser's device mode, or open it on a phone.
 
 - \`src/screens/\` — one file per screen. Screens move between each other with \`useNav()\` (\`push\`, \`pop\`, \`reset\` a tab).
+- \`src/store.js\` — the app's data and every change a person can make; every screen reads it with \`useStore()\`, and the app keeps its state between visits (localStorage).
 - \`src/kit/\` — the building blocks the screens use (rings, charts, photos, the tab bar).
 - \`src/app.json\` — the screens, the tabs and the theme: \`platform\` \`ios\` or \`material\` (Android), \`dark\`, \`accent\`, \`style\` (clean, midnight, vivid, soft or editorial).
 - \`src/styles.css\` — the accent colour (\`--color-brand-primary\`).
@@ -162,6 +164,9 @@ The code is yours.
 `,
     },
     { name: 'src/main.jsx', data: read('runtime/export/main.jsx') },
+    // FUN-01: the app's data and every change a person can make, shared by all the screens (an older app has none).
+    { name: 'src/store.js', data: plan?.store ?? 'export const initial = {}\nexport const actions = {}\n' },
+    { name: 'src/kit/store.js', data: read('runtime/kit/store.js') },
     { name: 'src/styles.css', data: styles(theme.accent) },
     { name: 'src/app.json', data: JSON.stringify({ name: project.name, theme, tabs, screens: screens.map(({ source: _source, ...s }) => s) }, null, 2) + '\n' },
     { name: 'src/photos.json', data: JSON.stringify(photos, null, 2) + '\n' },
@@ -171,7 +176,7 @@ The code is yours.
     { name: 'src/kit/on-color.js', data: read('runtime/kit/on-color.js') },
     { name: 'src/kit/styles.js', data: read('runtime/kit/styles.js') },
     { name: 'src/type-scale.css', data: read('runtime/type-scale.css') },
-    { name: 'src/kit/index.js', data: `export * from './ui.jsx'\nexport * from './blocks.jsx'\nexport { useNav, AppTabbar, usePhotos } from './nav.jsx'\nexport { ListItem } from './konsta.js'\n` },
+    { name: 'src/kit/index.js', data: `export * from './ui.jsx'\nexport * from './blocks.jsx'\nexport { useNav, AppTabbar, usePhotos } from './nav.jsx'\nexport { useStore, setupStore, resetStore } from './store.js'\nexport { ListItem } from './konsta.js'\n` },
     { name: 'src/kit/konsta.js', data: read('runtime/konsta.js').replace("export * from 'konsta/react'\n", '') },
     { name: 'src/screens/index.js', data: screens.map((s) => `import ${importName(s.id)} from './${s.id}.jsx'`).join('\n') + `\n\nexport const screens = {\n${screens.map((s) => `  '${s.id}': ${importName(s.id)},`).join('\n')}\n}\n` },
     ...screens.map((s) => ({ name: `src/screens/${s.id}.jsx`, data: s.source })),

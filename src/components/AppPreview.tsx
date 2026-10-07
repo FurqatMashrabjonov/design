@@ -4,7 +4,8 @@ import { Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, Link2, Pencil,
 import { toast } from 'sonner'
 import { copyText } from '@/lib/clipboard'
 import { BrandMark, BRAND } from '@/components/SiteChrome'
-import { GeneratingVeil, parseNav, postLook, screenForNav, screenSrc } from '@/ScreenFrame'
+import { GeneratingVeil, parseNav, postLook, screenForNav, screenSrc, type NavMessage } from '@/ScreenFrame'
+import { installStateBus } from '@/lib/app-state-bus'
 import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -30,7 +31,11 @@ type Motion = 'push' | 'pop' | 'fade'
 const DEVICE_KEY = 'od:preview-device'
 
 export function AppPreview({ project, screens: rows, start, share }: { project: PreviewProject; screens: PreviewScreen[]; start?: string; share?: { token: string; ref: string | null; branded?: boolean } }) {
+  useEffect(installStateBus, []) // FUN-01: the app's frames share one store
   const frames = useRef(new Map<string, HTMLIFrameElement>())
+  // FUN-02: the params each screen was last opened with (a detail's item id); a frame that loads later asks for them.
+  const params = useRef(new Map<string, NavMessage['params']>())
+  const sendParams = (id: string) => frames.current.get(id)?.contentWindow?.postMessage({ type: 'od:params', params: params.current.get(id) ?? {} }, '*')
 
   // Canvas order is plan order: left to right.
   const screens = useMemo(() => rows.filter((sc) => sc.html).sort((a, z) => a.x - z.x || a.y - z.y), [rows])
@@ -210,6 +215,10 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
   // The kit's useNav posts od:nav (runtime/kit/nav.jsx); only the frame on show may navigate.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      if ((e.data as { type?: unknown } | null)?.type === 'od:params-hello') {
+        for (const [id, f] of frames.current) if (f.contentWindow === e.source) sendParams(id)
+        return
+      }
       if (!shownId || !settled || !visible.some((v) => e.source === frames.current.get(v)?.contentWindow)) return
       const nav = parseNav(e.data)
       if (!nav) return
@@ -222,6 +231,8 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
       if (!target) return void toast.info('That screen has not been designed yet')
       if (nav.action === 'push') back.current.push(shownId)
       else back.current = []
+      params.current.set(target.id, nav.params)
+      sendParams(target.id)
       goTo(target.id, nav.action === 'push' ? 'push' : 'fade')
     }
     window.addEventListener('message', onMessage)

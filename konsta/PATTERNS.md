@@ -62,9 +62,9 @@ const save = () => { setToast(true); setTimeout(() => setToast(false), 2200) }
 <Notification opened={note} icon={<Tile color={C.a} size={22}>🐶</Tile>} title="Pawfolio" titleRightText="now" subtitle="Milo's walk" text="Time for the evening walk" onClick={() => setNote(false)} />
 ```
 
-**FAB** — the create action of a list or feed tab: an icon only (with text Konsta draws it in capitals), above the tab bar, and the page ends with room for it (`Page className="pb-40"`).
+**FAB** — the create action of a list or feed tab: an icon only (with text Konsta draws it in capitals), above the tab bar, and the page ends with room for it (`Page className="pb-40"`). It opens this screen's add sheet; the sheet's Save calls the store's add action.
 ```jsx
-<Fab className="fixed right-4 bottom-24 z-20" icon={<Plus className="w-6 h-6" />} onClick={() => nav.push('add-trip')} />
+<Fab className="fixed right-4 bottom-24 z-20" icon={<Plus className="w-6 h-6" />} onClick={() => setAdding(true)} />
 ```
 
 **Search and segments under a large title**

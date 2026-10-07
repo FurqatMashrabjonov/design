@@ -14,6 +14,8 @@ export * from './kit/blocks.jsx'
 import { STATIC } from './kit/ui.jsx'
 export { useNav, AppTabbar, usePhotos } from './kit/nav.jsx'
 export { STYLES, applyStyle, styleTokens } from './kit/styles.js'
+export { useStore, setupStore, resetStore } from './kit/store.js'
+import { setupStore } from './kit/store.js'
 import { applyStyle, parseStyle } from './kit/styles.js'
 
 /** A screen that throws while rendering says so, instead of leaving a blank frame. */
@@ -40,7 +42,9 @@ async function applyAccent(accent, material) {
 
 /** Renders one screen inside Konsta's <App>: the app's tabs, accent, light/dark and platform (iOS or Android /
  *  Material) come from the host — the same component is drawn natively for either platform. */
-export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform = 'ios', style = 'clean', insets = null, tabs = [], screen = '', photos = {}, el = document.getElementById('root') } = {}) {
+export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform = 'ios', style = 'clean', insets = null, tabs = [], screen = '', photos = {}, store = null, storeId = 'app', el = document.getElementById('root') } = {}) {
+  // FUN-01: the app's shared store, before the first render reads it.
+  if (store) setupStore(store, { id: storeId })
   // A settled frame (?static): every entrance animation is at its end, so a screenshot shows the finished screen.
   if (STATIC) document.documentElement.classList.add('vs-static')
   const root = createRoot(el)

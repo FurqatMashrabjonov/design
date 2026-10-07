@@ -11,7 +11,7 @@ import { resolvePhotos } from '@/app/Services/PhotoService'
 import { auditScreen, repairOn } from '@/app/Services/RenderAudit'
 import type { AppLook } from '@/app/Services/ScreenDocument'
 import { auditBrief } from '@/lib/render-audit'
-import { planApp, screenBrief, writeScreen, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
+import { planApp, screenBrief, writeScreen, writeStore, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 import { parseRefImages } from '@/lib/ref-images'
@@ -130,8 +130,19 @@ export const PlanController = {
           await Project.saveNavigation(project.id, { tabs: plan.tabs })
           // A midnight app is dark from the start (the switch still turns it light).
           await Project.saveTheme(project.id, { accent: plan.accent, style: plan.style, dark: plan.style === 'midnight' })
-          await Project.savePlan(project.id, plan)
           send({ type: 'plan', appName: plan.appName, screenIds, screens: plan.screens.map((s) => ({ name: s.name, kind: s.kind })) })
+          // FUN-01: the app's data layer before any screen, so every screen reads and changes the same app.
+          const t1 = Date.now()
+          // A store that does not build twice leaves the app on APP DATA as before, rather than drawing nothing.
+          try {
+            plan.store = await writeStore(plan, tally, abort.signal)
+            await resolvePhotos(plan.store, abort.signal).catch(() => {})
+            log.push(`Store — ${((Date.now() - t1) / 1000).toFixed(1)}s, ${plan.store.length} chars`)
+          } catch (e) {
+            // Stopped here: no screen starts, and the run ends as stopped below.
+            if (!abort.signal.aborted) log.push(`Store — failed: ${(e instanceof Error ? e.message : String(e)).slice(0, 200)}`)
+          }
+          await Project.savePlan(project.id, plan)
 
           const fw = frameSize(project.device).width
           const place = (s: PlannedScreen, i: number) => ({
@@ -145,7 +156,7 @@ export const PlanController = {
             const t0 = Date.now()
             try {
               let checked: AuditOutcome | undefined
-              const look = { accent: plan.accent, dark: plan.style === 'midnight', platform: 'ios' as const, style: plan.style, tabs: plan.tabs }
+              const look = { accent: plan.accent, dark: plan.style === 'midnight', platform: 'ios' as const, style: plan.style, tabs: plan.tabs, store: plan.store }
               const jsx = await drawScreen(screenBrief(plan, s), tally, abort.signal, 'screen', { look, slug: s.id, report: (o) => (checked = o) }, images)
               const screen = await Screen.create({ ...place(s, i), html: jsx })
               ShotService.warm(project.id, jsx, s.id) // KON-10: the dashboard's picture, ready before anyone asks

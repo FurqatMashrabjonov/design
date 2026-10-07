@@ -17,7 +17,7 @@ const inflight = new Map<string, Promise<Buffer | null>>()
 
 export const ShotService = {
   key(source: string, look: AppLook) {
-    return createHash('sha1').update(source).update('\0').update(JSON.stringify([look.accent, look.dark, look.platform, look.style, look.tabs])).digest('base64url').slice(0, 24)
+    return createHash('sha1').update(source).update('\0').update(JSON.stringify([look.accent, look.dark, look.platform, look.style, look.tabs, ...(look.store ? [look.store] : [])])).digest('base64url').slice(0, 24)
   },
 
   /** The picture for this source in this look, made now if it has not been. null when it cannot be made (no Chrome). */

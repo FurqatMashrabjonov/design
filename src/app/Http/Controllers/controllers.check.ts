@@ -80,8 +80,17 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
     const many = pp(JSON.stringify({ appName: 'X', tabs: [{ id: 'home', label: 'Home', icon: 'House' }, { id: 'me', label: 'Me', icon: 'User' }, { id: 'stats', label: 'Stats', icon: 'ChartColumn' }], screens: [
       { id: 'home', name: 'Home', kind: 'tab', tab: 'home', spec: '' }, { id: 'me', name: 'Me', kind: 'tab', tab: 'me', spec: '' }, { id: 'stats', name: 'Stats', kind: 'tab', tab: 'stats', spec: '' },
       ...[1, 2, 3, 4, 5, 6].map((i) => ({ id: `d${i}`, name: `D${i}`, kind: 'push', parent: 'home', spec: '' })),
-      { id: 'paywall', name: 'X Premium', kind: 'modal', parent: 'me', spec: '' }] }), 'x', 'seed')
+      { id: 'paywall', name: 'X Premium', kind: 'modal', parent: 'me', spec: '' }] }), 'x', 'seed', 8)
     assert.ok(many.screens.length === 8 && many.screens.some((s) => s.id === 'paywall'), many.screens.map((s) => s.id).join(','))
+  }
+  // FUN-03: a complete app is up to twelve screens; a brief that names a count gets exactly that many.
+  {
+    const { askedCount, MAX_SCREENS } = await import('../../Services/JsxGenerator.ts')
+    assert.equal(MAX_SCREENS, 12)
+    assert.equal(askedCount('create  a habitz tracker app with 4 screen'), 4)
+    assert.equal(askedCount('a 6-page recipe app'), 6)
+    assert.equal(askedCount('a habit tracker'), undefined)
+    assert.equal(askedCount('a tracker with 40 screens'), undefined, 'more than the cap is not a count we keep')
   }
   // KIT-21: a screen gets the kit blocks its own job asks for, two at most, and the brief says how to call them.
   {
@@ -1350,7 +1359,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     tabs: ['home', 'search', 'bag', 'saved', 'profile'].map((id) => ({ id, label: id, icon: 'House' })),
     screens: [{ id: 'welcome', name: 'Welcome', kind: 'first-run', spec: '' }, tab('home', true), tab('search'), tab('bag', true), tab('saved'), tab('profile'),
       push('product', 'home', true), push('checkout', 'bag', true), push('tracking', 'checkout', true), push('reviews', 'product'), push('settings', 'profile')],
-  }), 'x')
+  }), 'x', undefined, 8) // a brief that asked for eight
   const ids = plan.screens.map((s) => s.id)
   assert.equal(ids.length, 8)
   for (const want of ['welcome', 'product', 'checkout', 'tracking']) assert.ok(ids.includes(want), `${want} was asked for: ${ids}`)
@@ -1569,6 +1578,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   reply = (req) => planReply(req) ?? sse(page('Drawn'))
   await post(PlanController, { projectId: 'img-1', brief: 'Like this, please', images: [png] })
   const withPic = (u: unknown) => Array.isArray(u) && u.some((part) => (part as { type?: string }).type === 'image_url')
+  sent = sent.filter((r) => !r.system.startsWith('You write the data layer')) // FUN-01: the store is data, it needs no picture
   assert.ok(sent.length >= 2 && sent.every((r) => withPic(r.user)), 'the planner and every screen see the picture')
   assert.ok(sent.filter((r) => !r.json).every((r) => JSON.stringify(r.user).includes('REFERENCE IMAGE')), 'screens are told what the picture is for')
   const msg = (await Message.forProject('img-1')).find((m) => m.role === 'user')!
@@ -1868,6 +1878,35 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   await client.close()
   reply = () => sse(page('Screen'))
   delete process.env.ACCESS_MODE
+}
+
+{
+  // FUN-01: the app's store — the checker refuses what a screen may not do; the kit runs an action on a copy, keeps
+  // the state when it throws, and recomputes derived values.
+  const { compileStore } = await import('../../Services/ScreenCompiler.ts')
+  assert.ok(compileStore(`export const initial = { habits: [] }\nexport const actions = { add(s, name) { s.habits.push({ id: Date.now().toString(36), name }) } }\nexport const derived = { count: (s) => s.habits.length }\n`).ok)
+  const bad = (src: string, why: RegExp) => { const r = compileStore(src); assert.ok(!r.ok && why.test(r.errors.join('; ')), r.ok ? 'built' : r.errors.join('; ')) }
+  bad(`import x from 'y'\nexport const initial = {}\nexport const actions = {}`, /imports nothing/)
+  bad(`export const initial = {}\nexport const actions = { a() { fetch('/x') } }`, /'fetch' is not allowed/)
+  bad(`export const initial = {}\nexport const actions = { a() { window.name = 1 } }`, /'window' is not allowed/)
+  bad(`export const initial = {}\nexport const actions = { a() { setTimeout(() => {}, 1) } }`, /'setTimeout' is not allowed/)
+  bad(`export const initial = {}`, /actions is missing/)
+  const kit = await import('../../../../runtime/kit/store.js')
+  type H = { id: string; done: boolean }
+  const initial = { habits: [{ id: 'h1', done: false }, { id: 'h2', done: false }] }
+  kit.setupStore({ initial, actions: { toggle: (s: { habits: H[] }, id: string) => { s.habits.find((h) => h.id === id)!.done = true }, boom: (s: { habits: H[] }) => { s.habits = []; throw new Error('x') } }, derived: { doneCount: (s: { habits: H[] }) => s.habits.filter((h) => h.done).length } })
+  const app = () => kit.readStore() as unknown as { habits: H[]; doneCount: number; toggle: (id: string) => void; boom: () => void }
+  assert.equal(app().doneCount, 0)
+  app().toggle('h2')
+  assert.equal(app().doneCount, 1, 'an action changes the state and the derived values follow')
+  assert.equal(initial.habits[1]!.done, false, 'the store never changes its initial data')
+  const errLog = console.error
+  console.error = () => {}
+  app().boom()
+  console.error = errLog
+  assert.equal(app().habits.length, 2, 'an action that throws leaves the state as it was')
+  kit.resetStore()
+  assert.equal(app().doneCount, 0, 'reset goes back to the first state')
 }
 
 console.log('ok')

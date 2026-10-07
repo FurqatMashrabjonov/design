@@ -500,7 +500,13 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EXP-06 | React yoki boshqa framework kodiga eksport | Eksport / Integratsiyalar | Bekor | Rejada |  |  |  |
 | INF-09 | Tab–ekran bog'lanishi saqlanmagan eski loyihalarni tuzatish | Infratuzilma / Ma'lumotlar bazasi | Keyin | Rejada | Kichik |  |  |
 | QA-03 | To'liq avtomatlashtirilgan brauzer testlari | Sinov / To'liq yo'l sinovi | Keyin | Rejada | O'rta | QA-01 |  |
-| AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AUTH-02, BIL-04 | MCP-01 |
+| AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AUTH-02, BIL-04 | FUN-01 | Ilova bitta store: hamma ekran bir-birini biladi (useStore, actions, derived), eksportda saqlanadi | Generatsiya / Funksional ilova | MVP | Tayyor | Katta |  |  |
+| FUN-02 | Har control ishlaydi: navigatsiya parametrlari, sheet/dialog ekran ichida, qatordagi control qatorni ochmaydi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 |  |
+| FUN-03 | To'liq ilova: 12 ekrangacha, so'ralgan son aniq hurmat qilinadi | Generatsiya / Funksional ilova | MVP | Tayyor | Kichik | FUN-01 |  |
+| FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Rejada | O'rta | FUN-01 |  |
+| PAL-04 | Rang qayta: bitta accent, neytral fonlar, gradient ≤1 | Generatsiya / Rang | MVP | Rejada | O'rta |  |  |
+| EXP-07 | Expo eksport (DOM components) | Eksport / Integratsiyalar | Keyin | Rejada | O'rta | CODE-01 |  |
+| MCP-01 |
 | MCP-01 | MCP server (/api/mcp) + API kalitlar (/connect): 8 tool, kredit va eksport qoidalari bilan | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AGT-01 |  |
 | MCP-02 | MCP OAuth (@better-auth/mcp) — kalitsiz ulanish, Claude.ai connector | Agentlar uchun kirish / MCP | Keyin | Rejada | O'rta | MCP-01 |  |
 | MCP-03 | MCP launch: docs sahifa, MCP kataloglari, post/video | Agentlar uchun kirish / MCP | Keyin | Rejada | Kichik | MCP-01 |  |

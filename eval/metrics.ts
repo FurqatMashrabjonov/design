@@ -13,6 +13,9 @@ export function sourceMetrics(src: string) {
     colors: new Set((src.match(/#[0-9a-f]{6}\b/gi) ?? []).map((c) => c.toLowerCase())).size,
     gradients: (src.match(/gradient\(/g) ?? []).length,
     nav: (src.match(/nav\.(push|pop|reset)\(/g) ?? []).length,
+    // FUN-01: the screen reads and changes the app's shared store; and how many controls answer a tap or an input.
+    store: /\buseStore\(/.test(src) ? 1 : 0,
+    handlers: (src.match(/\bon(Click|Change|Input|BackdropClick)=\{/g) ?? []).length,
     // OVL-01: Konsta's overlays and floating actions in use (a sheet, action sheet, dialog, popover, toast, drawer, FAB).
     overlays: (src.match(/<(Sheet|Actions|Dialog|Popover|Popup|Toast|Notification|Panel|Fab)\b/g) ?? []).length,
     // KIT-20: the kit's ready-made blocks in use.

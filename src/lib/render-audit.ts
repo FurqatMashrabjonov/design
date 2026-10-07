@@ -7,7 +7,7 @@
 // The page is laid out in a frame as tall as its content (as the canvas shows it), so every element is in view
 // and elementFromPoint can tell what is on top.
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; where: string; detail: string }
 
@@ -177,6 +177,12 @@ for (var x = 0; x < texts.length && x < 300; x++) {
     add('overlap', B, 'is drawn over ' + where(A));
   }
 }
+// 7. A value the code could not make (FUN-01: a date parsed wrong, a sum of undefined): the person reads "Invalid Date".
+var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+for (var tn; (tn = walker.nextNode());) {
+  var m = /\b(Invalid Date|NaN|undefined)\b|\[object Object\]/.exec(tn.textContent || '');
+  if (m && tn.parentElement && visible(tn.parentElement)) add('broken-value', tn.parentElement, 'shows "' + m[0] + '"');
+}
 // 6. Half a phone left empty: the content stops high up on a phone-tall screen.
 if (bottom > 0 && bottom < PHONE_H * 0.6) out.push({ rule: 'sparse', where: '(Page)', detail: 'the content ends ' + Math.round(bottom) + 'px down; the lower ' + Math.round(100 - (bottom / PHONE_H) * 100) + '% of the phone is empty' });
 return out;
@@ -199,6 +205,7 @@ export function auditBrief(findings: AuditFinding[]): string {
     overlap: 'give each its own space; nothing absolute or negative-margin over text',
     'covered-text': 'move the covering element out of the way; no negative margins pulling a card over a heading',
     'low-contrast': 'use a text colour that reads on that background',
+    'broken-value': 'compute the value from the store or the data correctly (a date from a \'YYYY-MM-DD\' string is new Date(s + \'T00:00:00\'); a missing field gets a fallback) so a real value shows',
     sparse: 'fill the screen with real content from APP DATA (more rows, a second section, a summary) — not filler, not a giant empty illustration',
   }
   return findings.map((f) => `- ${f.where} ${f.detail} → ${how[f.rule]}`).join('\n')

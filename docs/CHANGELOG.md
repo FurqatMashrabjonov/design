@@ -14,6 +14,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (2)
+
+### FUN-01…03: a generated app is one working app — every screen knows the others
+
+- **One store per app.** After the plan, `writeStore` (`JsxGenerator`, `STORE_SYSTEM`) has the model write `store.js` (`initial`, `actions`, `derived`), checked by the new `compileStore` (`ScreenCompiler`: no imports, no browser APIs or timers; one retry; a store that fails twice leaves the app on APP DATA) and kept in `plan.store`. Screen, edit and add briefs carry it instead of APP DATA (`storeSection`); `PlanController` resolves its photos.
+- **The kit's `useStore()`** (`runtime/kit/store.js`): state, derived values and bound actions in one object; actions run on a copy (a throw keeps the state); a derived `(state, id) => …` is called with the item; `state` is there too (both forms the model wrote on the first run and crashed on). `mount` takes the compiled store (`ScreenDocument`, `AppLook.store`; `appLook` reads it from the plan; `ShotService.key` includes it).
+- **Frames stay in step** (`lib/app-state-bus.ts`, installed by `ScreenFrame` and `AppPreview`): a change posts `od:state`, the host hands it to the app's other frames; a late frame asks with `od:state-hello`.
+- **Navigation carries params** (`nav.push('habit', { id })`): `parseParams` in `ScreenFrame`, the preview posts `od:params`, the kit's `useNav().current.params` follows it.
+- **The kit's `ListItem` ignores a tap on a control inside the row** (`runtime/konsta.js`): ticking a habit opened its detail too.
+- **Planner:** 8–12 screens (`MAX_SCREENS` = 12, it was 8), a count in the brief is kept exactly (`askedCount`: "an app with 4 screen" → 4); quick tasks are sheets/dialogs inside their screen, `modal` only for full-screen flows; each spec says what every control does. Planner cap 4 000 → 8 000 tokens.
+- **Prompt:** SKILL.md "It works — a real app, not a picture" (store, every control does something, overlays on the screen, a toast after an action, empty states); PATTERNS' FAB opens a sheet.
+- **Render check:** `broken-value` — a visible "Invalid Date", "NaN", "undefined" or "[object Object]" goes into the repair.
+- **Export:** `src/store.js`, `src/kit/store.js`; `main.jsx` sets the store up with localStorage, so an exported app keeps its state.
+- **Eval:** `store` and `handlers` metrics.
+- Verified: eval `fun01` vs `map01` (8 briefs, GPT-6 Luna): 91 screens (was 64), store on 97% of screens, 7.7 handlers a screen, overlays 0.64 → 1.49, crash 0, build 98.9%; 119 s an app (was 72), problems a screen 0.11 → 0.24 (clean 92% → 79%). Judge 5–0–3 for fun01, rubric 3.14 → 3.19. The first two-brief run (`fun01a`) crashed 3 screens on the two store shapes above; fixed in the kit. In Chrome on a habit tracker made locally through the MCP: ticking a habit moved Today's ring to 3/4 and showed a toast, its detail (opened with its own id) said "Today complete", Progress counted the check-ins, "Add a habit" opened a sheet on Today and the new habit joined the list ("3 of 5"); after the ListItem fix a tick no longer opened the detail. `controllers.check.ts`: `compileStore` refusals, the kit store (action, derived, throw, reset), `askedCount`. `npm run check` and `npx tsc --noEmit` clean.
+- Known: a reload in the studio starts from `initial` (the state lives in the page); a screen edit cannot add to the store yet; colours are PAL-04, a tap audit is FUN-04.
+
 ## 2026-10-07
 
 ### MCP-01: Screenspell as an MCP server, with personal API keys

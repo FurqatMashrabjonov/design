@@ -89,9 +89,9 @@ function crashed(url: string): Promise<boolean> {
 /** The pages of a brief's stored screens; the look comes from its plan (accent, tabs). */
 // The look includes the plan's style (its surfaces, corners and fonts) and starts a Midnight app dark, as the studio
 // does: before PAL-03 the eval shot every app on Clean's surfaces, so a style change was invisible to the judge.
-async function addPages(id: string, slug: string, source: string, plan: { accent?: string; tabs?: unknown; style?: string }) {
+async function addPages(id: string, slug: string, source: string, plan: { accent?: string; tabs?: unknown; style?: string; store?: string }) {
   for (const dark of opt.dark ? [false, true] : [plan.style === 'midnight']) {
-    const look = appLook({ theme: JSON.stringify({ accent: plan.accent, style: plan.style }), navigation: JSON.stringify({ tabs: plan.tabs ?? [] }) }, { dark })
+    const look = appLook({ theme: JSON.stringify({ accent: plan.accent, style: plan.style }), navigation: JSON.stringify({ tabs: plan.tabs ?? [] }), plan: JSON.stringify({ screens: [], data: '', store: plan.store }) }, { dark })
     pages.set(`/${id}/${slug}${opt.dark && dark ? '-dark' : ''}.html`, await screenDocument(source, look, { slug }))
   }
 }
@@ -137,7 +137,7 @@ function summary(results: BriefResult[]) {
     buildRate: +(ok.length / Math.max(1, all.length)).toFixed(3),
     secondsPerApp: +(results.reduce((a, r) => a + r.seconds, 0) / Math.max(1, results.length)).toFixed(1),
     outTokensPerScreen: Math.round(results.reduce((a, r) => a + r.tokens.out, 0) / Math.max(1, all.length)),
-    konsta: mean('konsta'), photos: mean('photos'), kitFigures: mean('kitFigures'), emoji: mean('emoji'), colors: mean('colors'), gradients: mean('gradients'), nav: mean('nav'), motion: mean('motion'), overlays: mean('overlays'), sections: mean('sections'), blocks: mean('blocks'), hardWhite: mean('hardWhite'), chars: mean('chars'),
+    konsta: mean('konsta'), photos: mean('photos'), kitFigures: mean('kitFigures'), emoji: mean('emoji'), colors: mean('colors'), gradients: mean('gradients'), nav: mean('nav'), store: mean('store'), handlers: mean('handlers'), motion: mean('motion'), overlays: mean('overlays'), sections: mean('sections'), blocks: mean('blocks'), hardWhite: mean('hardWhite'), chars: mean('chars'),
     crashRate: +(ok.filter((s) => s.crashed).length / Math.max(1, ok.length)).toFixed(3),
     // HIG-10: lint findings left after its fixes — per screen, and which rules.
     hig: mean('hig'),
@@ -188,7 +188,7 @@ await mapLimit(results.filter((r) => !opt.only || opt.only.split(',').includes(r
 // here whether or not the run repaired, so RENDER_AUDIT=0 is the baseline).
 await mapLimit(results.filter((r) => !opt.only || opt.only.split(',').includes(r.id)).flatMap((r) => r.screens.filter((s) => s.built && !s.crashed).map((s) => ({ r, s }))), 4, async ({ r, s }) => {
   const plan = JSON.parse(readFileSync(join(OUT, r.id, 'plan.json'), 'utf8'))
-  const found = await auditScreen(readFileSync(join(OUT, r.id, `${s.slug}.jsx`), 'utf8'), { accent: plan.accent ?? '#5e5ce6', dark: plan.style === 'midnight', platform: 'ios', style: plan.style, tabs: plan.tabs ?? [] }, s.slug)
+  const found = await auditScreen(readFileSync(join(OUT, r.id, `${s.slug}.jsx`), 'utf8'), { accent: plan.accent ?? '#5e5ce6', dark: plan.style === 'midnight', platform: 'ios', style: plan.style, tabs: plan.tabs ?? [], store: plan.store }, s.slug)
   if (found) (s.problems = found.length), (s.problemRules = found.map((f) => f.rule))
 })
 server.close()
