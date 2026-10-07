@@ -19,7 +19,7 @@ if (cmd === 'shot') {
   const c = await compileScreen(src)
   if (!c.ok) { console.log('BUILD FAILED:\n' + c.errors.join('\n')); process.exit(1) }
   const found = await auditScreen(src, look, slugOf(file))
-  console.log('built · render check:', found?.length ? found.map((f: any) => `${f.kind ?? f.rule}: ${f.text ?? f.message ?? ''}`.slice(0, 120)).join(' | ') : 'clean')
+  console.log('built · render check:', found?.length ? found.map((f: any) => `${f.rule}: ${f.where} ${f.detail}`.slice(0, 140)).join(' | ') : 'clean')
   for (const [tag, l] of [['ios', look], ['ios-dark', { ...look, dark: true }], ['material', { ...look, platform: 'material' }]] as const) {
     const png = await screenshotScreen(src, l, slugOf(file))
     if (png) { writeFileSync(`${dir}/${slugOf(file)}-${tag}.png`, png); console.log(`${dir}/${slugOf(file)}-${tag}.png`) }

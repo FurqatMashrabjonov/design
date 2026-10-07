@@ -4,8 +4,8 @@
 // kit; plain React + Tailwind on the style's tokens, so the export can copy this file as it is.
 import { useEffect, useRef, useState } from 'react'
 import { Button, Glass, List, ListItem, Preloader } from 'konsta/react'
-import { ArrowDown, ChevronLeft, ChevronRight, Check, MapPin, Star, Plus } from 'lucide-react'
-import { Dots, Photo, Avatar, Meter, tint, gradient, onColor, cssColor } from './ui.jsx'
+import { ArrowDown, ChevronLeft, ChevronRight, Check, MapPin, Star, Plus, Play, Pause, SkipBack, SkipForward, Delete, Crown, Nfc } from 'lucide-react'
+import { Dots, Photo, Avatar, Meter, tint, gradient, onColor, cssColor, STATIC } from './ui.jsx'
 
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
@@ -792,6 +792,314 @@ export function RouteMap({ height = 220, route = 'line', progress, pins = [], co
         <span key={i} className="absolute -translate-x-1/2 text-caption1 font-semibold px-2 py-0.5 rounded-full bg-card shadow-sm whitespace-nowrap max-w-[45%] truncate" style={{ left: `${Math.max(18, Math.min(82, (p[0] / W) * 100))}%`, top: `calc(${(p[1] / H) * 100}% + 10px)` }}>{pin.label}</span>
       ) })}
       {children && <div className="absolute inset-x-0 bottom-0 p-3">{children}</div>}
+    </div>
+  )
+}
+
+// KIT-24: the first wave of parts top apps are known by (Revolut, Airbnb, Spotify, Uber Eats, Duolingo) — a donut of
+// categories, a bank card, an amount keypad, a photo header that folds into the navbar, a media player, a mini player
+// above the tab bar, a menu with tabs that follow the scroll, and a podium. Each takes the forms a model writes
+// (numbers as strings, colours as names) and keeps working on its own state when no handler is given.
+
+// Segments with no colour are the accent in lighter steps — one hue, as top apps chart categories.
+const palette = (i, c) => `color-mix(in oklab, ${c} ${Math.max(22, 100 - i * 20)}%, #ffffff)`
+const money = (n, currency = '$') => `${n < 0 ? '−' : ''}${currency}${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`
+
+/** Categories as one ring — spending, time, macros. `segments: [{ label, value, color? }]`; `children` sit in the middle
+ *  (the total); `legend` lists the segments under it with their share. */
+export function Donut({ segments = [], size = 180, stroke = 22, color, legend = false, currency, children, delay = 0 }) {
+  const base = color ? cssColor(color) : 'var(--color-primary)'
+  const items = (Array.isArray(segments) ? segments : []).map((s, i) => ({ label: String(s?.label ?? s?.name ?? ''), value: Math.max(0, asNum(s?.value ?? s?.amount)), color: s?.color ? cssColor(s.color) : palette(i, base) }))
+  const total = items.reduce((a, s) => a + s.value, 0) || 1
+  const [on, setOn] = useState(STATIC)
+  useEffect(() => { const t = setTimeout(() => setOn(true), 60 + delay); return () => clearTimeout(t) }, [delay])
+  const r = (size - stroke) / 2, C = 2 * Math.PI * r, gap = items.length > 1 ? Math.min(6, C * 0.012) : 0
+  let at = 0
+  return (
+    <div className="flex flex-col items-center gap-4" data-od-kit="Donut">
+      <div className="relative" style={{ width: size, height: size }}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" role="img" aria-label={items.map((s) => `${s.label} ${Math.round((s.value / total) * 100)}%`).join(', ')}>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(120,120,128,.14)" strokeWidth={stroke} />
+          {items.map((s, i) => {
+            const len = Math.max(0, (s.value / total) * C - gap)
+            const el = <circle key={i} cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} strokeLinecap={items.length > 1 ? 'butt' : 'round'} style={{ stroke: s.color, strokeDasharray: `${on ? len : 0} ${C}`, strokeDashoffset: -at, transition: 'stroke-dasharray 900ms cubic-bezier(.2,.8,.2,1)' }} />
+            at += (s.value / total) * C
+            return el
+          })}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">{children}</div>
+      </div>
+      {legend && items.length > 0 && (
+        <div className="w-full grid grid-cols-2 gap-x-4 gap-y-2.5">
+          {items.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+              <span className="text-subhead truncate flex-1">{s.label}</span>
+              <span className="text-subhead tabular-nums opacity-60">{currency ? money(s.value, currency) : `${Math.round((s.value / total) * 100)}%`}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** A payment card, drawn: chip, contactless mark, the number masked to its last four (a tap shows it), name, expiry,
+ *  network. `color` (and `color2`) tint it; `frozen` frosts it. */
+export function BankCard({ name = '', number = '', expiry = '', brand = 'visa', label, balance, color, color2, frozen = false, onClick, className = '' }) {
+  const c = color ? cssColor(color) : '#1c1c1e'
+  const digits = String(number).replace(/\D/g, '')
+  const last4 = digits.slice(-4) || '0000'
+  const [shown, setShown] = useState(false)
+  const full = digits.length >= 12 ? digits.replace(/(\d{4})(?=\d)/g, '$1 ') : `•••• •••• •••• ${last4}`
+  const ink = onColor(c)
+  const tap = () => (onClick ? onClick() : digits.length >= 12 && setShown((v) => !v))
+  return (
+    <button type="button" onClick={tap} data-od-kit="BankCard" className={`relative w-full overflow-hidden rounded-[22px] p-5 text-left shadow-lg motion-safe:transition-transform motion-safe:duration-150 active:scale-[.98] ${className}`} style={{ aspectRatio: '1.586', background: gradient(c, color2), color: ink }}>
+      <span className="absolute -right-16 -top-20 w-56 h-56 rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,.22), transparent 70%)' }} />
+      <span className="absolute -left-10 -bottom-24 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,.10), transparent 70%)' }} />
+      <span className="relative flex h-full flex-col justify-between">
+        <span className="flex items-start justify-between">
+          <span>
+            {label && <span className="block text-footnote font-semibold opacity-80">{label}</span>}
+            {balance !== undefined && <span className="block text-title2 font-bold tabular-nums mt-0.5">{typeof balance === 'number' ? money(balance) : balance}</span>}
+          </span>
+          <Nfc className="w-6 h-6 opacity-80" strokeWidth={1.8} />
+        </span>
+        <span className="flex items-center gap-3">
+          <svg width="40" height="30" viewBox="0 0 40 30" aria-hidden="true"><rect width="40" height="30" rx="6" fill="#e9c46a" /><path d="M0 10h13M0 20h13M27 10h13M27 20h13M13 0v30M27 0v30" stroke="#b8902f" strokeWidth="1.2" /></svg>
+          <span className="text-headline tracking-[0.12em] tabular-nums">{shown ? full : `•••• ${last4}`}</span>
+        </span>
+        <span className="flex items-end justify-between gap-3">
+          <span className="min-w-0">
+            <span className="block text-caption2 uppercase opacity-70">Card holder</span>
+            <span className="block text-subhead font-semibold truncate">{name}</span>
+          </span>
+          {expiry && <span className="shrink-0"><span className="block text-caption2 uppercase opacity-70">Expires</span><span className="block text-subhead font-semibold tabular-nums">{expiry}</span></span>}
+          <span className="shrink-0 text-title3 font-black italic tracking-tight">{String(brand).toLowerCase() === 'mastercard' ? <span className="flex -space-x-2"><span className="w-7 h-7 rounded-full bg-[#eb001b]" /><span className="w-7 h-7 rounded-full bg-[#f79e1b] opacity-90" /></span> : String(brand).toUpperCase()}</span>
+        </span>
+      </span>
+      {frozen && <span className="absolute inset-0 flex items-center justify-center bg-white/35 backdrop-blur-md text-headline text-black">❄︎ Frozen</span>}
+    </button>
+  )
+}
+
+/** Entering an amount, as Cash App and Revolut do: the figure large on top, a 3×4 keypad under it. `value` is a string
+ *  ('42.5'); without `onChange` it keeps its own. */
+export function AmountPad({ value, onChange, currency = '$', max = 100000, decimals = 2, note }) {
+  const [own, setOwn] = useState('0')
+  const v = value !== undefined ? String(value || '0') : own
+  const set = (n) => (onChange ? onChange(n) : setOwn(n))
+  const press = (k) => {
+    if (k === 'del') return set(v.length > 1 ? v.slice(0, -1) : '0')
+    if (k === '.') return decimals > 0 && !v.includes('.') && set(v + '.')
+    if (v.includes('.') && v.split('.')[1].length >= decimals) return
+    const next = v === '0' ? k : v + k
+    if (Number(next) <= max) set(next)
+  }
+  const [whole, frac] = v.split('.')
+  return (
+    <div className="flex flex-col items-center" data-od-kit="AmountPad">
+      <div className="py-6 text-center">
+        <span className="font-bold tabular-nums tracking-tight" style={{ fontSize: v.length > 7 ? 48 : 64, lineHeight: 1 }}>
+          <span className="opacity-50">{currency}</span>{Number(whole).toLocaleString('en-US')}{v.includes('.') && <span>.{frac}</span>}
+        </span>
+        {note && <div className="text-subhead opacity-60 mt-2">{note}</div>}
+      </div>
+      <div className="grid grid-cols-3 w-full max-w-xs">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9', decimals > 0 ? '.' : '', '0', 'del'].map((k, i) => (
+          <button key={i} type="button" disabled={!k} onClick={() => k && press(k)} aria-label={k === 'del' ? 'Delete' : k}
+            className="h-16 flex items-center justify-center text-title1 font-medium rounded-2xl motion-safe:transition-colors active:bg-black/5 dark:active:bg-white/10 disabled:opacity-0">
+            {k === 'del' ? <Delete className="w-6 h-6" /> : k}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** A detail screen's photo header that folds into the navbar as the page scrolls (Airbnb, Apple Music): the photo
+ *  full-bleed with the title over it, then a bar with the title once it scrolls away. Put it first inside <Page> (no
+ *  Navbar); `actions` are round buttons on the right (share, save). */
+export function CollapsingHeader({ photo, q = photo ?? '', title = '', subtitle, height = 320, onBack, actions, children }) {
+  const ref = useRef(null)
+  const [y, setY] = useState(0)
+  useEffect(() => {
+    const page = ref.current?.closest('.k-page')
+    if (!page) return
+    const on = () => setY(page.scrollTop)
+    page.addEventListener('scroll', on, { passive: true })
+    return () => page.removeEventListener('scroll', on)
+  }, [])
+  const p = Math.min(1, Math.max(0, (y - height * 0.45) / (height * 0.35)))
+  const round = 'w-10 h-10 rounded-full flex items-center justify-center motion-safe:transition-colors'
+  const btnStyle = { background: p > 0.5 ? 'transparent' : 'rgba(0,0,0,.35)', color: p > 0.5 ? 'inherit' : '#fff', backdropFilter: p > 0.5 ? 'none' : 'blur(12px)' }
+  return (
+    <div ref={ref} className="relative" data-od-kit="CollapsingHeader" style={{ height }}>
+      <div className="absolute inset-0 overflow-hidden">
+        <Photo q={q} className="absolute inset-0 w-full h-full" style={{ transform: `translateY(${y * 0.35}px) scale(${1 + Math.max(0, -y) / 400})` }} />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
+        <div className="absolute inset-x-0 bottom-0 p-5 text-white" style={{ opacity: 1 - p }}>
+          <div className="text-large-title font-bold leading-tight">{title}</div>
+          {subtitle && <div className="text-subhead opacity-85 mt-1">{subtitle}</div>}
+          {children}
+        </div>
+      </div>
+      <div className="fixed inset-x-0 top-0 z-30 pt-[var(--k-safe-area-top,0px)]" style={{ background: `color-mix(in oklab, var(--app-card, #fff) ${p * 92}%, transparent)`, backdropFilter: p > 0.05 ? 'blur(18px)' : 'none', borderBottom: p > 0.9 ? '0.5px solid rgba(120,120,128,.25)' : '0.5px solid transparent' }}>
+        <div className="h-12 px-3 flex items-center gap-2">
+          {onBack && <button type="button" aria-label="Back" onClick={onBack} className={round} style={btnStyle}><ChevronLeft className="w-6 h-6" /></button>}
+          <div className="flex-1 text-center text-headline truncate" style={{ opacity: p }}>{title}</div>
+          <div className="flex items-center gap-2">{(Array.isArray(actions) ? actions : actions ? [actions] : []).map((a, i) => <span key={i} className={round} style={btnStyle}>{a}</span>)}</div>
+          {!actions && onBack && <span className="w-10" />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const clock = (s) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`
+
+/** A full player — artwork, title, a scrubber that moves while it plays, and the transport. `duration` and `position`
+ *  in seconds; it plays on its own state when no `onToggle` is given. */
+export function MediaPlayer({ photo, q = photo ?? '', title = '', artist = '', duration = 600, position = 0, playing: playingProp, onToggle, color, skip = 15 }) {
+  const c = color ? cssColor(color) : 'var(--color-primary)'
+  const total = Math.max(1, asNum(duration, 600))
+  const [own, setOwn] = useState(false)
+  const playing = playingProp ?? own
+  const [at, setAt] = useState(asNum(position))
+  useEffect(() => {
+    if (!playing || STATIC) return
+    const t = setInterval(() => setAt((a) => Math.min(total, a + 1)), 1000)
+    return () => clearInterval(t)
+  }, [playing, total])
+  const toggle = () => (onToggle ? onToggle(!playing) : setOwn((p) => !p))
+  return (
+    <div className="flex flex-col items-center px-6" data-od-kit="MediaPlayer">
+      <div className="relative w-full max-w-[300px] aspect-square">
+        <Photo q={q} className="w-full h-full rounded-[28px] shadow-2xl motion-safe:transition-transform motion-safe:duration-500" style={{ transform: playing ? 'scale(1)' : 'scale(.92)' }} />
+      </div>
+      <div className="w-full mt-7">
+        <div className="text-title2 font-bold truncate">{title}</div>
+        <div className="text-body opacity-60 truncate">{artist}</div>
+      </div>
+      <div className="w-full mt-5">
+        <input type="range" min={0} max={total} value={at} onChange={(e) => setAt(Number(e.target.value))} aria-label="Position"
+          className="w-full h-1.5 rounded-full appearance-none cursor-pointer" style={{ accentColor: c, background: `linear-gradient(to right, ${c} ${(at / total) * 100}%, rgba(120,120,128,.25) ${(at / total) * 100}%)` }} />
+        <div className="flex justify-between text-caption1 tabular-nums opacity-60 mt-1.5"><span>{clock(at)}</span><span>−{clock(total - at)}</span></div>
+      </div>
+      <div className="flex items-center justify-center gap-10 mt-4">
+        <button type="button" aria-label={`Back ${skip} seconds`} onClick={() => setAt((a) => Math.max(0, a - skip))} className="w-12 h-12 flex items-center justify-center active:scale-90 motion-safe:transition-transform"><SkipBack className="w-7 h-7" fill="currentColor" /></button>
+        <button type="button" aria-label={playing ? 'Pause' : 'Play'} onClick={toggle} className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg active:scale-95 motion-safe:transition-transform" style={{ background: c, color: onColor(c) }}>
+          {playing ? <Pause className="w-9 h-9" fill="currentColor" /> : <Play className="w-9 h-9 translate-x-0.5" fill="currentColor" />}
+        </button>
+        <button type="button" aria-label={`Forward ${skip} seconds`} onClick={() => setAt((a) => Math.min(total, a + skip))} className="w-12 h-12 flex items-center justify-center active:scale-90 motion-safe:transition-transform"><SkipForward className="w-7 h-7" fill="currentColor" /></button>
+      </div>
+    </div>
+  )
+}
+
+/** A bar that stays above the tab bar while something runs across the app — what is playing, the order on its way, a
+ *  workout in progress. `media` (or `q` for a photo), title, subtitle, a thin progress line; a play/pause button when
+ *  `onToggle` is given, else `action`. Tapping it opens the full thing (`onClick`). */
+export function MiniPlayer({ photo, q = photo, media, title = '', subtitle, progress, playing = false, onToggle, action, onClick, color }) {
+  const c = color ? cssColor(color) : 'var(--color-primary)'
+  return (
+    <div className="fixed inset-x-3 z-30" style={{ bottom: 'calc(var(--k-safe-area-bottom, 0px) + 84px)' }} data-od-kit="MiniPlayer">
+      <div role="button" tabIndex={0} onClick={onClick} className="relative overflow-hidden flex items-center gap-3 p-2 pr-3 rounded-2xl shadow-xl border border-black/5 dark:border-white/10 motion-safe:transition-transform active:scale-[.99]" style={{ background: 'color-mix(in oklab, var(--app-card, #fff) 82%, transparent)', backdropFilter: 'blur(20px) saturate(1.6)' }}>
+        <span className="w-11 h-11 rounded-xl overflow-hidden shrink-0 flex items-center justify-center" style={{ background: tint(c) }}>{media ?? (q ? <Photo q={q} className="w-full h-full" /> : null)}</span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-subhead font-semibold truncate">{title}</span>
+          {subtitle && <span className="block text-footnote opacity-60 truncate">{subtitle}</span>}
+        </span>
+        {onToggle ? (
+          <button type="button" aria-label={playing ? 'Pause' : 'Play'} onClick={(e) => { e.stopPropagation(); onToggle(!playing) }} className="w-10 h-10 flex items-center justify-center rounded-full active:scale-90 motion-safe:transition-transform">
+            {playing ? <Pause className="w-6 h-6" fill="currentColor" /> : <Play className="w-6 h-6" fill="currentColor" />}
+          </button>
+        ) : action ? <span onClick={(e) => e.stopPropagation()}>{action}</span> : <ChevronRight className="w-5 h-5 opacity-40" />}
+        {progress !== undefined && <span className="absolute left-3 right-3 bottom-0 h-[3px] rounded-full bg-black/10 dark:bg-white/15"><span className="block h-full rounded-full" style={{ width: `${Math.round(Math.min(1, Math.max(0, asNum(progress))) * 100)}%`, background: c }} /></span>}
+      </div>
+    </div>
+  )
+}
+
+/** A long menu or catalogue in sections with a tab row that sticks under the navbar and follows the scroll (Uber Eats,
+ *  Wolt): tap a tab to jump, scroll and the tab moves. `sections: [{ id, title, content }]` — content is the section's
+ *  rows or cards. */
+export function MenuSections({ sections = [], top }) {
+  const list = (Array.isArray(sections) ? sections : []).map((s, i) => ({ id: String(s?.id ?? i), title: String(s?.title ?? s?.label ?? ''), content: s?.content ?? s?.children ?? null }))
+  const [active, setActive] = useState(list[0]?.id)
+  const [navH, setNavH] = useState(0)
+  const bar = useRef(null)
+  const refs = useRef({})
+  useEffect(() => {
+    const page = bar.current?.closest('.k-page')
+    if (!page) return
+    // The bar sticks under the page's navbar, not over it.
+    const nav = page.querySelector('.k-navbar')
+    if (nav) setNavH(nav.getBoundingClientRect().height)
+    const on = () => {
+      const edge = (bar.current?.getBoundingClientRect().bottom ?? 0) + 8
+      let cur = list[0]?.id
+      for (const s of list) { const el = refs.current[s.id]; if (el && el.getBoundingClientRect().top <= edge) cur = s.id }
+      // At the end of the page the last sections cannot reach the bar; the last one is what you are looking at.
+      if (page.scrollTop + page.clientHeight >= page.scrollHeight - 4) cur = list[list.length - 1]?.id
+      setActive(cur)
+    }
+    page.addEventListener('scroll', on, { passive: true })
+    return () => page.removeEventListener('scroll', on)
+  }, [list.map((s) => s.id).join('|')])
+  // Only the tab row scrolls to show the active tab (scrollIntoView moved the whole page sideways).
+  useEffect(() => {
+    const row = bar.current?.firstElementChild, tab = bar.current?.querySelector(`[data-tab="${CSS.escape(String(active))}"]`)
+    if (row && tab) row.scrollTo({ left: tab.offsetLeft - row.clientWidth / 2 + tab.clientWidth / 2, behavior: 'smooth' })
+  }, [active])
+  const jump = (id) => {
+    const page = bar.current?.closest('.k-page'), el = refs.current[id]
+    if (!page || !el) return
+    page.scrollTo({ top: page.scrollTop + el.getBoundingClientRect().top - (bar.current?.getBoundingClientRect().bottom ?? 0) - 4, behavior: 'smooth' })
+    setActive(id)
+  }
+  return (
+    <div data-od-kit="MenuSections">
+      <div ref={bar} className="sticky z-20 bg-page/90 backdrop-blur-xl" style={{ top: top ?? navH }}>
+        <div className="flex gap-1 overflow-x-auto px-4 py-2 [scrollbar-width:none]">
+          {list.map((s) => (
+            <button key={s.id} type="button" data-tab={s.id} onClick={() => jump(s.id)} className="shrink-0 px-3.5 py-1.5 rounded-full text-subhead font-semibold motion-safe:transition-colors"
+              style={active === s.id ? { background: 'var(--color-primary)', color: '#fff' } : { color: 'inherit', opacity: 0.7 }}>{s.title}</button>
+          ))}
+        </div>
+      </div>
+      {list.map((s) => (
+        <section key={s.id} ref={(el) => (refs.current[s.id] = el)} className="pt-4">
+          <div className="px-4 pb-2 text-title3 font-bold">{s.title}</div>
+          {s.content}
+        </section>
+      ))}
+    </div>
+  )
+}
+
+/** The top three on steps of a podium — second, first, third — with their photos, a crown on the winner and their
+ *  score. `people: [{ name, photo?, value, color? }]` in order; the rest of the board is the screen's own list. */
+export function Podium({ people = [], unit = '', color }) {
+  const c = color ? cssColor(color) : 'var(--color-primary)'
+  const top = (Array.isArray(people) ? people : []).slice(0, 3).map((p, i) => ({ name: String(p?.name ?? ''), photo: p?.photo, value: p?.value ?? p?.score ?? p?.xp, color: p?.color, rank: i + 1 }))
+  const order = [top[1], top[0], top[2]].filter(Boolean)
+  const step = { 1: 120, 2: 88, 3: 68 }
+  const medal = { 1: '#f5b301', 2: '#a9b4c2', 3: '#c98a52' }
+  return (
+    <div className="flex items-end justify-center gap-3 px-4 pt-6" data-od-kit="Podium">
+      {order.map((p) => (
+        <div key={p.rank} className="flex-1 max-w-[120px] flex flex-col items-center vs-rise" style={{ animationDelay: `${(3 - p.rank) * 90}ms` }}>
+          <div className="relative mb-2">
+            {p.rank === 1 && <Crown className="absolute -top-6 left-1/2 -translate-x-1/2 w-6 h-6" style={{ color: medal[1] }} fill={medal[1]} />}
+            <span className="block rounded-full p-[3px]" style={{ background: medal[p.rank] }}><Avatar name={p.name} photo={p.photo} color={p.color ?? c} size={p.rank === 1 ? 72 : 56} /></span>
+          </div>
+          <div className="text-subhead font-semibold truncate max-w-full mt-1">{p.name.split(' ')[0]}</div>
+          <div className="text-footnote tabular-nums opacity-60">{typeof p.value === 'number' ? p.value.toLocaleString('en-US') : p.value}{unit ? ` ${unit}` : ''}</div>
+          <div className="w-full mt-2 rounded-t-2xl flex items-start justify-center pt-2 text-title2 font-black" style={{ height: step[p.rank], background: p.rank === 1 ? gradient(c) : tint(c, p.rank === 2 ? 22 : 14), color: p.rank === 1 ? onColor(c) : c }}>{p.rank}</div>
+        </div>
+      ))}
     </div>
   )
 }

@@ -15,7 +15,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; backgro
 li { list-style: none; }
 
 /* The navigator: iOS push is a slide from the right over a page that drifts left and dims. */
-.vs-stack { position: absolute; inset: 0; overflow: hidden; }
+.vs-stack { position: absolute; inset: 0; overflow: hidden; overflow: clip; } /* clip: nothing can scroll the stack, not even scrollIntoView */
 .vs-screen { position: absolute; inset: 0; will-change: transform; }
 .vs-screen.vs-under { transform: translateX(-28%); filter: brightness(.9); transition: transform .42s cubic-bezier(.2,.8,.2,1), filter .42s; }
 .vs-screen.vs-top { transform: none; filter: none; transition: transform .42s cubic-bezier(.2,.8,.2,1), filter .42s; }

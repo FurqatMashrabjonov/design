@@ -14,6 +14,15 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (4)
+
+### KIT-24 (first wave): eight parts top apps are known by — in the kit, not yet in the prompt
+
+- `runtime/kit/blocks.jsx`: `Donut` (categories as one ring, the total inside, an optional legend; uncoloured segments are the accent in lighter steps), `BankCard` (chip, contactless mark, masked number a tap reveals, holder, expiry, network, frozen), `AmountPad` (big figure + 3×4 keypad, controlled or on its own state), `CollapsingHeader` (full-bleed photo with the title that folds into a navbar bar on scroll, round back/actions), `MediaPlayer` (artwork, a scrubber that moves while playing, ±15 s, play/pause), `MiniPlayer` (a glass bar above the tab bar for what runs across the app, with a progress line), `MenuSections` (sections with a tab row that sticks under the navbar and follows the scroll; the last tab at the end of the page), `Podium` (top three on steps with a crown). Photo props are `photo` (what `photoQueries` reads on any element). Strings for numbers and colour names pass as everywhere in the kit.
+- Found while reviewing them: the render check's `broken-value` pattern had lost its backslashes inside the template string and flagged every text on every screen (never deployed; a test now holds the pattern); `.vs-stack` is `overflow: clip`, so nothing (scrollIntoView, focus) can scroll the export's screen stack sideways.
+- `gallery/finance.jsx`, `player.jsx`, `stay.jsx`, `menu.jsx`, `leaderboard.jsx`; `scripts/kit-gallery.ts` prints each finding's place and detail.
+- Verified: each gallery screen built and passed the render check (iOS light/dark, Material); in Chrome on the exported gallery: the keypad typed 24.3 and enabled Send, the player's artwork loaded and played, the stay header folded into a bar with the title, the menu's tabs followed the scroll to Drinks with no sideways shift. `npm run check` and `npx tsc --noEmit` clean. Not offered to the model yet: that waits for the owner's review, then hints by screen name and an eval (KIT-21's process).
+
 ## 2026-10-07 (3)
 
 ### CLR-01: generation draws every app in Konsta's own colour; the person picks another

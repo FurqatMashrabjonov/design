@@ -180,7 +180,7 @@ for (var x = 0; x < texts.length && x < 300; x++) {
 // 7. A value the code could not make (FUN-01: a date parsed wrong, a sum of undefined): the person reads "Invalid Date".
 var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 for (var tn; (tn = walker.nextNode());) {
-  var m = /\b(Invalid Date|NaN|undefined)\b|\[object Object\]/.exec(tn.textContent || '');
+  var m = /\\b(Invalid Date|NaN|undefined)\\b|\\[object Object\\]/.exec(tn.textContent || '');
   if (m && tn.parentElement && visible(tn.parentElement)) add('broken-value', tn.parentElement, 'shows "' + m[0] + '"');
 }
 // 6. Half a phone left empty: the content stops high up on a phone-tall screen.

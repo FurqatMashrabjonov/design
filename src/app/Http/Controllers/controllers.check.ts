@@ -1912,4 +1912,12 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.equal(app().doneCount, 0, 'reset goes back to the first state')
 }
 
+{
+  // FUN-01: the render check's "broken value" pattern survives being a function body in a template string (a lost
+  // backslash once matched every letter and flagged every text on every screen).
+  const { AUDIT_SOURCE } = await import('../../../lib/render-audit.ts')
+  const src = AUDIT_SOURCE.split('\n').find((l) => l.includes('.exec(tn'))!
+  const re = new RegExp(/\/(.*)\/\.exec/.exec(src)![1]!)
+  assert.ok(re.test('Invalid Date') && re.test('NaN cups') && re.test('[object Object]') && !re.test('Casa Alma · 4.9 · 318 reviews') && !re.test('Undefined behaviour'))
+}
 console.log('ok')
