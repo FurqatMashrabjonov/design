@@ -14,6 +14,16 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (5)
+
+### KIT-24: the premium parts are offered by screen name; a screen that misuses the store is told so
+
+- `JsxGenerator.BLOCK_HINTS`: Donut (Spending, Insights, Budget…), BankCard (Cards, Wallet, Accounts), AmountPad (Send, Transfer, Pay… — not a review, confirmation or receipt step: the new `skip`), CollapsingHeader (a pushed Stay, Hotel, Restaurant, Recipe, Event…), MediaPlayer (Player, Now playing…; it draws the title, write it nowhere else), MenuSections (Menu, Restaurant, Catalogue), Podium (Leaderboard, League, Rankings). Rating now needs "reviews"/"ratings" (a "Review transfer" step got stars), MonthCalendar no longer matches "booking" (a checkout got a calendar).
+- Matching the plan id as well as the name was measured and dropped: kit24 (name) 4–2–2 vs clr01, rubric 3.00 → 3.10; kit24b (name + id, three times the blocks) 2–3–3, 2.94; kit24c (name + id + fixes) 4–1–3, 2.93 with coherence 3.63 → 3.38.
+- `lib/store-check.ts` (`storeFindings`, `storeOf`), in `drawScreen`'s repair beside the lint and the fact check: a derived value called as a function (`weeklySteps()` crashed Insights on kit24b) and a name taken from `useStore()` that the store does not have. Read as text, never run; on kit24b it flagged exactly the one crashed screen of 88.
+- `eval/run.ts` prints why an app has no store; `eval/metrics.ts` counts KIT-23/24 parts in `blocks`.
+- Verified: `clr01` (CLR-01, no hints) is the new baseline — rubric 3.00, clean 88%. Kit parts used on kit24: Donut, BankCard ×2, AmountPad, Podium, each where its name asked. `controllers.check.ts`: the hints by name (and not on review steps, bookings, or an item-named detail), `storeFindings`. `npm run check` and `npx tsc --noEmit` clean. Cost of the four runs and judges: about $0.90.
+
 ## 2026-10-07 (4)
 
 ### KIT-24 (first wave): eight parts top apps are known by — in the kit, not yet in the prompt

@@ -503,7 +503,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AUTH-02, BIL-04 | FUN-01 | Ilova bitta store: hamma ekran bir-birini biladi (useStore, actions, derived), eksportda saqlanadi | Generatsiya / Funksional ilova | MVP | Tayyor | Katta |  |  |
 | FUN-02 | Har control ishlaydi: navigatsiya parametrlari, sheet/dialog ekran ichida, qatordagi control qatorni ochmaydi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 |  |
 | FUN-03 | To'liq ilova: 12 ekrangacha, so'ralgan son aniq hurmat qilinadi | Generatsiya / Funksional ilova | MVP | Tayyor | Kichik | FUN-01 |  |
-| KIT-24 | Premium bloklar 1-to'lqin: Donut, BankCard, AmountPad, CollapsingHeader, MediaPlayer, MiniPlayer, MenuSections, Podium | Generatsiya / Kit | MVP | Jarayonda | O'rta | KIT-21 | Galereya tasdig'i, keyin hint + eval |
+| KIT-24 | Premium bloklar 1-to'lqin: Donut, BankCard, AmountPad, CollapsingHeader, MediaPlayer, MiniPlayer, MenuSections, Podium | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-21 | kit24 4–2–2, rubrika 3.00 → 3.10 |
+| KIT-25 | Premium bloklar 2-to'lqin (o'lcham/rang, chipta, QR, tarif jadvali, wheel picker, nafas, kayfiyat, ETA, feed post, story viewer, narx pin xarita, yutuq) | Generatsiya / Kit | Keyin | Rejada | Katta | KIT-24 |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Rejada | O'rta | FUN-01 |  |
 | CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |
 | PAL-04 | Rang qayta: bitta accent, neytral fonlar, gradient ≤1 | Generatsiya / Rang | Keyin | Rejada | O'rta | CLR-01 |  |

@@ -7,6 +7,7 @@ import { mapLimit } from '@/app/Services/Pool'
 import { compileScreen } from '@/app/Services/ScreenCompiler'
 import { lintJsx } from '@/lib/jsx-lint'
 import { appDataOf, factFindings } from '@/lib/fact-check'
+import { storeFindings, storeOf } from '@/lib/store-check'
 import { resolvePhotos } from '@/app/Services/PhotoService'
 import { auditScreen, repairOn } from '@/app/Services/RenderAudit'
 import type { AppLook } from '@/app/Services/ScreenDocument'
@@ -56,7 +57,7 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
     const check = async (src: string) => {
       const render = (await auditScreen(src, audit.look, audit.slug, signal)) ?? []
       // FCT-01: a person's XP or streak that APP DATA does not have is a finding too.
-      const lint = [...lintJsx(src, { apply: false }).findings, ...factFindings(src, appDataOf(user))]
+      const lint = [...lintJsx(src, { apply: false }).findings, ...factFindings(src, appDataOf(user)), ...storeFindings(src, storeOf(user))]
       return { render, lint, count: render.length + lint.length }
     }
     const found = await check(jsx)

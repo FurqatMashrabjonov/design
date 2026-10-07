@@ -124,6 +124,12 @@ async function runBrief(b: { id: string; brief: string }): Promise<BriefResult> 
     await addPages(b.id, slug, s.html, plan)
   }
   writeFileSync(join(dir, 'plan.json'), JSON.stringify(plan, null, 2))
+  // FUN-01: why an app has no store, when it has none (the reason is in the plan message's log).
+  if (!plan.store) {
+    const { Message } = await import('@/app/Models/Message')
+    const log = (await Message.forProject(projectId)).flatMap((m) => { try { return (JSON.parse(m.meta ?? '{}').log ?? []) as string[] } catch { return [] } })
+    console.log(`${b.id}: no store — ${log.find((l) => l.startsWith('Store')) ?? 'no log line'}`)
+  }
   return { id: b.id, brief: b.brief, appName: project.name, onboarding: plan.screens.some((s: { kind: string }) => s.kind === 'first-run') ? (plan.onboarding ?? 'slides') : undefined, seconds, planned: plan.screens.length, drawn: rows.filter((r) => r.html).length, tokens: tokens[b.id] ?? { in: 0, out: 0, calls: 0 }, screens }
 }
 

@@ -104,6 +104,17 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
     assert.deepEqual(names('Today', 'Your habits for today', 'push'), [], 'a week strip is for tab screens only')
     assert.deepEqual(names('Profile', 'Name, avatar, notifications, weekly reviews and settings', 'tab'), [], 'a word in the spec is not the screen\'s job')
     assert.deepEqual(names('Checkout', 'Pick a delivery date and pay'), [], 'only a screen named for dates gets the calendar')
+    // KIT-24: the premium parts by name.
+    assert.deepEqual(names('Spending', 'Where the money went', 'tab'), ['Donut'])
+    assert.deepEqual(names('Cards', 'Your cards', 'tab'), ['BankCard'])
+    assert.deepEqual(names('Send money', 'Pick an amount', 'modal'), ['AmountPad'])
+    assert.deepEqual(names('Restaurant', 'Photo, menu sections'), ['CollapsingHeader', 'MenuSections'])
+    assert.deepEqual(names('Player', 'Now playing'), ['MediaPlayer'])
+    assert.deepEqual(names('Leaderboard', 'This week', 'tab'), ['Podium'])
+    assert.deepEqual(names('Transaction details', 'One payment'), [], 'a detail that is not a place gets no photo header')
+    assert.deepEqual(names('Juniper Kitchen', 'The restaurant menu'), [], 'a detail named after its item is not matched (matching the plan id measured worse)')
+    assert.deepEqual(names('Review transfer', ''), [], 'a review step is not a keypad nor a ratings screen')
+    assert.deepEqual(names('Review your booking', ''), [], 'booking alone is not a calendar')
     const b = brief(p, { ...p.screens[1]!, name: 'Reviews', spec: 'All guest reviews with ratings' })
     assert.ok(b.includes('RatingSummary(') && b.includes("ready-made blocks"), 'the brief names the block and how to call it')
   }
@@ -1919,5 +1930,15 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const src = AUDIT_SOURCE.split('\n').find((l) => l.includes('.exec(tn'))!
   const re = new RegExp(/\/(.*)\/\.exec/.exec(src)![1]!)
   assert.ok(re.test('Invalid Date') && re.test('NaN cups') && re.test('[object Object]') && !re.test('Casa Alma · 4.9 · 318 reviews') && !re.test('Undefined behaviour'))
+}
+{
+  // FUN-01: a screen that uses the store differently from how it is written is told so in its repair.
+  const { storeFindings, storeOf } = await import('../../../lib/store-check.ts')
+  const store = `export const initial = {\n  habits: [],\n  user: { name: 'Maya' },\n}\nexport const actions = {\n  toggleHabit(state, id) { },\n}\nexport const derived = {\n  weeklySteps: (state) => [1, 2],\n  streakOf: (state, id) => 3,\n  total: state => 4,\n}\n`
+  const rules = (src: string) => storeFindings(src, store).map((f) => `${f.rule}:${f.sample}`)
+  assert.deepEqual(rules('const { weeklySteps, streakOf, habits, toggleHabit } = useStore()\nweeklySteps.map((x) => x); streakOf(h.id); toggleHabit(h.id)'), [], 'used as written: nothing to say')
+  assert.deepEqual(rules('const { weeklySteps, total } = useStore()\nconst w = weeklySteps(); const t = total()'), ['store-call:weeklySteps', 'store-call:total'], 'a value called as a function')
+  assert.deepEqual(rules('const { streak, user } = useStore()'), ['store-missing:streak'], 'a name the store does not have')
+  assert.equal(storeOf('x\n# APP STORE — y\n```js\nexport const initial = {}\n```\nRead'), 'export const initial = {}\n')
 }
 console.log('ok')
