@@ -14,6 +14,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (18)
+
+### MIC-01: micro-interactions on Konsta's own parts
+
+- `runtime/runtime.css` (inside `prefers-reduced-motion: no-preference`, off in `?static`): a `k-button` gives under
+  the finger (scale .96), a checked checkbox's mark draws in left to right (`clip-path`) while its circle pops, and
+  a toggle's thumb lands with a small overshoot (spring curve on Konsta's own transitions). Every screen gets them
+  with no change to its code.
+- `CountUp` (`runtime/kit/ui.jsx`) rolls from the number on screen when its value changes (a store action, a
+  check-in) instead of starting again from zero.
+- Verified: a test screen driven in headless Chrome over CDP (two "Add a glass" taps, two checkboxes, a toggle),
+  recorded and read frame by frame — 1,450 rolls to 1,700, marks draw in, the toggle springs. `npm run check`,
+  `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (17)
 
 ### GLS-01: Liquid Glass closer to iOS 26

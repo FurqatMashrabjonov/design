@@ -15,6 +15,17 @@ body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; backgro
    tint and a saturated blur, so what scrolls under a bar shows through in its own colours. */
 :root { --color-ios-light-glass: rgba(255, 255, 255, 0.58); --color-ios-dark-glass: rgba(44, 44, 46, 0.46); }
 .k-glass { --tw-backdrop-saturate: saturate(1.8); }
+/* MIC-01: the small physical answers iOS gives — a button gives under the finger, a check draws itself in, a
+   toggle's thumb lands with a little overshoot. Konsta's own markup, so every screen gets them. */
+@media (prefers-reduced-motion: no-preference) {
+  .k-button { transition: transform .18s cubic-bezier(.3,.7,.4,1), opacity .18s; }
+  .k-button:active:not(:disabled) { transform: scale(.96); }
+  .k-checkbox svg.opacity-100 { animation: od-check-draw .3s cubic-bezier(.65,0,.35,1) both; }
+  .k-checkbox :has(> svg.opacity-100) { animation: od-check-pop .32s cubic-bezier(.3,1.6,.6,1); }
+  .k-toggle, .k-toggle * { transition-timing-function: cubic-bezier(.34,1.45,.64,1); }
+}
+@keyframes od-check-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes od-check-pop { 0% { transform: scale(.82); } 60% { transform: scale(1.08); } 100% { transform: none; } }
 /* A Konsta row (<li>) placed outside a <List> must not grow a list bullet. */
 li { list-style: none; }
 

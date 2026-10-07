@@ -510,7 +510,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ICN-01 | Ikonkalar Phosphor: faol tab fill, Tile ichida duotone; eksportda ham | Generatsiya / Kit | MVP | Tayyor | Kichik |  | icn01 reshoot: metrikalar o'zgarmadi |
 | FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Tayyor | Kichik |  |  |
 | GLS-01 | Liquid Glass: shaffof tab bar va navbar | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
-| MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
+| MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
 | ILL-01 | Illyustratsiyalar (Open Peeps / Humaaans, CC0): bo'sh holat va onboarding | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
 | ICO-01 | Har ilovaga app ikonka va splash | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
 | DRK-01 | Dark mode: ko'tarilgan sirtlar | Generatsiya / Kit | MVP | Rejada | Kichik |  |  |

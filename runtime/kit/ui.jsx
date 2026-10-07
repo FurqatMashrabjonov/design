@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { emojiImage, emojiKey } from '../emoji-jsx.js'
 import { IconContext } from '../../node_modules/@phosphor-icons/react/dist/lib/context.es.js'
 import { usePhotos } from './nav.jsx'
@@ -37,13 +37,16 @@ export function Ring({ value, size = 64, stroke = 8, color = 'var(--color-primar
 /** Counts up to a number on mount — the dashboard figures arrive rather than appear. */
 export function CountUp({ to, duration = 900, format = (n) => n.toLocaleString('en-US') }) {
   const [n, setN] = useState(STATIC ? to : 0)
+  const shown = useRef(STATIC ? to : 0)
+  // MIC-01: a changed value rolls from the number on screen (a check-in, a store action), not from zero.
   useEffect(() => {
-    if (STATIC) return setN(to)
+    if (STATIC) return setN((shown.current = to))
     let raf
+    const from = shown.current
     const t0 = performance.now()
     const tick = (t) => {
       const p = Math.min(1, (t - t0) / duration)
-      setN(Math.round(to * (1 - Math.pow(1 - p, 3))))
+      setN((shown.current = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)))))
       if (p < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
