@@ -504,7 +504,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FUN-02 | Har control ishlaydi: navigatsiya parametrlari, sheet/dialog ekran ichida, qatordagi control qatorni ochmaydi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 |  |
 | FUN-03 | To'liq ilova: 12 ekrangacha, so'ralgan son aniq hurmat qilinadi | Generatsiya / Funksional ilova | MVP | Tayyor | Kichik | FUN-01 |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Rejada | O'rta | FUN-01 |  |
-| PAL-04 | Rang qayta: bitta accent, neytral fonlar, gradient ≤1 | Generatsiya / Rang | MVP | Rejada | O'rta |  |  |
+| CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |
+| PAL-04 | Rang qayta: bitta accent, neytral fonlar, gradient ≤1 | Generatsiya / Rang | Keyin | Rejada | O'rta | CLR-01 |  |
 | EXP-07 | Expo eksport (DOM components) | Eksport / Integratsiyalar | Keyin | Rejada | O'rta | CODE-01 |  |
 | MCP-01 |
 | MCP-01 | MCP server (/api/mcp) + API kalitlar (/connect): 8 tool, kredit va eksport qoidalari bilan | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AGT-01 |  |

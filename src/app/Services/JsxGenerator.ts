@@ -84,6 +84,9 @@ export function tabIcon(icon: unknown, label: string, used: Set<string>): string
 /** FUN-03: a complete app is up to twelve screens (it was eight, which cut the details, settings and history a real
  *  app has); a brief that says how many it wants ("an app with 4 screens") gets exactly that many. */
 export const MAX_SCREENS = 12
+/** CLR-01: Konsta's iOS primary; generation uses only it unless GEN_COLORS=1 brings back the styles' own colours. */
+export const KONSTA_ACCENT = '#007aff'
+const defaultColorOnly = () => process.env.GEN_COLORS !== '1'
 export function askedCount(brief: string): number | undefined {
   const m = /\b(\d{1,2})\s*(?:-\s*)?(?:screens?|pages?|ekran|sahifa)/i.exec(brief)
   const n = m ? Number(m[1]) : NaN
@@ -143,6 +146,11 @@ export function parsePlan(json: string, fallbackName: string, seed?: string, max
   const style = parseStyleName((raw as { style?: unknown }).style)
   const given: Record<string, unknown> = Array.isArray(raw.palette) ? Object.fromEntries((raw.palette as unknown[]).map((k) => [String(k), ''])) : raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
   const keys = Object.keys(given).filter((k) => /^[a-z][a-zA-Z0-9]{0,19}$/.test(k)).slice(0, 4) // PAL-02: four colours at most
+  // CLR-01 (the owner's call, 2026-10-07): for now an app is drawn in Konsta's own colour and look — iOS blue on the
+  // Clean surfaces — and the person picks another in the Style & colour panel. Every palette name is the accent
+  // itself (a CSS variable), so changing the accent there recolours the whole app. The styles and their colour sets
+  // (THM-01, PAL-01/02) stay in the code for when generation picks colours again.
+  if (seed && defaultColorOnly()) return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: KONSTA_ACCENT, style: 'clean', palette: Object.fromEntries(keys.map((k) => [k, 'var(--color-primary)'])), tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), onboarding: onboardingFor('clean', seed) }
   const colors = seed ? styleColors(style, keys, seed) : null
   const palette = colors ? colors.palette : Object.fromEntries(keys.filter((k) => /^#[0-9a-f]{6}$/i.test(String(given[k]))).map((k) => [k, String(given[k]).toLowerCase()]))
   return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }) }
@@ -185,7 +193,8 @@ Screens in this app (id — name — kind): ${plan.screens.map((s) => `${s.id} �
 Tab ids for AppTabbar: ${plan.tabs.map((t) => t.id).join(', ') || '(none)'}. The accent is set by the host (text-primary / bg-primary).
 # STYLE — ${STYLE_CARDS[parseStyleName(plan.style)]}
 The app's palette — paste this line at the top of the file unchanged and colour each thing with its entry:
-const C = ${JSON.stringify(plan.palette ?? {})}
+const C = ${JSON.stringify(plan.palette ?? {})}${Object.values(plan.palette ?? {}).every((v) => v === 'var(--color-primary)') ? `
+# COLOUR — one colour: every entry above is the accent, which the person chooses later. Use it for actions, selection, progress and one hero figure; everything else is neutral (bg-page, bg-card, the label colours). No other colours, no rainbow of tiles, no coloured gradients; tint(C.x) for a soft wash behind an icon is fine.` : ''}
 
 ${plan.store ? storeSection(plan.store) : `# APP DATA — the only source for names, numbers and dates\n${plan.data}`}`
 }

@@ -208,10 +208,11 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const project = (await Project.find('p2'))!
   assert.equal(project.name, 'Tasky')
   assert.deepEqual(JSON.parse(project.navigation!).tabs.map((t: { id: string }) => t.id), ['today', 'me'])
-  // THM-01: the accent is the code's, from the style's set and the project id — not what the planner wrote.
-  const { styleColors } = await import('../../../lib/app-theme.ts')
+  // CLR-01: for now every app is drawn in Konsta's own colour and look, whatever the planner wrote; each palette name
+  // is the accent itself, so the Style & colour panel recolours the whole app.
   const savedTheme = JSON.parse(project.theme!)
-  assert.deepEqual([savedTheme.accent, savedTheme.style], [styleColors('clean', [], 'p2').accent, 'clean'])
+  assert.deepEqual([savedTheme.accent, savedTheme.style, savedTheme.dark], ['#007aff', 'clean', false])
+  assert.ok(Object.values(JSON.parse(project.plan!).palette).every((v) => v === 'var(--color-primary)'))
   const rows = (await Screen.forProject('p2')).sort((a, z) => a.x - z.x)
   assert.deepEqual(rows.map((s) => [s.slug, Boolean(s.html), Boolean(s.error)]), [['today', true, false], ['me', true, false], ['task', false, true]], 'tabs first; the failed screen keeps its slot')
   assert.ok(rows[0]!.html.startsWith('import') && !rows[0]!.html.includes('```'), 'the stored screen is the bare component')
@@ -1303,6 +1304,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
 // THM-01: five styles. The planner picks one; the code picks the colours from that style's sets by the project id —
 // never the model's hex — and every surface and accent stays readable.
 {
+  process.env.GEN_COLORS = '1' // CLR-01 turned generation's own colours off; the machinery is kept and tested
   const { parsePlan } = await import('../../Services/JsxGenerator.ts')
   const { styleColors, readableOnWhite, APP_STYLES } = await import('../../../lib/app-theme.ts')
   const { styleTokens } = await import('../../../../runtime/kit/styles.js')
@@ -1348,6 +1350,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
       assert.ok(ratio('#ffffff', accent) >= 3.5, `${style}: white on its accent ${accent}`)
     }
   }
+  delete process.env.GEN_COLORS
 }
 // HIG-17: over eight screens, what the brief asked for stays; a tab nobody asked for goes before an asked checkout.
 {

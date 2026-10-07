@@ -14,6 +14,14 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (3)
+
+### CLR-01: generation draws every app in Konsta's own colour; the person picks another
+
+- `JsxGenerator.parsePlan` (with a project seed): the accent is Konsta's iOS primary `#007aff` (`KONSTA_ACCENT`), the style is Clean (light), and every palette name is the accent itself (`var(--color-primary)`) — so the Style & colour panel recolours the whole app at once. `appContext` adds a one-colour rule when the palette is all accent (actions, selection, progress and one hero figure in it; everything else neutral; no coloured gradients). The styles' colour sets (THM-01, PAL-01/02) stay in the code: `GEN_COLORS=1` brings them back (the tests run them that way).
+- `controllers.check.ts`: a planned app saves `#007aff`, `clean`, light, and an all-accent palette.
+- Verified: a budget app planned locally through the MCP came out iOS blue on Clean; picking purple in the Style & colour panel recoloured every screen in place. No eval: the owner's decision, not a taste experiment. `npm run check` and `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (2)
 
 ### FUN-01…03: a generated app is one working app — every screen knows the others
