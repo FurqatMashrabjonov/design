@@ -7,13 +7,17 @@
 // The page is laid out in a frame as tall as its content (as the canvas shows it), so every element is in view
 // and elementFromPoint can tell what is on top.
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value', 'crash'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; where: string; detail: string }
 
 /** A function body (as source) that returns the findings for the current document. */
 export const AUDIT_SOURCE = `
 var PHONE_H = 844, out = [], seen = {};
+// 0. The screen crashed (the kit's Crash boundary, or the module failed to load): the one finding that matters —
+// before this, a crashed screen had no findings at all, so the repair never ran on it and the person saw the error.
+var crashed = document.querySelector('[data-od-crash]');
+if (crashed) return [{ rule: 'crash', where: '(Page)', detail: (crashed.textContent || '').replace(/^This screen crashed:\\s*/, '').slice(0, 160) }];
 var vw = document.documentElement.clientWidth;
 var PARTS = [['k-navbar','Navbar'],['k-tabbar','Tab bar'],['k-toolbar','Toolbar'],['k-segmented','Segmented'],['k-searchbar','Searchbar'],['k-list-item','List row'],['k-list','List'],['k-card','Card'],['k-block-title','Block title'],['k-block','Block'],['k-chip','Chip'],['k-button','Button'],['k-fab','Fab'],['k-sheet','Sheet'],['k-popup','Popup']];
 function part(el) {
@@ -205,6 +209,7 @@ export function auditBrief(findings: AuditFinding[]): string {
     overlap: 'give each its own space; nothing absolute or negative-margin over text',
     'covered-text': 'move the covering element out of the way; no negative margins pulling a card over a heading',
     'low-contrast': 'use a text colour that reads on that background',
+    crash: 'the screen throws while rendering — fix exactly this error (an identifier that does not exist, a value used as a function); until it renders, nothing else matters',
     'broken-value': 'compute the value from the store or the data correctly (a date from a \'YYYY-MM-DD\' string is new Date(s + \'T00:00:00\'); a missing field gets a fallback) so a real value shows',
     sparse: 'fill the screen with real content from APP DATA (more rows, a second section, a summary) — not filler, not a giant empty illustration',
   }

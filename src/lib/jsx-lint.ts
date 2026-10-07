@@ -58,7 +58,7 @@ const AS_FINDING: Record<string, string> = {
   'white-on-hero': 'Remove text-white inside a Hero: it sets its own text colour.',
   'block-double-gutter': 'Remove px-4 from the Block: a Block pads itself.',
   'white-box': 'Use bg-card instead of bg-white: the style sets the card colour, in light and dark.',
-  'title-over-content': 'A BlockTitle with no Block or List right under it pulls the next box over its text: give it className="!mb-2", or put a Block or List under it.',
+  'title-over-content': 'A BlockTitle pulls the next box up by 8px, expecting a Block/List with its full top margin. This title sits over its content (a plain div, chips, or a Block whose !mt-* you reduced): add !mb-2 to the BlockTitle\'s className — keep the Block as it is.',
   'tiny-text': 'Text is smaller than 11px: use text-caption2 or a larger text style.',
   'icon-button-inline': 'An icon-only Button is full width in Konsta: add `inline` to it.',
 }
@@ -81,7 +81,7 @@ export function lintJsx(source: string, opts: { apply?: boolean } = {}): LintRes
   // Konsta pulls a BlockTitle's bottom margin up (-mb-2) for the Block or List it expects next; anything else
   // under it (a plain div of cards, a grid, a mapped list) then sits 8px over the title's descenders. The one right
   // answer is a small positive gap on that title.
-  const KONSTA_UNDER_TITLE = new Set(['Block', 'List', 'BlockHeader', 'BlockFooter', 'Table', 'BlockTitle'])
+  const KONSTA_UNDER_TITLE = new Set(['Block', 'List', 'BlockHeader', 'BlockFooter', 'Table', 'BlockTitle', 'EmptyState'])
   const titleGap = new Set<Node>()
   ;(function siblings(x: unknown): void {
     if (!x || typeof x !== 'object') return
@@ -89,10 +89,22 @@ export function lintJsx(source: string, opts: { apply?: boolean } = {}): LintRes
     const y = x as Node
     if ((y.type === 'JSXElement' || y.type === 'JSXFragment') && Array.isArray(y.children)) {
       const kids = y.children.filter((c: Node) => c.type === 'JSXElement' || c.type === 'JSXExpressionContainer' && c.expression?.type !== 'JSXEmptyExpression')
+      // What can render right under the title: the element itself, or every branch of {cond && X} / {cond ? X : Y}.
+      const rendered = (n: Node): Node[] => {
+        if (!n || typeof n !== 'object') return []
+        if (n.type === 'JSXElement') return [n]
+        if (n.type === 'JSXExpressionContainer') return rendered(n.expression)
+        if (n.type === 'JSXFragment') { const kids = (n.children ?? []).filter((k: Node) => k.type === 'JSXElement' || k.type === 'JSXExpressionContainer'); return kids.length ? rendered(kids[0]) : [] }
+        if (n.type === 'LogicalExpression') return rendered(n.right)
+        if (n.type === 'ConditionalExpression') return [...rendered(n.consequent), ...rendered(n.alternate)]
+        return [n] // a .map(), a variable: not provably a Block/List
+      }
       kids.forEach((c: Node, i: number) => {
         const next = kids[i + 1]
-        // A Block or List whose own top margin the model changed no longer leaves room for the pull-up either.
-        const konstaNext = next?.type === 'JSXElement' && KONSTA_UNDER_TITLE.has(nameOf(next)) && !/(^|\s)!?-?m[ty]-/.test(classText(next))
+        // A Block or List whose own top margin the model changed no longer leaves room for the pull-up either. A
+        // conditional under the title counts when every branch it can render is such a Block/List (null branches are fine).
+        const under = next ? rendered(next).filter((n) => !(n.type === 'NullLiteral' || (n.type === 'Identifier' && n.name === 'undefined') || n.type === 'BooleanLiteral')) : []
+        const konstaNext = next && under.length > 0 && under.every((n) => n.type === 'JSXElement' && KONSTA_UNDER_TITLE.has(nameOf(n)) && !/(^|\s)!?-?m[ty]-/.test(classText(n)))
         if (c.type === 'JSXElement' && nameOf(c) === 'BlockTitle' && next && !konstaNext && !/(^|\s)!?-?mb-/.test(classText(c))) titleGap.add(c)
       })
     }

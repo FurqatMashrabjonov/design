@@ -14,6 +14,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (7)
+
+### REL-01: a crashed screen is repaired, the store always arrives, the title lint stops crying wolf
+
+- **A crash is the render check's first finding** (`lib/render-audit.ts`, rule `crash`): a screen that throws (the
+  owner hit "premium is not defined" on a real app) used to have no findings at all, so the repair never ran on it
+  and the person saw the error. Now the audit returns the crash message alone and the model's one repair fixes
+  exactly that. Verified in the gallery harness on a screen using an undeclared identifier.
+- **The store gets three attempts** (`writeStore`), each told what the checker refused — one eval app in 32 had
+  fallen back to APP DATA after two.
+- **`title-over-content` is accurate now** (`lib/jsx-lint.ts`): a `{cond && <List…>}` / ternary / fragment under the
+  title counts as the List it renders; `EmptyState` pads itself; the message names the real case (a Block whose
+  `!mt-*` the model reduced) with the exact fix.
+- Verified: eval `rel01` — store in 8/8 apps, title-over-content 18 → 14, problemsPerScreen 0.20 → 0.14, clean 89%,
+  rubric 3.10 → 3.57 (pairwise 2–0–4 of 6, within this judge's noise; the fixes are deterministic). `npm run check`
+  and `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (6)
 
 ### CI removed (the owner's call)

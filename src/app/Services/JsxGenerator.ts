@@ -238,14 +238,17 @@ Write store.js now.`
     for await (const d of streamCompletion(STORE_SYSTEM, user, signal, onUsage, undefined, 'plan')) out += d
     return ((out.match(/```(?:js|javascript)?\s*\n([\s\S]*?)```/) ?? [null, out])[1] ?? '').trim() + '\n'
   }
-  let src = await write(brief)
-  let built = compileStore(src)
-  if (!built.ok) {
-    src = await write(`${brief}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`js\n${src}\`\`\`\nThe checker said: ${built.errors.join('; ')}\nWrite the whole module again with those fixed.`)
-    built = compileStore(src)
-    if (!built.ok) throw new Error(`The app's store did not build: ${built.errors.join('; ').slice(0, 300)}`)
+  // Three attempts, each told what the checker refused: an app without its store falls back to screens that each
+  // keep their own copy of the data, which is the one failure that breaks "every screen knows the others".
+  let src = ''
+  let errors: string[] = []
+  for (let attempt = 0; attempt < 3; attempt++) {
+    src = await write(attempt === 0 ? brief : `${brief}\n\n# YOUR LAST ATTEMPT DID NOT BUILD\n\`\`\`js\n${src}\`\`\`\nThe checker said: ${errors.join('; ')}\nWrite the whole module again with those fixed.`)
+    const built = compileStore(src)
+    if (built.ok) return src
+    errors = built.errors
   }
-  return src
+  throw new Error(`The app's store did not build: ${errors.join('; ').slice(0, 300)}`)
 }
 
 /** The example that shows how this kind of screen is built: the app's first tab is its dashboard. */
