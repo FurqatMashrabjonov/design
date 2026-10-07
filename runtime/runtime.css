@@ -11,6 +11,10 @@ html, body, #root { height: 100%; }
 /* The style's page colour under everything: a screen that washes its Page (bg-primary/5) showed whatever was behind
    the frame — black in the eval, the device bezel in the preview. */
 body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; background: var(--app-page, #fff); }
+/* GLS-01: Konsta's Liquid Glass (tab bar, navbar buttons, toolbars, toasts, popovers) closer to iOS 26 — thinner
+   tint and a saturated blur, so what scrolls under a bar shows through in its own colours. */
+:root { --color-ios-light-glass: rgba(255, 255, 255, 0.58); --color-ios-dark-glass: rgba(44, 44, 46, 0.46); }
+.k-glass { --tw-backdrop-saturate: saturate(1.8); }
 /* A Konsta row (<li>) placed outside a <List> must not grow a list bullet. */
 li { list-style: none; }
 

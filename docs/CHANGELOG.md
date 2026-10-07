@@ -14,6 +14,19 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (17)
+
+### GLS-01: Liquid Glass closer to iOS 26
+
+- Konsta v5 already draws Liquid Glass (`k-glass`: the tab bar pill, navbar buttons, toolbars, toasts, popovers,
+  action sheets) as 75% white over a 16px blur with rim highlights. `runtime/runtime.css` makes it thinner and
+  saturated, as iOS 26 is: `--color-ios-light-glass` 58% white, `--color-ios-dark-glass` 46%, and
+  `--tw-backdrop-saturate: saturate(1.8)` on `.k-glass` (composed by Tailwind's own `backdrop-filter`). The export
+  copies these rules with the rest of `runtime.css`.
+- Not done: edge refraction (an SVG displacement backdrop filter) — Chromium only, Safari ignores it.
+- Verified: a colourful test screen shot before/after in light and dark — the colours under the bar come through,
+  labels stay legible; `npm run check` clean.
+
 ## 2026-10-07 (16)
 
 ### FNT-01: SF on Apple devices, Inter everywhere else
