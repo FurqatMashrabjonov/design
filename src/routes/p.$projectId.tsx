@@ -502,8 +502,7 @@ function ProjectPage() {
                     <figcaption className="flex h-7 items-center truncate text-md font-medium text-muted-foreground">{name}</figcaption>
                   </FrameLabel>
                   <div className="relative overflow-hidden shadow-phone" style={{ width: f.width, height: f.height, borderRadius: 'var(--radius-phone)' }}>
-                    <ScreenSkeleton className="absolute inset-0" />
-                    <GeneratingVeil show mode="draw" accent={theme.accent} />
+                    <ScreenSkeleton accent={theme.accent} name={name} />
                   </div>
                 </figure>
               )

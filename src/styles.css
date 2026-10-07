@@ -326,15 +326,13 @@ svg.lucide { stroke-width: 1.75; }
 .dark .od-frame:not(.od-stream-ring) { box-shadow: var(--elevation-phone), 0 0 0 calc(1px / var(--canvas-scale, 1)) var(--border); }
 /* UI-20: selection is one colour on the canvas — the frame, the element, the size badge. */
 .od-frame[data-selected] { outline-width: calc(2px / var(--canvas-scale, 1)); outline-color: var(--selection); }
-/* A screen-shaped placeholder in the studio's own tokens, so a waiting slot is never a blank white phone. */
-.od-skel i {
-    display: block;
-    border-radius: 12px;
-    background: linear-gradient(90deg, var(--muted) 25%, color-mix(in oklab, var(--muted) 45%, var(--card)) 50%, var(--muted) 75%);
-    background-size: 200% 100%;
-    animation: od-skel 1.5s linear infinite;
-}
+/* UI-32: a screen being drawn — quiet blocks in the studio's tokens that gather one after another. */
+.od-skel i { display: block; border-radius: 14px; background: var(--muted); }
 @keyframes od-skel { to { background-position: -200% 0; } }
+/* The line under a frame at work. */
+.od-workline { position: absolute; left: 0; right: 0; bottom: 96px; display: flex; justify-content: center; pointer-events: none; }
+.od-workline-text { font-size: 15px; font-weight: 600; padding: 8px 14px; border-radius: 999px; color: var(--foreground); background: var(--card); box-shadow: inset 0 0 0 1px var(--border), var(--elevation-1); }
+.od-workline-text::after { content: '▍'; margin-left: 2px; color: var(--gen-accent, var(--primary)); }
 /* UI-31: a page on its way — a 2px lime fill across the top (lime is a fill, never text). Still with reduced motion. */
 .od-nav-progress { position: fixed; inset: 0 0 auto 0; z-index: 100; height: 2px; background: var(--primary); transform-origin: left; transform: scaleX(.6); pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
@@ -431,15 +429,15 @@ svg.lucide { stroke-width: 1.75; }
 .od-gen { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; opacity: 0; transition: opacity 450ms var(--motion-ease-out); }
 .od-gen[data-show] { opacity: 1; transition-duration: 150ms; }
 .od-gen-dim { position: absolute; inset: 0; }
-.od-gen[data-mode='load'] .od-gen-dim { background: color-mix(in oklab, var(--card) 70%, transparent); backdrop-filter: blur(6px); }
-.od-gen[data-mode='edit'] .od-gen-dim { background: color-mix(in oklab, var(--card) 35%, transparent); backdrop-filter: blur(2px); }
-.od-gen-scan { position: absolute; left: 0; right: 0; top: -30%; height: 30%; background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--gen-accent, var(--primary)) 38%, transparent) 65%, transparent); }
-.od-gen-edge { position: absolute; inset: 0; border-radius: inherit; opacity: .5; box-shadow: inset 0 0 0 calc(2px / var(--canvas-scale, 1)) color-mix(in oklab, var(--gen-accent, var(--primary)) 80%, transparent), inset 0 0 calc(36px / var(--canvas-scale, 1)) color-mix(in oklab, var(--gen-accent, var(--primary)) 35%, transparent); }
-@keyframes od-gen-scan { to { transform: translateY(433%); } }
-@keyframes od-gen-breathe { 50% { opacity: 1; } }
-@keyframes od-skel-draw { from { opacity: 0; transform: scaleX(.55); } }
+.od-gen[data-mode='load'] .od-gen-dim { background: var(--card); }
+.od-gen[data-mode='edit'] .od-gen-dim { background: color-mix(in oklab, var(--card) 45%, transparent); }
+/* Each block rises into its place after the one above it, holds while the screen is written, then the screen gathers
+   again — so a long wait still reads as work, not a stuck frame. */
+@keyframes od-gather { 0% { opacity: 0; transform: translateY(14px) scale(.97); } 14%, 84% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
+@keyframes od-word { from { opacity: 0; transform: translateY(6px); } }
+@keyframes od-caret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
-  .od-gen[data-show] .od-gen-scan { animation: od-gen-scan 2.6s var(--motion-ease-out) infinite; }
-  .od-gen[data-show] .od-gen-edge { animation: od-gen-breathe 2.6s ease-in-out infinite; }
-  .od-skel i { transform-origin: left center; animation: od-skel 1.5s linear infinite, od-skel-draw 520ms var(--motion-ease-out) calc(var(--i, 0) * 80ms) both; }
+  .od-skel i { animation: od-gather 4.4s var(--motion-ease-out) calc(var(--i, 0) * 130ms) infinite both; }
+  .od-workline-text { animation: od-word 320ms var(--motion-ease-out) both; }
+  .od-workline-text::after { animation: od-caret 1s steps(1) infinite; }
 }

@@ -179,7 +179,7 @@ export function ScreenFrame(props: {
           className={cn('block w-full border-0', active ? 'pointer-events-auto' : 'pointer-events-none')}
           style={{ height: iframeHeight }}
         />
-        <GeneratingVeil show={Boolean(props.busy) || !ready} mode={props.busy ? 'edit' : 'load'} accent={props.theme.accent} />
+        <GeneratingVeil show={Boolean(props.busy) || !ready} mode={props.busy ? 'edit' : 'load'} accent={props.theme.accent} name={props.title} />
       </div>
     </figure>
   )
@@ -188,17 +188,29 @@ export function ScreenFrame(props: {
 /** UI-30: what a frame shows while it works. `draw` — nothing yet, over the skeleton: a light in the app's accent
  *  sweeps down and the edge breathes, no blur. `edit` — the screen stays visible, lightly dimmed, under the same
  *  light. `load` — the page is still starting: one light blur that resolves when it is ready. */
-export function GeneratingVeil(props: { show: boolean; mode?: 'draw' | 'edit' | 'load'; accent?: string }) {
+/** UI-32: a frame at work. Drawing — the screen's blocks gather one after another, with a line saying what is
+ *  happening; editing — the screen stays in view, lightly dimmed, under the same line; loading — a quick fade, no blur.
+ *  (A drifting aurora behind the blocks was tried and dropped: the owner found it ugly.) */
+export function GeneratingVeil(props: { show: boolean; mode?: 'draw' | 'edit' | 'load'; accent?: string; name?: string }) {
   const mode = props.mode ?? 'load'
   return (
     <div aria-hidden className="od-gen z-10" data-show={props.show || undefined} data-mode={mode} style={props.accent ? ({ '--gen-accent': props.accent } as CSSProperties) : undefined}>
       <div className="od-gen-dim" />
-      {mode !== 'load' && (
-        <>
-          <div className="od-gen-scan" />
-          <div className="od-gen-edge" />
-        </>
-      )}
+      {mode === 'edit' && props.show && <WorkLine steps={[`Updating ${props.name ?? 'the screen'}`, 'Checking every tap']} />}
+    </div>
+  )
+}
+
+/** The line under a frame at work: what is being done, one step after another, with a caret. */
+function WorkLine({ steps }: { steps: string[] }) {
+  const [k, setK] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setK((x) => x + 1), 2400)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <div className="od-workline">
+      <span key={k % steps.length} className="od-workline-text">{steps[k % steps.length]}</span>
     </div>
   )
 }
@@ -216,13 +228,14 @@ export function FrameLabel(props: { width: number; children: ReactNode; free?: b
   )
 }
 
-/** UI-13: a screen-shaped shimmer in the studio's tokens, for a slot that has nothing to show yet. */
-export function ScreenSkeleton(props: { className?: string; style?: CSSProperties }) {
+/** UI-13 / UI-32: a slot with nothing to show yet — the screen's blocks gather one after another, and a line says what
+ *  is being drawn. */
+export function ScreenSkeleton(props: { className?: string; style?: CSSProperties; accent?: string; name?: string }) {
   let n = 0
-  // Each block sketches itself in after the one above it (UI-30), so the slot reads as a screen being drawn.
   const i = (style: CSSProperties, className?: string) => <i className={className} style={{ ...style, '--i': n++ } as CSSProperties} />
   return (
-    <div className={cn('od-skel pointer-events-none flex flex-col gap-3.5 bg-card px-5 pt-14 pb-6', props.className)} style={props.style} aria-hidden>
+    <div className={cn('od-skel pointer-events-none absolute inset-0 overflow-hidden bg-card', props.className)} style={{ ...props.style, ...(props.accent ? { '--gen-accent': props.accent } : {}) } as CSSProperties} aria-hidden>
+      <div className="relative flex h-full flex-col gap-3.5 px-5 pt-14 pb-6">
       {i({ height: 14, width: '38%' })}
       {i({ height: 30, width: '70%' })}
       {i({ height: 150, borderRadius: 20 })}
@@ -241,6 +254,8 @@ export function ScreenSkeleton(props: { className?: string; style?: CSSPropertie
         </div>
       ))}
       {i({ height: 56, borderRadius: 28 }, 'mt-auto')}
+      </div>
+      <WorkLine steps={[`Laying out ${props.name ?? 'the screen'}`, 'Filling in the content', 'Checking every tap']} />
     </div>
   )
 }
