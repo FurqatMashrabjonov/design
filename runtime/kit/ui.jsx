@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { emojiImage, emojiKey } from '../emoji-jsx.js'
+import { IconContext } from '../../node_modules/@phosphor-icons/react/dist/lib/context.es.js'
 import { usePhotos } from './nav.jsx'
 import { onColor } from './on-color.js'
 export { onColor }
@@ -116,7 +117,8 @@ export function Tile({ color, children, size = 30, tinted = false }) {
   color = cssColor(color)
   return (
     <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.5, background: tinted ? tint(color) : color, color: tinted ? color : onColor(color) }}>
-      {children}
+      {/* ICN-01: an icon on a tile is Phosphor's duotone, as SF Symbols' hierarchical rendering is. */}
+      <IconContext.Provider value={{ weight: 'duotone' }}>{children}</IconContext.Provider>
     </span>
   )
 }

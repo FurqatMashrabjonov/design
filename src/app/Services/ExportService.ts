@@ -68,6 +68,35 @@ ${rules}
 }
 
 /** EMJ-01: the Fluent emoji keys an app's sources use (screens, store, kit), each with its animated version if any. */
+/** ICN-01: src/icons.js — what `lucide-react` resolves to in an export: every icon the screens and the kit import,
+ *  as its Phosphor counterpart with lucide's props mapped (the studio's runtime does the same), else lucide's own. */
+async function iconModule(sources: string[]): Promise<string> {
+  const { phosphorFor } = await import('../../../runtime/phosphor-map.js')
+  const ph = new Set(readdirSync(join(ROOT, 'node_modules/@phosphor-icons/react/dist/csr')).filter((f) => f.endsWith('.es.js')).map((f) => f.slice(0, -6)))
+  const names = new Set<string>()
+  for (const src of sources) for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/g)) for (const n of m[1]!.split(',')) {
+    const name = n.split(/\s+as\s+/)[0]!.trim()
+    if (/^\w+$/.test(name)) names.add(name)
+  }
+  const out = [
+    "import { forwardRef, createElement } from 'react'",
+    "import * as Ph from '@phosphor-icons/react'",
+    "import * as Lu from 'lucide-react/dist/esm/lucide-react.mjs'",
+    '',
+    '// The screens import lucide icons; each is drawn as its Phosphor counterpart (fill and duotone weights).',
+    'const ph = (P) => forwardRef(function Icon({ size = 24, strokeWidth, absoluteStrokeWidth, fill, color, weight, ...rest }, ref) {',
+    "  const w = weight ?? (fill && fill !== 'none' ? 'fill' : Number(strokeWidth) >= 2.4 ? 'bold' : undefined)",
+    "  return createElement(P, { ref, size, color: color ?? (fill && fill !== 'none' && fill !== 'currentColor' ? fill : undefined), ...(w ? { weight: w } : {}), ...rest })",
+    '})',
+    '',
+  ]
+  for (const n of [...names].sort()) {
+    const p = phosphorFor(n.replace(/^Lucide|Icon$/g, '') || n, (x) => ph.has(x))
+    out.push(p ? `export const ${n} = ph(Ph.${p})` : `export const ${n} = Lu.${n}`)
+  }
+  return out.join('\n') + '\n'
+}
+
 async function usedEmoji(sources: string[]): Promise<{ still: string[]; animated: string[] }> {
   const { STILL, ANIMATED } = (await import('../../../runtime/emoji-codes.js')) as { STILL: Set<string>; ANIMATED: Set<string> }
   const EMOJI = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}\uFE0F?|[\u{1F3FB}-\u{1F3FF}])*/gu
@@ -123,7 +152,7 @@ export async function exportReact(project: ProjectIn, rows: ScreenIn[], opts: { 
           version: '0.1.0',
           type: 'module',
           scripts: { dev: 'vite', build: 'vite build', preview: 'vite preview' },
-          dependencies: { react: version('react'), 'react-dom': version('react-dom'), konsta: version('konsta'), 'lucide-react': version('lucide-react') },
+          dependencies: { react: version('react'), 'react-dom': version('react-dom'), konsta: version('konsta'), 'lucide-react': version('lucide-react'), '@phosphor-icons/react': version('@phosphor-icons/react') },
           devDependencies: { vite: version('vite'), '@vitejs/plugin-react': version('@vitejs/plugin-react'), tailwindcss: version('tailwindcss'), '@tailwindcss/vite': version('@tailwindcss/vite') },
         },
         null,
@@ -144,6 +173,8 @@ export default defineConfig({
   resolve: { alias: [
     { find: '@od/kit', replacement: fileURLToPath(new URL('./src/kit/index.js', import.meta.url)) },
     { find: /^react\\/jsx-runtime$/, replacement: fileURLToPath(new URL('./src/emoji-jsx.js', import.meta.url)) },
+    // Icons are written as lucide and drawn as Phosphor (src/icons.js).
+    { find: /^lucide-react$/, replacement: fileURLToPath(new URL('./src/icons.js', import.meta.url)) },
   ] },
 })
 `,
@@ -188,6 +219,7 @@ The code is yours.
 `,
     },
     { name: 'src/main.jsx', data: read('runtime/export/main.jsx') },
+    { name: 'src/icons.js', data: await iconModule([...screens.map((s) => s.source), read('runtime/kit/ui.jsx'), read('runtime/kit/nav.jsx'), read('runtime/kit/blocks.jsx')]) },
     // EMJ-01: emoji as Microsoft's Fluent 3D (MIT) — the ones this app uses, in public/emoji.
     { name: 'src/emoji-jsx.js', data: read('runtime/emoji-jsx.js') },
     { name: 'src/emoji-codes.js', data: emojiCodes(emoji, opts.inlineEmoji) },

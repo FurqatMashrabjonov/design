@@ -1251,6 +1251,8 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const app = JSON.parse(String(files.find((f) => f.name.endsWith('src/app.json'))!.data))
   assert.deepEqual(app.theme, { accent: '#ff375f', dark: true, platform: 'material', style: 'clean' })
   assert.ok(names.includes('cafe-test/src/kit/styles.js'), 'the export carries the style module (THM-01)')
+  const icons = String(files.find((f) => f.name.endsWith('src/icons.js'))!.data)
+  assert.ok(/export const ChevronRight = ph\(Ph\.CaretRight\)/.test(icons) && /export const House = ph\(Ph\.House\)/.test(icons), 'ICN-01: the screens\' and the kit\'s lucide icons are drawn as Phosphor in the export')
   const dir = mkdtempSync(join(tmpdir(), 'od-export-'))
   for (const f of files) { mkdirSync(dirname(join(dir, f.name)), { recursive: true }); writeFileSync(join(dir, f.name), f.data) }
   const root = join(dir, 'cafe-test')

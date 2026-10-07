@@ -17,3 +17,5 @@ runtime/jsx-runtime.js
 runtime/react-dom-client.js
 
 docs/brand/videos/raw/
+
+runtime/.icons/

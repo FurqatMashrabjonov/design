@@ -507,6 +507,13 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-25 | Premium bloklar 2a: PlanCompare, SizePicker, SwatchPicker, Ticket, QRCode, LiveETA, BreathTimer, FeedPost | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-24 | k25 3–1–0; Size/Swatch o'lchandi, qolganlari nom bo'yicha |
 | KIT-26 | Premium bloklar 2b: AchievementUnlock, MoodPicker, StoryViewer, WheelPicker, PriceMap | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-25 | Nom bo'yicha hint; kichik eval'da ekran chiqmadi |
 | EMJ-01 | Emoji: Fluent 3D hamma qurilmada, asosiy lahzalarda animatsiya | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
+| ICN-01 | Ikonkalar Phosphor: faol tab fill, Tile ichida duotone; eksportda ham | Generatsiya / Kit | MVP | Tayyor | Kichik |  | icn01 reshoot: metrikalar o'zgarmadi |
+| FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Rejada | Kichik |  |  |
+| GLS-01 | Liquid Glass: shaffof tab bar va navbar | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
+| MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
+| ILL-01 | Illyustratsiyalar (Open Peeps / Humaaans, CC0): bo'sh holat va onboarding | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
+| ICO-01 | Har ilovaga app ikonka va splash | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
+| DRK-01 | Dark mode: ko'tarilgan sirtlar | Generatsiya / Kit | MVP | Rejada | Kichik |  |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 | fun04b: 24/24 ekranda hamma tugma ishlaydi |
 | EVL-01 | Eval arzon: standart 4 ilova × 6 ekran, --full kerak bo'lsa | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |
 | CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |

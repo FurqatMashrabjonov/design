@@ -14,6 +14,27 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (15)
+
+### ICN-01: icons are Phosphor (fill and duotone weights); the model still writes lucide
+
+- **Runtime** (`runtime/phosphor-map.js`, `runtime/vite.config.js`): each lucide icon a screen imports is built as an
+  adapter onto its Phosphor (MIT) counterpart — same name, else the `ALIASES` table (Search → MagnifyingGlass,
+  Flame → Fire…), else a rule (CircleCheck → CheckCircle, a trailing digit dropped); 574 of lucide's icons map, the
+  rest stay lucide. lucide's props carry over: a `fill` becomes the fill weight, a `strokeWidth` ≥ 2.4 bold. The kit's
+  own `lucide-react` imports resolve to the same adapters. Generated into `runtime/.icons/` (gitignored).
+- **Kit**: the active tab's icon is the fill weight (`nav.jsx`), as iOS draws a selected tab; icons inside a `Tile`
+  are duotone (`IconContext` in `ui.jsx`).
+- **Export** (`ExportService.iconModule`): `src/icons.js` holds the icons the screens and the kit import, as the same
+  adapters; the exported `vite.config` aliases `lucide-react` to it and `package.json` gains `@phosphor-icons/react`.
+- The source is untouched: the model writes `import { Flame } from 'lucide-react'` as before.
+- Files: `package.json`, `runtime/phosphor-map.js` (+ `.d.ts`), `runtime/vite.config.js`, `runtime/kit/nav.jsx`,
+  `runtime/kit/ui.jsx`, `src/app/Services/ExportService.ts`, `controllers.check.ts`, `.gitignore`.
+- Verified: `npm run eval -- --label icn01 --reshoot` over k26emj (no model calls): 24 screens, clean 91.7%, every
+  control working, no crash — the same as before; screenshots compared side by side (filled active tab, Phosphor
+  glyphs). The export test asserts the Phosphor mapping and builds the project with Vite. `npm run check`,
+  `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (14)
 
 ### EMJ-01: emoji are Microsoft's Fluent 3D on every device; the moments that matter move

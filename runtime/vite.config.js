@@ -5,7 +5,8 @@
 // `react`, `react/jsx-runtime` and `react-dom/client` are CommonJS, and `export *` from CommonJS gives an entry with no
 // static exports (import maps need them) — so those three entry files are (re)written here with every name spelled out.
 import { createRequire } from 'node:module'
-import { readFileSync, writeFileSync, cpSync } from 'node:fs'
+import { readFileSync, writeFileSync, cpSync, mkdirSync, rmSync, readdirSync } from 'node:fs'
+import { phosphorFor } from './phosphor-map.js'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -25,10 +26,34 @@ writeFileSync('runtime/react-dom-client.js', named('react-dom/client'))
 const lucideIndex = readFileSync(require.resolve('lucide-react/dist/esm/lucide-react.mjs'), 'utf8')
 const lucideMap = {} // export name → icon file (without extension)
 const iconEntries = {}
+// ICN-01: each lucide icon a screen imports is an adapter onto its Phosphor counterpart (runtime/.icons, generated):
+// lucide's props become Phosphor's (a `fill` → the fill weight, a heavy strokeWidth → bold); no counterpart → lucide.
+const PH = 'node_modules/@phosphor-icons/react/dist/csr'
+// Exact names (a case-insensitive disk would say Paintbrush exists when the file is PaintBrush).
+const PH_NAMES = new Set(readdirSync(PH).filter((f) => f.endsWith('.es.js')).map((f) => f.slice(0, -6)))
+const hasPh = (n) => PH_NAMES.has(n)
+rmSync('runtime/.icons', { recursive: true, force: true })
+mkdirSync('runtime/.icons', { recursive: true })
+const adapter = (ph) => `import { forwardRef, createElement } from 'react'
+import { ${ph} as P } from '../../${PH}/${ph}.es.js'
+// ICN-01: lucide's props on Phosphor's ${ph}.
+const Icon = forwardRef(function Icon({ size = 24, strokeWidth, absoluteStrokeWidth, fill, color, weight, ...rest }, ref) {
+  const w = weight ?? (fill && fill !== 'none' ? 'fill' : Number(strokeWidth) >= 2.4 ? 'bold' : undefined)
+  return createElement(P, { ref, size, color: color ?? (fill && fill !== 'none' && fill !== 'currentColor' ? fill : undefined), ...(w ? { weight: w } : {}), ...rest })
+})
+export default Icon
+`
+const kitIcons = [] // every lucide name, re-exported for the kit (which imports from 'lucide-react')
 for (const [, names, file] of lucideIndex.matchAll(/export \{([^}]+)\} from '\.\/icons\/([\w-]+)\.mjs'/g)) {
-  for (const n of names.split(',')) lucideMap[n.replace('default as', '').trim()] = file
-  iconEntries[`icons/${file}`] = require.resolve(`lucide-react/dist/esm/icons/${file}.mjs`)
+  const list = names.split(',').map((n) => n.replace('default as', '').trim())
+  for (const n of list) lucideMap[n] = file
+  const canonical = list.filter((n) => !/^Lucide|Icon$/.test(n)).sort((a, b) => a.length - b.length)[0] ?? list[0]
+  const ph = phosphorFor(canonical, hasPh)
+  if (ph) writeFileSync(`runtime/.icons/${file}.js`, adapter(ph))
+  iconEntries[`icons/${file}`] = ph ? `runtime/.icons/${file}.js` : require.resolve(`lucide-react/dist/esm/icons/${file}.mjs`)
+  for (const n of list) kitIcons.push(ph ? `export { default as ${n} } from './${file}.js'` : `export { default as ${n} } from '../../node_modules/lucide-react/dist/esm/icons/${file}.mjs'`)
 }
+writeFileSync('runtime/.icons/index.js', kitIcons.join('\n') + '\n')
 
 export default defineConfig({
   plugins: [
@@ -49,7 +74,11 @@ export default defineConfig({
     },
   ],
   // EMJ-01: Konsta and the kit render through the same emoji-drawing jsx runtime as the screens.
-  resolve: { alias: [{ find: /^react\/jsx-runtime$/, replacement: fileURLToPath(new URL('./emoji-jsx.js', import.meta.url)) }] },
+  resolve: { alias: [
+    { find: /^react\/jsx-runtime$/, replacement: fileURLToPath(new URL('./emoji-jsx.js', import.meta.url)) },
+    // ICN-01: the kit's own icons (tab bar, blocks) are the Phosphor adapters too.
+    { find: /^lucide-react$/, replacement: fileURLToPath(new URL('./.icons/index.js', import.meta.url)) },
+  ] },
   define: { 'process.env.NODE_ENV': '"production"' },
   build: {
     outDir: 'runtime/dist',

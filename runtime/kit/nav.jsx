@@ -55,7 +55,7 @@ export function AppTabbar({ active }) {
         {tabs.map((t) => {
           const I = iconOf(t.icon)
           return <TabbarLink key={t.id} active={active === t.id} onClick={() => active !== t.id && nav.reset(t.id)}
-            icon={<I className="w-6 h-6" strokeWidth={active === t.id ? 2.4 : 1.8} />} label={t.label} />
+            icon={<I className="w-6 h-6" weight={active === t.id ? 'fill' : 'regular'} strokeWidth={active === t.id ? 2.4 : 1.8} />} label={t.label} />
         })}
       </ToolbarPane>
     </Tabbar>
