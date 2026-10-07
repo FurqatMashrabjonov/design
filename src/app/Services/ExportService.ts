@@ -1,10 +1,11 @@
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { completeImports } from './ScreenCompiler'
 import { cachedPhotos, type Photo } from './PhotoService'
 import { parseAppPlan } from './JsxGenerator'
 import { parseAppTheme } from '@/lib/app-theme'
+import { iconKey, iconSvg } from '@/lib/app-icon'
 
 // CODE-01: the app as a React + Vite project. The screens are the code the studio runs, unchanged except for
 // the imports they forgot (completeImports — the same fix the compiler applies); the kit and the navigator
@@ -98,6 +99,13 @@ async function iconModule(sources: string[]): Promise<string> {
   return out.join('\n') + '\n'
 }
 
+/** ILL-01: the Open Doodles scenes an app's sources name (any scene name as a string), plus `sitting`, the fallback. */
+function doodleFiles(sources: string[]): ExportFile[] {
+  const all = readdirSync(join(ROOT, 'runtime/doodles')).map((f) => f.slice(0, -3))
+  const text = sources.join('\n')
+  return all.filter((n) => n === 'sitting' || new RegExp(`['"\`]${n}['"\`]`).test(text)).map((n) => ({ name: `src/doodles/${n}.js`, data: read(`runtime/doodles/${n}.js`) }))
+}
+
 async function usedEmoji(sources: string[]): Promise<{ still: string[]; animated: string[] }> {
   const { STILL, ANIMATED } = (await import('../../../runtime/emoji-codes.js')) as { STILL: Set<string>; ANIMATED: Set<string> }
   const EMOJI = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}\uFE0F?|[\u{1F3FB}-\u{1F3FF}])*/gu
@@ -142,6 +150,12 @@ export async function exportReact(project: ProjectIn, rows: ScreenIn[], opts: { 
   } catch {}
 
   const emoji = await usedEmoji([...drawn.map((s) => s.html), plan?.store ?? '', read('runtime/kit/ui.jsx'), read('runtime/kit/blocks.jsx')])
+  // ICO-01: the app's icon (its emoji on its accent) as one data URL — the tab icon and the splash, in the project and
+  // in the one-file HTML alike.
+  const iconFile = plan?.icon ? join(ROOT, 'runtime/emoji', `${iconKey(plan.icon)}.webp`) : null
+  const iconEmoji = iconFile && existsSync(iconFile) ? `data:image/webp;base64,${readFileSync(iconFile).toString('base64')}` : null
+  const icon = `data:image/svg+xml;base64,${Buffer.from(iconSvg(theme.accent, iconEmoji, project.name.trim().charAt(0).toUpperCase())).toString('base64')}`
+  const safeName = project.name.replace(/[<>&"]/g, '')
   const importName = (id: string) => `S_${id.replace(/-/g, '_')}`
   const files: ExportFile[] = [
     {
@@ -187,10 +201,16 @@ export default defineConfig({
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>${project.name.replace(/[<>&"]/g, '')}</title>
+    <title>${safeName}</title>
+    <link rel="icon" href="${icon}" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- The splash: the app's icon and name until the first screen is up (src/main.jsx fades it). -->
+    <div id="splash" style="position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:${theme.dark ? '#000' : '#f2f2f7'};color:${theme.dark ? '#fff' : '#1c1c1e'};font:600 22px -apple-system,'Inter Variable',system-ui,sans-serif;transition:opacity .4s ease-out">
+      <img src="${icon}" alt="" width="104" height="104" style="filter:drop-shadow(0 8px 16px rgb(0 0 0 / .25))" />
+      <span>${safeName}</span>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
@@ -225,6 +245,7 @@ The code is yours.
     { name: 'src/emoji-jsx.js', data: read('runtime/emoji-jsx.js') },
     { name: 'src/emoji-codes.js', data: emojiCodes(emoji, opts.inlineEmoji) },
     ...(opts.inlineEmoji ? [] : emojiFiles(emoji)),
+    ...doodleFiles([...drawn.map((s) => s.html), plan?.store ?? '']),
     // FUN-01: the app's data and every change a person can make, shared by all the screens (an older app has none).
     { name: 'src/store.js', data: plan?.store ?? 'export const initial = {}\nexport const actions = {}\n' },
     { name: 'src/kit/store.js', data: read('runtime/kit/store.js') },
@@ -261,7 +282,7 @@ export async function exportHtml(project: ProjectIn, rows: ScreenIn[]): Promise<
     const root = join(dir, files[0]!.name.split('/')[0]!)
     symlinkSync(join(ROOT, 'node_modules'), join(root, 'node_modules'))
     const { build } = await import('vite')
-    await build({ root, configFile: join(root, 'vite.config.js'), logLevel: 'silent', build: { assetsInlineLimit: 100_000_000, cssCodeSplit: false, modulePreload: false } })
+    await build({ root, configFile: join(root, 'vite.config.js'), logLevel: 'silent', build: { assetsInlineLimit: 100_000_000, cssCodeSplit: false, modulePreload: false, rollupOptions: { output: { inlineDynamicImports: true } } } })
     const dist = join(root, 'dist')
     const assets = readdirSync(join(dist, 'assets'))
     let html = readFileSync(join(dist, 'index.html'), 'utf8')

@@ -10,6 +10,7 @@ import { parseAppTheme } from '@/lib/app-theme'
 import { AppLookSwitch } from '@/components/canvas/ThemePanel'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { DeviceFrame } from '@/components/DeviceFrame'
+import { AppSplash } from '@/components/AppIcon'
 import { DEVICES, DEFAULT_DEVICE, deviceById, FOLD_PERSPECTIVE, foldLayout, splitPanes, type Device, type FoldFrame } from '@/lib/devices'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -45,6 +46,11 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
   const [theme, setTheme] = useState(saved)
   // Screens whose page has loaded; the one on show wears the veil until then.
   const [loaded, setLoaded] = useState<Set<string>>(() => new Set())
+  // ICO-01: the app opens on its splash (icon and name) until its first screen has drawn and a beat has passed.
+  const icon = useMemo(() => { try { return (JSON.parse(project.plan ?? '{}') as { icon?: string }).icon } catch { return undefined } }, [project.plan])
+  const [splash, setSplash] = useState<'on' | 'leaving' | 'off'>('on')
+  const [splashMin, setSplashMin] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setSplashMin(true), 1100); return () => clearTimeout(t) }, [])
   const loadedRef = useRef(loaded)
   loadedRef.current = loaded
   // A screen has drawn itself when its page reports a height (the kit's first od:height). That — not the
@@ -262,6 +268,9 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
   const phoneH = (native.height + bezel * 2) * scale
 
 
+  const firstDrawn = !!shownId && visible.every((v) => loaded.has(v))
+  useEffect(() => { if (splash === 'on' && splashMin && firstDrawn) setSplash('leaving') }, [splash, splashMin, firstDrawn])
+
   // Every mounted screen and the veil over the one still drawing — inside the drawn device, or (on a phone) the page.
   const frameEls = (
     <>
@@ -287,7 +296,8 @@ export function AppPreview({ project, screens: rows, start, share }: { project: 
           tabIndex={visible.includes(s.id) ? 0 : -1}
         />
       ))}
-      <GeneratingVeil show={!shownId || visible.some((v) => !loaded.has(v))} />
+      <GeneratingVeil show={splash === 'off' && (!shownId || visible.some((v) => !loaded.has(v)))} />
+      {splash !== 'off' && <AppSplash emoji={icon} accent={theme.accent} name={project.name} dark={theme.dark} leaving={splash === 'leaving'} onLeft={() => setSplash('off')} />}
     </>
   )
 

@@ -219,12 +219,33 @@ export function PhotoCard({ q, color, title, meta, badge }) {
 
 // ── EmptyState ──────────────────────────────────────────────────────────────────────────────────────────────
 /** Centred empty state: art in a soft tinted circle, a title, one line, one primary action, an optional link. */
-export function EmptyState({ emoji, icon, color, title, text, action, onAction, secondary, onSecondary }) {
+// ── Doodle ──────────────────────────────────────────────────────────────────────────────────────────────────
+// ILL-01: a hand-drawn scene from Pablo Stanley's Open Doodles (CC0) — ink in the text colour (white in dark mode),
+// the one accent in the app's colour. Each scene is its own module (runtime/doodles, scripts/open-doodles.mjs),
+// loaded when drawn; an unknown scene draws `sitting`.
+const DOODLES = import.meta.glob('../doodles/*.js')
+export function Doodle({ scene = 'sitting', color, className = '', style }) {
+  const [art, setArt] = useState(null)
+  useEffect(() => {
+    let live = true
+    const load = DOODLES[`../doodles/${scene}.js`] ?? DOODLES['../doodles/sitting.js']
+    load?.().then((m) => live && setArt(m))
+    return () => { live = false }
+  }, [scene])
+  const box = (art?.viewBox ?? '0 0 1024 768').split(' ').map(Number)
+  return (
+    <svg data-od-kit="Doodle" role="img" aria-hidden viewBox={box.join(' ')} className={`block h-auto w-full text-[#1c1c1e] dark:text-white/90 ${className}`}
+      style={{ aspectRatio: `${box[2]} / ${box[3]}`, '--od-doodle-accent': cssColor(color) ?? 'var(--color-primary)', ...style }}
+      dangerouslySetInnerHTML={art ? { __html: art.default } : undefined} />
+  )
+}
+
+export function EmptyState({ emoji, icon, doodle, color, title, text, action, onAction, secondary, onSecondary }) {
   return (
     <div className="flex flex-col items-center px-6 py-9 text-center">
-      <div className="flex size-24 items-center justify-center rounded-full" style={{ background: tint(color, 14), color: color ?? 'var(--color-primary)', fontSize: 44 }}>
+      {doodle ? <Doodle scene={doodle} color={color} className="!w-56 max-w-full" /> : <div className="flex size-24 items-center justify-center rounded-full" style={{ background: tint(color, 14), color: color ?? 'var(--color-primary)', fontSize: 44 }}>
         {emoji ? heroEmoji(emoji, !STATIC) : icon}
-      </div>
+      </div>}
       <div className="mt-5 text-title3">{title}</div>
       <p className="mt-1.5 max-w-[17rem] text-subhead opacity-60">{text}</p>
       {action && <Button large rounded inline className="mt-6 px-8" onClick={onAction}>{action}</Button>}

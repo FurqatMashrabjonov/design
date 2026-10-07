@@ -14,6 +14,52 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (21)
+
+### DRK-01: dark sheets are raised surfaces
+
+- A grouped list on a dark sheet was the sheet's own colour (Konsta paints both `ios-dark-surface-1`), so its rows
+  had no edge. `runtime/kit/styles.js` sets `--app-sheet` (the card colour) and `--app-card-up` (the card mixed 8%
+  toward white: Clean's #1c1c1e → #2e2e30, as iOS's elevated grouped background) in dark mode; `runtime/runtime.css`
+  gives `.dark .k-sheet` the first and lifts Konsta's surfaces and the kit's `bg-card` inside it to the second. Light
+  mode is unchanged.
+- Verified: a sheet with a list, a `bg-card` note and a button shot before/after in dark and after in light — the
+  list and the note read as cards on the sheet; `npm run check`, `npx tsc --noEmit` clean.
+
+## 2026-10-07 (20)
+
+### ICO-01: every app has an icon and opens on a splash
+
+- The planner names `icon`, one emoji for the app's subject; `parsePlan` keeps it only when the Fluent set draws it
+  (`iconOf`, tested), else the icon is the app's initial.
+- `src/lib/app-icon.ts`: the icon is drawn, never stored — the emoji (Fluent 3D) on a squircle in the accent lit from
+  the top (`iconStops`, `iconSvg`). `components/AppIcon.tsx`: `AppIcon` and `AppSplash`.
+- Preview and shared link: the app opens on its splash (icon and name on the page colour) until its first screen has
+  drawn and 1.1 s have passed, then fades into it (`od-splash`; at once under reduced motion; a timer, since
+  `transitionend` did not always arrive).
+- Export: `index.html` carries the icon as the favicon and a splash `div` that `main.jsx` fades after the first
+  screen is up; the icon is one inline data URL, so the one-file HTML has it too.
+- Verified in Chrome on the dev server: a project with an icon showed its splash (Fluent image loaded) then the
+  screen; an old project without one showed its initial and the same timing. ill02 eval: 4 of 4 plans named an
+  icon (💳 🍜 🌿 🌿). Export test asserts the favicon and splash. `npm run check`, `npx tsc --noEmit` clean.
+
+## 2026-10-07 (19)
+
+### ILL-01: hand-drawn illustrations (Open Doodles, CC0)
+
+- `scripts/open-doodles.mjs` turns Pablo Stanley's Open Doodles (CC0) into 30 kit modules in `runtime/doodles/`
+  (672 KB in all, svgo at 0.1 px, cropped to each drawing in headless Chrome); three off-brief scenes are left out.
+  Ink is `currentColor` (text colour, white in dark mode), the one accent `var(--od-doodle-accent)` (the app's colour).
+- Kit: `Doodle({ scene, color, className })` loads its scene as its own chunk (`import.meta.glob`, nothing on a
+  page that does not draw one); `EmptyState({ doodle })` shows a scene instead of the emoji circle.
+- The model: `konsta/KIT.md` lists both with the scenes; the `value` onboarding example opens on a Doodle and the
+  `value` and `slides` layouts name one. Listing it in KIT.md alone was inert (ill01: 0 of 24 screens).
+- Export: the scenes an app names (and `sitting`, the fallback) ship in `src/doodles/`; the one-file HTML build
+  inlines dynamic imports.
+- Measured (ill02 vs icn01, 4 apps × 6 screens, ~$0.10): Doodles on 3 screens (two welcomes, a library); rubric
+  2.92 → 3.13 (polish 2.79 → 3.17); pairwise 0–1–1 on the two apps compared, the loss over a screen the plan left
+  out; problems per screen 0.08 → 0.13, every control working.
+
 ## 2026-10-07 (18)
 
 ### MIC-01: micro-interactions on Konsta's own parts

@@ -72,6 +72,9 @@ const { dark, platform, style, accent } = app.theme
 document.documentElement.classList.toggle('dark', dark)
 // THM-01: the app's style — surfaces, corners and fonts — as on the canvas.
 applyStyle(style, accent, dark)
+// ICO-01: the splash in index.html stays a beat after the first screen is up, then fades.
+const splash = document.getElementById('splash')
+if (splash) setTimeout(() => { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 400) }, 900)
 createRoot(document.getElementById('root')).render(
   <App theme={platform === 'material' ? 'material' : 'ios'} dark={dark} safeAreas className={dark ? 'dark' : ''}>
     <Navigator />

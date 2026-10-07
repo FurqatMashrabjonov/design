@@ -22,6 +22,8 @@ Surfaces and marks
 - `Medal({ emoji, color = '#ffb800', size = 64, locked = false })` — an award badge: the emoji on a squircle tinted with its colour; locked ones are grey.
 - `Avatar({ name, color, size = 44, photo })` — a person: their portrait when `photo` names one ("portrait smiling young woman", like Photo's `q`), initials on a gradient until it loads. Give every person a `photo`.
 - `Glow({ color, size = 260, opacity = 0.5 })` — a blurred halo behind art; place it inside a `relative` box.
+- `Doodle({ scene, color?, className })` — a hand-drawn scene (a person doing something), ink in the text colour and one accent in the app's: art for an onboarding page, a welcome, a finished moment or an empty list; full width of its box, so size it with `className` (`w-56 mx-auto`). One per screen. `scene`: reading, reading-side, sitting-reading, meditating, running, sprinting, strolling, rolling, roller-skating, jumping, dancing, groovy, ballet, coffee, ice-cream, dog, dog-jump, petting, plant, unboxing, selfie, laying, chilling, sitting, swinging, float, levitate, loving, sleek, clumsy (an error).
+- `EmptyState({ doodle, emoji, title, text, action, onAction, secondary?, onSecondary? })` — what an empty list shows: a `doodle` scene (or an emoji), a title, one line and the action that fills it.
 - `Dots({ count, active })` — onboarding pager dots.
 - `Confetti({ run })` — a burst when something is completed.
 

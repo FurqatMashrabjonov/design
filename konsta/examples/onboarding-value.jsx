@@ -1,10 +1,10 @@
 import { Page, Button, Link } from 'konsta/react'
-import { Wallet, PieChart, Bell, ShieldCheck } from 'lucide-react'
-import { useNav, Tile, tint } from '@od/kit'
+import { Wallet, PieChart, Bell } from 'lucide-react'
+import { useNav, Doodle, tint } from '@od/kit'
 
 const C = { spend: '#0a84ff', budget: '#30d158', alerts: '#ff9f0a', safe: '#5e5ce6' }
 
-// The promise as a big title, three concrete benefits, one action. A single calm page — no slides.
+// A hand-drawn scene, the promise as a big title, three concrete benefits, one action. A single calm page — no slides.
 const BENEFITS = [
   { icon: PieChart, color: C.spend, title: 'See where it goes', text: 'Every card and account in one feed, sorted into categories for you.' },
   { icon: Wallet, color: C.budget, title: 'Budgets that adjust', text: 'Set a monthly limit; we pace it day by day and warn you early.' },
@@ -15,8 +15,8 @@ export default function Screen() {
   const nav = useNav()
   return (
     <Page className="flex flex-col">
-      <div className="flex-1 px-6 pt-20">
-        <div className="vs-rise"><Tile color={C.safe} size={56}><ShieldCheck className="size-7" /></Tile></div>
+      <div className="flex-1 px-6 pt-14">
+        <div className="vs-rise"><Doodle scene="sitting" className="!w-52 -ml-2" /></div>
         <h1 className="mt-6 text-large-title leading-tight vs-rise" style={{ animationDelay: '60ms' }}>
           Your money,
           <br />

@@ -54,6 +54,12 @@ const planReply = (req: Sent) => (req.json ? new Response(JSON.stringify({ choic
   assert.deepEqual(p.screens.map((s) => [s.id, s.kind]), [['a', 'tab'], ['b', 'push'], ['c', 'push']], 'one root screen per tab; unknown kinds are pushes')
   assert.equal(p.screens[2]!.parent, 'a', 'a push with no parent goes back to the first tab')
   // A tab icon the set lacks comes from the label, and two tabs never wear the same icon (a Sleep tab was a house).
+  // ICO-01: the app's icon is one emoji the Fluent set draws, or none.
+  const withIcon = (icon: unknown) => parsePlan(JSON.stringify({ icon, tabs: [{ id: 'a', label: 'A', icon: 'House' }], screens: [{ name: 'A', kind: 'tab', tab: 'a' }] }), 'X').icon
+  assert.equal(withIcon('🏃'), '🏃')
+  assert.equal(withIcon('❤️ love'), '❤️', 'the leading emoji is kept, the words dropped')
+  assert.equal(withIcon('run'), undefined)
+  assert.equal(withIcon(42), undefined)
   const icons = parsePlan(JSON.stringify({ tabs: [{ id: 'today', label: 'Today', icon: 'House' }, { id: 'breathe', label: 'Breathe', icon: 'Wind' }, { id: 'sleep', label: 'Sleep', icon: 'BedDouble' }, { id: 'me', label: 'Profile', icon: 'House' }, { id: 'x', label: 'Stuff', icon: 'Nope' }], screens: ['today', 'breathe', 'sleep', 'me', 'x'].map((t) => ({ name: t, kind: 'tab', tab: t })) }), 'X').tabs.map((t) => t.icon)
   assert.deepEqual(icons, ['House', 'Wind', 'Moon', 'CircleUser', 'Sparkles'], 'unknown or repeated tab icons are chosen from the label, then a fallback no other tab wears')
   const { TAB_ICONS } = await import('../../Services/JsxGenerator.ts')
@@ -1251,6 +1257,9 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const app = JSON.parse(String(files.find((f) => f.name.endsWith('src/app.json'))!.data))
   assert.deepEqual(app.theme, { accent: '#ff375f', dark: true, platform: 'material', style: 'clean' })
   assert.ok(names.includes('cafe-test/src/kit/styles.js'), 'the export carries the style module (THM-01)')
+  assert.ok(names.includes('cafe-test/src/doodles/sitting.js'), 'ILL-01: the fallback doodle ships with the kit')
+  const index = String(files.find((f) => f.name.endsWith('/index.html'))!.data)
+  assert.ok(/<link rel="icon" href="data:image\/svg\+xml;base64,/.test(index) && /id="splash"/.test(index), 'ICO-01: the export carries the app icon and the splash')
   const icons = String(files.find((f) => f.name.endsWith('src/icons.js'))!.data)
   assert.ok(/export const ChevronRight = ph\(Ph\.CaretRight\)/.test(icons) && /export const House = ph\(Ph\.House\)/.test(icons), 'ICN-01: the screens\' and the kit\'s lucide icons are drawn as Phosphor in the export')
   const dir = mkdtempSync(join(tmpdir(), 'od-export-'))

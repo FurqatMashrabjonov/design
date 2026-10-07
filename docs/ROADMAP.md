@@ -511,9 +511,9 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Tayyor | Kichik |  |  |
 | GLS-01 | Liquid Glass: shaffof tab bar va navbar | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
 | MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
-| ILL-01 | Illyustratsiyalar (Open Peeps / Humaaans, CC0): bo'sh holat va onboarding | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
-| ICO-01 | Har ilovaga app ikonka va splash | Generatsiya / Kit | MVP | Rejada | O'rta |  |  |
-| DRK-01 | Dark mode: ko'tarilgan sirtlar | Generatsiya / Kit | MVP | Rejada | Kichik |  |  |
+| ILL-01 | Illyustratsiyalar (Open Doodles, CC0): bo'sh holat va onboarding | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
+| ICO-01 | Har ilovaga app ikonka va splash | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
+| DRK-01 | Dark mode: ko'tarilgan sirtlar | Generatsiya / Kit | MVP | Tayyor | Kichik |  |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 | fun04b: 24/24 ekranda hamma tugma ishlaydi |
 | EVL-01 | Eval arzon: standart 4 ilova × 6 ekran, --full kerak bo'lsa | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |
 | CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |

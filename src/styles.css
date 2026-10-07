@@ -384,6 +384,10 @@ svg.lucide { stroke-width: 1.75; }
     /* Panels that slide in from their edge and back out (data-open on the element). */
     .od-slide { transition: transform var(--duration-base) var(--motion-ease-spring), opacity var(--duration-base) var(--motion-ease-out), visibility 0s linear var(--duration-base); }
     .od-slide[data-open] { transition: transform var(--duration-base) var(--motion-ease-spring), opacity var(--duration-base) var(--motion-ease-out), visibility 0s; }
+    /* ICO-01: the preview's splash fades into the first screen; its icon lands. */
+    .od-splash { transition: opacity var(--duration-slow) var(--motion-ease-out); }
+    .od-splash[data-leaving] { opacity: 0; }
+    .od-splash > :first-child { animation: od-land var(--duration-slow) var(--motion-ease-spring) both; }
     /* The canvas moving to a fit or a focus glides instead of jumping (wheel and drag stay direct). */
     .od-glide { transition: transform var(--duration-slow) var(--motion-ease-out); }
 }

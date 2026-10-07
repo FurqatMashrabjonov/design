@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { completeJSON, jsonOnly, streamCompletion, type LlmUsage, type RefImage } from './LlmService'
 import { REF_IMAGE_NOTE } from '@/lib/ref-images'
+import { iconKey } from '@/lib/app-icon'
+import { STILL } from '../../../runtime/emoji-codes.js'
 import type { AppLook } from './ScreenDocument'
 import { parseAppTheme, parseStyleName, seededPick, styleColors, type AppStyle, type AppTheme } from '@/lib/app-theme'
 
@@ -24,7 +26,7 @@ export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Set
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
-export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding; store?: string }
+export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding; store?: string; icon?: string }
 
 /**
  * ONB-01: how the first-run screen is built. With one example every app opened on the same carousel (7 of 7 on the
@@ -32,10 +34,10 @@ export type AppPlan = { appName: string; summary: string; accent: string; style:
  * the code picks one per app from those that suit its style (seededPick), and the screen brief names it.
  */
 export const ONBOARDINGS = {
-  slides: 'two or three slides inside the one screen: art composed from the kit that shows the app\'s own thing, a two-line title, one line, pager Dots, Continue.',
+  slides: 'two or three slides inside the one screen: art for each — a kit `Doodle` scene that fits the slide (ILL-01) or a figure composed from the kit that shows the app\'s own thing — a two-line title, one line, pager Dots, Continue.',
   photo: 'one full-bleed Photo of the app\'s world under a dark gradient, the promise as a big title and one line over it, one button and a small log-in link. No slides, no dots.',
   quiz: 'a short personal question flow (two or three questions in this one screen, a Meter for progress on top): each question is three or four large tappable option cards with an emoji Tile; Continue is enabled once one is chosen. Ask what this app really needs to know (a goal, a level, a time, a preference).',
-  value: 'the app\'s promise as a big title, then three benefit rows (a tinted icon, a headline, one line each), one primary button and a small terms line. One calm page — no slides.',
+  value: 'a kit `Doodle` scene that fits the app at the top (`className="w-60 mx-auto"`, ILL-01), the app\'s promise as a big title, then three benefit rows (a tinted icon, a headline, one line each), one primary button and a small terms line. One calm page — no slides.',
   showcase: 'a collage of three tilted mini cards that preview the app\'s own screens (its hero figure, a chart, a streak or list row), built from the kit, then a bold two-line title and one button.',
 } as const
 export type Onboarding = keyof typeof ONBOARDINGS
@@ -53,7 +55,7 @@ const onboardingOf = (plan: AppPlan): Onboarding => (plan.onboarding && plan.onb
 type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}`
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
-{"appName": string, "summary": "one sentence",
+{"appName": string, "summary": "one sentence", "icon": "one emoji that is the app's mark on its home-screen icon and splash (its subject: 🏃 a running app, 🌿 calm wellness, 🍜 food delivery)",
  "style": the look of top apps like this one — "clean" (finance, productivity, booking, utilities, news), "midnight" (dark and premium: fitness, training, sleep, investing, nightlife), "vivid" (bold and playful: food delivery, learning, habits, kids, games, social fun), "soft" (calm and warm: meditation, wellness, journaling, reading, parenting, mental health) or "editorial" (photo-led and typographic: travel, fashion, recipes, lifestyle, events); pick what the brief's audience would expect, and if the brief names a look (dark, minimal, playful, cozy, luxury) follow it,
  "palette": ["camelCaseName", …] — 2–4 names, one per main thing the app tracks or sorts by (top apps use two to four colours, not a rainbow), named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); the host colours them,
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
@@ -98,6 +100,12 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 /** The plan is a contract: vocabulary closed, one tab screen per tab, parents that exist, at most 8 screens —
  *  and when there are more, what the brief asked for stays (HIG-17: a checkout or a tracking screen used to be cut
  *  because the eight slots went to onboarding and the tabs first). */
+/** ICO-01: the plan's icon, kept only when it is one emoji the Fluent set draws (else the icon is the initial). */
+function iconOf(raw: unknown): string | undefined {
+  const m = typeof raw === 'string' ? raw.trim().match(/^\p{Extended_Pictographic}[\p{Extended_Pictographic}\u200d\ufe0f\u{1f3fb}-\u{1f3ff}]*/u) : null
+  return m && STILL.has(iconKey(m[0])) ? m[0] : undefined
+}
+
 export function parsePlan(json: string, fallbackName: string, seed?: string, max = MAX_SCREENS): AppPlan {
   const raw = JSON.parse(jsonOnly(json)) as Partial<AppPlan> & { screens?: Partial<PlannedScreen>[]; tabs?: Partial<AppLook['tabs'][number]>[] }
   const usedIcons = new Set<string>()
@@ -150,10 +158,10 @@ export function parsePlan(json: string, fallbackName: string, seed?: string, max
   // Clean surfaces — and the person picks another in the Style & colour panel. Every palette name is the accent
   // itself (a CSS variable), so changing the accent there recolours the whole app. The styles and their colour sets
   // (THM-01, PAL-01/02) stay in the code for when generation picks colours again.
-  if (seed && defaultColorOnly()) return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: KONSTA_ACCENT, style: 'clean', palette: Object.fromEntries(keys.map((k) => [k, 'var(--color-primary)'])), tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), onboarding: onboardingFor('clean', seed) }
+  if (seed && defaultColorOnly()) return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: KONSTA_ACCENT, style: 'clean', palette: Object.fromEntries(keys.map((k) => [k, 'var(--color-primary)'])), tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), onboarding: onboardingFor('clean', seed), icon: iconOf((raw as { icon?: unknown }).icon) }
   const colors = seed ? styleColors(style, keys, seed) : null
   const palette = colors ? colors.palette : Object.fromEntries(keys.filter((k) => /^#[0-9a-f]{6}$/i.test(String(given[k]))).map((k) => [k, String(given[k]).toLowerCase()]))
-  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }) }
+  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }), icon: iconOf((raw as { icon?: unknown }).icon) }
 }
 
 export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string, images?: RefImage[]): Promise<AppPlan> {
