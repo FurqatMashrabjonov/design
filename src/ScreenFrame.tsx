@@ -196,12 +196,13 @@ export function GeneratingVeil(props: { show: boolean; mode?: 'draw' | 'edit' | 
   return (
     <div aria-hidden className="od-gen z-10" data-show={props.show || undefined} data-mode={mode} style={props.accent ? ({ '--gen-accent': props.accent } as CSSProperties) : undefined}>
       <div className="od-gen-dim" />
-      {mode === 'edit' && props.show && <WorkLine steps={[`Updating ${props.name ?? 'the screen'}`, 'Checking every tap']} />}
+      {mode === 'edit' && props.show && <WorkLine steps={[`Reading ${props.name ?? 'the screen'}`, 'Working out the change', 'Rewriting the screen', 'Checking every tap']} />}
     </div>
   )
 }
 
-/** The line under a frame at work: what is being done, one step after another, with a caret. */
+/** The line under a frame at work, as an assistant thinks out loud: one step after another, a light sweeping across
+ *  the words. */
 function WorkLine({ steps }: { steps: string[] }) {
   const [k, setK] = useState(0)
   useEffect(() => {
@@ -210,7 +211,10 @@ function WorkLine({ steps }: { steps: string[] }) {
   }, [])
   return (
     <div className="od-workline">
-      <span key={k % steps.length} className="od-workline-text">{steps[k % steps.length]}</span>
+      <span key={k % steps.length} className="od-workline-text">
+        <span className="od-workline-mark">✦</span>
+        <span className="od-thinking">{steps[k % steps.length]}…</span>
+      </span>
     </div>
   )
 }
@@ -255,7 +259,7 @@ export function ScreenSkeleton(props: { className?: string; style?: CSSPropertie
       ))}
       {i({ height: 56, borderRadius: 28 }, 'mt-auto')}
       </div>
-      <WorkLine steps={[`Laying out ${props.name ?? 'the screen'}`, 'Filling in the content', 'Checking every tap']} />
+      <WorkLine steps={[`Thinking about ${props.name ?? 'the screen'}`, 'Sketching the layout', 'Choosing what goes first', 'Writing the components', 'Wiring up the taps', 'Checking every tap']} />
     </div>
   )
 }

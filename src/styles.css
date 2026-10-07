@@ -331,8 +331,12 @@ svg.lucide { stroke-width: 1.75; }
 @keyframes od-skel { to { background-position: -200% 0; } }
 /* The line under a frame at work. */
 .od-workline { position: absolute; left: 0; right: 0; bottom: 96px; display: flex; justify-content: center; pointer-events: none; }
-.od-workline-text { font-size: 15px; font-weight: 600; padding: 8px 14px; border-radius: 999px; color: var(--foreground); background: var(--card); box-shadow: inset 0 0 0 1px var(--border), var(--elevation-1); }
-.od-workline-text::after { content: '▍'; margin-left: 2px; color: var(--gen-accent, var(--primary)); }
+.od-workline-text { display: inline-flex; align-items: center; gap: 7px; font-size: 16px; font-weight: 500; letter-spacing: -.01em; color: var(--muted-foreground); }
+.od-workline-mark { font-size: 14px; color: var(--gen-accent, var(--foreground)); }
+/* The words are lit by a band that sweeps across them, as an assistant's "Thinking…" is. */
+.od-thinking { background: linear-gradient(90deg, var(--muted-foreground) 0%, var(--muted-foreground) 35%, var(--foreground) 50%, var(--muted-foreground) 65%, var(--muted-foreground) 100%) 0 0 / 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+@keyframes od-think { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+@keyframes od-mark { 50% { opacity: .35; transform: scale(.82) rotate(45deg); } }
 /* UI-31: a page on its way — a 2px lime fill across the top (lime is a fill, never text). Still with reduced motion. */
 .od-nav-progress { position: fixed; inset: 0 0 auto 0; z-index: 100; height: 2px; background: var(--primary); transform-origin: left; transform: scaleX(.6); pointer-events: none; }
 @media (prefers-reduced-motion: no-preference) {
@@ -435,9 +439,9 @@ svg.lucide { stroke-width: 1.75; }
    again — so a long wait still reads as work, not a stuck frame. */
 @keyframes od-gather { 0% { opacity: 0; transform: translateY(14px) scale(.97); } 14%, 84% { opacity: 1; transform: none; } 100% { opacity: 0; transform: none; } }
 @keyframes od-word { from { opacity: 0; transform: translateY(6px); } }
-@keyframes od-caret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: no-preference) {
   .od-skel i { animation: od-gather 4.4s var(--motion-ease-out) calc(var(--i, 0) * 130ms) infinite both; }
   .od-workline-text { animation: od-word 320ms var(--motion-ease-out) both; }
-  .od-workline-text::after { animation: od-caret 1s steps(1) infinite; }
+  .od-thinking { animation: od-think 1.8s linear infinite; }
+  .od-workline-mark { display: inline-block; animation: od-mark 1.8s ease-in-out infinite; }
 }

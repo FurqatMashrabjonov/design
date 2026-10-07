@@ -21,7 +21,10 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 - `ScreenFrame.tsx` (`ScreenSkeleton`, `GeneratingVeil`, `WorkLine`), `styles.css`: a screen being drawn shows its
   blocks rising into place one after another and gathering again while the model writes (`od-gather`, staggered by
   `--i`), with a pill under them that names the step — "Laying out Today", "Filling in the content", "Checking every
-  tap" — and a caret. An edit keeps the screen in view, lightly dimmed, under "Updating Today" / "Checking every tap".
+  tap" — and a caret. Then (the owner's ask) the line reads like an assistant thinking: "✦ Thinking about Today… → Sketching
+  the layout… → Choosing what goes first… → Writing the components… → Wiring up the taps… → Checking every tap…" (an
+  edit: "Reading Today… → Working out the change… → Rewriting the screen… → Checking every tap…"), plain text lit by a
+  band that sweeps across the words (`od-thinking`), a pulsing ✦, no pill and no caret. An edit keeps the screen in view, lightly dimmed, under "Updating Today" / "Checking every tap".
   Loading is a plain quick fade. The light sweep, the breathing edge and both blurs (6px load, 2px edit) are gone.
 - Chosen by the owner from six live variants (gathering blocks from v0/Lovable, aurora + glass from Gemini/Arc); the
   aurora and glass were built and removed the same hour ("orqadagi gradient, dumaloq effektlar hunuk").
