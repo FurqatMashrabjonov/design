@@ -14,6 +14,20 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (13)
+
+### KIT-26: wave 2b offered by screen name
+
+- `JsxGenerator.BLOCK_HINTS`: AchievementUnlock (Awards, Achievements, Badges, Milestones — with the Medal grid),
+  MoodPicker (Check-in, Mood, Journal), WheelPicker (a pushed or modal Reminder, Alarm, Set time, Bedtime), PriceMap
+  (a Map or Nearby screen whose spec has stays, homes, rentals or prices — before RouteMap), and the Stories hint now
+  says a ring opens a `StoryViewer`.
+- Verified: small eval k26 vs k26base (habits, meditate, travel, social × 6 screens): none of the five was drawn — no
+  six-screen plan had a screen with those names — so the 1–1–2 is noise from parts they do not touch (the losses
+  were a meditation onboarding and a date picker). Every control worked on 24/24 screens with the hints (22/24
+  without). The hints stay because they fire only on a screen named for them; their real test is a full run or real
+  apps. `controllers.check.ts` holds the names. About $0.10.
+
 ## 2026-10-07 (12)
 
 ### KIT-26 (wave 2b) in the kit; the Medal is an iOS squircle; the render check ignores what is scrolled out of its box
