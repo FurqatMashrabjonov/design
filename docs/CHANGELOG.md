@@ -14,6 +14,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (8)
+
+### FUN-04: every control is tapped before anyone sees the screen; EVL-01: evals are small by default
+
+- **Tap audit** (`runtime/kit.jsx` `answerTaps`, `od:taps` → `od:tapped`; `RenderAudit` harness): after the iOS and
+  Material measurements the page is switched back to iOS and every visible, reachable button, link and row is tapped in
+  turn. A tap that changes nothing on the page, asks for no navigation and changes no store (the kit counts both in
+  `__odActs`) is a `dead-control` finding for the one repair, with how to make it work. Not judged: the tab bar, a
+  control under something else or faded out with a closed sheet/dialog (`elementFromPoint`, `checkVisibility`), a
+  control whose surroundings already change on their own, and an option already chosen in its group (it looked
+  different from its working siblings when tapped).
+- Its false alarms were found and removed on the eval: the active tab, buttons in closed sheets, the selected "All"
+  chip and colour swatch. On the stored rel01 screens it then flagged one control of 90 screens, and it was real
+  (`onClick={() => {}}` on a paywall's Start Membership).
+- **EVL-01** (`eval/run.ts`, the owner's call: evals cost too much): by default 4 briefs × 6 screens; `--full` for all
+  eight at the planner's size, `--screens N`. Metrics `deadPerScreen`, `allWork`.
+- Verified: a test screen with three working and three dead controls → exactly the three dead ones; eval fun04b
+  (4 × 6, GPT-6 Luna): every control on 24/24 screens works, 0 dead, clean 95.8%, problems 0.08 a screen, 80 s an
+  app, no crash. `npm run check` and `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (7)
 
 ### REL-01: a crashed screen is repaired, the store always arrives, the title lint stops crying wolf

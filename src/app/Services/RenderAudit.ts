@@ -97,14 +97,25 @@ addEventListener('message', (e) => {
     platform = 'material'
     f.contentWindow.postMessage({ type: 'od:look', accent: ${JSON.stringify(accent)}, dark: ${dark}, platform: 'material' }, '*')
     setTimeout(ask, 1500)
-  } else document.getElementById('out').textContent = JSON.stringify(got)
+  } else {
+    // FUN-04: back to iOS (Material's ripples would make every tap look alive), then every control is tapped.
+    f.contentWindow.postMessage({ type: 'od:look', accent: ${JSON.stringify(accent)}, dark: ${dark}, platform: 'ios' }, '*')
+    setTimeout(() => f.contentWindow.postMessage({ type: 'od:taps' }, '*'), 1200)
+  }
 })
+addEventListener('message', (e) => {
+  if (e.source !== f.contentWindow || e.data?.type !== 'od:tapped') return
+  got.taps = e.data
+  document.getElementById('out').textContent = JSON.stringify(got)
+})
+// A kit from before the tap audit never answers od:taps: the measurements alone are written after a while.
+setTimeout(() => { if (!document.getElementById('out').textContent && got.material) document.getElementById('out').textContent = JSON.stringify(got) }, 9000)
 f.onload = () => setTimeout(ask, 1800)
 </script></body>`
 
 function dumpDom(url: string, signal?: AbortSignal): Promise<string> {
   return withChrome(() => new Promise((ok) => {
-    const child = spawn(CHROME, ['--headless=new', '--disable-gpu', `--window-size=${W + 40},${H}`, '--virtual-time-budget=6000', '--dump-dom', url], { stdio: ['ignore', 'pipe', 'ignore'] })
+    const child = spawn(CHROME, ['--headless=new', '--disable-gpu', `--window-size=${W + 40},${H}`, '--virtual-time-budget=14000', '--dump-dom', url], { stdio: ['ignore', 'pipe', 'ignore'] })
     let dom = ''
     child.stdout.on('data', (d) => (dom += d))
     const kill = () => child.kill('SIGKILL')
@@ -130,13 +141,15 @@ export async function auditScreen(source: string, look: AppLook, slug: string, s
     const dom = await dumpDom(`${origin}/h/${token}`, signal)
     const raw = dom.match(/<pre id="out">([\s\S]*?)<\/pre>/)?.[1]
     if (!raw) return null
-    const reply = JSON.parse(decode(raw)) as Record<'ios' | 'material', { findings?: unknown; error?: unknown } | undefined>
+    const reply = JSON.parse(decode(raw)) as Record<'ios' | 'material' | 'taps', { findings?: unknown; error?: unknown } | undefined>
     if (!reply.ios || reply.ios.error) return null
     const ios = parseAudit(reply.ios.findings)
     const seen = new Set(ios.map((f) => `${f.rule}|${f.where}`))
     // What only Android shows is said so: the model fixes it without breaking the iOS look.
     const android = reply.material && !reply.material.error ? parseAudit(reply.material.findings).filter((f) => !seen.has(`${f.rule}|${f.where}`)).map((f) => ({ ...f, where: `${f.where} on Android` })) : []
-    return [...ios, ...android].slice(0, 12)
+    // FUN-04: the controls that did nothing when tapped.
+    const dead = reply.taps && !reply.taps.error ? parseAudit(reply.taps.findings) : []
+    return [...ios, ...android].slice(0, 12 - Math.min(6, dead.length)).concat(dead.slice(0, 6))
   } catch {
     return null
   } finally {

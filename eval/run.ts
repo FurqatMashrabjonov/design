@@ -3,6 +3,7 @@
 // metrics.json and index.html (a contact sheet with the numbers).
 //   DB_FRESH=1 LLM_PROVIDER=claude-cli node --env-file=.env --import ./scripts/alias-hook.mjs eval/run.ts --label base
 //   flags: --only id,id  --concurrency 2  --dark  --vs <label> (print metric deltas against an earlier run)
+//          default: 4 apps × 6 screens (EVL-01); --full for all 8 briefs at the planner's size; --screens N
 //          --reshoot (no generation: render the stored screens of --label again, e.g. after a kit fix)
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { spawn } from 'node:child_process'
@@ -22,7 +23,11 @@ import { ImageCache } from '@/app/Models/ImageCache'
 import { auditScreen } from '@/app/Services/RenderAudit'
 import { sourceMetrics } from './metrics'
 
-const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false }, model: { type: 'string' }, briefs: { type: 'string', default: 'eval/briefs.json' } } })
+const { values: opt } = parseArgs({ options: { label: { type: 'string', default: new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') }, only: { type: 'string' }, concurrency: { type: 'string', default: '2' }, dark: { type: 'boolean', default: false }, vs: { type: 'string' }, reshoot: { type: 'boolean', default: false }, model: { type: 'string' }, briefs: { type: 'string', default: 'eval/briefs.json' }, full: { type: 'boolean', default: false }, screens: { type: 'string', default: '6' } } })
+// EVL-01 (the owner's call, 2026-10-07: evals cost too much): by default four apps of six screens — about a quarter of
+// the full run. `--full` runs all eight briefs at the size the planner picks; `--only` still picks briefs.
+if (!opt.full && !opt.only) opt.only = 'habits,bank,food,meditate'
+const briefText = (brief: string) => (opt.full ? brief : `${brief} — ${opt.screens} screens in all.`)
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 const OUT = resolve('eval/out', opt.label!)
 const briefs = (JSON.parse(readFileSync(opt.briefs, 'utf8')) as { id: string; brief: string }[]).filter((b) => !opt.only || opt.only.split(',').includes(b.id))
@@ -101,7 +106,7 @@ async function runBrief(b: { id: string; brief: string }): Promise<BriefResult> 
   await Project.create({ id: projectId, name: 'Untitled', designSystem: 'konsta', device: 'mobile' })
   const t0 = Date.now()
   await ctx.run(b.id, async () => {
-    const res = await PlanController.stream(new Request('http://eval/api', { method: 'POST', body: JSON.stringify({ projectId, brief: b.brief }) }))
+    const res = await PlanController.stream(new Request('http://eval/api', { method: 'POST', body: JSON.stringify({ projectId, brief: briefText(b.brief) }) }))
     await res.text()
   })
   const seconds = +((Date.now() - t0) / 1000).toFixed(1)
@@ -156,6 +161,9 @@ function summary(results: BriefResult[]) {
     onboardingByKind: results.reduce<Record<string, number>>((m, r) => (r.onboarding ? ((m[r.onboarding] = (m[r.onboarding] ?? 0) + 1), m) : m), {}),
     problemsPerScreen: +(ok.reduce((a, s) => a + (s.problems ?? 0), 0) / Math.max(1, ok.length)).toFixed(2),
     cleanShare: +(ok.filter((s) => s.problems === 0).length / Math.max(1, ok.length)).toFixed(3),
+    // FUN-04: controls that did nothing when the tap audit pressed them, per screen, and the share of screens with none.
+    deadPerScreen: +(ok.reduce((a, s) => a + (s.problemRules ?? []).filter((r) => r === 'dead-control').length, 0) / Math.max(1, ok.length)).toFixed(2),
+    allWork: +(ok.filter((s) => !(s.problemRules ?? []).includes('dead-control')).length / Math.max(1, ok.length)).toFixed(3),
   }
 }
 

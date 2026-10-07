@@ -9,7 +9,8 @@ export const AppContext = Ctx.Provider
 /** The photos the host looked up for this screen, by normalised query (PhotoService.photoKey). */
 export const usePhotos = () => useContext(Ctx).photos ?? {}
 
-const ask = (action, id, params) => window.parent !== window && window.parent.postMessage({ type: 'od:nav', action, id, params }, '*')
+// FUN-04: every nav request counts as something a tap did (the tap audit reads __odActs).
+const ask = (action, id, params) => { globalThis.__odActs = (globalThis.__odActs ?? 0) + 1; return window.parent !== window && window.parent.postMessage({ type: 'od:nav', action, id, params }, '*') }
 
 // FUN-02: in the studio each screen is its own frame, opened once; what a push carried (a detail's item id) arrives
 // later as od:params from the host, and a frame that loads after the push asks for it.

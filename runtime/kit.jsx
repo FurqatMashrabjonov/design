@@ -67,6 +67,7 @@ export async function mount(Screen, { dark = false, accent = '#5e5ce6', platform
   reportHeight(el)
   answerSerialize()
   answerAudit()
+  answerTaps()
   answerPick()
   // The host changes the look in place (od:look) — iOS ↔ Android, light ↔ dark, accent — so a theme switch
   // re-renders this screen instead of reloading the page. Only the parent is listened to, and only valid values pass.
@@ -202,3 +203,64 @@ function answerAudit() {
     window.parent.postMessage({ type: 'od:audited', findings, error, material: !!document.querySelector('.k-material') }, '*')
   })
 }
+
+// FUN-04: the server asks (od:taps) whether every control does something. Each visible button, link and row is
+// tapped in turn; a tap that changes nothing on the page, asks for no navigation and changes no store is a dead
+// control. A control whose surroundings are already changing on their own (a timer) is not judged. Only the parent
+// may ask; the answer names each dead control by its text, as the render check names its findings.
+function answerTaps() {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+  const label = (el) => (el.innerText || el.getAttribute('aria-label') || el.getAttribute('title') || '').trim().replace(/\s+/g, ' ').slice(0, 48)
+  // Only what a person can see and reach: on the page (a closed sheet waits below the frame), not faded out with a
+  // closed dialog (checkVisibility follows the ancestors' opacity), and taking the pointer.
+  const visible = (el) => {
+    const r = el.getBoundingClientRect(); const cs = getComputedStyle(el)
+    if (!(r.width > 4 && r.height > 4) || r.top >= window.innerHeight || r.bottom <= 0 || r.right <= 0 || r.left >= window.innerWidth) return false
+    if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true, contentVisibilityAuto: true })) return false
+    const hit = document.elementFromPoint(Math.min(window.innerWidth - 1, r.left + r.width / 2), Math.min(window.innerHeight - 1, r.top + r.height / 2))
+    return cs.pointerEvents !== 'none' && !!hit && (hit === el || el.contains(hit) || hit.contains(el))
+  }
+  window.addEventListener('message', async (e) => {
+    if (e.source !== window.parent || !e.data || e.data.type !== 'od:taps') return
+    const dead = []
+    const alive = new Set()
+    let tried = 0
+    try {
+      const controls = [...document.querySelectorAll('button, a, [role="button"]')].filter((el) =>
+        !el.closest('.k-tabbar, .k-toolbar, [class*="k-tabbar"]') && !el.closest('[data-od-crash]') && !el.disabled && el.getAttribute('aria-disabled') !== 'true' && !el.closest('[aria-disabled="true"]') && visible(el))
+      let changes = 0
+      const watch = new MutationObserver((list) => (changes += list.length))
+      watch.observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true })
+      for (const el of controls.slice(0, 40)) {
+        if (!el.isConnected || !visible(el)) continue
+        changes = 0
+        await wait(60)
+        if (changes) continue // already moving on its own: not judged
+        const acts = globalThis.__odActs ?? 0
+        tried++
+        el.click()
+        await wait(120)
+        if (changes || (globalThis.__odActs ?? 0) !== acts) { alive.add(el); continue }
+        // How it and its sibling options looked at that moment (a later tap may choose another option).
+        const fill = (x) => getComputedStyle(x).backgroundColor
+        const peers = [...(el.parentElement?.children ?? [])].filter((x) => x !== el && x.tagName === el.tagName).map((x) => [x, fill(x)])
+        dead.push({ el, look: fill(el), peers, rule: 'dead-control', where: (label(el) ? '"' + label(el) + '" ' : '') + '(' + (el.closest('.k-list-item') ? 'List row' : el.tagName === 'A' ? 'Link' : 'Button') + ')', detail: 'does nothing when tapped' })
+        if (dead.length >= 8) break
+      }
+      watch.disconnect()
+    } catch (err) {
+      dead.length = 0
+      return window.parent.postMessage({ type: 'od:tapped', findings: [], tried, error: String(err?.message ?? err) }, '*')
+    }
+    // The option already chosen in a group (the "All" chip, the selected colour) changes nothing when tapped again;
+    // a dead control whose sibling of the same kind works is that, not a dead one.
+    // A chosen option also looks chosen: when it was tapped, its fill differed from every sibling option that works.
+    const chosen = (d) => {
+      const working = d.peers.filter(([x]) => alive.has(x))
+      return d.el.getAttribute('aria-pressed') === 'true' || d.el.getAttribute('aria-selected') === 'true' || (working.length > 0 && working.every(([, f]) => f !== d.look))
+    }
+    const findings = dead.filter((d) => !chosen(d)).map(({ el, look, peers, ...f }) => f)
+    window.parent.postMessage({ type: 'od:tapped', findings, tried }, '*')
+  })
+}
+

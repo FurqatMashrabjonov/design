@@ -7,7 +7,7 @@
 // The page is laid out in a frame as tall as its content (as the canvas shows it), so every element is in view
 // and elementFromPoint can tell what is on top.
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value', 'crash'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value', 'crash', 'dead-control'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; where: string; detail: string }
 
@@ -209,6 +209,7 @@ export function auditBrief(findings: AuditFinding[]): string {
     overlap: 'give each its own space; nothing absolute or negative-margin over text',
     'covered-text': 'move the covering element out of the way; no negative margins pulling a card over a heading',
     'low-contrast': 'use a text colour that reads on that background',
+    'dead-control': 'make it work: open what it names (nav.push to a screen, or a Sheet/Dialog/Actions on this screen), call the store action it stands for, or answer with a Toast saying what happened — a control never does nothing',
     crash: 'the screen throws while rendering — fix exactly this error (an identifier that does not exist, a value used as a function); until it renders, nothing else matters',
     'broken-value': 'compute the value from the store or the data correctly (a date from a \'YYYY-MM-DD\' string is new Date(s + \'T00:00:00\'); a missing field gets a fallback) so a real value shows',
     sparse: 'fill the screen with real content from APP DATA (more rows, a second section, a summary) — not filler, not a giant empty illustration',

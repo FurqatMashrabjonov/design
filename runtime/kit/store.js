@@ -25,6 +25,7 @@ function emit(local) {
   view = null
   for (const f of subs) f()
   if (!local) return
+  globalThis.__odActs = (globalThis.__odActs ?? 0) + 1 // FUN-04: a store change is something a tap did
   if (inFrame) window.parent.postMessage({ type: 'od:state', app: key, state }, '*')
   else if (persistKey) {
     try { localStorage.setItem(persistKey, JSON.stringify(state)) } catch {}

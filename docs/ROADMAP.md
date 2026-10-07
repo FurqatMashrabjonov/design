@@ -505,7 +505,8 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | FUN-03 | To'liq ilova: 12 ekrangacha, so'ralgan son aniq hurmat qilinadi | Generatsiya / Funksional ilova | MVP | Tayyor | Kichik | FUN-01 |  |
 | KIT-24 | Premium bloklar 1-to'lqin: Donut, BankCard, AmountPad, CollapsingHeader, MediaPlayer, MiniPlayer, MenuSections, Podium | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-21 | kit24 4–2–2, rubrika 3.00 → 3.10 |
 | KIT-25 | Premium bloklar 2-to'lqin (o'lcham/rang, chipta, QR, tarif jadvali, wheel picker, nafas, kayfiyat, ETA, feed post, story viewer, narx pin xarita, yutuq) | Generatsiya / Kit | Keyin | Rejada | Katta | KIT-24 |  |
-| FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Rejada | O'rta | FUN-01 |  |
+| FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 | fun04b: 24/24 ekranda hamma tugma ishlaydi |
+| EVL-01 | Eval arzon: standart 4 ilova × 6 ekran, --full kerak bo'lsa | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |
 | CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |
 | PAL-04 | Rang qayta: bitta accent, neytral fonlar, gradient ≤1 | Generatsiya / Rang | Keyin | Rejada | O'rta | CLR-01 |  |
 | EXP-07 | Expo eksport (DOM components) | Eksport / Integratsiyalar | Keyin | Rejada | O'rta | CODE-01 |  |

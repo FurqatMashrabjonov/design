@@ -1941,4 +1941,11 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   assert.deepEqual(rules('const { streak, user } = useStore()'), ['store-missing:streak'], 'a name the store does not have')
   assert.equal(storeOf('x\n# APP STORE — y\n```js\nexport const initial = {}\n```\nRead'), 'export const initial = {}\n')
 }
+{
+  // FUN-04: a control the tap audit found doing nothing reaches the repair with what to do about it.
+  const { parseAudit, auditBrief } = await import('../../../lib/render-audit.ts')
+  const f = parseAudit([{ rule: 'dead-control', where: '"Start Membership" (Button)', detail: 'does nothing when tapped' }, { rule: 'made-up', where: 'x', detail: 'y' }])
+  assert.deepEqual(f.map((x) => x.rule), ['dead-control'], 'a dead control is a finding; an unknown rule is not')
+  assert.match(auditBrief(f), /Start Membership.*nav\.push.*Toast/, 'the repair is told how to make it work')
+}
 console.log('ok')
