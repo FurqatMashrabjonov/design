@@ -48,6 +48,10 @@ export function applyStyle(style, accent, dark, root = document.documentElement)
   set('--app-font-display', t.display)
   root.toggleAttribute('data-app-font', !!t.body)
   root.toggleAttribute('data-app-display', !!t.display)
+  // DRK-01: in dark mode a sheet is a raised surface (the card colour) and what sits on it is raised once more, as
+  // iOS's elevated backgrounds are — otherwise a grouped list on a sheet is the sheet's own colour and disappears.
+  set('--app-sheet', dark ? t.card : '')
+  set('--app-card-up', dark ? wash(t.card, 0.08) : '')
   const m = dark ? 'dark' : 'light'
   // iOS: the grouped page and the cards on it.
   set(`--color-ios-${m}-surface`, t.page)

@@ -26,6 +26,8 @@ body { margin: 0; -webkit-font-smoothing: antialiased; overflow: hidden; backgro
 }
 @keyframes od-check-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes od-check-pop { 0% { transform: scale(.82); } 60% { transform: scale(1.08); } 100% { transform: none; } }
+/* DRK-01: a dark sheet keeps the card colour and lifts what is on it one step (styles.js sets both colours). */
+.dark .k-sheet { background-color: var(--app-sheet, #1c1c1e); --color-ios-dark-surface-1: var(--app-card-up); --color-ios-dark-surface-3: var(--app-card-up); --app-card: var(--app-card-up); --color-card: var(--app-card-up); }
 /* A Konsta row (<li>) placed outside a <List> must not grow a list bullet. */
 li { list-style: none; }
 
