@@ -14,6 +14,14 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (6)
+
+### CI removed (the owner's call)
+
+- `.github/workflows/ci.yml` deleted: GitHub Actions was locked over billing and the owner does not want to pay
+  GitHub; the gate stays local — `npm run check` and `npx tsc --noEmit` before every change is reported done
+  (CLAUDE.md), and the eval for generation changes. ROADMAP: INF-08 → Bekor.
+
 ## 2026-10-07 (5)
 
 ### KIT-24: the premium parts are offered by screen name; a screen that misuses the store is told so
