@@ -14,6 +14,32 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (14)
+
+### EMJ-01: emoji are Microsoft's Fluent 3D on every device; the moments that matter move
+
+- **Assets** (`runtime/emoji/`, `scripts/fluent-emoji.py`): all 1,595 Fluent Emoji (MIT) as 96px 3D WebP stills
+  (4.2 MB) and 26 animated heroes from fluentui-emoji-animated as 128px animated WebP (2.9 MB, every other frame) —
+  fire, party popper, star, heart, rocket, clapping, 100, sleeping and others; the animated set has no objects
+  (trophy, books, gift), which stay still. `runtime/emoji-codes.js` lists both sets. Apple's emoji cannot be used this
+  way (their licence); Noto's animated set was weighed and left out to keep one visual family (and it asks for credit).
+- **Drawing** (`runtime/emoji-jsx.js`): the jsx runtime the screens import, and Konsta's `React.createElement`, turn
+  an emoji in text children into `<img class="od-emoji">` sized like a glyph — where React makes the element, so the
+  model's code is never changed and React owns every node. Only emoji that are emoji by default or carry FE0F/ZWJ
+  (©, ™, ★, ↔ stay text); skin tones fall back to the default; an emoji the set lacks stays text; an image that fails
+  becomes the device's emoji. Not inside option/textarea/svg text. `runtime/vite.config.js` aliases
+  `react/jsx-runtime` to it for the whole runtime and copies the images to `dist/emoji`; `/api/rt` serves webp.
+- **Moving**: `Medal({ animated })` and `heroEmoji()` (`ui.jsx`); `AchievementUnlock`'s medal and `EmptyState`'s
+  emoji move when the set has them (still in `?static` pictures).
+- **Everywhere it shows**: the render check and pictures allow the runtime's own images (`RenderAudit` CSP); the React
+  export ships `src/emoji-jsx.js`, the emoji it uses (screens, store, kit) in `public/emoji` and aliases the jsx
+  runtime; the one-file HTML export carries those stills inline as data URLs.
+- Verified: a live screen drew its 10 emoji as Fluent images (all loaded); a picture of the awards gallery shows the 3D
+  set; the one-file export drew 6/6 inline; the achievement's medal loaded `emoji/anim/1f525.webp` and moves; the
+  React export still builds in `npm run check`. Judge on the k26 screens re-shot (no model calls): 3 ties ("only the
+  emoji set differs, which neither helps nor hurts") and one loss to a flaky picture (a list missing from one shot,
+  present when re-shot). `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (13)
 
 ### KIT-26: wave 2b offered by screen name

@@ -5,7 +5,8 @@
 // `react`, `react/jsx-runtime` and `react-dom/client` are CommonJS, and `export *` from CommonJS gives an entry with no
 // static exports (import maps need them) — so those three entry files are (re)written here with every name spelled out.
 import { createRequire } from 'node:module'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, cpSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -16,7 +17,8 @@ const named = (pkg) => {
   return `export { ${names.join(', ')} } from '${pkg}'\n`
 }
 writeFileSync('runtime/react.js', named('react') + "export { default } from 'react'\n")
-writeFileSync('runtime/jsx-runtime.js', named('react/jsx-runtime'))
+// EMJ-01: the jsx runtime screens import draws emoji as Fluent 3D images (runtime/emoji-jsx.js).
+writeFileSync('runtime/jsx-runtime.js', "export { Fragment, jsx, jsxs } from './emoji-jsx.js'\n")
 writeFileSync('runtime/react-dom-client.js', named('react-dom/client'))
 
 // lucide-react's index: `export { default as Bell, default as BellIcon, default as LucideBell } from './icons/bell.mjs'`
@@ -40,8 +42,14 @@ export default defineConfig({
         this.emitFile({ type: 'asset', fileName: 'exports.json', source: JSON.stringify(exports) })
         this.emitFile({ type: 'asset', fileName: 'lucide-map.json', source: JSON.stringify(lucideMap) })
       },
+      // EMJ-01: the Fluent emoji images sit beside the modules (/api/rt/v…/emoji/<key>.webp).
+      closeBundle() {
+        cpSync('runtime/emoji', 'runtime/dist/emoji', { recursive: true })
+      },
     },
   ],
+  // EMJ-01: Konsta and the kit render through the same emoji-drawing jsx runtime as the screens.
+  resolve: { alias: [{ find: /^react\/jsx-runtime$/, replacement: fileURLToPath(new URL('./emoji-jsx.js', import.meta.url)) }] },
   define: { 'process.env.NODE_ENV': '"production"' },
   build: {
     outDir: 'runtime/dist',

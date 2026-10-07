@@ -66,7 +66,7 @@ function start(): Promise<Local> {
       // The screen is in a sandboxed (opaque-origin) frame, so its own server is named rather than 'self'.
       const me = `http://${req.headers.host}`
       const csp = url.startsWith('/s/')
-        ? `default-src 'none'; script-src ${me} 'unsafe-inline' 'unsafe-eval' blob:; style-src ${me} 'unsafe-inline'; font-src ${me} data:; img-src https://images.pexels.com data: blob:; connect-src 'none'; frame-src 'none'`
+        ? `default-src 'none'; script-src ${me} 'unsafe-inline' 'unsafe-eval' blob:; style-src ${me} 'unsafe-inline'; font-src ${me} data:; img-src https://images.pexels.com ${me} data: blob:; connect-src 'none'; frame-src 'none'`
         : `default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src ${me}`
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': csp }).end(page)
     })

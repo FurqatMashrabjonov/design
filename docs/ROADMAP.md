@@ -506,6 +506,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | KIT-24 | Premium bloklar 1-to'lqin: Donut, BankCard, AmountPad, CollapsingHeader, MediaPlayer, MiniPlayer, MenuSections, Podium | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-21 | kit24 4–2–2, rubrika 3.00 → 3.10 |
 | KIT-25 | Premium bloklar 2a: PlanCompare, SizePicker, SwatchPicker, Ticket, QRCode, LiveETA, BreathTimer, FeedPost | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-24 | k25 3–1–0; Size/Swatch o'lchandi, qolganlari nom bo'yicha |
 | KIT-26 | Premium bloklar 2b: AchievementUnlock, MoodPicker, StoryViewer, WheelPicker, PriceMap | Generatsiya / Kit | MVP | Tayyor | O'rta | KIT-25 | Nom bo'yicha hint; kichik eval'da ekran chiqmadi |
+| EMJ-01 | Emoji: Fluent 3D hamma qurilmada, asosiy lahzalarda animatsiya | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
 | FUN-04 | Tap audit: headless Chrome har tugmani bosib, o'lik control'larni modelga qaytaradi | Generatsiya / Funksional ilova | MVP | Tayyor | O'rta | FUN-01 | fun04b: 24/24 ekranda hamma tugma ishlaydi |
 | EVL-01 | Eval arzon: standart 4 ilova × 6 ekran, --full kerak bo'lsa | Generatsiya / Sifat | MVP | Tayyor | Kichik |  |  |
 | CLR-01 | Generatsiya faqat Konsta default rangi (#007aff, Clean); user panelda o'zgartiradi | Generatsiya / Rang | MVP | Tayyor | Kichik |  |  |

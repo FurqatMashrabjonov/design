@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, Glass, List, ListItem, Preloader } from 'konsta/react'
 import { ArrowDown, ChevronLeft, ChevronRight, Check, MapPin, Star, Plus, Play, Pause, SkipBack, SkipForward, Delete, Crown, Nfc, X, Plane, Phone, MessageCircle, Heart, Share, Bike } from 'lucide-react'
-import { Dots, Photo, Avatar, Meter, Medal, Confetti, tint, gradient, onColor, cssColor, STATIC } from './ui.jsx'
+import { Dots, Photo, Avatar, Meter, Medal, Confetti, heroEmoji, tint, gradient, onColor, cssColor, STATIC } from './ui.jsx'
 
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
@@ -223,7 +223,7 @@ export function EmptyState({ emoji, icon, color, title, text, action, onAction, 
   return (
     <div className="flex flex-col items-center px-6 py-9 text-center">
       <div className="flex size-24 items-center justify-center rounded-full" style={{ background: tint(color, 14), color: color ?? 'var(--color-primary)', fontSize: 44 }}>
-        {emoji ?? icon}
+        {emoji ? heroEmoji(emoji, !STATIC) : icon}
       </div>
       <div className="mt-5 text-title3">{title}</div>
       <p className="mt-1.5 max-w-[17rem] text-subhead opacity-60">{text}</p>
@@ -1383,7 +1383,7 @@ export function AchievementUnlock({ opened = false, emoji = '🏆', title = '', 
       <div className="absolute inset-0 bg-black/55 vs-fade-in" onClick={onClose} />
       <Confetti run={!STATIC} />
       <div className="relative w-full max-w-xs rounded-[28px] bg-card px-6 pt-8 pb-5 text-center shadow-2xl" style={{ animation: STATIC ? 'none' : 'vs-unlock 520ms cubic-bezier(.2,.9,.3,1.3) both' }}>
-        <div className="flex justify-center" style={{ animation: STATIC ? 'none' : 'vs-medal 900ms cubic-bezier(.2,.8,.2,1) both' }}><Medal emoji={emoji} color={c} size={96} /></div>
+        <div className="flex justify-center" style={{ animation: STATIC ? 'none' : 'vs-medal 900ms cubic-bezier(.2,.8,.2,1) both' }}><Medal emoji={emoji} color={c} size={96} animated /></div>
         <div className="text-footnote font-semibold uppercase tracking-wide mt-5" style={{ color: c }}>Achievement unlocked</div>
         <div className="text-title2 font-bold mt-1">{title}</div>
         {detail && <div className="text-subhead opacity-65 mt-1.5">{detail}</div>}

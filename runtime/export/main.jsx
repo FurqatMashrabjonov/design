@@ -62,6 +62,9 @@ function Navigator() {
   )
 }
 
+// EMJ-01: the Fluent emoji images are in public/emoji.
+globalThis.__odEmojiBase = `${import.meta.env.BASE_URL}emoji/`
+
 // FUN-01: one store for every screen, kept between visits.
 setupStore(store, { id: app.name, persist: true })
 

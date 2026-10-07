@@ -6,7 +6,7 @@ import { RUNTIME_DIR } from '@/app/Services/ScreenCompiler'
 // The screen runtime (React, Konsta, @od/kit, one module per lucide icon), built by `npm run build:runtime`.
 // A screen page runs in an opaque origin (CSP sandbox), so every file answers with CORS *; nothing here is
 // private. Only files under runtime/dist, by a normalised path, are served.
-const TYPES: Record<string, string> = { js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', json: 'application/json' }
+const TYPES: Record<string, string> = { js: 'text/javascript; charset=utf-8', css: 'text/css; charset=utf-8', json: 'application/json', webp: 'image/webp' }
 
 export const Route = createFileRoute('/api/rt/$')({
   server: {

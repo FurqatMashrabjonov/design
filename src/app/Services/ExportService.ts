@@ -15,7 +15,7 @@ const ROOT = process.cwd()
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 const version = (pkg: string) => `^${JSON.parse(read(`node_modules/${pkg}/package.json`)).version}`
 
-export type ExportFile = { name: string; data: string }
+export type ExportFile = { name: string; data: string | Uint8Array }
 type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 type ScreenIn = { id: string; slug: string | null; name: string; html: string; x: number; y: number; screenType: string | null; activeTabId: string | null }
 type ProjectIn = { name: string; theme: string | null; navigation: string | null; plan: string | null }
@@ -67,7 +67,26 @@ ${rules}
 `
 }
 
-export async function exportReact(project: ProjectIn, rows: ScreenIn[]): Promise<ExportFile[]> {
+/** EMJ-01: the Fluent emoji keys an app's sources use (screens, store, kit), each with its animated version if any. */
+async function usedEmoji(sources: string[]): Promise<{ still: string[]; animated: string[] }> {
+  const { STILL, ANIMATED } = (await import('../../../runtime/emoji-codes.js')) as { STILL: Set<string>; ANIMATED: Set<string> }
+  const EMOJI = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}\uFE0F?|[\u{1F3FB}-\u{1F3FF}])*/gu
+  const still = new Set<string>()
+  for (const src of sources) for (const m of src.matchAll(EMOJI)) {
+    const cps = [...m[0]].map((c) => c.codePointAt(0)!).filter((c) => c !== 0xfe0f)
+    const key = [cps, cps.filter((c) => c < 0x1f3fb || c > 0x1f3ff)].map((x) => x.map((c) => c.toString(16)).join('-')).find((k) => STILL.has(k))
+    if (key) still.add(key)
+  }
+  return { still: [...still].sort(), animated: [...still].filter((k) => ANIMATED.has(k)).sort() }
+}
+/** The kit's emoji list for an export; `inline` carries the stills as data URLs (one HTML file has no public folder). */
+const emojiCodes = (u: { still: string[]; animated: string[] }, inline = false) => `// The Fluent emoji (Microsoft, MIT) this app uses, in public/emoji.\nexport const STILL = new Set(${JSON.stringify(u.still)})\nexport const ANIMATED = new Set(${JSON.stringify(inline ? [] : u.animated)})\nexport const DATA = ${inline ? JSON.stringify(Object.fromEntries(u.still.map((k) => [k, `data:image/webp;base64,${readFileSync(join(ROOT, 'runtime/emoji', `${k}.webp`)).toString('base64')}`]))) : 'null'}\n`
+const emojiFiles = (u: { still: string[]; animated: string[] }): ExportFile[] => [
+  ...u.still.map((k) => ({ name: `public/emoji/${k}.webp`, data: new Uint8Array(readFileSync(join(ROOT, 'runtime/emoji', `${k}.webp`))) })),
+  ...u.animated.map((k) => ({ name: `public/emoji/anim/${k}.webp`, data: new Uint8Array(readFileSync(join(ROOT, 'runtime/emoji/anim', `${k}.webp`))) })),
+]
+
+export async function exportReact(project: ProjectIn, rows: ScreenIn[], opts: { inlineEmoji?: boolean } = {}): Promise<ExportFile[]> {
   const theme = parseAppTheme(project.theme)
   const plan = parseAppPlan(project.plan)
   const drawn = rows.filter((s) => s.html).sort((a, z) => a.x - z.x || a.y - z.y)
@@ -92,6 +111,7 @@ export async function exportReact(project: ProjectIn, rows: ScreenIn[]): Promise
     tabs = JSON.parse(project.navigation ?? 'null')?.tabs ?? []
   } catch {}
 
+  const emoji = await usedEmoji([...drawn.map((s) => s.html), plan?.store ?? '', read('runtime/kit/ui.jsx'), read('runtime/kit/blocks.jsx')])
   const importName = (id: string) => `S_${id.replace(/-/g, '_')}`
   const files: ExportFile[] = [
     {
@@ -119,8 +139,12 @@ import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // The screens import their building blocks from '@od/kit' — the kit in src/kit.
-  resolve: { alias: { '@od/kit': fileURLToPath(new URL('./src/kit/index.js', import.meta.url)) } },
+  // The screens import their building blocks from '@od/kit' — the kit in src/kit. Every element goes through
+  // src/emoji-jsx.js, which draws emoji as the Fluent 3D images in public/emoji.
+  resolve: { alias: [
+    { find: '@od/kit', replacement: fileURLToPath(new URL('./src/kit/index.js', import.meta.url)) },
+    { find: /^react\\/jsx-runtime$/, replacement: fileURLToPath(new URL('./src/emoji-jsx.js', import.meta.url)) },
+  ] },
 })
 `,
     },
@@ -164,6 +188,10 @@ The code is yours.
 `,
     },
     { name: 'src/main.jsx', data: read('runtime/export/main.jsx') },
+    // EMJ-01: emoji as Microsoft's Fluent 3D (MIT) — the ones this app uses, in public/emoji.
+    { name: 'src/emoji-jsx.js', data: read('runtime/emoji-jsx.js') },
+    { name: 'src/emoji-codes.js', data: emojiCodes(emoji, opts.inlineEmoji) },
+    ...(opts.inlineEmoji ? [] : emojiFiles(emoji)),
     // FUN-01: the app's data and every change a person can make, shared by all the screens (an older app has none).
     { name: 'src/store.js', data: plan?.store ?? 'export const initial = {}\nexport const actions = {}\n' },
     { name: 'src/kit/store.js', data: read('runtime/kit/store.js') },
@@ -190,7 +218,7 @@ The code is yours.
  * inlined, so it opens from a file, a mail or a chat with nothing beside it. Photos stay links to Pexels.
  */
 export async function exportHtml(project: ProjectIn, rows: ScreenIn[]): Promise<string> {
-  const files = await exportReact(project, rows)
+  const files = await exportReact(project, rows, { inlineEmoji: true })
   const dir = mkdtempSync(join(tmpdir(), 'od-html-'))
   try {
     for (const f of files) {

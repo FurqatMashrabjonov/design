@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import { emojiImage, emojiKey } from '../emoji-jsx.js'
 import { usePhotos } from './nav.jsx'
 import { onColor } from './on-color.js'
 export { onColor }
@@ -238,13 +239,19 @@ export function Dots({ count, active = 0 }) {
 
 /** An award badge in the iOS way: an emoji on a squircle tinted with its colour and a fine ring of it — no gloss, no
  *  glow (the owner's call: the glossy gold disc read as AI slop). `locked` greys it out. */
-export function Medal({ emoji, color = '#ffb800', size = 64, locked = false }) {
+export function Medal({ emoji, color = '#ffb800', size = 64, locked = false, animated = false }) {
   color = cssColor(color)
   return (
     <span className="flex items-center justify-center shrink-0" style={{ width: size, height: size, borderRadius: size * 0.3, fontSize: size * 0.46, background: locked ? 'rgba(120,120,128,.12)' : tint(color, 16), boxShadow: `inset 0 0 0 1.5px ${locked ? 'rgba(120,120,128,.18)' : tint(color, 38)}`, filter: locked ? 'grayscale(1)' : 'none', opacity: locked ? 0.5 : 1 }}>
-      {emoji}
+      {heroEmoji(emoji, animated && !locked && !STATIC)}
     </span>
   )
+}
+
+/** EMJ-01: an emoji at a moment that matters (an award won, an empty state) moves when Fluent has it animated. */
+export function heroEmoji(ch, animated = true) {
+  const key = typeof ch === 'string' ? emojiKey(ch) : null
+  return key && animated ? emojiImage(ch, key, { animated: true }) : ch
 }
 
 /** A real photo of what `q` describes ("grilled chicken salad", "beach villa bali"), looked up by the host.
