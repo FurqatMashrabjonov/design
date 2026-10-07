@@ -14,6 +14,26 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07 (10)
+
+### KIT-25 (wave 2a): seven parts in the kit, not yet in the prompt
+
+- `runtime/kit/blocks.jsx`: `PlanCompare` (a paywall's features × plans table, the recommended plan lit), `SizePicker`
+  (a size grid, sold-out struck through) and `SwatchPicker` (colour swatches, the chosen one ringed and named), `Ticket`
+  (a boarding pass or ticket: route or title, a details grid, a perforated tear line, a QR), `QRCode` (a real code:
+  byte mode, ECC M, versions 1–6, up to 106 bytes, in plain JS — `qrMatrix`), `LiveETA` (minutes large, the steps as a
+  progress line with the current one lit, the courier with message and call), `BreathTimer` (a circle that grows,
+  holds and shrinks with the instruction inside, rounds counting down, tap to start or pause) and `FeedPost` (author,
+  photo with double-tap to like and a heart burst, stats, caption, like/comment/share). `runtime.css`: `vs-heart`.
+- The tap audit (FUN-04) now recognises a chosen option by its outline or ring too, not only its fill (a selected plan
+  card and a ringed colour swatch were called dead).
+- `gallery/plans.jsx`, `product.jsx`, `ticket.jsx`, `tracking.jsx`, `breathe.jsx`, `feed.jsx`.
+- Verified: OpenCV decoded the QR at versions 1, 3, 4 and 6 (a URL, UTF-8 text with arrows, 100 bytes); each gallery
+  screen built and passed the render check; in Chrome on the exported gallery: a swatch and a size chosen updated the
+  title and the button ("Add to bag · US 10"), the breathing circle went Breathe in → Hold → Breathe out with rounds
+  counting, a double-tap on a post sent up the heart and moved 128 → 129. `npm run check` and `npx tsc --noEmit`
+  clean. Not offered to the model until the owner has seen them.
+
 ## 2026-10-07 (9)
 
 ### UI-32: a frame at work gathers its blocks and says what it is doing; no blur

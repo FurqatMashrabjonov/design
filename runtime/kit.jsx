@@ -242,7 +242,8 @@ function answerTaps() {
         await wait(120)
         if (changes || (globalThis.__odActs ?? 0) !== acts) { alive.add(el); continue }
         // How it and its sibling options looked at that moment (a later tap may choose another option).
-        const fill = (x) => getComputedStyle(x).backgroundColor
+        // Chosen shows as a fill, an outline or a ring: compare all three.
+        const fill = (x) => { const cs = getComputedStyle(x); return `${cs.backgroundColor}|${cs.outlineStyle !== 'none' ? cs.outlineColor + cs.outlineWidth : ''}|${cs.boxShadow}` }
         const peers = [...(el.parentElement?.children ?? [])].filter((x) => x !== el && x.tagName === el.tagName).map((x) => [x, fill(x)])
         dead.push({ el, look: fill(el), peers, rule: 'dead-control', where: (label(el) ? '"' + label(el) + '" ' : '') + '(' + (el.closest('.k-list-item') ? 'List row' : el.tagName === 'A' ? 'Link' : 'Button') + ')', detail: 'does nothing when tapped' })
         if (dead.length >= 8) break
