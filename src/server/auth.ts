@@ -7,6 +7,9 @@ import { Project, type ProjectRow } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { RequestContext } from '@/app/Services/RequestContext'
 import { AccessService } from '@/app/Services/AccessService'
+import { ApiKey } from '@/app/Models/ApiKey'
+import { db } from '@/database/connection'
+import { sql } from 'drizzle-orm'
 
 export class HttpError extends Error {
   status: number
@@ -23,7 +26,27 @@ export type SessionUser = { id: string; name: string; email: string; image?: str
 export async function userFrom(request: Request): Promise<SessionUser | null> {
   const s = await auth.api.getSession({ headers: request.headers })
   if (!s) return null
-  const u = s.user as typeof s.user & { role?: string | null; banned?: boolean | null; banExpires?: Date | null }
+  return admitted(s.user as AuthUser)
+}
+
+type AuthUser = { id: string; name: string; email: string; image?: string | null; role?: string | null; banned?: boolean | null; banExpires?: Date | null }
+
+/** MCP-01: the person an `Authorization: Bearer ss_…` API key belongs to, under the same rules as a session — banned
+ *  or (in waitlist mode) not an admin counts as nobody. */
+export async function userFromApiKey(request: Request): Promise<SessionUser | null> {
+  const m = /^Bearer\s+(ss_\S+)$/.exec(request.headers.get('authorization') ?? '')
+  const id = m && (await ApiKey.userOf(m[1]!))
+  return id ? userFromId(id) : null
+}
+
+/** A person by id (an API key's owner, a signed link's subject), under the same admission rules as a session. */
+export async function userFromId(id: string): Promise<SessionUser | null> {
+  const u = (await db.execute(sql`SELECT id, name, email, image, role, banned, ban_expires AS "banExpires" FROM "user" WHERE id = ${id}`)).rows[0] as AuthUser | undefined
+  return u ? admitted(u) : null
+}
+
+/** Who may act: not banned, and an admin while the app is waitlist-only. */
+async function admitted(u: AuthUser): Promise<SessionUser | null> {
   if (u.banned && (!u.banExpires || new Date(u.banExpires) > new Date())) return null
   // ACC-02: in waitlist mode only an admin is signed in — a session from before the switch counts as signed out.
   const admin = isAdmin(u)

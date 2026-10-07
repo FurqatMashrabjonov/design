@@ -12,6 +12,7 @@ import { CreditService } from '@/app/Services/CreditService'
 import { BillingController } from '@/app/Http/Controllers/BillingController'
 import { PRODUCTS } from '@/lib/credit-prices'
 import { Credit } from '@/app/Models/Credit'
+import { ApiKey } from '@/app/Models/ApiKey'
 import { requireProject, requireScreen, requireUser, userFrom } from './auth'
 import { publicOrigin } from './guard'
 import { AccessService } from '@/app/Services/AccessService'
@@ -205,3 +206,17 @@ export const rateScreen = createServerFn({ method: 'POST' })
   .validator((d: unknown) => ({ projectId: idOf(obj(d).projectId), screenId: idOf(obj(d).screenId), value: obj(d).value === null ? null : oneOf(obj(d).value, ['up', 'down'] as const) }))
   .handler(async ({ data }) => (await requireProject(data.projectId), FeedbackController.rate(data)))
 
+
+/** MCP-01: personal API keys for the MCP endpoint (/connect). The plain key is returned once, on create. */
+export const listApiKeys = createServerFn({ method: 'GET' }).handler(async () => {
+  const user = await requireUser()
+  return { keys: (await ApiKey.list(user.id)).filter((k) => !k.revokedAt) }
+})
+
+export const createApiKey = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ name: str(obj(d).name ?? '', 60) }))
+  .handler(async ({ data }) => ApiKey.create((await requireUser()).id, data.name))
+
+export const revokeApiKey = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => ({ id: idOf(obj(d).id) }))
+  .handler(async ({ data }) => ({ ok: await ApiKey.revoke((await requireUser()).id, data.id) }))

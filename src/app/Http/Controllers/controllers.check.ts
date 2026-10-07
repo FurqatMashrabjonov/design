@@ -1807,4 +1807,67 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   PaymentsService.clear()
 }
 
+{
+  // MCP-01: an API key stands for its owner on /api/mcp; a signed link for a download; the tools see only the owner's
+  // projects, and generation pays through the same guard as the studio.
+  const { sql } = await import('drizzle-orm')
+  const { db } = await import('../../../database/connection.ts')
+  const { user } = await import('../../../database/schema.ts')
+  const { Credit } = await import('../../Models/Credit.ts')
+  process.env.ACCESS_MODE = 'open' // the block above leaves the panel on waitlist-only
+  const { ApiKey } = await import('../../Models/ApiKey.ts')
+  const { userFromApiKey } = await import('../../../server/auth.ts')
+  const { signLink, verifyLink } = await import('../../../lib/signed-link.ts')
+  const { mcpServer } = await import('../../Services/McpService.ts')
+  const { PlanRuns } = await import('../../Services/PlanRuns.ts')
+  const { Client } = await import('@modelcontextprotocol/sdk/client/index.js')
+  const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js')
+  await db.insert(user).values([{ id: 'mcp-u', name: 'Mcp', email: 'mcp@x.uz', createdAt: new Date(), updatedAt: new Date() }])
+  const bearer = (k: string) => new Request('http://test/api/mcp', { headers: { authorization: `Bearer ${k}` } })
+  const { key, row } = await ApiKey.create('mcp-u', 'laptop')
+  assert.equal((await userFromApiKey(bearer(key)))?.id, 'mcp-u', 'a live key is its owner')
+  assert.equal(await userFromApiKey(bearer(key + 'x')), null, 'a wrong key is nobody')
+  assert.equal(await userFromApiKey(new Request('http://test/api/mcp')), null, 'no key is nobody')
+  assert.ok(!JSON.stringify(await db.execute(sql`SELECT * FROM api_keys`)).includes(key), 'only a hash of the key is stored')
+  await ApiKey.revoke('mcp-u', row.id)
+  assert.equal(await userFromApiKey(bearer(key)), null, 'a revoked key never works again')
+
+  const t = signLink('mcp-u', 'export:p1', 600, 1000)
+  assert.equal(verifyLink(t, 'export:p1', 1500), 'mcp-u')
+  assert.equal(verifyLink(t, 'export:p2', 1500), null, 'a link is for one project')
+  assert.equal(verifyLink(t, 'export:p1', 1601), null, 'and stops working')
+  assert.equal(verifyLink(t.replace(/.$/, (c) => (c === 'A' ? 'B' : 'A')), 'export:p1', 1500), null, 'and cannot be forged')
+
+  const client = new Client({ name: 'check', version: '1' })
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  await mcpServer({ id: 'mcp-u', name: 'Mcp', email: 'mcp@x.uz', admin: false }, 'http://test').connect(a)
+  await client.connect(b)
+  const call = async (name: string, args: Record<string, unknown> = {}) => {
+    const r = (await client.callTool({ name, arguments: args })) as { content: { type: string; text: string }[]; isError?: boolean }
+    return { error: r.isError ? r.content[0]!.text : null, data: r.isError ? null : JSON.parse(r.content[0]!.text) }
+  }
+  assert.ok((await client.listTools()).tools.some((x) => x.name === 'create_app'))
+  assert.equal((await call('get_project', { project_id: 'p-detach' })).error, 'Project not found', "someone else's project is not found")
+  reply = (req) => planReply(req) ?? sse(page('Drawn'))
+  const broke = await call('create_app', { brief: 'todo app' })
+  assert.match(broke.error!, /Not enough credits/, 'no credits, no app')
+  assert.equal((await call('list_projects')).data.length, 0, 'and no empty project is left behind')
+  await Credit.add({ userId: 'mcp-u', delta: 1000, kind: 'admin', ref: 'mcp-test' })
+  const made = await call('create_app', { brief: 'todo app' })
+  const pid = made.data.project_id as string
+  for (let i = 0; i < 100 && PlanRuns.running(pid); i++) await new Promise((r) => setTimeout(r, 20))
+  const got = await call('get_project', { project_id: pid })
+  assert.equal(got.data.running, false)
+  assert.equal(got.data.screens.filter((s: { ready: boolean }) => s.ready).length, 3, 'the detached run drew every planned screen')
+  assert.ok(await Credit.balance('mcp-u') < 1000, 'and it was paid for')
+  const screen = got.data.screens[0].id
+  assert.match((await client.callTool({ name: 'get_screen', arguments: { project_id: pid, screen_id: screen } }) as { content: { text: string }[] }).content[0]!.text, /export default function/, "a screen's code")
+  const ex = await call('export_project', { project_id: pid })
+  if (ex.data) assert.equal(verifyLink(new URL(ex.data.url).searchParams.get('k'), `export:${pid}`), 'mcp-u', 'export is a signed link for this project')
+  assert.match((await call('share_project', { project_id: pid, on: true })).data.share, /^http:\/\/test\/s\//)
+  await client.close()
+  reply = () => sse(page('Screen'))
+  delete process.env.ACCESS_MODE
+}
+
 console.log('ok')

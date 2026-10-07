@@ -1,7 +1,7 @@
 // API routes that stream generation (OWN-03): the caller must be signed in and own the project
 // the body names. The body is read here once and handed to the controller unchanged.
 import { Project } from '@/app/Models/Project'
-import { userFrom } from './auth'
+import { userFrom, type SessionUser } from './auth'
 import { UsageService } from '@/app/Services/UsageService'
 import { CreditService } from '@/app/Services/CreditService'
 import '@/app/Services/SecretService' // ADM-13: model calls take their key from the panel, else .env
@@ -29,9 +29,11 @@ export function crossSite(request: Request, publicUrl = process.env.BETTER_AUTH_
   return !ours.has(origin)
 }
 
-export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>): Promise<Response> {
-  if (crossSite(request)) return new Response('Cross-site request refused', { status: 403 })
-  const user = await userFrom(request)
+/** MCP-01: `as` is a caller already authenticated another way (an API key on the MCP endpoint) — then there is no
+ *  browser, so no cross-site check and no session; every limit, credit hold and settlement below still applies. */
+export async function guardGeneration(request: Request, run: (req: Request, userId: string, finish: () => void) => Promise<Response>, as?: SessionUser): Promise<Response> {
+  if (!as && crossSite(request)) return new Response('Cross-site request refused', { status: 403 })
+  const user = as ?? (await userFrom(request))
   if (!user) return new Response('Sign in to continue', { status: 401 })
   const text = await request.text()
   // REG-01: two reference images at ~1 MB each, plus the prompt; nothing bigger is read further.

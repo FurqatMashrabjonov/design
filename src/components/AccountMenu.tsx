@@ -1,5 +1,5 @@
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { CreditCard, LifeBuoy, LogOut, MessageSquare, Shield } from 'lucide-react'
+import { CreditCard, LifeBuoy, LogOut, MessageSquare, Plug, Shield } from 'lucide-react'
 import { usePayments } from '@/routes/__root'
 import { openFeedback } from '@/components/Feedback'
 import { authClient } from '@/lib/auth-client'
@@ -43,6 +43,10 @@ export function AccountMenu() {
               <CreditCard /> Billing
             </DropdownMenuItem>
           )}
+          {/* MCP-01: API keys for coding agents. */}
+          <DropdownMenuItem onSelect={() => navigate({ to: '/connect' })}>
+            <Plug /> Connect AI agent
+          </DropdownMenuItem>
           {/* FDB-10: say what you think, any time. */}
           <DropdownMenuItem onSelect={() => openFeedback()}>
             <MessageSquare /> Send feedback

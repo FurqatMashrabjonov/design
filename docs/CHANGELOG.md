@@ -14,6 +14,37 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-07
+
+### MCP-01: Screenspell as an MCP server, with personal API keys
+
+- `POST /api/mcp` (`routes/api/mcp.ts`): Streamable HTTP, stateless, JSON answers (`@modelcontextprotocol/sdk`
+  1.32.1, `WebStandardStreamableHTTPServerTransport`). The caller is the owner of an `Authorization: Bearer ss_…` key;
+  no key or a revoked one is a 401 with `WWW-Authenticate`.
+- `app/Services/McpService.ts`: eight tools bound to that person — `list_projects`, `get_project`, `get_screen` (the
+  code as the export ships it + a PNG from `ShotService`), `create_app` (returns at once; the plan run is detached, as
+  when a tab closes), `edit_screen`, `add_screen` (run to the end), `export_project`, `share_project`. Another person's
+  project is "not found". Generation goes through `guardGeneration` (new third argument: an already-authenticated
+  user skips the cross-site and session checks; limits, credit hold and settle are unchanged). A refused
+  `create_app` deletes the project it made.
+- `export_project` hands out a 10-minute signed link (`lib/signed-link.ts`, HMAC with `BETTER_AUTH_SECRET`) to the
+  same `/api/export` route, which now accepts `?k=` beside the session — so Free's export count and the plan rule hold.
+- API keys: migration `0013_api_keys`, `app/Models/ApiKey.ts` (`ss_` + 32 random bytes, only the SHA-256 stored, 10
+  live keys at most, `last_used_at` at most once a minute), `server/auth.ts` (`userFromApiKey`, `userFromId`; one
+  `admitted` check for ban and waitlist mode shared with sessions), `server/fns.ts` (`listApiKeys`, `createApiKey`,
+  `revokeApiKey`).
+- `/connect` page (Account → Connect AI agent): make, copy once, revoke keys; the Claude Code command and the
+  `mcp.json` for Cursor and others with the key filled in.
+- `zod` is a direct dependency now (it was only transitive).
+- Verified: `controllers.check.ts` (key → owner, wrong/revoked/missing key → nobody, only a hash stored; signed link
+  for one project, expires, cannot be forged; in-memory MCP client: tools listed, another's project not found,
+  `create_app` with no credits refused and no project left, with credits the detached run draws all three screens and
+  is paid for, `get_screen` code, export link verifies, share link). On the dev server: curl initialize / tools/list /
+  list_projects / get_project / get_screen (code + PNG) / export link downloads a 119 KB zip, a tampered link 404;
+  real Claude Code (`claude -p --mcp-config`) listed the apps and the newest app's screens. `/connect` in Chrome:
+  create shows the key once and fills the commands; revoke removes it and the key then gets 401. `npm run check` and
+  `npx tsc --noEmit` clean.
+
 ## 2026-10-04 (4)
 
 ### ACC-07: a shared preview stops offering the waitlist once the app is open

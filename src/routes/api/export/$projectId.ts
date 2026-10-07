@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { userFrom } from '@/server/auth'
+import { userFrom, userFromId } from '@/server/auth'
+import { verifyLink } from '@/lib/signed-link'
 import { Project } from '@/app/Models/Project'
 import { Screen } from '@/app/Models/Screen'
 import { CreditService } from '@/app/Services/CreditService'
@@ -11,11 +12,17 @@ import { zip } from '@/lib/zip'
 // file (CODE-02). Only the owner (or an admin); anyone else gets the same 404 as a missing project. Export follows the plan (BIL-14): a plan
 // without it gets 402 { error: 'plan', limit: 'export' }, which the page turns into the upgrade dialog.
 // `?a=<hex>&p=ios|material&dark=1` exports the look the studio shows (validated), else the stored one.
+const userFromLink = async (token: string | null, projectId: string) => {
+  const sub = verifyLink(token, `export:${projectId}`)
+  return sub ? userFromId(sub) : null
+}
+
 export const Route = createFileRoute('/api/export/$projectId')({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const user = await userFrom(request)
+        // MCP-01: an agent downloads with the short-lived signed link `export_project` gave it (?k=), not a session.
+        const user = (await userFrom(request)) ?? (await userFromLink(new URL(request.url).searchParams.get('k'), params.projectId))
         const project = user ? (user.admin ? await Project.find(params.projectId) : await Project.findOwned(params.projectId, user.id)) : undefined
         if (!user || !project) return new Response('Not found', { status: 404 })
         // PRC-02: Free has a few tries; one is taken only once the file is built, so a failed build costs none.

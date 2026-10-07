@@ -500,7 +500,10 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | EXP-06 | React yoki boshqa framework kodiga eksport | Eksport / Integratsiyalar | Bekor | Rejada |  |  |  |
 | INF-09 | Tab–ekran bog'lanishi saqlanmagan eski loyihalarni tuzatish | Infratuzilma / Ma'lumotlar bazasi | Keyin | Rejada | Kichik |  |  |
 | QA-03 | To'liq avtomatlashtirilgan brauzer testlari | Sinov / To'liq yo'l sinovi | Keyin | Rejada | O'rta | QA-01 |  |
-| AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | Keyin | Rejada | Katta | AUTH-02, BIL-04 |  |
+| AGT-01 | Agentlar dizayn yaratishi uchun MCP server va API kalitlar | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AUTH-02, BIL-04 | MCP-01 |
+| MCP-01 | MCP server (/api/mcp) + API kalitlar (/connect): 8 tool, kredit va eksport qoidalari bilan | Agentlar uchun kirish / MCP | MVP | Tayyor | Katta | AGT-01 |  |
+| MCP-02 | MCP OAuth (@better-auth/mcp) — kalitsiz ulanish, Claude.ai connector | Agentlar uchun kirish / MCP | Keyin | Rejada | O'rta | MCP-01 |  |
+| MCP-03 | MCP launch: docs sahifa, MCP kataloglari, post/video | Agentlar uchun kirish / MCP | Keyin | Rejada | Kichik | MCP-01 |  |
 | HIG-04 | Loyihada platforma tanlovi: iOS / Android | Generatsiya / Qurilmalar | Keyin | Rejada | O'rta |  |  |
 | FB-03 | Yoqqan ekranlar few-shot kutubxonasiga ko'tariladi | Generatsiya / Sifat | Keyin | Rejada | O'rta | FB-01 |  |
 | FB-04 | Juftliklardan reward model / fine-tune | Generatsiya / Sifat | Keyin | Rejada | Katta | FB-02 |  |
