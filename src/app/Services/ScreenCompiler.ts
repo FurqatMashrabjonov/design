@@ -114,11 +114,13 @@ function resolveNames(source: string): { source: string; missing: string[] } {
     if (node.type === 'CallExpression' && (node.callee as { type: string }).type === 'Identifier') used.add((node.callee as { name: string }).name)
     for (const [k, v] of Object.entries(node)) if (k !== 'loc' && k !== 'start' && k !== 'end' && typeof v === 'object') walk(v, k)
   })(ast.program)
-  const add: Record<string, string[]> = { 'konsta/react': [], '@od/kit': [], 'lucide-react': [] }
+  const add: Record<string, string[]> = { react: [], 'konsta/react': [], '@od/kit': [], 'lucide-react': [] }
   const missing: string[] = []
   for (const name of used) {
     if (declared.has(name) || !/^[A-Za-z]/.test(name)) continue
-    if (allowed['konsta/react']!.has(name)) add['konsta/react']!.push(name)
+    // A React hook used without its import ("useState is not defined" crashed a screen in production).
+    if (/^use[A-Z]/.test(name) && allowed.react!.has(name)) add.react!.push(name)
+    else if (allowed['konsta/react']!.has(name)) add['konsta/react']!.push(name)
     else if (allowed['@od/kit']!.has(name)) add['@od/kit']!.push(name)
     else if (/^[A-Z]/.test(name) && lucide[name]) add['lucide-react']!.push(name)
     // HIG-10: a capitalised name nothing declares is a component that does not exist — the frame would crash on it.

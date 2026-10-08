@@ -32,6 +32,11 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
   Locally they load from disk in a blink; on prod a canvas of 11 frames asked for them over the network and
   `kit.js` took ~34 s, so frames stayed white and the server's pictures timed out into "crashed". The build now
   writes `runtime/.icons/package.json` with `{ "sideEffects": false }` (measured: 686 → 126 modules).
+- A third, separate one: a Stridewell screen used `useState` without importing it ("useState is not defined"). The
+  compiler already imported a forgotten Konsta part, kit export or icon; it now imports a forgotten React hook too
+  (`resolveNames`, tested). The stored source is unchanged — the fix applies when the screen is compiled.
+- Prod has no Chrome, so the dashboard's pictures fall back to live frames (69 on the dashboard); with the kit at
+  126 modules they draw in ~20 s on a cold cache instead of not at all.
 - Verified: on prod every runtime file loads (a crawl of all 693 modules, CORS present); the failing Loopforge
   screens render locally with their exported code and store; locally a missing runtime file now answers 404 with
   `cache-control: no-store`. `npm run check`, `npx tsc --noEmit` clean.
