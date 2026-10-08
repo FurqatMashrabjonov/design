@@ -72,7 +72,7 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
       const wire = found.render.some((f) => f.rule === 'dead-control')
       const patched = wire ? null : await writePatch(`${asked}\n${PATCH_RULES}`, tally, signal, site).then((r) => applyPatch(jsx, r)).catch(() => null)
       const usable = !!patched && (await compileScreen(linted(patched))).ok
-      console.log(`[repair] ${usable ? 'edits applied' : 'whole file'}`)
+      console.log(`[repair] ${usable ? 'edits applied' : 'whole file'} · render ${found.render.length}${found.render.length ? ` (${[...new Set(found.render.map((f) => f.rule))].join(', ')})` : ''} · lint ${found.lint.length}`)
       const fix = usable ? linted(patched!) : await writeScreen(`${asked} Write the whole file again.`, tally, signal, site).then(linted).catch(() => null)
       if (fix && (await compileScreen(fix)).ok) {
         await resolvePhotos(fix, signal).catch(() => {})
