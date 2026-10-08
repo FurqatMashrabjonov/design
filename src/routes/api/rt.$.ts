@@ -19,7 +19,9 @@ export const Route = createFileRoute('/api/rt/$')({
           const body = await readFile(join(RUNTIME_DIR, withExt))
           return new Response(body, { headers: { 'content-type': TYPES[withExt.split('.').pop()!] ?? 'application/octet-stream', 'access-control-allow-origin': '*', 'cache-control': 'public, max-age=3600', 'x-content-type-options': 'nosniff' } })
         } catch {
-          return new Response('Not found', { status: 404, headers: { 'access-control-allow-origin': '*' } })
+          // no-store: Cloudflare (and the browser) otherwise keep a 404 for hours — one missing chunk while a deploy
+          // switched over left every screen that needed it crashed long after the file was back.
+          return new Response('Not found', { status: 404, headers: { 'access-control-allow-origin': '*', 'cache-control': 'no-store' } })
         }
       },
     },

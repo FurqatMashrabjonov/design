@@ -13,7 +13,7 @@ export type AppLook = { accent: string; dark: boolean; platform: 'ios' | 'materi
 // The runtime's URL carries its build (the mtime of exports.json), so a rebuilt kit is a new URL and the
 // hour-long cache on /api/rt never serves a page the old one.
 let lastBuild = 0
-const runtimeUrl = () => {
+export const runtimeUrl = () => {
   try {
     lastBuild = Math.floor(statSync(join(RUNTIME_DIR, 'exports.json')).mtimeMs)
   } catch {} // mid-rebuild: keep the last build's URL

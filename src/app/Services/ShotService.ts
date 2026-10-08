@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { sql } from 'drizzle-orm'
 import { db } from '@/database/connection'
 import { screenshotScreen } from './RenderAudit'
-import type { AppLook } from './ScreenDocument'
+import { runtimeUrl, type AppLook } from './ScreenDocument'
 import { appLook } from './JsxGenerator'
 import { Project } from '@/app/Models/Project'
 import { parseAppTheme } from '@/lib/app-theme'
@@ -11,13 +11,15 @@ import { parseAppTheme } from '@/lib/app-theme'
 // changed screen or theme makes a new picture and an old one is never shown for it. Pictures are made on first ask
 // (and warmed right after a screen is drawn), one per key however many ask; Chrome itself is capped server-wide
 // (RenderAudit's CHROME_MAX).
+// The runtime's build is in the key too: a picture taken while a deploy was half done (a module 404, "This screen
+// crashed") was kept for good; each new runtime now makes its pictures again, on first ask.
 // ponytail: pictures of screens that changed stay in the table; prune by age if it ever matters (~30-60 KB each).
 
 const inflight = new Map<string, Promise<Buffer | null>>()
 
 export const ShotService = {
   key(source: string, look: AppLook) {
-    return createHash('sha1').update(source).update('\0').update(JSON.stringify([look.accent, look.dark, look.platform, look.style, look.tabs, ...(look.store ? [look.store] : [])])).digest('base64url').slice(0, 24)
+    return createHash('sha1').update(runtimeUrl()).update('\0').update(source).update('\0').update(JSON.stringify([look.accent, look.dark, look.platform, look.style, look.tabs, ...(look.store ? [look.store] : [])])).digest('base64url').slice(0, 24)
   },
 
   /** The picture for this source in this look, made now if it has not been. null when it cannot be made (no Chrome). */

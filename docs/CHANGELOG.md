@@ -14,6 +14,22 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08
+
+### Fix: screens crashed or stayed white in production after the deploy
+
+- Cause: during Railway's switchover a page from the new build asked the old container for the new build's chunks
+  (`/api/rt/v<build>/…` serves whatever build the container has), got a 404, and Cloudflare stored that 404 for four
+  hours (`max-age=14400` on a 404 with no cache header from us) — the browser too. Every screen whose icons needed a
+  missing chunk then crashed ("Failed to fetch dynamically imported module: blob:null/…") or stayed white, long after
+  the files were there; pictures the server took in that window kept the crash for good, because a picture's key
+  did not know the runtime had changed.
+- `src/routes/api/rt.$.ts`: a 404 is `no-store`. `ShotService.key` includes the runtime build (`runtimeUrl`), so
+  each deploy remakes pictures on first ask and no crashed picture outlives its runtime.
+- Verified: on prod every runtime file loads (a crawl of all 693 modules, CORS present); the failing Loopforge
+  screens render locally with their exported code and store; locally a missing runtime file now answers 404 with
+  `cache-control: no-store`. `npm run check`, `npx tsc --noEmit` clean.
+
 ## 2026-10-07 (21)
 
 ### DRK-01: dark sheets are raised surfaces
