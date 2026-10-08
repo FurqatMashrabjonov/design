@@ -1409,6 +1409,13 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
 {
   const { parseAudit, auditBrief, AUDIT_SOURCE } = await import('../../../lib/render-audit.ts')
   // The page-side script is a template string: one unescaped backslash made it unparsable and every check silently empty.
+  // LEAN-01: a repair's edits are placed exactly once each, or not at all (then the whole file is asked for).
+  const { applyPatch } = await import('../../Services/JsxGenerator.ts')
+  const file = "a\nb\nc\nb2\n"
+  assert.equal(applyPatch(file, '<<<<<<< SEARCH\nc\n=======\nC\n>>>>>>> REPLACE'), 'a\nb\nC\nb2\n')
+  assert.equal(applyPatch(file, '<<<<<<< SEARCH\nb\n=======\nB\n>>>>>>> REPLACE'), null, 'a search that matches twice is refused')
+  assert.equal(applyPatch(file, '<<<<<<< SEARCH\nzz\n=======\nB\n>>>>>>> REPLACE'), null, 'a search that matches nothing is refused')
+  assert.equal(applyPatch(file, 'the whole file again'), null)
   assert.doesNotThrow(() => new Function(AUDIT_SOURCE), 'the audit script parses')
   // A single backslash in the template (\b, \(, \p) silently becomes another character in the page — three regexes were
   // broken that way. Every regex escape must reach the page doubled.

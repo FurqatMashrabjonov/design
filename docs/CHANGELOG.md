@@ -14,6 +14,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (4)
+
+### LEAN-01: a repair is edits, not the whole screen again
+
+- What was measured first: the generated code repeats itself little (1.7% of long lines), so linting repetition
+  would save almost nothing; about a third of an app's output went to repairs, each a full rewrite (~3.5k tokens to
+  change a few lines).
+- The render check's one repair now asks for SEARCH/REPLACE edits (`PATCH_RULES`, `writePatch`); `applyPatch`
+  places each exactly once or refuses, and a refused or unbuildable patch falls back to the whole-file rewrite as
+  before. The edits are the model's own — our code only places them, as REG-02 splices an element. Tested.
+- Measured (lean01 vs aud01g, 4×6, ~$0.15): edits applied on 15 of 17 repairs; output tokens per screen 3,764 →
+  2,551 (−32%); judge 3–1–0, rubric 2.96 → 3.13 (fidelity 3.54 → 4.04, coherence 3.25 → 3.75 — mostly which
+  screens the plans chose); problems left per screen 0.08 → 0.38 and every control working on 23 of 24 screens
+  (one screen kept four dead controls); seconds per app 84 → 97. Kept: cheaper, the judge prefers it; the
+  problems-left rise is one screen and is watched on the next run.
+- Files: `src/app/Services/JsxGenerator.ts`, `src/app/Http/Controllers/PlanController.ts`, `controllers.check.ts`.
+
 ## 2026-10-08 (3)
 
 ### AUD-01: the render check measures four design faults (after Impeccable's rules)

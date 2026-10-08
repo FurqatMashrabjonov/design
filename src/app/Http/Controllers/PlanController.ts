@@ -12,7 +12,7 @@ import { resolvePhotos } from '@/app/Services/PhotoService'
 import { auditScreen, repairOn } from '@/app/Services/RenderAudit'
 import type { AppLook } from '@/app/Services/ScreenDocument'
 import { auditBrief } from '@/lib/render-audit'
-import { planApp, screenBrief, writeScreen, writeStore, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
+import { applyPatch, PATCH_RULES, planApp, screenBrief, writePatch, writeScreen, writeStore, type AppPlan, type PlannedScreen } from '@/app/Services/JsxGenerator'
 import { frameSize, FRAME_GAP } from '@/canvas'
 import { formatTokens, friendlyError, planReply, type MessageScreen } from '@/lib/agent-messages'
 import { parseRefImages } from '@/lib/ref-images'
@@ -65,7 +65,12 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
     let repaired = false
     if (found.count && !signal.aborted) {
       const problems = [auditBrief(found.render), ...found.lint.map((f) => `- ${f.message}`)].filter(Boolean).join('\n')
-      const fix = await writeScreen(`${user}\n\n# YOUR SCREEN, AS IT RENDERED\n\`\`\`jsx\n${jsx}\`\`\`\nWe drew it 390px wide and checked it. A person would see these problems:\n${problems}\nFix exactly these. Keep everything else as it is — the same content, data, sections, colours and style. Write the whole file again.`, tally, signal, site).then(linted).catch(() => null)
+      const asked = `${user}\n\n# YOUR SCREEN, AS IT RENDERED\n\`\`\`jsx\n${jsx}\`\`\`\nWe drew it 390px wide and checked it. A person would see these problems:\n${problems}\nFix exactly these. Keep everything else as it is — the same content, data, sections, colours and style.`
+      // LEAN-01: the fix as edits; the whole file again only when the edits do not apply or do not build.
+      const patched = await writePatch(`${asked}\n${PATCH_RULES}`, tally, signal, site).then((r) => applyPatch(jsx, r)).catch(() => null)
+      const usable = !!patched && (await compileScreen(linted(patched))).ok
+      console.log(`[repair] ${usable ? 'edits applied' : 'whole file'}`)
+      const fix = usable ? linted(patched!) : await writeScreen(`${asked} Write the whole file again.`, tally, signal, site).then(linted).catch(() => null)
       if (fix && (await compileScreen(fix)).ok) {
         await resolvePhotos(fix, signal).catch(() => {})
         const after = await check(fix)

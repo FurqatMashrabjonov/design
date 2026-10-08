@@ -380,6 +380,36 @@ export async function writeScreen(user: string, onUsage: (u: LlmUsage) => void, 
   return extractJsx(out)
 }
 
+/** LEAN-01: a fix as edits, not the whole file again. A rewrite repeated the full screen (~3.5k output tokens) to change a
+ *  few lines; about a third of an app's output went to that. The model answers with SEARCH/REPLACE blocks. */
+export const PATCH_RULES = `Reply with only the edits, nothing else — no prose, no whole file. Each edit:
+<<<<<<< SEARCH
+(lines copied exactly from the file, enough to be unique)
+=======
+(the lines that replace them)
+>>>>>>> REPLACE
+Use as many edits as the fixes need. A new import is an edit to the import lines.`
+
+export async function writePatch(user: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, site: 'screen' | 'edit' = 'screen'): Promise<string> {
+  let out = ''
+  for await (const d of streamCompletion(screenSystem(), user, signal, onUsage, undefined, site)) out += d
+  return out
+}
+
+/** The model's edits applied to the file, or null if any of them does not match exactly once (then the caller asks for the
+ *  whole file instead). The edits are the model's own; this only places them. */
+export function applyPatch(source: string, reply: string): string | null {
+  const blocks = [...reply.matchAll(/<{7} SEARCH\n([\s\S]*?)\n={7}\n([\s\S]*?)\n?>{7} REPLACE/g)]
+  if (!blocks.length) return null
+  let out = source
+  for (const [, search, replace] of blocks) {
+    const at = out.indexOf(search!)
+    if (!search!.trim() || at < 0 || out.indexOf(search!, at + 1) >= 0) return null
+    out = out.slice(0, at) + replace! + out.slice(at + search!.length)
+  }
+  return out
+}
+
 /** The app's look for a frame: accent, light/dark and platform from the project's theme (a frame URL may
  *  override them — themeFromQuery), tabs from its navigation. */
 export function appLook(project: { theme: string | null; navigation: string | null; plan?: string | null }, override?: Partial<AppTheme>): AppLook {
