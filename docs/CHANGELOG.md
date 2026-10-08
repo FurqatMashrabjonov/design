@@ -26,6 +26,12 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
   did not know the runtime had changed.
 - `src/routes/api/rt.$.ts`: a 404 is `no-store`. `ShotService.key` includes the runtime build (`runtimeUrl`), so
   each deploy remakes pictures on first ask and no crashed picture outlives its runtime.
+- **The main cause** (found after that deploy, screens still white): ICN-01's generated icon index
+  (`runtime/.icons/index.js`, which the kit's `lucide-react` resolves to) re-exports all ~1,600 icons and had no
+  `sideEffects: false`, so the bundler kept every one in the kit's graph — 686 modules for `@od/kit` instead of 126.
+  Locally they load from disk in a blink; on prod a canvas of 11 frames asked for them over the network and
+  `kit.js` took ~34 s, so frames stayed white and the server's pictures timed out into "crashed". The build now
+  writes `runtime/.icons/package.json` with `{ "sideEffects": false }` (measured: 686 → 126 modules).
 - Verified: on prod every runtime file loads (a crawl of all 693 modules, CORS present); the failing Loopforge
   screens render locally with their exported code and store; locally a missing runtime file now answers 404 with
   `cache-control: no-store`. `npm run check`, `npx tsc --noEmit` clean.

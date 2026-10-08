@@ -54,6 +54,9 @@ for (const [, names, file] of lucideIndex.matchAll(/export \{([^}]+)\} from '\.\
   for (const n of list) kitIcons.push(ph ? `export { default as ${n} } from './${file}.js'` : `export { default as ${n} } from '../../node_modules/lucide-react/dist/esm/icons/${file}.mjs'`)
 }
 writeFileSync('runtime/.icons/index.js', kitIcons.join('\n') + '\n')
+// Side-effect free, so the kit keeps only the icons it imports (without it the index pulled all ~1,600 into kit.js,
+// and every screen waited ~30 s for them).
+writeFileSync('runtime/.icons/package.json', '{ "sideEffects": false }\n')
 
 export default defineConfig({
   plugins: [
