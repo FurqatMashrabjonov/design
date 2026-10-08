@@ -1410,6 +1410,10 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
   const { parseAudit, auditBrief, AUDIT_SOURCE } = await import('../../../lib/render-audit.ts')
   // The page-side script is a template string: one unescaped backslash made it unparsable and every check silently empty.
   assert.doesNotThrow(() => new Function(AUDIT_SOURCE), 'the audit script parses')
+  // A single backslash in the template (\b, \(, \p) silently becomes another character in the page — three regexes were
+  // broken that way. Every regex escape must reach the page doubled.
+  assert.ok(!/\x08/.test(AUDIT_SOURCE) && AUDIT_SOURCE.includes('/[\\p{L}\\p{N}]/u') && AUDIT_SOURCE.includes('matrix\\('), 'AUD-01: the audit\'s regexes reach the page intact')
+  assert.ok(['small-target', 'gray-on-color', 'nested-card', 'cramped'].every((r) => AUDIT_SOURCE.includes(`'${r}'`) && auditBrief([{ rule: r as never, where: 'x', detail: 'y' }]).includes('→')), 'AUD-01: each design rule is measured and tells the repair how to fix it')
   const found = parseAudit([{ rule: 'clipped-text', where: '"Speaking" (Button)', detail: 'is cut off' }, { rule: 'rm -rf', where: 'x' }, 'junk', { rule: 'sparse', where: '(Page)', detail: 'the lower 46% is empty' }])
   assert.deepEqual(found.map((f) => f.rule), ['clipped-text', 'sparse'], 'unknown rules and junk are dropped')
   const brief = auditBrief(found)

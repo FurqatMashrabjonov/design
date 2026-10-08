@@ -14,6 +14,28 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (3)
+
+### AUD-01: the render check measures four design faults (after Impeccable's rules)
+
+- `src/lib/render-audit.ts`, in the page with the other checks, each with its fix for the one repair:
+  `small-target` (a button, link or FAB under 36px or 24px on a side; rows, checkboxes, toggles, the tab bar, navbar
+  text links and links inside a sentence are not judged), `gray-on-color` (grey or translucent text on a strongly
+  coloured card), `nested-card` (a coloured rounded card inside another), `cramped` (text within 6px of its card's
+  edge). Impeccable's line-length rule was left out: a phone line never reaches it.
+- Three regexes in the audit script had a single backslash inside the template string and reached the page broken
+  (`\b` in `seenX`, `\(` in `turned`, `\p` in `emojiOnly`), so some overflows and some faint text were never
+  found; doubled, with a test. `low-contrast` now reads what is painted under the text (a chosen day's circle is a
+  sibling), which the emoji fix had exposed as a false finding.
+- Measured: over 48 stored screens (`--reshoot`, no model calls) the new rules found 3 real misses (a 45×20 "See
+  all"); `gray-on-color`, `nested-card` and `cramped` found none — on CLR-01's one Konsta colour such faults are
+  rare. Fresh run aud01g (4×6, ~$0.15): problems per screen 0.38 → 0.08 and clean screens 67% → 92% against the
+  same rules over ill02's screens, every control working, −12% seconds per app, +4% output tokens. Judge against
+  ill02: 1–1–2, rubric 3.13 → 2.96; both clear losses name screens the plan left out (a contact picker, order
+  tracking), which the audit does not touch — plan variance on a four-app run. Kept: a repair is only kept when it
+  leaves fewer problems.
+- Files: `src/lib/render-audit.ts`, `controllers.check.ts`. `npm run check`, `npx tsc --noEmit` clean.
+
 ## 2026-10-08 (2)
 
 ### Fix: "Still designing this app … 1791435617s"

@@ -7,7 +7,7 @@
 // The page is laid out in a frame as tall as its content (as the canvas shows it), so every element is in view
 // and elementFromPoint can tell what is on top.
 
-export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value', 'crash', 'dead-control'] as const
+export const AUDIT_RULES = ['overflow', 'clipped-text', 'overlap', 'covered-text', 'low-contrast', 'sparse', 'broken-value', 'crash', 'dead-control', 'small-target', 'gray-on-color', 'nested-card', 'cramped'] as const
 export type AuditRule = (typeof AUDIT_RULES)[number]
 export type AuditFinding = { rule: AuditRule; where: string; detail: string }
 
@@ -77,7 +77,7 @@ function clipper(el) {
 function seenX(el, r) {
   var l = r.left, rr = r.right;
   for (var p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-    if (/\bk-page\b/.test(p.getAttribute('class') || '')) break;
+    if (/\\bk-page\\b/.test(p.getAttribute('class') || '')) break;
     var o = getComputedStyle(p).overflowX;
     if (o !== 'visible') { var b = p.getBoundingClientRect(); l = Math.max(l, b.left); rr = Math.min(rr, b.right); }
   }
@@ -122,10 +122,10 @@ function covers(top, el) {
 function shows(el, x, y) { var t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t) || t.contains(el)); }
 // Art turned on purpose (two tilted cards on an onboarding slide) overlaps by design.
 function turned(el) {
-  for (var e = el; e && e.nodeType === 1; e = e.parentElement) { var t = getComputedStyle(e).transform; if (t && t !== 'none') { var m = t.match(/matrix\(([^)]+)\)/); if (m && Math.abs(parseFloat(m[1].split(',')[1])) > 0.01) return true; } }
+  for (var e = el; e && e.nodeType === 1; e = e.parentElement) { var t = getComputedStyle(e).transform; if (t && t !== 'none') { var m = t.match(/matrix\\(([^)]+)\\)/); if (m && Math.abs(parseFloat(m[1].split(',')[1])) > 0.01) return true; } }
   return false;
 }
-function emojiOnly(el) { return !/[\p{L}\p{N}]/u.test(el.textContent || ''); }
+function emojiOnly(el) { return !/[\\p{L}\\p{N}]/u.test(el.textContent || ''); }
 function onPhoto(el, r) {
   var stack = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2);
   for (var i = 0; i < stack.length; i++) if (stack[i].tagName === 'IMG' || stack[i].hasAttribute('data-od-photo') || /url\\(/.test(getComputedStyle(stack[i]).backgroundImage || '')) return true;
@@ -174,6 +174,8 @@ for (var i = 0; i < all.length; i++) {
   if (bgs) {
     var fg = rgba(cs.color), ratio = 99;
     for (var bi = 0; bi < bgs.length; bi++) { var bg = bgs[bi]; ratio = Math.min(ratio, (Math.max(lum(fg), lum(bg)) + 0.05) / (Math.min(lum(fg), lum(bg)) + 0.05)); }
+    // What the browser really paints under the text's middle: a chosen day's circle is a sibling, not an ancestor.
+    if (fg[3] > 60 && ratio < 1.6) { var under = document.elementsFromPoint(r.left + r.width / 2, r.top + r.height / 2); for (var ui = 0; ui < under.length; ui++) { var ue = under[ui]; if (ue === el || el.contains(ue)) continue; var uc = rgba(getComputedStyle(ue).backgroundColor); if (uc[3] > 200) { ratio = (Math.max(lum(fg), lum(uc)) + 0.05) / (Math.min(lum(fg), lum(uc)) + 0.05); break; } } }
     if (fg[3] > 60 && ratio < 1.6) add('low-contrast', el, 'is almost invisible: ' + ratio.toFixed(2) + ':1 against its background');
   }
 }
@@ -198,6 +200,46 @@ var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 for (var tn; (tn = walker.nextNode());) {
   var m = /\\b(Invalid Date|NaN|undefined)\\b|\\[object Object\\]/.exec(tn.textContent || '');
   if (m && tn.parentElement && visible(tn.parentElement)) add('broken-value', tn.parentElement, 'shows "' + m[0] + '"');
+}
+// AUD-01 (after Impeccable's design rules, Apache 2.0, the ones that hold on a phone):
+// 8. A control too small to hit (HIG asks 44pt; a 22pt icon with no padding is the miss). Checkboxes, radios and
+// toggles sit in rows that take the tap; the tab bar and list rows are Konsta's own and right.
+function sat(c) { return Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]); }
+function radius(e) { return parseFloat(getComputedStyle(e).borderTopLeftRadius) || 0; }
+var controls = document.body.querySelectorAll('button, a[href], [role="button"], .k-button, .k-link, .k-fab');
+for (var ci = 0; ci < controls.length; ci++) {
+  var c = controls[ci];
+  if (!visible(c) || c.closest('.k-tabbar, .k-navbar, .k-list-item, .k-checkbox, .k-radio, .k-toggle, [aria-hidden="true"]') || turned(c)) continue;
+  // A link inside a sentence (the terms in fine print) is text, not a button.
+  if (c.tagName === 'A' && c.parentElement && Array.prototype.some.call(c.parentElement.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); })) continue;
+  var cr = c.getBoundingClientRect();
+  if (Math.max(cr.width, cr.height) < 36 || Math.min(cr.width, cr.height) < 24) add('small-target', c, 'is ' + Math.round(cr.width) + '×' + Math.round(cr.height) + 'px, too small to tap');
+}
+// 9. Grey text on a strongly coloured fill reads muddy; 10. a card inside a card; 11. text pressed against its card's
+// edge. "A card" is a rounded box that paints its own colour, not a photo.
+function card(e) { if (e.tagName === 'IMG' || e.hasAttribute('data-od-photo')) return false; var cs2 = getComputedStyle(e); return radius(e) >= 10 && rgba(cs2.backgroundColor)[3] > 200 && !(cs2.backgroundImage && /url\\(/.test(cs2.backgroundImage)); }
+var cards = [];
+for (var ti = 0; ti < texts.length; ti++) {
+  var t = texts[ti], tr = t.getBoundingClientRect(), tcs = getComputedStyle(t);
+  if (pinned(t) || emojiOnly(t) || onPhoto(t, tr) || turned(t)) continue;
+  var holder = null;
+  for (var h2 = t.parentElement; h2 && h2 !== document.body; h2 = h2.parentElement) { if (/\\bk-page\\b/.test(h2.getAttribute('class') || '')) break; if (card(h2)) { holder = h2; break; } }
+  if (!holder) continue;
+  if (cards.indexOf(holder) < 0) cards.push(holder);
+  var hb = rgba(getComputedStyle(holder).backgroundColor), tf = rgba(tcs.color);
+  if (sat(hb) > 90 && (sat(tf) < 24 && lum(tf) > 0.08 && lum(tf) < 0.75 || tf[3] < 200)) add('gray-on-color', t, 'is grey text on a coloured card');
+  var hr = holder.getBoundingClientRect();
+  if (hr.width > 120 && t.closest('.k-button, .k-chip, button') === null && (tr.left - hr.left < 6 || hr.right - tr.right < 6 || tr.top - hr.top < 4) && tr.width < hr.width - 4) add('cramped', t, 'touches the edge of its ' + part(holder) + ' — no padding');
+}
+for (var ki = 0; ki < cards.length; ki++) {
+  var inner = cards[ki], ir = inner.getBoundingClientRect();
+  for (var o2 = inner.parentElement; o2 && o2 !== document.body; o2 = o2.parentElement) {
+    if (/\\bk-page\\b/.test(o2.getAttribute('class') || '')) break;
+    if (!card(o2)) continue;
+    var or2 = o2.getBoundingClientRect();
+    if (ir.width > or2.width * 0.6 && ir.height > 48 && rgba(getComputedStyle(inner).backgroundColor).join() !== rgba(getComputedStyle(o2).backgroundColor).join()) add('nested-card', inner, 'is a card inside ' + where(o2) + ' — one surface is enough');
+    break;
+  }
 }
 // 6. Half a phone left empty: the content stops high up on a phone-tall screen.
 if (bottom > 0 && bottom < PHONE_H * 0.6) out.push({ rule: 'sparse', where: '(Page)', detail: 'the content ends ' + Math.round(bottom) + 'px down; the lower ' + Math.round(100 - (bottom / PHONE_H) * 100) + '% of the phone is empty' });
@@ -224,6 +266,10 @@ export function auditBrief(findings: AuditFinding[]): string {
     'dead-control': 'make it work: open what it names (nav.push to a screen, or a Sheet/Dialog/Actions on this screen), call the store action it stands for, or answer with a Toast saying what happened — a control never does nothing',
     crash: 'the screen throws while rendering — fix exactly this error (an identifier that does not exist, a value used as a function); until it renders, nothing else matters',
     'broken-value': 'compute the value from the store or the data correctly (a date from a \'YYYY-MM-DD\' string is new Date(s + \'T00:00:00\'); a missing field gets a fallback) so a real value shows',
+    'small-target': 'make the tap area at least 44×44 (padding around the icon, or size-11 on the button) without making the icon bigger',
+    'gray-on-color': 'text on a coloured fill is white or the fill\'s own dark shade, never grey or translucent black',
+    'nested-card': 'drop the inner card\'s own background and radius (or the outer one) — rows inside one surface, divided by spacing or a hairline',
+    cramped: 'give the card its inner padding (p-4) so text never touches its edge',
     sparse: 'fill the screen with real content from APP DATA (more rows, a second section, a summary) — not filler, not a giant empty illustration',
   }
   return findings.map((f) => `- ${f.where} ${f.detail} → ${how[f.rule]}`).join('\n')
