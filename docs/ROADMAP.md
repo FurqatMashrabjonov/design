@@ -510,6 +510,7 @@ Doira: `MVP` hozir quriladi · `Keyin` hozir emas · `Bekor` qilinmaydi. Holat: 
 | ICN-01 | Ikonkalar Phosphor: faol tab fill, Tile ichida duotone; eksportda ham | Generatsiya / Kit | MVP | Tayyor | Kichik |  | icn01 reshoot: metrikalar o'zgarmadi |
 | AUD-01 | Render-audit: Impeccable'dan dizayn qoidalari (kichik bosish zonasi, rangli fonda kulrang matn, karta ichida karta, tiqilinch padding, uzun qator) | Generatsiya / Sifat | MVP | Tayyor | O'rta |  | aud01g: muammo 0.38 → 0.08, toza 67% → 92%; judge 1–1–2 |
 | LEAN-01 | Repair patch bilan (butun faylni qayta yozmasdan): output token kamayadi | Generatsiya / Sifat | MVP | Tayyor | O'rta | AUD-01 | lean01: output −32%, judge 3–1–0 |
+| EXM-01 | Ilova turiga qarab namunalar: 6 kategoriya (foto, moliya, sog'liq, ijtimoiy, ish, o'rganish), planner kategoriya tanlaydi | Generatsiya / Sifat | MVP | Jarayonda | Katta | LEAN-01 | gallery tasdig'i + eval + judge |
 | FNT-01 | Shrift: Apple'da SF, boshqa qurilmalarda Inter | Generatsiya / Kit | MVP | Tayyor | Kichik |  |  |
 | GLS-01 | Liquid Glass: shaffof tab bar va navbar | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |
 | MIC-01 | Mikro-interaksiyalar: bosish, belgi chizilishi, toggle spring, raqam aylanishi | Generatsiya / Kit | MVP | Tayyor | O'rta |  |  |

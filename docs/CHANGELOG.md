@@ -14,6 +14,28 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (5)
+
+### EXM-01 (first step): the home tab of a known kind of app is built from a home of that kind
+
+- The planner names a `category` (photo, money, health, social, work, learn; `APP_CATEGORIES`, kept by `parsePlan`
+  only when it is one of them) and `exampleFor` gives a first tab the home example of its kind (`HOME_EXAMPLES`);
+  a kind with no home yet keeps the dashboard. Before, every app's home — travel, food, a bank — copied the one
+  health dashboard.
+- Two homes, written from the structure of real top apps studied on Page Flows (screens kept out of the repo and
+  the product; our components, accent, icons and made-up data): `home-photo.jsx` (a marketplace home — the search
+  as the header, icon category tabs, large photos with the facts under them, a floating map pill) and
+  `home-finance.jsx` (a neobank home — one calm balance card with its actions, activity inside it, offers as photo
+  cards). Both pass the render and tap checks; a test builds every example.
+- The tap check took the chosen option of a Konsta `strong` segmented control for a dead one (its choice is drawn
+  on a separate highlight, so its buttons look alike); in a segment whose other options work, the one that did
+  nothing is the chosen one now (`runtime/kit.jsx`).
+- Measured (exm01 vs lean01, 4×6, ~$0.15; food and bank get the new homes): those two home screens' hierarchy
+  3 → 4, overall unchanged at 3; judge 0–3–1, rubric 3.13 → 2.92 — the loss names screens the plan left out
+  (checkout and tracking); problems per screen 0.38 → 0.04, clean screens 83% → 96%, every control working on
+  24 of 24, seconds per app 97 → 79. Kept: the home screens it targets improved and nothing measured worse beyond
+  plan variance.
+
 ## 2026-10-08 (4)
 
 ### LEAN-01: a repair is edits, not the whole screen again

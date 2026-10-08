@@ -26,7 +26,7 @@ export const TAB_ICONS = ['House', 'Search', 'Heart', 'User', 'CircleUser', 'Set
 
 export type Kind = 'tab' | 'push' | 'modal' | 'first-run'
 export type PlannedScreen = { id: string; name: string; kind: Kind; tab?: string; parent?: string; spec: string; asked?: boolean }
-export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding; store?: string; icon?: string }
+export type AppPlan = { appName: string; summary: string; accent: string; style: AppStyle; palette: Record<string, string>; tabs: AppLook['tabs']; screens: PlannedScreen[]; data: string; onboarding?: Onboarding; store?: string; icon?: string; category?: AppCategory }
 
 /**
  * ONB-01: how the first-run screen is built. With one example every app opened on the same carousel (7 of 7 on the
@@ -52,10 +52,10 @@ const ONBOARDING_BY_STYLE: Record<AppStyle, Onboarding[]> = {
 export const onboardingFor = (style: AppStyle, seed: string): Onboarding => seededPick(ONBOARDING_BY_STYLE[style], seed, 'onboarding')
 /** A stored plan's layout; plans from before ONB-01 (or a stray value) are the carousel. */
 const onboardingOf = (plan: AppPlan): Onboarding => (plan.onboarding && plan.onboarding in ONBOARDINGS ? plan.onboarding : 'slides')
-type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}`
+type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}` | `home-${string}`
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
-{"appName": string, "summary": "one sentence", "icon": "one emoji that is the app's mark on its home-screen icon and splash (its subject: 🏃 a running app, 🌿 calm wellness, 🍜 food delivery)",
+{"appName": string, "summary": "one sentence", "category": what kind of app it is — "photo" (places, food, homes, products, events: chosen by their pictures), "money" (banking, budgets, payments, investing), "health" (fitness, habits, sleep, meditation, tracking the body), "social" (feeds, friends, communities, dating), "work" (tasks, notes, calendars, tools) or "learn" (courses, languages, books, podcasts, music), "icon": "one emoji that is the app's mark on its home-screen icon and splash (its subject: 🏃 a running app, 🌿 calm wellness, 🍜 food delivery)",
  "style": the look of top apps like this one — "clean" (finance, productivity, booking, utilities, news), "midnight" (dark and premium: fitness, training, sleep, investing, nightlife), "vivid" (bold and playful: food delivery, learning, habits, kids, games, social fun), "soft" (calm and warm: meditation, wellness, journaling, reading, parenting, mental health) or "editorial" (photo-led and typographic: travel, fashion, recipes, lifestyle, events); pick what the brief's audience would expect, and if the brief names a look (dark, minimal, playful, cozy, luxury) follow it,
  "palette": ["camelCaseName", …] — 2–4 names, one per main thing the app tracks or sorts by (top apps use two to four colours, not a rainbow), named after that thing (steps/water/sleep, food/drinks/dessert, income/rent/fun — never a quality like consistency or motivation); the host colours them,
  "tabs": [{"id": "kebab-id", "label": "One word", "icon": one of ${TAB_ICONS.join(', ')}}],
@@ -158,10 +158,10 @@ export function parsePlan(json: string, fallbackName: string, seed?: string, max
   // Clean surfaces — and the person picks another in the Style & colour panel. Every palette name is the accent
   // itself (a CSS variable), so changing the accent there recolours the whole app. The styles and their colour sets
   // (THM-01, PAL-01/02) stay in the code for when generation picks colours again.
-  if (seed && defaultColorOnly()) return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: KONSTA_ACCENT, style: 'clean', palette: Object.fromEntries(keys.map((k) => [k, 'var(--color-primary)'])), tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), onboarding: onboardingFor('clean', seed), icon: iconOf((raw as { icon?: unknown }).icon) }
+  if (seed && defaultColorOnly()) return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: KONSTA_ACCENT, style: 'clean', palette: Object.fromEntries(keys.map((k) => [k, 'var(--color-primary)'])), tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), onboarding: onboardingFor('clean', seed), icon: iconOf((raw as { icon?: unknown }).icon), category: categoryOf((raw as { category?: unknown }).category) }
   const colors = seed ? styleColors(style, keys, seed) : null
   const palette = colors ? colors.palette : Object.fromEntries(keys.filter((k) => /^#[0-9a-f]{6}$/i.test(String(given[k]))).map((k) => [k, String(given[k]).toLowerCase()]))
-  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }), icon: iconOf((raw as { icon?: unknown }).icon) }
+  return { appName: String(raw.appName || fallbackName).slice(0, 40), summary: String(raw.summary ?? '').slice(0, 300), accent: colors?.accent ?? accent, style, palette, tabs: liveTabs, screens, data: String(raw.data ?? '').slice(0, 6000), ...(seed && { onboarding: onboardingFor(style, seed) }), icon: iconOf((raw as { icon?: unknown }).icon), category: categoryOf((raw as { category?: unknown }).category) }
 }
 
 export async function planApp(brief: string, fallbackName: string, onUsage: (u: LlmUsage) => void, signal?: AbortSignal, seed?: string, images?: RefImage[]): Promise<AppPlan> {
@@ -260,9 +260,16 @@ Write store.js now.`
 }
 
 /** The example that shows how this kind of screen is built: the app's first tab is its dashboard. */
+/** EXM-01: what kind of app it is, so its home tab is built from a finished home of that kind (each written from the
+ *  structure of real top apps, our look and data). A category with no home example yet keeps the dashboard. */
+export const APP_CATEGORIES = ['photo', 'money', 'health', 'social', 'work', 'learn'] as const
+export type AppCategory = (typeof APP_CATEGORIES)[number]
+const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance' }
+const categoryOf = (raw: unknown): AppCategory | undefined => (APP_CATEGORIES as readonly string[]).includes(String(raw)) ? (raw as AppCategory) : undefined
+
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
   if (s.kind === 'first-run') { const o = onboardingOf(plan); return o === 'slides' ? 'onboarding' : `onboarding-${o}` }
-  if (s.kind === 'tab') return s.tab === plan.tabs[0]?.id ? ('dashboard' as const) : ('list' as const)
+  if (s.kind === 'tab') return s.tab === plan.tabs[0]?.id ? (plan.category && HOME_EXAMPLES[plan.category]) || ('dashboard' as const) : ('list' as const)
   if (s.kind === 'modal') return /^(paywall|premium|upgrade)/.test(s.id) || /premium|subscription|paywall/i.test(s.name) ? ('paywall' as const) : ('sheet' as const)
   return 'detail' as const
 }

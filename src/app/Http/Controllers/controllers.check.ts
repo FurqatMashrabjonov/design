@@ -1369,6 +1369,14 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     assert.ok(screenBrief(plan, plan.screens[0]!).includes(`Layout: ${ONBOARDINGS.quiz}`) && screenBrief(plan, plan.screens[0]!).includes('const QUESTIONS'), 'the brief names the layout and carries its example')
     assert.equal(exampleFor({ ...plan, onboarding: undefined }, plan.screens[0]!), 'onboarding', 'a plan from before ONB-01 keeps the carousel')
     assert.equal(parsePlan(json('soft'), 'x').onboarding, undefined, 'no seed, no choice')
+    // EXM-01: the home tab of a known kind of app is built from that kind's home; an unknown kind keeps the dashboard.
+    const home = { ...plan, screens: [{ id: 'home', name: 'Home', kind: 'tab' as const, tab: plan.tabs[0]!.id, spec: '' }] }
+    assert.equal(exampleFor({ ...home, category: 'money' }, home.screens[0]!), 'home-finance')
+    assert.equal(exampleFor({ ...home, category: 'social' }, home.screens[0]!), 'dashboard', 'a kind with no home example yet keeps the dashboard')
+    assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'photo' }), 'x', 'p').category, 'photo')
+    assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'crypto' }), 'x', 'p').category, undefined)
+    const { readdirSync: ls } = await import('node:fs')
+    for (const f of ls(join(process.cwd(), 'konsta/examples')).filter((f: string) => f.endsWith('.jsx'))) assert.ok((await compileScreen(readFileSync(join(process.cwd(), 'konsta/examples', f), 'utf8'))).ok, `the ${f} example builds`)
     for (const o of Object.keys(ONBOARDINGS)) {
       const src = readFileSync(join(process.cwd(), 'konsta/examples', o === 'slides' ? 'onboarding.jsx' : `onboarding-${o}.jsx`), 'utf8')
       assert.ok((await compileScreen(src)).ok, `the ${o} example builds`)

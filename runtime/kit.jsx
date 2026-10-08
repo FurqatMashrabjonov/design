@@ -258,7 +258,9 @@ function answerTaps() {
     // A chosen option also looks chosen: when it was tapped, its fill differed from every sibling option that works.
     const chosen = (d) => {
       const working = d.peers.filter(([x]) => alive.has(x))
-      return d.el.getAttribute('aria-pressed') === 'true' || d.el.getAttribute('aria-selected') === 'true' || (working.length > 0 && working.every(([, f]) => f !== d.look))
+      // A Konsta segmented control draws its choice on a separate highlight, so its buttons look alike: in a segment
+      // whose other options work, the one that did nothing is the chosen one.
+      return d.el.getAttribute('aria-pressed') === 'true' || d.el.getAttribute('aria-selected') === 'true' || (working.length > 0 && (!!d.el.closest('.k-segmented') || working.every(([, f]) => f !== d.look)))
     }
     const findings = dead.filter((d) => !chosen(d)).map(({ el, look, peers, ...f }) => f)
     window.parent.postMessage({ type: 'od:tapped', findings, tried }, '*')
