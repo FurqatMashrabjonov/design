@@ -264,14 +264,14 @@ Write store.js now.`
  *  structure of real top apps, our look and data). A category with no home example yet keeps the dashboard. */
 export const APP_CATEGORIES = ['photo', 'money', 'health', 'social', 'work', 'learn'] as const
 export type AppCategory = (typeof APP_CATEGORIES)[number]
-const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance' }
-const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo', money: 'list-finance', health: 'list-health' }
-const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo', money: 'detail-finance', health: 'detail-health' }
+const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance', social: 'home-social' }
+const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo', money: 'list-finance', health: 'list-health', social: 'list-social' }
+const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo', money: 'detail-finance', health: 'detail-health', social: 'detail-social' }
 // A screen about the person or the app (profile, settings, alerts, money flows) keeps the general examples; a list of the
 // things the app is about, and the page of one of them, take the kind's own.
 const ABOUT_ME = /\b(profile|account|settings?|preferences|notifications?|inbox|messages?|me|you)\b/i
 const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support|send|transfer|request|top ?up|deposit|withdraw|exchange|invest|buy|sell|log|timer|player|session player|start)\b/i
-const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved|transactions|history|activity|statements?|workouts?|sessions|runs|awards?|achievements?)\b/i
+const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved|transactions|history|activity|statements?|workouts?|sessions|runs|awards?|achievements?|friends|followers|following|members|people|communities|groups)\b/i
 const categoryOf = (raw: unknown): AppCategory | undefined => (APP_CATEGORIES as readonly string[]).includes(String(raw)) ? (raw as AppCategory) : undefined
 
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
@@ -282,6 +282,8 @@ export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
     if (s.tab === plan.tabs[0]?.id) return (kind && HOME_EXAMPLES[kind]) || ('dashboard' as const)
     return (kind && !ABOUT_ME.test(words) && LIST_EXAMPLES[kind]) || ('list' as const)
   }
+  // In a social app another person's page (a profile, a creator, a host) is the detail, not a screen about me.
+  if (s.kind === 'push' && kind === 'social' && /\b(profile|creator|host|seller|member|friend|user|author)\b/i.test(words) && !FLOW.test(words)) return 'detail-social'
   if (s.kind === 'push' && kind && !ABOUT_ME.test(words) && !FLOW.test(words)) {
     if (RESULTS.test(words) && LIST_EXAMPLES[kind]) return LIST_EXAMPLES[kind]!
     if (DETAIL_EXAMPLES[kind]) return DETAIL_EXAMPLES[kind]!

@@ -1372,7 +1372,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     // EXM-01: the home tab of a known kind of app is built from that kind's home; an unknown kind keeps the dashboard.
     const home = { ...plan, screens: [{ id: 'home', name: 'Home', kind: 'tab' as const, tab: plan.tabs[0]!.id, spec: '' }] }
     assert.equal(exampleFor({ ...home, category: 'money' }, home.screens[0]!), 'home-finance')
-    assert.equal(exampleFor({ ...home, category: 'social' }, home.screens[0]!), 'dashboard', 'a kind with no home example yet keeps the dashboard')
+    assert.equal(exampleFor({ ...home, category: 'work' }, home.screens[0]!), 'dashboard', 'a kind with no home example yet keeps the dashboard')
     const scr = (id: string, name: string, kind: 'tab' | 'push', tab?: string) => ({ id, name, kind, tab, parent: kind === 'push' ? 'home' : undefined, spec: '' })
     const photo = { ...plan, category: 'photo' as const, tabs: [...plan.tabs, { id: 'saved', label: 'Saved', icon: 'Heart' }, { id: 'me', label: 'Profile', icon: 'User' }] }
     assert.equal(exampleFor(photo, scr('saved', 'Saved stays', 'tab', 'saved')), 'list-photo')
@@ -1388,6 +1388,11 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     assert.equal(exampleFor(health, scr('activity', 'Activity', 'tab', 'saved')), 'list-health')
     assert.equal(exampleFor(health, scr('run-detail', 'Evening run', 'push')), 'detail-health')
     assert.equal(exampleFor(health, scr('timer', 'Session timer', 'push')), 'detail', 'a player or timer keeps the general detail')
+    const social = { ...photo, category: 'social' as const }
+    assert.equal(exampleFor(social, scr('home', 'Home', 'tab', plan.tabs[0]!.id)), 'home-social')
+    assert.equal(exampleFor(social, scr('friends', 'Friends', 'push')), 'list-social')
+    assert.equal(exampleFor(social, scr('user-profile', 'Mina Reyes', 'push')), 'detail-social', 'another person’s profile is the social detail')
+    assert.equal(exampleFor(social, scr('me', 'Your profile', 'tab', 'me')), 'list', 'my own profile tab keeps the general list')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'photo' }), 'x', 'p').category, 'photo')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'crypto' }), 'x', 'p').category, undefined)
     const { readdirSync: ls } = await import('node:fs')

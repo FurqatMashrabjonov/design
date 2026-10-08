@@ -1384,9 +1384,9 @@ export function FeedPost({ author, time, photo, text, likes = 0, comments = 0, l
       {Array.isArray(stats) && stats.length > 0 && <div className="grid gap-2 px-4 pt-3" style={{ gridTemplateColumns: `repeat(${Math.min(4, stats.length)}, minmax(0, 1fr))` }}>{stats.slice(0, 4).map((s, i) => <div key={i}><div className="text-caption1 opacity-55">{s.label}</div><div className="text-headline">{s.value}</div></div>)}</div>}
       {text && <div className="px-4 pt-3 text-subhead">{text}</div>}
       <div className="flex items-center gap-5 px-4 py-3">
-        <button type="button" onClick={() => like(false)} aria-pressed={on} className="flex items-center gap-1.5 active:scale-90 motion-safe:transition-transform"><Heart className="w-6 h-6" style={{ color: on ? c : undefined }} fill={on ? c : 'none'} /><span className="text-subhead tabular-nums">{count.toLocaleString('en-US')}</span></button>
-        <button type="button" onClick={onComment ?? (() => {})} className="flex items-center gap-1.5 active:scale-90"><MessageCircle className="w-6 h-6" /><span className="text-subhead tabular-nums">{asNum(comments).toLocaleString('en-US')}</span></button>
-        <button type="button" onClick={onShare ?? (() => {})} aria-label="Share" className="ml-auto active:scale-90"><Share className="w-6 h-6" /></button>
+        <button type="button" onClick={() => like(false)} aria-pressed={on} className="flex min-h-11 items-center gap-1.5 -my-2 active:scale-90 motion-safe:transition-transform"><Heart className="w-6 h-6" style={{ color: on ? c : undefined }} fill={on ? c : 'none'} /><span className="text-subhead tabular-nums">{count.toLocaleString('en-US')}</span></button>
+        <button type="button" onClick={onComment ?? (() => {})} className="flex min-h-11 items-center gap-1.5 -my-2 active:scale-90"><MessageCircle className="w-6 h-6" /><span className="text-subhead tabular-nums">{asNum(comments).toLocaleString('en-US')}</span></button>
+        <button type="button" onClick={onShare ?? (() => {})} aria-label="Share" className="ml-auto grid size-11 place-items-center -my-2 -mr-2 active:scale-90"><Share className="w-6 h-6" /></button>
       </div>
     </div>
   )

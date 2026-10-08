@@ -14,6 +14,23 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (8)
+
+### EXM-01 (social): feed, people list and profile examples; FeedPost's buttons reach 44pt
+
+- `home-social.jsx` (a feed: stories row with yours first, Friends · Discover, posts as `FeedPost`, a live card
+  between them, a compose sheet from the plus, a story opens `StoryViewer`), `list-social.jsx` (people: Friends ·
+  Requests · Suggested, Accept / Decline on a request, a Follow button that flips per row, groups as photo cards with
+  `AvatarStack`) and `detail-social.jsx` (a profile: cover with the portrait overlapping, name, handle, bio, place and
+  link, three tappable counts, Follow + Message, "followed by", a segment over a photo grid, "…" actions), from the
+  structure of BeReal, Twitch and Whatnot. In a social app another person's page (profile, creator, host, member…)
+  takes the social detail; my own profile tab keeps the general list (tested).
+- `FeedPost` (kit): like, comment and share were 24px tall — AUD-01's `small-target` caught it on the new example;
+  each is a 44pt target now, with negative margins so the row keeps its height.
+- exm04 (health examples + the store arity fix) vs exm03: crash 0.042 → 0, clean screens 92% → 96%, every control
+  working, seconds per app 83 → 74; judge 1–2–1 (the loss names a plan without a payment step), rubric 3.04 → 3.09
+  (hierarchy 3.38 → 3.5, spacing 3.29 → 3.42, fidelity 3.5 → 3.71, coherence 3.5 → 3.75; one screen unscored).
+
 ## 2026-10-08 (7)
 
 ### EXM-01 (money, health): list and detail examples; a derived with default parameters is callable
