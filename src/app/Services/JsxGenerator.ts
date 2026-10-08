@@ -52,7 +52,7 @@ const ONBOARDING_BY_STYLE: Record<AppStyle, Onboarding[]> = {
 export const onboardingFor = (style: AppStyle, seed: string): Onboarding => seededPick(ONBOARDING_BY_STYLE[style], seed, 'onboarding')
 /** A stored plan's layout; plans from before ONB-01 (or a stray value) are the carousel. */
 const onboardingOf = (plan: AppPlan): Onboarding => (plan.onboarding && plan.onboarding in ONBOARDINGS ? plan.onboarding : 'slides')
-type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}` | `home-${string}`
+type ExampleName = 'dashboard' | 'detail' | 'list' | 'sheet' | 'paywall' | 'onboarding' | `onboarding-${Exclude<Onboarding, 'slides'>}` | `${'home' | 'list' | 'detail'}-${string}`
 
 export const PLANNER = `You plan a phone app (iOS) that will be drawn screen by screen with Konsta UI, at the level of a top App Store app. Reply with JSON only:
 {"appName": string, "summary": "one sentence", "category": what kind of app it is — "photo" (places, food, homes, products, events: chosen by their pictures), "money" (banking, budgets, payments, investing), "health" (fitness, habits, sleep, meditation, tracking the body), "social" (feeds, friends, communities, dating), "work" (tasks, notes, calendars, tools) or "learn" (courses, languages, books, podcasts, music), "icon": "one emoji that is the app's mark on its home-screen icon and splash (its subject: 🏃 a running app, 🌿 calm wellness, 🍜 food delivery)",
@@ -265,11 +265,27 @@ Write store.js now.`
 export const APP_CATEGORIES = ['photo', 'money', 'health', 'social', 'work', 'learn'] as const
 export type AppCategory = (typeof APP_CATEGORIES)[number]
 const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance' }
+const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo' }
+const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo' }
+// A screen about the person or the app (profile, settings, alerts, money flows) keeps the general examples; a list of the
+// things the app is about, and the page of one of them, take the kind's own.
+const ABOUT_ME = /\b(profile|account|settings?|preferences|notifications?|inbox|messages?|me|you)\b/i
+const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support)\b/i
+const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved)\b/i
 const categoryOf = (raw: unknown): AppCategory | undefined => (APP_CATEGORIES as readonly string[]).includes(String(raw)) ? (raw as AppCategory) : undefined
 
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {
   if (s.kind === 'first-run') { const o = onboardingOf(plan); return o === 'slides' ? 'onboarding' : `onboarding-${o}` }
-  if (s.kind === 'tab') return s.tab === plan.tabs[0]?.id ? (plan.category && HOME_EXAMPLES[plan.category]) || ('dashboard' as const) : ('list' as const)
+  const kind = plan.category
+  const words = `${s.name} ${s.id.replace(/-/g, ' ')}`
+  if (s.kind === 'tab') {
+    if (s.tab === plan.tabs[0]?.id) return (kind && HOME_EXAMPLES[kind]) || ('dashboard' as const)
+    return (kind && !ABOUT_ME.test(words) && LIST_EXAMPLES[kind]) || ('list' as const)
+  }
+  if (s.kind === 'push' && kind && !ABOUT_ME.test(words) && !FLOW.test(words)) {
+    if (RESULTS.test(words) && LIST_EXAMPLES[kind]) return LIST_EXAMPLES[kind]!
+    if (DETAIL_EXAMPLES[kind]) return DETAIL_EXAMPLES[kind]!
+  }
   if (s.kind === 'modal') return /^(paywall|premium|upgrade)/.test(s.id) || /premium|subscription|paywall/i.test(s.name) ? ('paywall' as const) : ('sheet' as const)
   return 'detail' as const
 }

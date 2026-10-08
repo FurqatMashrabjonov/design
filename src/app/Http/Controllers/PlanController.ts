@@ -67,7 +67,10 @@ export async function drawScreen(user: string, tally: (u: import('@/app/Services
       const problems = [auditBrief(found.render), ...found.lint.map((f) => `- ${f.message}`)].filter(Boolean).join('\n')
       const asked = `${user}\n\n# YOUR SCREEN, AS IT RENDERED\n\`\`\`jsx\n${jsx}\`\`\`\nWe drew it 390px wide and checked it. A person would see these problems:\n${problems}\nFix exactly these. Keep everything else as it is — the same content, data, sections, colours and style.`
       // LEAN-01: the fix as edits; the whole file again only when the edits do not apply or do not build.
-      const patched = await writePatch(`${asked}\n${PATCH_RULES}`, tally, signal, site).then((r) => applyPatch(jsx, r)).catch(() => null)
+      // Wiring a dead control (state, a handler, a sheet) touches several places; as edits it stayed dead on 2 of 2 runs
+      // (lean01, exm02 — four dead controls each), so a screen with one gets the whole file.
+      const wire = found.render.some((f) => f.rule === 'dead-control')
+      const patched = wire ? null : await writePatch(`${asked}\n${PATCH_RULES}`, tally, signal, site).then((r) => applyPatch(jsx, r)).catch(() => null)
       const usable = !!patched && (await compileScreen(linted(patched))).ok
       console.log(`[repair] ${usable ? 'edits applied' : 'whole file'}`)
       const fix = usable ? linted(patched!) : await writeScreen(`${asked} Write the whole file again.`, tally, signal, site).then(linted).catch(() => null)

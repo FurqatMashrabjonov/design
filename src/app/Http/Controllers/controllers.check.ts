@@ -1373,6 +1373,13 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     const home = { ...plan, screens: [{ id: 'home', name: 'Home', kind: 'tab' as const, tab: plan.tabs[0]!.id, spec: '' }] }
     assert.equal(exampleFor({ ...home, category: 'money' }, home.screens[0]!), 'home-finance')
     assert.equal(exampleFor({ ...home, category: 'social' }, home.screens[0]!), 'dashboard', 'a kind with no home example yet keeps the dashboard')
+    const scr = (id: string, name: string, kind: 'tab' | 'push', tab?: string) => ({ id, name, kind, tab, parent: kind === 'push' ? 'home' : undefined, spec: '' })
+    const photo = { ...plan, category: 'photo' as const, tabs: [...plan.tabs, { id: 'saved', label: 'Saved', icon: 'Heart' }, { id: 'me', label: 'Profile', icon: 'User' }] }
+    assert.equal(exampleFor(photo, scr('saved', 'Saved stays', 'tab', 'saved')), 'list-photo')
+    assert.equal(exampleFor(photo, scr('me', 'Your profile', 'tab', 'me')), 'list', 'a profile tab keeps the general list')
+    assert.equal(exampleFor(photo, scr('stay-detail', 'Cedar Cabin', 'push')), 'detail-photo')
+    assert.equal(exampleFor(photo, scr('search-results', 'Results', 'push')), 'list-photo')
+    assert.equal(exampleFor(photo, scr('checkout', 'Checkout', 'push')), 'detail', 'a flow screen keeps the general detail')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'photo' }), 'x', 'p').category, 'photo')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'crypto' }), 'x', 'p').category, undefined)
     const { readdirSync: ls } = await import('node:fs')

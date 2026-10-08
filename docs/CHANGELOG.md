@@ -14,6 +14,25 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (6)
+
+### EXM-01 (photo): list and detail examples; a dead control is repaired as a whole file
+
+- `list-photo.jsx` (results: the search as the header, sort and filter chips, a count line, large photo cards with a
+  badge and a struck old price, the map pill) and `detail-photo.jsx` (photos edge to edge with round buttons and a
+  counter, host, three highlights, description with Show more, what it offers, review cards, a pinned price bar with
+  Reserve and its sheet), from the structure of Turo, Airbnb, Booking, Yelp and Uber Eats.
+- `exampleFor`: a photo app's other tabs and results screens take `list-photo`, its item pages `detail-photo`; a
+  screen about the person (profile, settings, alerts) or a flow (checkout, cart, confirm, edit…) keeps the general
+  example (`ABOUT_ME`, `FLOW`, `RESULTS`; tested).
+- Photos are looked up from `photo:` keys, not `photos: [...]` — the detail example had the array and drew a grey
+  hero; it uses the key the pipeline reads, so a model copying it gets real photos.
+- LEAN-01 follow-up: a screen whose findings include a dead control gets the whole-file repair, not edits — as
+  edits it stayed dead on both runs that had one (lean01, exm02: four dead controls on one screen each).
+- Measured (exm02 vs exm01, 4×6, ~$0.15): judge 2–2–0, rubric 2.92 → 3.17 (spacing 3.00 → 3.21, fidelity
+  3.58 → 3.79); output tokens per screen 2,659 → 2,295; problems per screen 0.04 → 0.58 — mostly a bank send
+  screen with four dead controls (the case the follow-up above addresses) and an onboarding, not the new examples.
+
 ## 2026-10-08 (5)
 
 ### EXM-01 (first step): the home tab of a known kind of app is built from a home of that kind
