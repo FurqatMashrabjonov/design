@@ -70,7 +70,8 @@ const secs = (ms: number) => `${Math.max(0, Math.round(ms / 1000))}s`
 
 export function ActivityCard({ activity }: { activity: Activity }) {
   useElapsed(activity.startedAt) // re-renders every second, so the elapsed time ticks
-  const total = secs(Date.now() - activity.startedAt)
+  // A run this page did not start (another tab, an agent over MCP) has no known start: show no time, not "1791435617s".
+  const total = activity.startedAt ? secs(Date.now() - activity.startedAt) : undefined
   const shell = (children: React.ReactNode) => (
     <div className="od-rise flex gap-2.5" aria-live="polite">
       <AgentAvatar />
@@ -106,7 +107,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
           {allDone ? `Drew ${screens.length} screens` : `Drawing ${screens.length} screens`}
         </span>
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-          {finished}/{screens.length} · {total}
+          {finished}/{screens.length}{total ? ` · ${total}` : ''}
         </span>
       </div>
       <div className="od-progress mx-1" role="progressbar" aria-valuemin={0} aria-valuemax={screens.length} aria-valuenow={finished}>

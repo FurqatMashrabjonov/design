@@ -14,6 +14,16 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (2)
+
+### Fix: "Still designing this app … 1791435617s"
+
+- A run the page did not start (another tab, or an agent over MCP) has no start time on the page (`workStarted` 0),
+  so the activity line showed seconds since 1970. `ActivityCard` now shows no time when the start is unknown.
+- Files: `src/components/canvas/ActivityCard.tsx`. Verified: `npx tsc --noEmit`, `npm run check` clean; seen on prod
+  for an app created over MCP (screenshot from the owner). Not re-run in a browser: reproducing needs a second run
+  started outside the page.
+
 ## 2026-10-08
 
 ### Fix: screens crashed or stayed white in production after the deploy
