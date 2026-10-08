@@ -265,13 +265,13 @@ Write store.js now.`
 export const APP_CATEGORIES = ['photo', 'money', 'health', 'social', 'work', 'learn'] as const
 export type AppCategory = (typeof APP_CATEGORIES)[number]
 const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance' }
-const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo' }
-const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo' }
+const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo', money: 'list-finance', health: 'list-health' }
+const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo', money: 'detail-finance', health: 'detail-health' }
 // A screen about the person or the app (profile, settings, alerts, money flows) keeps the general examples; a list of the
 // things the app is about, and the page of one of them, take the kind's own.
 const ABOUT_ME = /\b(profile|account|settings?|preferences|notifications?|inbox|messages?|me|you)\b/i
-const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support)\b/i
-const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved)\b/i
+const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support|send|transfer|request|top ?up|deposit|withdraw|exchange|invest|buy|sell|log|timer|player|session player|start)\b/i
+const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved|transactions|history|activity|statements?|workouts?|sessions|runs|awards?|achievements?)\b/i
 const categoryOf = (raw: unknown): AppCategory | undefined => (APP_CATEGORIES as readonly string[]).includes(String(raw)) ? (raw as AppCategory) : undefined
 
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {

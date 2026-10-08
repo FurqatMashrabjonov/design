@@ -14,6 +14,24 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (7)
+
+### EXM-01 (money, health): list and detail examples; a derived with default parameters is callable
+
+- `list-finance.jsx` / `detail-finance.jsx` (from Revolut, Chase, Capital One: a segment All · Spent · Received, the
+  month's figure with daily bars, rows grouped by day with the day's total; one big signed amount over grouped fact
+  rows, split / repeat / receipt / report) and `list-health.jsx` / `detail-health.jsx` (from Nike Run Club,
+  ClassPass, AllTrails: Week · Month · Year with the span's figure and bars, awards strip, sessions by week; one big
+  figure, six stats, the route on `RouteMap`, splits as bars, gear, kudos). Routed by `exampleFor` with the kind's
+  words (`RESULTS`: transactions, history, activity, workouts…; `FLOW` adds send, transfer, log, timer, player…).
+- `runtime/kit/store.js`: a derived written `(state, query = '') => …` has `fn.length` 1 (JS stops at the first
+  default), so the kit computed it as a value and a screen calling it crashed — the one crash on exm03 (a bank
+  Activity screen, "activitySearch is not a function"). `arity()` reads the parameter list from the source instead;
+  tested.
+- exm03 (money examples) vs exm02: problems per screen 0.58 → 0.04, every control working on 24 of 24, judge 0–2–2
+  (the clear loss is that crash plus a plan without the send-money screen; the slight loss names data bugs on an
+  app the examples do not touch), rubric 3.17 → 3.04.
+
 ## 2026-10-08 (6)
 
 ### EXM-01 (photo): list and detail examples; a dead control is repaired as a whole file

@@ -81,6 +81,24 @@ export function resetStore() {
   emit(true)
 }
 
+// How many parameters a function declares, defaults and rest included — `fn.length` stops at the first default, so
+// `(state, query = '') => …` read as a value and a screen calling it crashed ("is not a function").
+function arity(fn) {
+  if (fn.length > 1) return fn.length
+  const src = Function.prototype.toString.call(fn)
+  const open = src.indexOf('(')
+  const arrow = src.indexOf('=>')
+  if (open < 0 || (arrow >= 0 && arrow < open)) return fn.length // `state => …`: one parameter
+  let depth = 0, n = 1, i = open + 1
+  for (; i < src.length; i++) {
+    const c = src[i]
+    if ('([{'.includes(c)) depth++
+    else if (')]}'.includes(c)) { if (depth === 0) break; depth-- }
+    else if (c === ',' && depth === 0) n++
+  }
+  return src.slice(open + 1, i).trim() ? n : 0
+}
+
 function current() {
   if (view) return view
   // `state` is there too, for a screen that reads `const { state } = useStore()`.
@@ -88,7 +106,7 @@ function current() {
   for (const [name, fn] of Object.entries(app.derived)) {
     if (typeof fn !== 'function') continue
     // A derived value per item (`streakOf: (state, id) => …`) is called from a screen as `streakOf(h.id)`.
-    if (fn.length > 1) {
+    if (arity(fn) > 1) {
       out[name] = (...args) => {
         try { return fn(state, ...args) } catch (e) { console.error(`[store] ${name} failed:`, e); return undefined }
       }

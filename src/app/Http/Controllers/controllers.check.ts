@@ -1380,6 +1380,14 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     assert.equal(exampleFor(photo, scr('stay-detail', 'Cedar Cabin', 'push')), 'detail-photo')
     assert.equal(exampleFor(photo, scr('search-results', 'Results', 'push')), 'list-photo')
     assert.equal(exampleFor(photo, scr('checkout', 'Checkout', 'push')), 'detail', 'a flow screen keeps the general detail')
+    const money = { ...photo, category: 'money' as const }
+    assert.equal(exampleFor(money, scr('history', 'Transactions', 'push')), 'list-finance')
+    assert.equal(exampleFor(money, scr('transaction', 'Blue Bottle', 'push')), 'detail-finance')
+    assert.equal(exampleFor(money, scr('send-money', 'Send money', 'push')), 'detail', 'a money flow keeps the general detail')
+    const health = { ...photo, category: 'health' as const }
+    assert.equal(exampleFor(health, scr('activity', 'Activity', 'tab', 'saved')), 'list-health')
+    assert.equal(exampleFor(health, scr('run-detail', 'Evening run', 'push')), 'detail-health')
+    assert.equal(exampleFor(health, scr('timer', 'Session timer', 'push')), 'detail', 'a player or timer keeps the general detail')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'photo' }), 'x', 'p').category, 'photo')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'crypto' }), 'x', 'p').category, undefined)
     const { readdirSync: ls } = await import('node:fs')
@@ -1984,6 +1992,16 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
 }
 {
   // FUN-01: a screen that uses the store differently from how it is written is told so in its repair.
+  // A derived with default parameters is still a per-item function (`fn.length` stops at the first default).
+  {
+    const { setupStore, readStore } = await import('../../../../runtime/kit/store.js')
+    setupStore({ initial: { items: [1, 2, 3] }, actions: {}, derived: { total: (st: { items: number[] }) => st.items.length, search: (st: { items: number[] }, q = '') => st.items.filter((x) => String(x).includes(q)), pick: (st: { items: number[] }, id: number) => st.items[id] } } as never, { id: 'arity-test' })
+    const v = readStore() as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+    assert.equal(v.total, 3, 'a one-parameter derived is a value')
+    assert.equal(typeof v.search, 'function', 'a derived with default parameters is callable')
+    assert.deepEqual(v.search('2'), [2])
+    assert.equal(v.pick(1), 2)
+  }
   const { storeFindings, storeOf } = await import('../../../lib/store-check.ts')
   const store = `export const initial = {\n  habits: [],\n  user: { name: 'Maya' },\n}\nexport const actions = {\n  toggleHabit(state, id) { },\n}\nexport const derived = {\n  weeklySteps: (state) => [1, 2],\n  streakOf: (state, id) => 3,\n  total: state => 4,\n}\n`
   const rules = (src: string) => storeFindings(src, store).map((f) => `${f.rule}:${f.sample}`)
