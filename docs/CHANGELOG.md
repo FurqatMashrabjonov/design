@@ -14,6 +14,30 @@ Entries before 2026-09-19 were backfilled from git history and have no verificat
 
 
 
+## 2026-10-08 (9)
+
+### EXM-01 (work + learn, done): six categories have their home, list and detail; routing words extended
+
+- `home-work.jsx` (Today: a week strip, an "up next" card with Join, the day as a timeline, to-dos with checkboxes and a
+  meter, a quick-add sheet), `list-work.jsx` (projects as cover cards with people and a star, Recent · Favourites ·
+  All, items with "…" → actions) and `detail-work.jsx` (an event: list tag, title, fact rows with icons, people sheet,
+  checklist, reminder/repeat toggles, delete behind a dialog), from the structure of Amie and Microsoft Loop;
+  `home-learn.jsx` (daily goal ring + streak, a Continue card with play and progress, recommended carousel, saved),
+  `list-learn.jsx` (search in the subnavbar, topics as a two-column tile grid, count + Filters sheet, result rows with
+  a bookmark) and `detail-learn.jsx` (cover with play, numbers, teacher + Follow, progress, Lessons · Projects ·
+  Reviews, numbered lessons with locked ones → paywall sheet, About with Show more, a pinned Continue bar), from
+  Skillshare and Drops. All six pass the render audit on iOS and Android, light and dark.
+- `exampleFor`: `work` and `learn` join `HOME_EXAMPLES` / `LIST_EXAMPLES` / `DETAIL_EXAMPLES`; `RESULTS` learns
+  courses, classes, library, topics, catalog, projects, notes, tasks, pages, documents, files, events, boards; `FLOW`
+  learns lesson, quiz, exercise, practice, flashcards (a lesson is a player, not the course page). Tests for both
+  categories in `controllers.check.ts`; the "kind with no home" case is now `category: undefined`.
+- Measured: exm05 (travel + social) vs icn01 — judge 2–0–0, overall 2.92 → 3.17, polish 2.79 → 3.17, output
+  tokens/screen 3 343 → 2 407, clean 92% → 75% (two screens with one finding each). exm06 (learn, no earlier run on
+  that brief to pair with): rubric 3.5 overall, polish 3.67, 0 problems on 6 screens, 2 275 output tokens/screen.
+- Files: `konsta/examples/{home,list,detail}-{work,learn}.jsx`, `src/app/Services/JsxGenerator.ts`,
+  `src/app/Http/Controllers/controllers.check.ts`, `CLAUDE.md`, `docs/ROADMAP.md` (EXM-01 → Tayyor). Verified:
+  `npm run check`, `npx tsc --noEmit`, the render audit over the six examples, the eval runs above.
+
 ## 2026-10-08 (8)
 
 ### EXM-01 (social): feed, people list and profile examples; FeedPost's buttons reach 44pt

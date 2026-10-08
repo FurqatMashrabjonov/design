@@ -264,14 +264,14 @@ Write store.js now.`
  *  structure of real top apps, our look and data). A category with no home example yet keeps the dashboard. */
 export const APP_CATEGORIES = ['photo', 'money', 'health', 'social', 'work', 'learn'] as const
 export type AppCategory = (typeof APP_CATEGORIES)[number]
-const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance', social: 'home-social' }
-const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo', money: 'list-finance', health: 'list-health', social: 'list-social' }
-const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo', money: 'detail-finance', health: 'detail-health', social: 'detail-social' }
+const HOME_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'home-photo', money: 'home-finance', social: 'home-social', work: 'home-work', learn: 'home-learn' }
+const LIST_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'list-photo', money: 'list-finance', health: 'list-health', social: 'list-social', work: 'list-work', learn: 'list-learn' }
+const DETAIL_EXAMPLES: Partial<Record<AppCategory, ExampleName>> = { photo: 'detail-photo', money: 'detail-finance', health: 'detail-health', social: 'detail-social', work: 'detail-work', learn: 'detail-learn' }
 // A screen about the person or the app (profile, settings, alerts, money flows) keeps the general examples; a list of the
 // things the app is about, and the page of one of them, take the kind's own.
 const ABOUT_ME = /\b(profile|account|settings?|preferences|notifications?|inbox|messages?|me|you)\b/i
-const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support|send|transfer|request|top ?up|deposit|withdraw|exchange|invest|buy|sell|log|timer|player|session player|start)\b/i
-const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved|transactions|history|activity|statements?|workouts?|sessions|runs|awards?|achievements?|friends|followers|following|members|people|communities|groups)\b/i
+const FLOW = /\b(checkout|cart|basket|payment|pay|confirm|confirmation|review|edit|add|new|create|filter|onboarding|welcome|premium|subscription|help|support|send|transfer|request|top ?up|deposit|withdraw|exchange|invest|buy|sell|log|timer|player|session player|start|lesson|quiz|exercise|practice|flashcards?)\b/i
+const RESULTS = /\b(results?|search|browse|nearby|category|categories|all|list|collection|wishlist|saved|transactions|history|activity|statements?|workouts?|sessions|runs|awards?|achievements?|friends|followers|following|members|people|communities|groups|courses|classes|library|topics|catalog(?:ue)?|projects|notes|tasks|pages|documents|files|events|boards)\b/i
 const categoryOf = (raw: unknown): AppCategory | undefined => (APP_CATEGORIES as readonly string[]).includes(String(raw)) ? (raw as AppCategory) : undefined
 
 export function exampleFor(plan: AppPlan, s: PlannedScreen): ExampleName {

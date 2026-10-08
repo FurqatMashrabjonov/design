@@ -1372,7 +1372,7 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     // EXM-01: the home tab of a known kind of app is built from that kind's home; an unknown kind keeps the dashboard.
     const home = { ...plan, screens: [{ id: 'home', name: 'Home', kind: 'tab' as const, tab: plan.tabs[0]!.id, spec: '' }] }
     assert.equal(exampleFor({ ...home, category: 'money' }, home.screens[0]!), 'home-finance')
-    assert.equal(exampleFor({ ...home, category: 'work' }, home.screens[0]!), 'dashboard', 'a kind with no home example yet keeps the dashboard')
+    assert.equal(exampleFor({ ...home, category: undefined }, home.screens[0]!), 'dashboard', 'no kind keeps the dashboard')
     const scr = (id: string, name: string, kind: 'tab' | 'push', tab?: string) => ({ id, name, kind, tab, parent: kind === 'push' ? 'home' : undefined, spec: '' })
     const photo = { ...plan, category: 'photo' as const, tabs: [...plan.tabs, { id: 'saved', label: 'Saved', icon: 'Heart' }, { id: 'me', label: 'Profile', icon: 'User' }] }
     assert.equal(exampleFor(photo, scr('saved', 'Saved stays', 'tab', 'saved')), 'list-photo')
@@ -1393,6 +1393,19 @@ reply = (req) => planReply(req) ?? (which(req) === 'Task' ? sse('no code here') 
     assert.equal(exampleFor(social, scr('friends', 'Friends', 'push')), 'list-social')
     assert.equal(exampleFor(social, scr('user-profile', 'Mina Reyes', 'push')), 'detail-social', 'another person’s profile is the social detail')
     assert.equal(exampleFor(social, scr('me', 'Your profile', 'tab', 'me')), 'list', 'my own profile tab keeps the general list')
+    const work = { ...photo, category: 'work' as const }
+    assert.equal(exampleFor(work, scr('today', 'Today', 'tab', plan.tabs[0]!.id)), 'home-work')
+    assert.equal(exampleFor(work, scr('projects', 'Projects', 'tab', 'saved')), 'list-work')
+    assert.equal(exampleFor(work, scr('inbox', 'Inbox', 'tab', 'me')), 'list', 'an inbox tab keeps the general list')
+    assert.equal(exampleFor(work, scr('event', 'Design sync', 'push')), 'detail-work')
+    assert.equal(exampleFor(work, scr('all-notes', 'Notes', 'push')), 'list-work')
+    assert.equal(exampleFor(work, scr('new-event', 'New event', 'push')), 'detail', 'a new-thing flow keeps the general detail')
+    const learn = { ...photo, category: 'learn' as const }
+    assert.equal(exampleFor(learn, scr('home', 'Home', 'tab', plan.tabs[0]!.id)), 'home-learn')
+    assert.equal(exampleFor(learn, scr('browse', 'Browse', 'tab', 'saved')), 'list-learn')
+    assert.equal(exampleFor(learn, scr('course', 'Always Drawing', 'push')), 'detail-learn')
+    assert.equal(exampleFor(learn, scr('my-courses', 'Courses', 'push')), 'list-learn')
+    assert.equal(exampleFor(learn, scr('lesson', 'Lesson 3', 'push')), 'detail', 'a lesson is a player, not the course page')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'photo' }), 'x', 'p').category, 'photo')
     assert.equal(parsePlan(JSON.stringify({ ...JSON.parse(json('clean')), category: 'crypto' }), 'x', 'p').category, undefined)
     const { readdirSync: ls } = await import('node:fs')
