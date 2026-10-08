@@ -21,6 +21,9 @@ import { parseAudit, type AuditFinding } from '@/lib/render-audit'
 // over CDP if generation volume makes the spawns show up.
 
 const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+// A container runs as root, where Chrome refuses to start with its sandbox (no user namespaces). There the walls are
+// the compiler's banned identifiers and the page's CSP (no network, a private server holding only that page).
+const HEADLESS = ['--headless=new', '--disable-gpu', ...(process.env.CHROME_NO_SANDBOX === '1' ? ['--no-sandbox', '--disable-dev-shm-usage'] : [])]
 const { width: W, height: H } = FRAME_SIZE.mobile
 
 /**
@@ -115,7 +118,7 @@ f.onload = () => setTimeout(ask, 1800)
 
 function dumpDom(url: string, signal?: AbortSignal): Promise<string> {
   return withChrome(() => new Promise((ok) => {
-    const child = spawn(CHROME, ['--headless=new', '--disable-gpu', `--window-size=${W + 40},${H}`, '--virtual-time-budget=14000', '--dump-dom', url], { stdio: ['ignore', 'pipe', 'ignore'] })
+    const child = spawn(CHROME, [...HEADLESS, `--window-size=${W + 40},${H}`, '--virtual-time-budget=14000', '--dump-dom', url], { stdio: ['ignore', 'pipe', 'ignore'] })
     let dom = ''
     child.stdout.on('data', (d) => (dom += d))
     const kill = () => child.kill('SIGKILL')
@@ -181,7 +184,7 @@ export async function screenshotScreen(source: string, look: AppLook, slug: stri
   pages.set(`/h/${token}`, `<!doctype html><body style="margin:0;overflow:hidden"><iframe src="/s/${token}?static" style="width:${W}px;height:${H}px;border:0;display:block"></iframe></body>`)
   try {
     await withChrome(() => new Promise<void>((ok) => {
-      const child = spawn(CHROME, ['--headless=new', '--disable-gpu', '--hide-scrollbars', `--force-device-scale-factor=${SHOT_SCALE}`, `--window-size=${W},${H + CHROME_BARS}`, '--virtual-time-budget=5000', `--screenshot=${out}`, `${origin}/h/${token}`], { stdio: 'ignore' })
+      const child = spawn(CHROME, [...HEADLESS, '--hide-scrollbars', `--force-device-scale-factor=${SHOT_SCALE}`, `--window-size=${W},${H + CHROME_BARS}`, '--virtual-time-budget=5000', `--screenshot=${out}`, `${origin}/h/${token}`], { stdio: 'ignore' })
       const timer = setTimeout(() => child.kill('SIGKILL'), 30_000)
       child.on('close', () => (clearTimeout(timer), ok()))
     }))
